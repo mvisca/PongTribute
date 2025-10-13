@@ -14,7 +14,7 @@
 ## Corepack
 Para garantizar la máxima consistencia entre diferentes máquinas, ejecuta:
 
-```bash
+bash
 corepack enable
 
 Esto hace que el gestor de paquetes integrado de Node.js utilice el manejador indicado en package.json (en nuestro caso pnpm@10.18.2) y simplifica los pasos posteriores de configuración.
