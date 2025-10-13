@@ -1,0 +1,60 @@
+{
+  "compilerOptions": {
+    // ========================================
+    // LENGUAJE Y TARGET
+    // ========================================
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    
+    // ========================================
+    // RESOLUCIÓN DE MÓDULOS
+    // ========================================
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    
+    // ========================================
+    // COMPOSITE (PARA PROJECT REFERENCES)
+    // ========================================
+    "composite": true,
+    "incremental": true,
+    
+    // ========================================
+    // GENERACIÓN DE ARCHIVOS
+    // ========================================
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    
+    // ========================================
+    // STRICTNESS
+    // ========================================
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "forceConsistentCasingInFileNames": true,
+    
+    // ========================================
+    // PERFORMANCE
+    // ========================================
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true
+  },
+  
+  // ========================================
+  // PROJECT REFERENCES
+  // ========================================
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/api-gateway" },
+    { "path": "./packages/frontend" }
+  ],
+  
+  // Este archivo no incluye ningún código directamente
+  "files": []
+}

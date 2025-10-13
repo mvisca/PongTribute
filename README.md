@@ -142,4 +142,3 @@ Cambios aplicados
     Uniformidad de estilo (uso de backticks, negritas y bloques de código).
 
 Con estas mejoras el README queda más legible, completo y listo para que cualquier colaborador lo siga sin dudas.
-# ft_transcendence
