@@ -3,6 +3,8 @@
   
   "compilerOptions": {
 	
+	"esModuleInterop": true,
+	"allowSyntheticDefaultImports": true,
 	// === COMPILACIÓN ==="
 	"rootDir": ".",
 	"outDir": "./dist",
@@ -18,5 +20,10 @@
     "types": []
   },
   
-  "include": ["index.ts"]
+  "include": [ "constants/**/*",
+			   "events/**/*",
+			   "schema/**/*",
+			   "types/**/*",
+			   "utils/**/*",
+			   "index.ts"]
 }
