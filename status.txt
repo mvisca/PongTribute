@@ -1,0 +1,750 @@
+=============== BEGIN
+file full path: ./packages/frontend/vite.config.ts
+content:
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+
+export default defineConfig({
+	resolve: {
+		alias: {
+			'@': resolve(__dirname, './src'),
+			'@shared': resolve(__dirname, '../shared')
+		}
+	},
+	// Evita: import { Game } from '../../../shared/index';
+	// Permite: import { Game } from '@shared';
+
+	server: {
+		port: 3000,
+		strictPort: false,
+		host: true,
+		open: false
+	},
+
+	build: {
+		outDir: 'dist',
+		sourcemap: true, // para ver código typescript original en DevTools
+		emptyOutDir: true,
+		minify: 'esbuild',
+		target: 'es2022'
+	},
+
+	optimizeDeps: {
+		include: ['babylonjs']
+	}
+});=============== END
+=============== BEGIN
+file full path: ./packages/frontend/src/main.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/constants/game.constants.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   game.constants.ts                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 13:05:01 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 13:05:12 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+export const GAME_CONSTANTS = {
+	COURT: {
+		ASPECT_RATIO_2: 16/9,
+		ASPECT_RATIO_4: 1/1,
+		ASPECT_RATIO_6: 6/6,
+	},
+	
+	PADDLE: {
+		WIDTH_PERCENT: 0.1,
+		HEIGHT_PERCENT: 0.15,
+		SPEED: 0.015, // a 60 FPS
+	},
+
+	BALL: {
+		SIZE: 0.02,
+		INITIAL_SPEED: 0.008,
+		MAX_SPEED: 0.025,
+		ACCELERATION: 1.05,
+	},
+	
+	COUNTDOWN: {
+		INITIAL: 3,
+		RECONNECT: 1,
+	},
+
+	SCORE: {
+		WINNING_SCORE: 5, // El primero en hacer 5 goles gana
+	},
+} as const;
+
+export type GameConstants = typeof GAME_CONSTANTS;=============== END
+=============== BEGIN
+file full path: ./packages/shared/constants/network.constants.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   network.constants.ts                               :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 13:05:19 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 13:05:22 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+export const NETWORK_CONSTANTS = {
+	NETWORK: {
+		TICK_RATE: 60, // 60 updates por segundo
+		RECONNECT_TIMEOUT: 3000, // 30 segundo
+		MATCH_CONFIRM_TIMEOUT: 3000,
+	}
+} as const;
+
+export type GameConstants = typeof NETWORK_CONSTANTS;=============== END
+=============== BEGIN
+file full path: ./packages/shared/events/base/EventFactory.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/events/base/EventMetadata.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/events/base/BaseEvent.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   BaseEvent.ts                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 13:04:51 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 14:22:38 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+import { EventId } from "../../types/branded.types";
+import { generateEventId } from "../../utils/uuidGenerator";
+
+export abstract class BaseEvent {
+	public readonly id: EventId;
+	public readonly eventType: string; // crear un enum de types
+	public readonly timestamp: number;
+	public readonly version: number; // como lo administramos
+	public readonly source: string; // quién lo emitió, podría ser un enum de sources
+	
+	constructor(eventType: string, source: string) {
+		this.id = generateEventId();
+		this.eventType = eventType;
+		this.timestamp = Date.now();
+		this.version = 1;
+		this.source = source;
+	}
+
+	/** Método para serializar con validación:
+	 * Define qué datos se enviarán por websocket en cada evento.
+	 * Cada evento hijo debe implmentarlo porque tienen objetos distintos. */
+	abstract toJSON(): object;
+
+	/** Método para loggin para todos los eventos
+	 * Se podría integrar en un sistema de loggin más amplio para todo el sistema
+	 * O desarrollar otro sistema para debuguar que sea accesible por todo el sistema */
+	toString(): string {
+		return `[${this.source}] ${this.eventType} (${this.id})`;
+	}	
+}=============== END
+=============== BEGIN
+file full path: ./packages/shared/events/game/GameEvents.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/events/matchmaking/MatchmakingEvents.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/types/game.types.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   game.types.ts                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/14 18:33:14 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 00:16:30 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+// ==== ENUMS y TYPES ====
+
+// Define tipos de juego (incluido para hacer extensible)
+export enum GameTitle {
+	PONG = "pong"
+	// futuro >> SNAKE = "snake"
+}
+
+// Define tipos de cancha
+export enum CourtType {
+	TWO_PLAYERS = "2_players",
+	// THREE_PLAYERS = "3_players", // no en Pong
+	FOUR_PLAYERS = "4_players",
+	// FIVE_PLAYERS = "5_players", // no en Pong... o sí?
+	SIX_PLAYERS = "6_players"
+}
+
+// Define estado de partida
+export enum GameStatus {
+	COUNTDOWN = "countdown",
+	PLAYING = "playing",
+	RECONNECTING = "reconnecting",
+	DISCONECTED = "disconnected",
+	FINISHED = "finished"
+}
+
+// Define condicional el tipo de posiciones la cancha
+// //////// CONDICIONAL???
+export enum Position {
+	LEFT = "left",
+	RIGHT = "right",
+	TOP = "top",
+	DOWN = "down",
+	LEFT_TOP = "left-top",
+	RIGHT_DOWN = "right_down"
+}
+
+//////////////////////////
+// Condicionales seran
+// TwoPositions {...}
+// FourPositions {...}
+// SixPositions {...}
+// enum Position { TwoPositions | ForPositions | SixPositions }
+
+// Puestos que puede haber en el juego, máximo 6
+export type PlayerSlot = "slot1" | "slot2" | "slot3" | "slot4" | "slot5" | "slot6";
+/////////////////// Podría ser enum?
+
+// ==== INTERFACES DE GameState ====
+
+// Define estado de jugador en partida Pong
+export interface PlayerState {
+	playerId: string;
+	isReady: boolean;
+	connected: boolean;
+	lastSeenAt: number; // Unix timestamp
+	position: Position; // Enum definido arriba
+	axis: number; // [0 -1] Normalizado para mutidispositivo
+}
+
+// Define estado de pelota en partida Pong
+export interface BallState {
+	x: number; // [0 -1] Normalizado para mutidispositivo
+	y: number; // [0 -1] Normalizado para mutidispositivo
+}
+
+export interface GameScore {
+	score: { [K in PlayerSlot]?: number }
+	// Mapped type: valores de PongPlayerSlot (todos o no todos?) de tipo number
+}
+
+export interface GameState {
+	// Identificación de partida
+	GameId: string; // puede ser un tipo más único de id /////////
+	gameTitle: GameTitle;
+	courtType: CourtType;
+	
+	// Estado temporal de partida
+	status: GameStatus;
+	stateChangedAt: number;
+	countdownDuration: number; // 3s para inicio de partida o 1s al reconnectar 
+	
+	// Jugadores
+	players: Record<PlayerSlot, PlayerState>;
+
+	ball: BallState;
+	score: GameScore;
+	
+	winner: PlayerSlot | null;
+	///////////// que tal separar pong en pong.types.ts y game.types.ts tiene lo general??? pros y cons
+}=============== END
+=============== BEGIN
+file full path: ./packages/shared/types/matchmaking.types.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   matchmaking.types.ts                               :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 13:05:28 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 13:05:30 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+import { GameTitle, CourtType, Position, PlayerSlot } from "./game.types";
+import { UserId, MatchId } from "../types/branded.types";
+
+// ==== INTERFACES ====
+
+export interface MatchFoundEvent {
+	eventType: "match.found";
+	matchId: string;
+	gameTitle: GameTitle;
+	courtType: CourtType;
+	timestamp: number;
+	expiresAt: number; // tiempo límite para confirmar.
+	
+	opponente: {
+		id: UserId;
+		alias: string;
+		avatar?: string;
+	};
+	
+	availablePositions: Position[];
+}
+
+export interface MatchConfirmedEvent {
+	eventType: "match.confirmed";
+	matchId: MatchId;
+	gameTitle: GameTitle;
+	courtType: CourtType;
+	timestamp: number;
+
+	players: Record<PlayerSlot, { userId: UserID; position: Position }> // usar type UserId
+}
+
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/types/branded.types.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   branded.types.ts                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 12:01:23 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 13:04:29 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+/**
+ * Tipos branded para IDs únicos.
+ * 
+ * Los branded types previenen mezclar diferentes tipos de IDs
+ * a nivel de TypeScript sin overhead en runtime.
+ * 
+ * @example
+ * ```typescript
+ * const userId: UserId = "abc-123" as UserId; // ✅
+ * const eventId: EventId = "def-456" as EventId; // ✅
+ * 
+ * function takeUser(id: UserId) { ... }
+ * takeUser(eventId); // ❌ Error en compilación
+ * ```
+ */
+
+/**
+ * Id de Event
+ */
+export type EventId = string & { readonly __brand: 'EventId' };
+
+/** 
+ * Id de User
+*/
+export type UserId = string & { readonly __brand: 'UserId' };
+
+/** 
+ * Id de Match
+*/
+export type MatchId = string & { readonly __brand: 'MatchId' };
+
+/**
+ * Id de Game
+ */
+export type GameId = string & { readonly __brand: 'GameId' };=============== END
+=============== BEGIN
+file full path: ./packages/shared/types/user.types.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   user.types.ts                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 13:04:41 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 14:19:40 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+import { UserId } from "../types/branded.types";
+
+/**
+ * Usuario de la plataforma
+ */
+export interface User {
+	id: UserId;
+	alias: string;
+	email?: string; // usar tipo email
+	avatar?: string;
+	createdAt: number;
+}
+
+/**
+ * Credenciales de login
+ */
+export interface UserCredentials {
+	email: string;
+	password: string;
+}
+
+/**
+ * Perfil público de usuario (sin datos sensibles)
+ */
+export interface UserProfile {
+	id: UserId;
+	alias: string;
+	avatar: string;	
+}=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/schema/indexes.sql
+content:
+/*
+Indices para optimizar consultas frecuentes
+*/
+
+-- Búsqueda de usuarios
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_online ON users(online);
+
+-- Historial de partidas
+CREATE INDEX IF NOT EXISTS idx_match_participants_user ON match_participants(user_id);
+CREATE INDEX IF NOT EXISTS idx_matches_created ON matches(created_at);
+
+-- Búsqueda de amistades
+CREATE INDEX IF NOT EXISTS idx_friendships_user ON friendships(user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships(friend_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/schema/tables.sql
+content:
+/*
+Tablas del sistema
+*/
+
+CREATE TABLE IF NOT EXISTS users (
+	id TEXT PRIMARY KEY,
+	username TEXT UNIQUE NOT NULL,
+	email TEXT UNIQUE,
+	password_hash TEXT NOT NULL,
+	avatar TEXT,
+	is_online INTEGER DEFAULT 0,
+	created_at INTEGER NOT NULL,
+	updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS usert_stats (
+	user_id TEXT PRIMARY KEY,
+	total_matches INTEGER DEFAULT 0,
+	wins INTEGER DEFAULT 0,
+	losses INTEGER DEFAULT 0,
+	win_rate REAL DEFAULT 0.0,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS matches (
+	id TEXT PRIMARY KEY,
+	game_title TEXT NOT NULL,
+	court_type TEXT NOT NULL,
+	status TEXT NOT NULL,
+	winner_id TEXT,
+	created_at INTEGER NOT NULL,
+	finished_at INTEGER,
+	FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS match_participants (
+	match_id TEXT NOT NULL,
+	user_id TEXT NOT NULL,
+	player_slot TEXt NOT NULL,
+	position TEXT NOT NULL,
+	score INTEGER DEFAULT 0,
+	PRIMARY KEY (match_id, user_id),
+	FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+);
+
+CREATE TABLE IF NOT EXISTS friendships (
+	user_id TEXT NOT NULL,
+	friend_id TEXT NOT NULL,
+	status TEXT NOT NULL,
+	created_at INTEGER NOT NULL,
+	PRIMARY KEY (user_id, friend_id),
+	FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
+	FOREIGN KEY (friend_id) REFERENCES (userid) ON DELETE CASCADE,
+	CHECK (user_id != friend_id)
+);=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/mappers/MatchRepository.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/mappers/UserMapper.ts
+content:
+/**
+ * Funciones puras para traducir records/base de datos <> dominio/instancias
+ * rowToUser(row: any): User // SQLite row to Entity
+ * userToRow(user: User): object // Entity to objeto para INSERT en SQLite
+ */=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/mappers/FriendshipMappers.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/connection.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   connection.ts                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 18:13:31 by m                 #+#    #+#             */
+/*   Updated: 2025/10/16 00:24:01 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+/**
+ * Singleton que inicializa SQLite, ejecuta schemas, y exporta instancia db
+ */
+
+import BetterSqlite3 from 'better-sqlite3'; // Importr el driver de DB SQLite para JS
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+const Database = BetterSqlite3 as any as {
+	new (filename: string, options?: BetterSqlite3.Options): BetterSqlite3.Database;
+};
+
+let db: BetterSqlite3.Database | null = null;
+
+/**
+ * Obtiene o crea la DB, instancia única
+ */
+export function getDatabase(): BetterSqlite3.Database {
+	if (!db) {
+		// Ruta de la db
+		const dbPath = process.env.DB_PATH || './transcendence.db';
+		
+		// Crea instancia singleton
+		db = new Database(dbPath, {
+			verbose: process.env.NODE_ENV === 'development' ? console.log : undefined
+		});
+		
+		// Activar foreign keys
+		db.pragma('foreign_keys = ON');
+		
+		// Ejecutar schemas
+		initializeSchema(db);
+	}
+
+	return db;
+}
+
+/**
+ * Ejecuta CREATE TABLE e indexes
+ */
+function initializeSchema(database: BetterSqlite3.Database): void {
+	const tablesSQL = readFileSync(join(__dirname, 'schema/tables.sql'), 'utf-8');
+	const indexesSQL = readFileSync(join(__dirname, 'schema/indexes.sql'), 'utf-8');
+
+	database.exec(tablesSQL);
+	database.exec(indexesSQL);
+}
+
+/**
+ * Cierra la conexión (para test y shutdown)
+ */
+export function closeDatabase(): void {
+	if (db) {
+		db.close();
+		db = null;
+	}
+}=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/repositories/IFriendshipRepository.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/repositories/IUserRepository.ts
+content:
+/**
+ * Contrato / Interfaz con métodos
+ * create(user), findBy(id), findByUsername(username), update(id, data), delete(id), isUsernameTaken(username)
+ */=============== END
+=============== BEGIN
+file full path: ./packages/shared/database/repositories/IMatchRepository.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/index.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   index.ts                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/14 23:51:14 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 01:17:45 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+export * from './types/game.types';
+export * from './types/user.types';
+export * from './types/matchmaking.types';
+
+// = Re-exports =
+export type {
+	GameState,
+	PlayerState,
+	BallState
+} from './types/game.types';
+
+// = Events =
+export { BaseEvent } from './events/base/BaseEvent';
+
+// = Constants =
+export { GAME_CONSTANTS } from './constants/game.constants';
+
+// = Enums =
+export { GameStatus, Position, CourtType, GameTitle } from './types/game.types';=============== END
+=============== BEGIN
+file full path: ./packages/shared/utils/validators.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/utils/uuidGenerator.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   uuidGenerator.ts                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 01:47:26 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 12:10:34 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+import { EventId, UserId, MatchId, GameId } from  "../types/branded.types"; 
+import { v4 as uuidv4 } from "uuid";
+
+/**
+ * Genera un UUID v4 compatible con Node.js y navegadores.
+ * 
+ * Usa crypto.randomUUID() si está disponible (Node 19+, todos los navegadores modernos),
+ * de lo contrario usa una implementación de uuid.
+ */
+
+function generateId(): string {
+	const g = globalThis as any;
+	if (g?.crypto?.randomUUID) {
+		return g.crypto.randomUUID() as string;
+	}
+	return uuidv4();
+}
+
+export function generateUserId(): UserId {
+	return generateId() as UserId;
+}
+
+export function generateEventId(): EventId {
+	return generateId() as EventId;
+}
+
+export function generateMatchId(): MatchId {
+	return generateId() as MatchId;
+}
+
+export function generateGameId(): GameId {
+	return generateId() as GameId;
+}=============== END
+=============== BEGIN
+file full path: ./packages/shared/entities/Match.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/entities/Friendship.ts
+content:
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/entities/User.ts
+content:
+/**
+ * Clase con:
+ * Constructor privado accesible solo desde mapper
+ * static create para nuevos usuarios
+ * updateProfile(), changePassword()
+ * Validaciones de negocio/lógica
+ */
+=============== END
+=============== BEGIN
+file full path: ./packages/shared/test-db.ts
+content:
+// test-db.ts
+import { getDatabase, closeDatabase } from './database/connection';
+import { generateUserId } from './utils/uuidGenerator';
+import type { Database } from 'better-sqlite3';
+
+const db = getDatabase() as Database;
+
+// Insertar usuario de prueba
+const stmt = db.prepare(`
+  INSERT INTO users (id, username, email, password_hash, created_at, updated_at)
+  VALUES (?, ?, ?, ?, ?, ?)
+`);
+
+stmt.run(generateUserId(), 'alice', 'alice@test.com', 'hashed_pw', Date.now(), Date.now());
+
+// Leer usuario
+const user = db.prepare('SELECT * FROM users WHERE username = ?').get('alice');
+console.log('✅ Usuario creado:', user);
+
+closeDatabase();=============== END
+=============== BEGIN
+file full path: ./packages/api-gateway/src/modules/game/gameService.ts
+content:
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   gameService.ts                                     :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/15 01:08:37 by m                 #+#    #+#             */
+/*   Updated: 2025/10/15 01:08:52 by m                ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+import { GameState, GAME_CONSTANTS, GameStatus } from '@transcendence/shared';
+
+=============== END
+=============== BEGIN
+file full path: ./packages/api-gateway/src/server.ts
+content:
+// port 3001=============== END

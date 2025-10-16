@@ -17,7 +17,7 @@
 		"composite": true
 	},
 	"dependencies": {
-		"better-sqlite3": "12.4.1",
+		"sql.js": "1.13.0",
 		"uuid": "13.0.0"
 	},
 	"browserlist": [

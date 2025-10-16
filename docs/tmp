@@ -1,0 +1,9 @@
+update del proyecto....
+tengo la intencion de incluir una estrategia para crear el historial del jugador
+en bd habrá registro de los diferentes games jugados y quien gano
+se podría hacer el historial con una consulta cada vez que se requier, pero sería consumidor de recursos alto
+sería bueno hacer una tabla con las partidas del usuario y que se actualice cuando acaba una partida? TLDR directo y minimo.
+la arquitectura actual funciona con bd? que habría que cambiar? TLDR
+revisar implementacion hasta el momento para dejar shared completo...
+listar que esta ok, que corregir, que falta.
+no dar el codigo completo. Mantenerse como nivel de arquitectura ahora

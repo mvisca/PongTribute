@@ -6,7 +6,7 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/15 18:13:31 by m                 #+#    #+#             */
-/*   Updated: 2025/10/16 00:24:01 by m                ###   ########.fr       */
+/*   Updated: 2025/10/16 09:33:24 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
  * Singleton que inicializa SQLite, ejecuta schemas, y exporta instancia db
  */
 
-import BetterSqlite3 from 'better-sqlite3'; // Importr el driver de DB SQLite para JS
+import initSqlJs, { Database as SqlJsDatabase } from 'sql.js'; // Importr el driver de DB SQLite para JS
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
