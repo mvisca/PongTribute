@@ -1,29 +1,23 @@
+// packages/shared/tsconfig.json
 {
-  "extends": "../../tsconfig.json",
-  
   "compilerOptions": {
-	
-	"esModuleInterop": true,
-	"allowSyntheticDefaultImports": true,
-	// === COMPILACIÓN ==="
-	"rootDir": ".",
-	"outDir": "./dist",
-	"composite": true,
-
-    // === LIBRERÍA ===
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "declaration": true,
     "declarationMap": true,
-    "emitDeclarationOnly": true,
-    
-    // === SIN ENTORNO ESPECÍFICO ===
-    "lib": ["ES2022"],
-    "types": []
+    "noEmit": true,  // ← No genera dist/, solo valida tipos
+    "composite": true // ← Permite project references
   },
-  
-  "include": [ "constants/**/*",
-			   "events/**/*",
-			   "schema/**/*",
-			   "types/**/*",
-			   "utils/**/*",
-			   "index.ts"]
+  "include": [
+    "types/**/*",
+    "events/**/*",
+    "constants/**/*",
+    "utils/**/*",
+    "index.ts"
+  ],
+  "exclude": ["node_modules", "test-db.ts"]
 }

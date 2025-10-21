@@ -1,2 +1,4 @@
 packages:
-  - 'packages/*'
+  - 'packages/database'
+  - 'packages/api-gateway'
+  - 'packages/frontend'

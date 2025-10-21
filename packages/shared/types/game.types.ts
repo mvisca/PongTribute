@@ -3,101 +3,72 @@
 /*                                                        :::      ::::::::   */
 /*   game.types.ts                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/14 18:33:14 by m                 #+#    #+#             */
-/*   Updated: 2025/10/15 00:16:30 by m                ###   ########.fr       */
+/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
+/*   Updated: 2025/10/20 21:09:59 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// ==== ENUMS y TYPES ====
 
-// Define tipos de juego (incluido para hacer extensible)
-export enum GameTitle {
-	PONG = "pong"
-	// futuro >> SNAKE = "snake"
+/* export enum GameTitle {
+  PONG = "pong"
 }
 
-// Define tipos de cancha
 export enum CourtType {
-	TWO_PLAYERS = "2_players",
-	// THREE_PLAYERS = "3_players", // no en Pong
-	FOUR_PLAYERS = "4_players",
-	// FIVE_PLAYERS = "5_players", // no en Pong... o sí?
-	SIX_PLAYERS = "6_players"
+  TWO_PLAYERS = "2_players"
 }
 
-// Define estado de partida
 export enum GameStatus {
-	COUNTDOWN = "countdown",
-	PLAYING = "playing",
-	RECONNECTING = "reconnecting",
-	DISCONECTED = "disconnected",
-	FINISHED = "finished"
+  COUNTDOWN = "countdown",
+  PLAYING = "playing",
+  RECONNECTING = "reconnecting",
+  DISCONNECTED = "disconnected",
+  FINISHED = "finished"
 }
 
-// Define condicional el tipo de posiciones la cancha
-// //////// CONDICIONAL???
 export enum Position {
-	LEFT = "left",
-	RIGHT = "right",
-	TOP = "top",
-	DOWN = "down",
-	LEFT_TOP = "left-top",
-	RIGHT_DOWN = "right_down"
+  LEFT = "left",
+  RIGHT = "right"
 }
 
-//////////////////////////
-// Condicionales seran
-// TwoPositions {...}
-// FourPositions {...}
-// SixPositions {...}
-// enum Position { TwoPositions | ForPositions | SixPositions }
+export enum PlayerSlot {
+  PLAYER_ONE = "player_one",
+  PLAYER_TWO = "player_two"
+}
 
-// Puestos que puede haber en el juego, máximo 6
-export type PlayerSlot = "slot1" | "slot2" | "slot3" | "slot4" | "slot5" | "slot6";
-/////////////////// Podría ser enum?
+// ==== INTERFACES ====
 
-// ==== INTERFACES DE GameState ====
-
-// Define estado de jugador en partida Pong
 export interface PlayerState {
-	playerId: string;
-	isReady: boolean;
-	connected: boolean;
-	lastSeenAt: number; // Unix timestamp
-	position: Position; // Enum definido arriba
-	axis: number; // [0 -1] Normalizado para mutidispositivo
+  playerId: string;
+  isReady: boolean;
+  connected: boolean;
+  lastSeenAt: number;
+  position: Position;
+  axis: number; // [-1, 1] normalizado
 }
 
-// Define estado de pelota en partida Pong
 export interface BallState {
-	x: number; // [0 -1] Normalizado para mutidispositivo
-	y: number; // [0 -1] Normalizado para mutidispositivo
+  x: number; // [0, 1] normalizado
+  y: number; // [0, 1] normalizado
+  velocityX: number;
+  velocityY: number;
 }
 
 export interface GameScore {
-	score: { [K in PlayerSlot]?: number }
-	// Mapped type: valores de PongPlayerSlot (todos o no todos?) de tipo number
+  [PlayerSlot.PLAYER_ONE]: number;
+  [PlayerSlot.PLAYER_TWO]: number;
 }
 
 export interface GameState {
-	// Identificación de partida
-	GameId: string; // puede ser un tipo más único de id /////////
-	gameTitle: GameTitle;
-	courtType: CourtType;
-	
-	// Estado temporal de partida
-	status: GameStatus;
-	stateChangedAt: number;
-	countdownDuration: number; // 3s para inicio de partida o 1s al reconnectar 
-	
-	// Jugadores
-	players: Record<PlayerSlot, PlayerState>;
-
-	ball: BallState;
-	score: GameScore;
-	
-	winner: PlayerSlot | null;
-	///////////// que tal separar pong en pong.types.ts y game.types.ts tiene lo general??? pros y cons
-}
+  gameId: string;
+  gameTitle: GameTitle;
+  courtType: CourtType;
+  status: GameStatus;
+  stateChangedAt: number;
+  countdownDuration: number;
+  players: Record<PlayerSlot, PlayerState>;
+  ball: BallState;
+  score: GameScore;
+  winner: PlayerSlot | null;
+} */

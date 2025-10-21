@@ -1,0 +1,254 @@
+database-service:
+- Arranca servidor en puerto 3001
+- Define rutas:
+  * POST /users → crear usuario
+  * GET /users/:id → buscar usuario
+  * PUT /users/:id → actualizar usuario
+- Queda escuchando esperando peticiones
+```
+
+**Analogía:** Como un restaurante que abre a las 9am y espera clientes.
+
+### Servicio que EMITE (Cliente)
+
+**Concepto:** Hace una petición HTTP a otro servicio.
+```
+auth-service necesita crear usuario:
+- Prepara datos: {username: "alice", email: "..."}
+- Envía HTTP POST a http://database:3001/users
+- Espera respuesta
+- Recibe: {id: "123", username: "alice", ...}
+```
+
+**Analogía:** Cliente que llega al restaurante, hace pedido, espera comida.
+
+---
+
+## **2. WebSocket (Bidireccional)**
+
+### Servicio que ESCUCHA
+
+**Concepto:** Abre servidor WebSocket y espera conexiones.
+```
+game-service:
+- Arranca servidor WebSocket en puerto 3003
+- Espera conexiones de clientes
+- Cuando cliente conecta:
+  * Guarda la conexión
+  * Escucha mensajes del cliente
+  * Puede enviarle mensajes en cualquier momento
+```
+
+**Pasos:**
+1. Cliente conecta → servidor acepta
+2. Conexión permanece abierta
+3. Ambos pueden enviar mensajes cuando quieran
+
+### Servicio que EMITE
+
+**Concepto:** Conecta al servidor y puede enviar/recibir mensajes.
+```
+frontend:
+- Conecta a ws://game-service:3003
+- Envía mensaje: "player:move" {direction: "up"}
+- Escucha mensajes: "game:update" {ball: {...}, score: {...}}
+```
+
+**Diferencia clave con HTTP:**
+- HTTP: cliente pregunta → servidor responde → conexión cierra
+- WebSocket: conexión abierta → ambos hablan continuamente
+
+**Analogía:** Como una llamada telefónica (ambos pueden hablar), no como cartas (envías, esperas respuesta, envías otra).
+
+---
+
+## **3. Redis Pub/Sub (Mensajería Asíncrona)**
+
+### Servicio que ESCUCHA (Subscriber)
+
+**Concepto:** Se suscribe a un "canal" y espera mensajes.
+```
+game-service:
+- Conecta a Redis
+- Se suscribe al canal "match:created"
+- Queda escuchando
+- Cuando llega mensaje:
+  * Procesa: crear partida con jugadores X e Y
+  * No responde al emisor (asíncrono)
+```
+
+**Analogía:** Como suscribirse a un periódico. No sabes cuándo llegará, pero cuando llegue lo lees.
+
+### Servicio que EMITE (Publisher)
+
+**Concepto:** Publica un mensaje en un "canal".
+```
+matchmaking-service:
+- Encuentra match entre dos jugadores
+- Publica en canal "match:created"
+- Mensaje: {players: ["alice", "bob"], courtType: "2_players"}
+- No espera respuesta
+- Sigue con lo suyo
+```
+
+**Característica clave:**
+- Publisher NO sabe quién está escuchando
+- Puede haber 0, 1 o N subscribers
+- Es "fire and forget" (dispara y olvida)
+
+**Analogía:** Como gritar en un estadio. No sabes quién te escucha, solo anuncias.
+
+---
+
+## **Comparativa Visual**
+
+### HTTP REST
+```
+[auth-service] ─────┐
+                    │ 1. POST /users
+                    ↓
+              [database] ────┐
+                    ↑        │ 2. Guarda en SQLite
+                    │        │
+                    └────────┘
+              [auth-service]
+                    ↑
+                    │ 3. Respuesta {user}
+                    │
+              [database]
+```
+
+### WebSocket
+```
+[frontend] ←──────────→ [game-service]
+     ↑                        ↑
+     │ "player:move"          │
+     │                        │
+     └─ "game:update" ────────┘
+     
+(Conexión permanente, mensajes en ambas direcciones)
+```
+
+### Redis Pub/Sub
+```
+[matchmaking] ──→ [Redis Canal "match:created"] ──→ [game-service]
+                                                 └─→ [frontend]
+                                                 └─→ [notification-service]
+                                                 
+(Todos los suscritos reciben el mensaje)
+```
+
+---
+
+## **Cuándo Usar Cada Uno**
+
+| Tipo | Cuándo Usar | Ejemplo |
+|------|-------------|---------|
+| **HTTP REST** | Necesitas respuesta inmediata | "¿Existe este usuario?" |
+| **WebSocket** | Actualizaciones continuas en tiempo real | Posición de pelota cada 16ms |
+| **Redis Pub/Sub** | Notificar a múltiples servicios | "Match creado, todos enterarse" |
+
+---
+
+## **Ejemplo Completo: Crear Partida**
+
+### 1. Usuario pide jugar
+```
+[frontend] ──HTTP POST──> [matchmaking-service]
+           "Quiero jugar"
+```
+
+matchmaking-service **ESCUCHA** en `POST /queue/join`
+
+### 2. Matchmaking encuentra oponente
+```
+[matchmaking] ──Redis PUBLISH──> Canal "match:created"
+              {players: ["alice", "bob"]}
+```
+
+matchmaking-service **EMITE** evento a Redis
+
+### 3. Game-service se entera
+```
+[game-service] ──Redis SUBSCRIBE── Canal "match:created"
+               (estaba escuchando)
+```
+
+game-service **ESCUCHA** canal de Redis
+
+### 4. Game-service crea partida
+```
+[game-service] ──HTTP POST──> [database]
+               {matchId, players, status}
+```
+
+game-service **EMITE** petición HTTP a database
+
+### 5. Database guarda y responde
+```
+[database] ──HTTP 200──> [game-service]
+           {match: {...}}
+```
+
+database **ESCUCHA** en `POST /matches` y **EMITE** respuesta
+
+### 6. Game-service notifica jugadores
+```
+[game-service] ──WebSocket EMIT──> [frontend-alice]
+               ──WebSocket EMIT──> [frontend-bob]
+               "game:start"
+```
+
+game-service **EMITE** por WebSocket a ambos clientes
+
+---
+
+## **Implementación Práctica (Conceptual)**
+
+### Servicio que escucha HTTP
+```
+Servidor Fastify arranca:
+- app.listen(3001) → abre puerto
+- app.post('/users', handler) → define ruta
+- Espera peticiones...
+```
+
+### Servicio que emite HTTP
+```
+Cliente hace petición:
+- fetch('http://database:3001/users', {método, datos})
+- Espera respuesta...
+- Procesa resultado
+```
+
+### Servicio que escucha WebSocket
+```
+Servidor Socket.io arranca:
+- io.listen(3003) → abre puerto WebSocket
+- io.on('connection', socket => {
+    socket.on('player:move', handler) → escucha evento
+  })
+```
+
+### Servicio que emite WebSocket
+```
+Cliente conecta:
+- socket = io('ws://game-service:3003')
+- socket.emit('player:move', data) → emite evento
+- socket.on('game:update', handler) → escucha respuestas
+```
+
+### Servicio que escucha Redis
+```
+Subscriber arranca:
+- redis.subscribe('match:created')
+- redis.on('message', (channel, msg) => {
+    procesarMatch(msg)
+  })
+```
+
+### Servicio que emite Redis
+```
+Publisher publica:
+- redis.publish('match:created', JSON.stringify(data))
+- Continúa sin esperar

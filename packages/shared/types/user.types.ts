@@ -5,37 +5,67 @@
 /*                                                    +:+ +:+         +:+     */
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/15 13:04:41 by m                 #+#    #+#             */
-/*   Updated: 2025/10/15 14:19:40 by m                ###   ########.fr       */
+/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
+/*   Updated: 2025/10/20 15:41:41 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-import { UserId } from "../types/branded.types";
+import { UserId, Email } from './branded.types';
 
 /**
- * Usuario de la plataforma
- */
-export interface User {
-	id: UserId;
-	alias: string;
-	email?: string; // usar tipo email
+* User Base - forma más básica
+*/
+export interface UserBase {
+	username: string;
+	email: Email;
 	avatar?: string;
-	createdAt: number;
 }
 
 /**
- * Credenciales de login
- */
-export interface UserCredentials {
-	email: string;
-	password: string;
+* DTO IN - Registro desde frontend
+*/
+export interface UserRegister extends UserBase {
+	password: string; // Texto plano
 }
 
 /**
- * Perfil público de usuario (sin datos sensibles)
- */
-export interface UserProfile {
+* DATA - Para crear en DB (con password hasheado)
+*/
+export interface CreateUserData extends UserBase {
+	passwordHash: string; // Hasheado
+}
+
+/**
+* Entidad completa en DB
+*/
+export interface User extends CreateUserData {
 	id: UserId;
-	alias: string;
-	avatar: string;	
+	isOnline: boolean;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+/**
+* DTO OUT - Sin passwordHash
+*/
+export type UserResponse = Omit<User, 'passwordHash'>;
+
+/**
+* DTO IN - Actualizar usuario
+*/
+export type UserUpdate = Omit<
+Partial<User>,
+| 'id'
+| 'isOnline'
+| 'passwordHash'
+| 'createdAt'
+| 'updatedAt'
+>;
+
+/**
+* DTO IN - Login
+*/
+export interface UserLogin {
+	email: Email;
+	password: string;
 }

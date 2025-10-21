@@ -1,0 +1,20 @@
+{
+  "name": "@transcendence/database",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "./dist/connection.js",
+  "scripts": {
+    "build": "tsc",
+    "test:user": "tsx ./test/test-user-repository.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.4.1",
+    "uuid": "13.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "24.7.2",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}

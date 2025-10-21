@@ -3,29 +3,26 @@
 /*                                                        :::      ::::::::   */
 /*   index.ts                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
+/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/14 23:51:14 by m                 #+#    #+#             */
-/*   Updated: 2025/10/15 01:17:45 by m                ###   ########.fr       */
+/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
+/*   Updated: 2025/10/20 21:41:46 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-export * from './types/game.types';
+export * from './types/branded.types';
 export * from './types/user.types';
-export * from './types/matchmaking.types';
+// export * from './types/game.types';
+// export * from './types/matchmaking.types';
 
-// = Re-exports =
-export type {
-	GameState,
-	PlayerState,
-	BallState
-} from './types/game.types';
+// Events
+export * from './events/base/BaseEvent';
+export * from './events/user/UserEvents';
+// export * from './events/game/GameEvents';
+// export * from './events/matchmaking/MatchmakingEvents';
 
-// = Events =
-export { BaseEvent } from './events/base/BaseEvent';
+// Constants
+export * from './constants/game.constants';
 
-// = Constants =
-export { GAME_CONSTANTS } from './constants/game.constants';
-
-// = Enums =
-export { GameStatus, Position, CourtType, GameTitle } from './types/game.types';
+// Utils
+export * from './utils/uuidGenerator';

@@ -15,7 +15,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@transcendence/shared": "workspace:*",
+		"@transcendence/database": "workspace:*",
 		"dotenv": "17.2.3",
 		"fastify": "5.6.1",
 		"tsx": "4.20.6"

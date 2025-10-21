@@ -1,27 +1,19 @@
 {
-  "extends": "../../tsconfig.json",
-  
-  "compilerOptions": {
-
-	// === COMPILACIÓN ===
-	"composite":true,
-
-	// === ENTORNO BROWSER ===
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],  // → APIs del browser
-    "types": [],                               // → NO incluir Node.js types
-    
-    // === VITE NO NECESITA COMPILAR ===
-    // (Vite compila TypeScript al vuelo, TS solo valida)
-    "noEmit": true,
-    
-    // === RESOLUCIÓN ===
-    "moduleResolution": "bundler",             // → Para Vite
-    "resolveJsonModule": true,
-    "isolatedModules": true                    // → Cada archivo independiente (para Vite)
-  },
-  
-  "include": ["src/**/*"],
-  "references": [
-    { "path": "../shared" }                    // → Referencia a shared
-  ]
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"skipLibCheck": true,
+		"declaration": true,
+		"composite": true,
+		"noEmit": true,
+		"outDir": "./dist"
+	},
+	"include": [".src/**/*"],
+	"references": [
+		{ "path": "../shared" }
+	]
 }

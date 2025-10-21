@@ -3,10 +3,10 @@
 	"version": "1.0.0",
 	"description": "",
 	"main": "index.js",
-	"packageManager": "pnpm@10.18.3",
+	"packageManager": "pnpm@10.18.2",
 	"engines": {
 		"node": ">=20.0.0 <23.0.0",
-		"pnpm": "^10.18.2"
+		"pnpm": "10.18.2"
 	},
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
@@ -19,7 +19,7 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@types/better-sqlite3": "7.6.13",
+		"@types/node": "24.7.2",
 		"typescript": "5.9.3"
 	}
 }

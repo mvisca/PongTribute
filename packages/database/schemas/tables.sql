@@ -1,6 +1,6 @@
 /*
 Tablas del sistema
-*/
+ */
 
 CREATE TABLE IF NOT EXISTS users (
 	id TEXT PRIMARY KEY,
@@ -13,13 +13,24 @@ CREATE TABLE IF NOT EXISTS users (
 	updated_at INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS usert_stats (
+CREATE TABLE IF NOT EXISTS user_stats (
 	user_id TEXT PRIMARY KEY,
 	total_matches INTEGER DEFAULT 0,
 	wins INTEGER DEFAULT 0,
 	losses INTEGER DEFAULT 0,
 	win_rate REAL DEFAULT 0.0,
 	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS friendships (
+	user_id TEXT NOT NULL,
+	friend_id TEXT NOT NULL,
+	status TEXT NOT NULL,
+	created_at INTEGER NOT NULL,
+	PRIMARY KEY (user_id, friend_id),
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+	CHECK (user_id != friend_id)
 );
 
 CREATE TABLE IF NOT EXISTS matches (
@@ -41,16 +52,13 @@ CREATE TABLE IF NOT EXISTS match_participants (
 	score INTEGER DEFAULT 0,
 	PRIMARY KEY (match_id, user_id),
 	FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS friendships (
-	user_id TEXT NOT NULL,
-	friend_id TEXT NOT NULL,
-	status TEXT NOT NULL,
-	created_at INTEGER NOT NULL,
-	PRIMARY KEY (user_id, friend_id),
-	FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE,
-	FOREIGN KEY (friend_id) REFERENCES (userid) ON DELETE CASCADE,
-	CHECK (user_id != friend_id)
+CREATE TABLE IF NOT EXISTS tournaments (
+	id TEXT NOT NULL,
+	number_of_players INTEGER,
+	users_ids INTEGER[],
+	playoffs JSON,
+	PRIMARY KEY (id)
 );
