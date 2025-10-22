@@ -1,11 +1,12 @@
 {
   "name": "@transcendence/database",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "commonjs",
   "main": "./dist/connection.js",
   "scripts": {
     "build": "tsc",
-    "test:user": "tsx ./test/test-user-repository.ts"
+    "test:user": "tsx ./test/test-user-repository.ts",
+	"test:friendship": "tsx ./test/test-friendship-repository.ts"
   },
   "dependencies": {
     "better-sqlite3": "12.4.1",

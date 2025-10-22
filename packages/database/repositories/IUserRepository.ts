@@ -6,16 +6,10 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 01:45:10 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 01:57:47 by m                ###   ########.fr       */
+/*   Updated: 2025/10/21 15:50:47 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-/**
- * Se usará aquí el branded type UserId \
- * Pero ya se importó en 'user.types.ts' \
- * Por no ser redundante lo omitimos \
- * import { UserId } from "../../types/branded.types"; \ 
- */
 import { Email, UserId } from "../../shared/types/branded.types";
 import * as UserTypes from "../../shared/types/user.types";
 

@@ -6,14 +6,13 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 01:27:54 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 01:50:20 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
  /**
   * Tipos branded para IDs únicos.
   */
- 
 export type EventId = string & { readonly __brand: 'EventId' };
 export type UserId = string & { readonly __brand: 'UserId' };
 export type MatchId = string & { readonly __brand: 'MatchId' };

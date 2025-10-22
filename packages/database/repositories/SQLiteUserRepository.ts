@@ -6,7 +6,7 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 12:17:05 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 14:55:29 by m                ###   ########.fr       */
+/*   Updated: 2025/10/21 22:18:00 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	
 	constructor(private db: Database.Database) {}
 	
-	private getRowUserById(id: UserId): any {
+	private async getRowUserById(id: UserId): Promise<any> {
 		// Se puede hacer en una línea pero lo divido para comprensión paso a paso
 		// return this.db.prepare(`SELECT * FROM users WHERE id = ?`).get(id);
 
@@ -71,7 +71,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		toInsert.run(row);
 		
 		// Retorna el user recien creado mapeado al tipo UserResponse
-		return UserMapper.rowToUserResponse(this.getRowUserById(row.id));
+		return UserMapper.rowToUserResponse(await this.getRowUserById(row.id));
 	}
 
 	async update(id: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse> {
@@ -96,7 +96,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			.run( { ...finalData, id } );
 
 		// Retorna el record modificado mapeado al tipo UserResponse
-		return UserMapper.rowToUserResponse(this.getRowUserById(id));
+		return UserMapper.rowToUserResponse(await this.getRowUserById(id));
 	}
 
 	async updatePassword(id: UserId, password_hash: string): Promise<UserTypes.UserResponse> {
@@ -111,7 +111,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		});
 
 		// Retorna el record del password actualizado mapeado al tipo UserResponse
-		return UserMapper.rowToUserResponse(this.getRowUserById(id));
+		return UserMapper.rowToUserResponse(await this.getRowUserById(id));
 	}
 
 	async delete(id: UserId): Promise<void> {
@@ -122,7 +122,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	}
 
 	async findById(id: UserId): Promise<UserTypes.UserResponse | null> {
-		const row = this.getRowUserById(id);
+		const row = await this.getRowUserById(id);
 		return row ? UserMapper.rowToUserResponse(row) :null;
 	}
 
@@ -162,7 +162,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			.run({is_online: isOnline ? 1 : 0, updated_at: Date.now(), id: id});
 
 		// Recupera el usuario recién actualizado
-		const targetUser = this.getRowUserById(id);
+		const targetUser = await this.getRowUserById(id);
 
 		// Retorna el usuario sin 'password_hash'
 		return UserMapper.rowToUserResponse(targetUser);

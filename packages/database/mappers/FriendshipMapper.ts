@@ -1,19 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   UserMapper.ts                                      :+:      :+:    :+:   */
+/*   FriendshipMapper.ts                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 02:31:03 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 19:34:25 by m                ###   ########.fr       */
+/*   Created: 2025/10/21 17:53:32 by m                 #+#    #+#             */
+/*   Updated: 2025/10/22 00:51:34 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 import * as SharedTypes from '../../shared';
 
 /**
- * @class UserMapper
+ * @class FriendshipMapper
  * 
  * Funciones puras para convertir entre representaciones del usuario:\
  * \
@@ -26,49 +26,36 @@ import * as SharedTypes from '../../shared';
  * - Usa `SharedTypes` del módulo `shared` para mantener tipos consistentes entre dominio y persistencia. \
  * - Convierte fechas (`createdAt`, `updatedAt`) a `Date` al leer y a `timestamp` numérico al escribir. \
  * - Los nombres de columnas en la base de datos siguen `snake_case`.
+ * - Las queries se hacen con LOWER al igual que el envío de parámentros desde repository.
  */
+export class FriendshipMapper {
 
-export class UserMapper {
-
-	static rowToUserResponse(row: any): SharedTypes.UserResponse {
+	static rowToFriendshipResponse(row: SharedTypes.FriendshipRow): SharedTypes.Friendship {
 		return {
-			id: row.id as SharedTypes.UserId,
-			username: row.username,
-			email: row.email as SharedTypes.Email,
-			avatar: row.avatar,
-			isOnline: Boolean(row.is_online),
+			userId: row.user_id as SharedTypes.UserId,
+			friendId: row.friend_id as SharedTypes.UserId,
+			status: row.status as SharedTypes.FriendshipStatus,
 			createdAt: new Date(row.created_at),
 			updatedAt: new Date(row.updated_at)
 		};
 	}
 
-	static rowToUser(row: any): SharedTypes.User {
+	static dataToInsert(data: SharedTypes.Friendship) : SharedTypes.FriendshipRow {
 		return {
-			...this.rowToUserResponse(row),
-			passwordHash: row.password_hash
-		};
-	}
-
-	static dataToInsert(data: SharedTypes.User) {
-		return {
-			id: data.id,
-			username: data.username,
-			email: data.email,
-			password_hash: data.passwordHash, // se hashea en Módulo User
-			avatar: data.avatar || null,
-			is_online: data.isOnline ? 1 : 0,
-			created_at: data.createdAt.getTime(), // crea timestamp Unix (en milisegundos) a partir de Date 
+			user_id: data.userId,
+			friend_id: data.friendId,
+			status: data.status,
+			created_at: data.createdAt.getTime(),
 			updated_at: data.updatedAt.getTime()
 		};
 	}
 
-	static dataToSet(data: SharedTypes.UserUpdate) {
-		const update: any = {};
-
-		if (data.username !== undefined) update.username = data.username;
-		if (data.avatar !== undefined) update.avatar = data.avatar;
-		if (data.email !== undefined) update.email = data.email;
-
-		return update;
+	static dataToSet(data: SharedTypes.UpdateFriendshipData) : SharedTypes.UpdateFriendshipRow {
+		return {
+			user_id: data.userId,
+			friend_id: data.friendId,
+			status: data.status,
+			updated_at: data.updatedAt.getTime()
+		}
 	}
 }
