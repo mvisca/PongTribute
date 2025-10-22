@@ -1,9 +1,16 @@
 // packages/database/test/test-friendship-repository.ts
 
-import { getDatabase, closeDatabase } from '../connection';
-import { FRIENDSHIP_STATUS, Email } from '@transcendence/shared';
-import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
-import { SQLiteFriendshipRepository } from '../repositories/SQLiteFriendshipRepository';
+import { generateUserId, UserId, Email, UserLoggedInEvent, FRIENDSHIP_STATUS } from '@transcendence/shared';
+import * as UserTypes from '@transcendence/shared';
+import assert from "node:assert";
+
+import { SQLiteFriendshipRepository } from "../repositories/SQLiteFriendshipRepository";
+import { IFriendshipRepository } from "../repositories/IFriendshipRepository";
+import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
+import { IUserRepository } from "../repositories/IUserRepository";
+
+import { UserMapper } from '../mappers/UserMapper';
+import { getDatabase } from '../connection';
 
 async function testFriendshipRepository() {
 	console.log("=== TEST FRIENDSHIP REPOSITORY ===\n");
@@ -161,7 +168,7 @@ async function testFriendshipRepository() {
 	console.log(' DB limpiada');
 	
 	console.log("\n=== TEST COMPLETO ===");
-	closeDatabase();
+	db.close();
 }
 
 testFriendshipRepository();
