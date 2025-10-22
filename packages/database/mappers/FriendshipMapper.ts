@@ -6,11 +6,11 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/21 17:53:32 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 00:51:34 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 20:38:48 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-import * as SharedTypes from '../../shared';
+import * as SharedTypes from '@transcendence/shared';
 
 /**
  * @class FriendshipMapper

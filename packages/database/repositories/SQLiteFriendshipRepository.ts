@@ -6,16 +6,15 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 12:17:05 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 01:14:48 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 20:40:26 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 import Database from 'better-sqlite3';
-import { IFriendshipRepository } from './IFriendshipRepository';
-import { FriendshipMapper } from '../mappers/FriendshipMapper';
-import { UserId } from '../../shared/types/branded.types';
-import * as FriendshipTypes from '../../shared/types/friendship.types';
-import { FriendshipStatus } from '../../shared/constants/friendship.constants';
+import { UserId, FriendshipStatus } from '@transcendence/shared';
+import * as FriendshipTypes from '@transcendence/shared';
+import { IFriendshipRepository } from './IFriendshipRepository';      // ← Local
+import { FriendshipMapper } from '../mappers/FriendshipMapper';   
 
 export class SQLiteFriendshipRepository implements IFriendshipRepository {
 

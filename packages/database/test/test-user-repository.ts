@@ -6,16 +6,16 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 21:46:12 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 15:19:57 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 20:35:30 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 import { getDatabase, closeDatabase } from '../connection';
-import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
-import { generateUserId, UserId, Email, UserLoggedInEvent } from '../../shared';
-import * as UserTypes from '../../shared/types/user.types';
+import { SQLiteUserRepository } from '@transcendence/shared';
+import { generateUserId, UserId, Email, UserLoggedInEvent } from '@transcendence/shared';
+import * as UserTypes from '@transcendence/shared';
 import assert from "node:assert";
-import { UserMapper } from '../mappers/UserMapper';
+import { UserMapper } from '@transcendence/shared';
 
 const SQL = SQLiteUserRepository;
 

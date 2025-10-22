@@ -6,12 +6,12 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 01:45:10 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 15:50:47 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 20:39:15 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-import { Email, UserId } from "../../shared/types/branded.types";
-import * as UserTypes from "../../shared/types/user.types";
+import { Email, UserId } from '@transcendence/shared';
+import * as UserTypes from '@transcendence/shared';
 
 /**
  * Interfaz que define el contrato para el repositorio de Usuarios.
@@ -55,9 +55,9 @@ export interface IUserRepository {
 	/**
 	 * Actualizar el password del usuario \
 	 * @param id del User del que se quiere actualizar la password \
-	 * @param password_hash el nuevo password hasheado que se quiere guardar
+	 * @param data con currentPasswordHash y newPassword
 	 */
-	updatePassword(id: UserId, password_hash: string): Promise<UserTypes.UserResponse>;
+	updatePassword(id: UserId, newPasswordHass: string): Promise<void>;
 
 	/**
 	 * Elimina el User \
@@ -108,5 +108,4 @@ export interface IUserRepository {
 	 * @param id del User cuyo estado se quiere actualizar. \
 	 */
     setOnlineStatus(id: UserId, isOnline: boolean): Promise<UserTypes.UserResponse>;
-
 }

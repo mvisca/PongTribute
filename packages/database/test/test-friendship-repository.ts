@@ -1,10 +1,9 @@
 // packages/database/test/test-friendship-repository.ts
 
 import { getDatabase, closeDatabase } from '../connection';
+import { FRIENDSHIP_STATUS, Email } from '@transcendence/shared';
 import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
 import { SQLiteFriendshipRepository } from '../repositories/SQLiteFriendshipRepository';
-import { FRIENDSHIP_STATUS } from '../../shared/constants/friendship.constants';
-import { Email } from '../../shared/types/branded.types';
 
 async function testFriendshipRepository() {
 	console.log("=== TEST FRIENDSHIP REPOSITORY ===\n");

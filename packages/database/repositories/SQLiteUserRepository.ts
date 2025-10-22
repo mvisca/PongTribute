@@ -6,7 +6,7 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 12:17:05 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 22:18:00 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 20:39:56 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,17 @@
  * import { UserId } from "../../types/branded.types"; \ 
  */
 import Database from 'better-sqlite3';
+import { Email, UserId } from '@transcendence/shared';
+import * as UserTypes from '@transcendence/shared';
 import { IUserRepository } from './IUserRepository';
 import { UserMapper } from '../mappers/UserMapper';
-import { Email, UserId } from '../../shared/types/branded.types';
-import * as UserTypes from '../../shared/types/user.types';
-import { generateUserId } from '../../shared/utils/uuidGenerator';
+import { generateUserId } from '@transcendence/shared';
 
 export class SQLiteUserRepository implements IUserRepository {
 	
 	constructor(private db: Database.Database) {}
 	
-	private async getRowUserById(id: UserId): Promise<any> {
+	private async getRowUserById(id: UserId): Promise<UserTypes.User | null> {
 		// Se puede hacer en una línea pero lo divido para comprensión paso a paso
 		// return this.db.prepare(`SELECT * FROM users WHERE id = ?`).get(id);
 
@@ -35,10 +35,10 @@ export class SQLiteUserRepository implements IUserRepository {
 		const inserted = this.db.prepare(`SELECT * FROM users WHERE id = ?`);
 
 		// Ejecuta línea de comandos SQL para recuperar el nuevo usuario
-		const selectedUser = inserted.get(id);
+		const selectedUser = inserted.get(id) as UserTypes.User | undefined;
 
 		// Retornar el usuario seleccionado
-		return selectedUser;
+		return selectedUser || null;
 	}
 
 	async create(data: UserTypes.CreateUserData): Promise<UserTypes.UserResponse> {
@@ -74,14 +74,23 @@ export class SQLiteUserRepository implements IUserRepository {
 		return UserMapper.rowToUserResponse(await this.getRowUserById(row.id));
 	}
 
-	async update(id: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse> {
+	async update(userId: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse> {
 		// Como puede ser que no todos los parametros esten en data, hay que extraer los key presentes
 		// Primero se convierte el type UserUpdate a row, el mapper filtra campos no presentes
 		// Generar un objeto anónimo, sin tipo
-		const updateData = UserMapper.dataToSet(data);
+
+		const validatedData = {};
+		try {
+			UserMapper.validateUpdate(data);
+		} catch (error) {
+			console.error(`La validación ha arrojado errores: ${error}`);
+			throw (error);			
+		}
+
+		const mappedData = UserMapper.dataToSet(validatedData);
 
 		const finalData = {
-			...updateData,
+			...mappedData,
 			updated_at: Date.now()
 		};
 
@@ -93,25 +102,18 @@ export class SQLiteUserRepository implements IUserRepository {
 		// Actualiza expandiendo 'fields' y pasando a 'run()' el objeto anónimo con key: value, y la id del target de users
 		this.db
 			.prepare(`UPDATE users SET ${fields} WHERE id = @id `)
-			.run( { ...finalData, id } );
+			.run( { ...finalData, userId } );
 
 		// Retorna el record modificado mapeado al tipo UserResponse
-		return UserMapper.rowToUserResponse(await this.getRowUserById(id));
+		return UserMapper.rowToUserResponse(await this.getRowUserById(userId));
 	}
 
-	async updatePassword(id: UserId, password_hash: string): Promise<UserTypes.UserResponse> {
+	async updatePassword(id: UserId, newPasswordHash: string): Promise<void> {
 		const targetUser = this.db.prepare(`
 			UPDATE users
-			SET password_hash = @password_hash, updated_at = @now
-			WHERE id = @id
-		`).run({
-			password_hash: password_hash,
-			now: Date.now(),
-			id: id
-		});
-
-		// Retorna el record del password actualizado mapeado al tipo UserResponse
-		return UserMapper.rowToUserResponse(await this.getRowUserById(id));
+			SET password_hash = ?, updated_at = ?
+			WHERE id = ?
+		`).run({newPasswordHash, now: Date.now(), id: id});
 	}
 
 	async delete(id: UserId): Promise<void> {
@@ -133,11 +135,11 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToUser(row) : null;
 	}
 
-	async findByUsername(username: string): Promise<UserTypes.User | null> {
+	async findByUsername(username: string): Promise<UserTypes.UserResponse | null> {
 		const row = this.db
-				.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
-				.get(username.toLowerCase());
-		return row ? UserMapper.rowToUser(row) : null;
+			.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
+			.get(username.toLowerCase());
+		return row ? UserMapper.rowToUserResponse(row) : null;
 	}
 
 	async isUsernameTaken(username: string): Promise<boolean> {

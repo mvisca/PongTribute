@@ -6,13 +6,13 @@
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/21 15:49:35 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 23:44:44 by m                ###   ########.fr       */
+/*   Updated: 2025/10/22 20:33:19 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-import { FriendshipStatus } from "../../shared/constants/friendship.constants";
-import { UserId } from "../../shared/types/branded.types";
-import * as FriendshipTypes from "../../shared/types/friendship.types";
+import { FriendshipStatus } from '@transcendence/shared'; 
+import { UserId } from '@transcendence/shared';
+import * as FriendshipTypes from '@transcendence/shared';
 
 /**
  * Interfaz que define el contrato para el repositorio de Friendship.

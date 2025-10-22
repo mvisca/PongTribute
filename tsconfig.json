@@ -23,10 +23,11 @@
 		"skipDefaultLibCheck": true
 	},
 	"references": [
-		{ "path": "./packages/shared" },
-		{ "path": "./packages/database" },
 		{ "path": "./packages/api-gateway" },
-		{ "path": "./packages/frontend" }
+		{ "path": "./packages/database" },
+		{ "path": "./packages/frontend" },
+		{ "path": "./packages/shared" },
+		{ "path": "./packages/user" }
 	],
 	"files": []
 }
