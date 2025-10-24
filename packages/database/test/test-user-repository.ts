@@ -1,163 +1,204 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   test-user-repository.ts                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 21:46:12 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:35:30 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+/*import { getDatabase, closeDatabase } from "../connection";
+import { UserId, Email } from "../../shared/src";
+import * as UserTypes from "../../shared/src";
+import * as MatchTypes from "../../shared/src";
+import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
 
-import { getDatabase, closeDatabase } from '../connection';
-import { SQLiteUserRepository } from '@transcendence/shared';
-import { generateUserId, UserId, Email, UserLoggedInEvent } from '@transcendence/shared';
-import * as UserTypes from '@transcendence/shared';
-import assert from "node:assert";
-import { UserMapper } from '@transcendence/shared';
-
-const SQL = SQLiteUserRepository;
+// ============================================================================
+// AUXILIAR
+// ============================================================================
 
 function userExists(user: UserTypes.User | UserTypes.UserResponse | null) {
-	!!user
-		? console.log('User recuperado: \
-			', user)
-		: console.log('No existe');
+  !!user
+    ? console.log("User recuperado:", user)
+    : console.log("No existe");
 }
 
+function matchExist(match: UserTypes.MatchResponse | Matchty
+)
+
 async function testUserRepository() {
-	console.log("Iniciando test de UserRepository\n");
-	
-	// Setup
-	const db = getDatabase();
-	const userRepo = new SQLiteUserRepository(db);
-	console.log('Conexión DB establecida');
-	
-	// TEST 1 : Crear Usuario
-	console.log('\nTest 1: Crear usuario');
+  console.log("=== TEST USER REPOSITORY ===\n");
 
-	let alice: UserTypes.User | null = null;
-	try { 	
-		const createUserData: UserTypes.CreateUserData = {
-			username: "Alice",
-			email: "alice@test.com",
-			passwordHash: `Timesamped_${Date.now()}`, // simulado ya hasheado
-			avatar: 'https://image.com/myimage.png'	
-		} as UserTypes.CreateUserData;	
-		
-		let alice = await userRepo.create(createUserData);
-		console.warn('Alice se creó');
-	} catch {
-		console.warn('Alice ya está en la base de datos y no se creó');
-	} finally {
-		if (!alice) alice = await userRepo.findByUsername('Alice');
-		console.log('Recuprada Alice de la base de datos');
-	}
-	
-	if (alice) userExists(alice);
-	else process.exit(1);
-	
-	// TEST 2 : Leer Usuario
-	console.log('\nTest 2: findByEmail');
-	console.log('Es UserType.User con \'password_hash\' porque es el campo usado para login')
+  // ============================================================================
+  // SETUP
+  // ============================================================================
+  const db = getDatabase();
+  const userRepo = new SQLiteUserRepository(db);
+  console.log("Conexión DB establecida");
 
-	console.log('\nTest 2.1: User existe - Alice');
-	const aliceByEmail = await userRepo.findByEmail('alice@test.com' as Email);
-	!!aliceByEmail
-		? console.log(`User recuperad: `, aliceByEmail)
-		: console.log('No existe');
+  // ============================================================================
+  // TEST 1: Crear usuario
+  // ============================================================================
+  console.log("\n--- TEST 1: Crear usuario ---");
 
-	console.log('\nTest 2.2: User NO existe - undefined | null');
-	const noExsistByEmail = await userRepo.findByEmail('no-alice@test.com' as Email) as UserTypes.User;
-	console.log(!!noExsistByEmail ? 'User recuperado con email: ' + noExsistByEmail : 'No existe');
+  let alice: UserTypes.User | null = null;
+  try {
+    const createUserData: UserTypes.CreateUserData = {
+      username: "Alice",
+      email: "alice@test.com" as Email,
+      passwordHash: `Timesamped_${Date.now()}`,
+      avatar: "https://image.com/myimage.png",
+    };
+    alice = await userRepo.create(createUserData);
+    console.log("Alice creada correctamente");
+  } catch {
+    console.warn("Alice ya estaba en la base de datos");
+  } finally {
+    if (!alice) alice = await userRepo.findByUsername("Alice");
+    console.log("Recuperada Alice de la base de datos");
+  }
 
-	console.log('Fin test findByEmail\n');
+  if (alice) userExists(alice);
+  else process.exit(1);
 
-	// TEST 3 : Leer usuario
-	console.log('\nTest 3: findById')
-	
-	console.log('\nTest 3.1: User existe - Alice');
-	const aliceById = await userRepo.findById(alice.id);
-	userExists(aliceById);
+  // ============================================================================
+  // TEST 2: findByEmail
+  // ============================================================================
+  console.log("\n--- TEST 2: findByEmail ---");
 
-	console.log('\nTest 3.2: User NO existe - undefined | null');
-	const noExsistById = await userRepo.findById("sdfjerjfljflaskldf" as UserId);
-	userExists(aliceById);
+  console.log("2.1: User existe - Alice");
+  const aliceByEmail = await userRepo.findByEmail("alice@test.com" as Email);
+  userExists(aliceByEmail);
 
-	console.log('Fin test findById\n');
+  console.log("\n2.2: User NO existe");
+  const notExistByEmail = await userRepo.findByEmail(
+    "no-alice@test.com" as Email
+  );
+  userExists(notExistByEmail);
 
-	// TEST 4 : Leer Usuario
-	console.log('\nTest 4: findByUsername');
-	console.log('Es UserType.User con \'password_hash\' porque es el campo usado para login')
+  // ============================================================================
+  // TEST 3: findById
+  // ============================================================================
+  console.log("\n--- TEST 3: findById ---");
 
-	console.log('\nTest 4.1: User existe - Alice');
-	const aliceByUsername = await userRepo.findByUsername(alice.username);
-	userExists(aliceByUsername);
+  console.log("3.1: User existe - Alice");
+  const aliceById = await userRepo.findById(alice.id);
+  userExists(aliceById);
 
-	console.log('\nTest 4.2: User NO existe - undefined | null');
-	const noExsistByUsername = await userRepo.findByUsername('Pepe');
-	userExists(noExsistByUsername);
-	
-	console.log('Fin test findByUsername\n');
+  console.log("\n3.2: User NO existe");
+  const notExistById = await userRepo.findById(
+    "nonexistent-id-123" as UserId
+  );
+  userExists(notExistById);
 
-	// TEST 5 : UPDATE PASSWORD & AND TOGGLE ONLINE STATUS
-	console.log('\nTest 5: updatePassword & setOnlineStatus');
+  // ============================================================================
+  // TEST 4: findByUsername
+  // ============================================================================
+  console.log("\n--- TEST 4: findByUsername ---");
 
-	if (!aliceByEmail) process.exit(1);
-	console.log('Password inicial: ', aliceByEmail.passwordHash);
-	console.log('Online status inicial: ', aliceByEmail.isOnline);
-	userRepo.updatePassword(aliceByEmail.id, `Timesamped_${Date.now()}`);
-	console.log('Password cambiado');
-	userRepo.setOnlineStatus(aliceByEmail.id, aliceByEmail.isOnline ? false : true);
-	console.log('Status cambiado');
-	const updateAlice = await userRepo.findByEmail('alice@test.com' as Email);
-	console.log('Password actualizado: ', updateAlice?.passwordHash);
-	console.log('Online status cambiado: ', updateAlice?.isOnline);
+  console.log("4.1: User existe - Alice");
+  const aliceByUsername = await userRepo.findByUsername(alice.username);
+  userExists(aliceByUsername);
 
-	// TEST 6 : VALIDATIONS
-	console.log('\nTest 6: Validations');
+  console.log("\n4.2: User NO existe");
+  const notExistByUsername = await userRepo.findByUsername("Pepe");
+  userExists(notExistByUsername);
 
-	console.log(`isEmailTaken('alice@test.com): ${await userRepo.isEmailTaken('alice@test.com' as Email)}`);
-	console.log(`isEmailTaken('pepe@test.com): ${await userRepo.isEmailTaken('pepe@test.com' as Email)}`);
-	
-	console.log(`isEmailTaken('alICE@test.com): ${await userRepo.isEmailTaken('alICE@test.com' as Email)}`);
-	console.log(`isEmailTaken('pEpe@test.COM): ${await userRepo.isEmailTaken('pEpe@test.COM' as Email)}`);
-	
-	console.log(`isEmailUsername('Alice'): ${await userRepo.isUsernameTaken('Alice')}`);
-	console.log(`isEmailUsername('Pepe'): ${await userRepo.isUsernameTaken('Pepe')}`);
+  // ============================================================================
+  // TEST 5: updatePassword & setOnlineStatus
+  // ============================================================================
+  console.log("\n--- TEST 5: updatePassword & setOnlineStatus ---");
 
-	console.log(`isEmailUsername('ALICE'): ${await userRepo.isUsernameTaken('AliCE')}`);
-	console.log(`isEmailUsername('pePE'): ${await userRepo.isUsernameTaken('pePE')}`);
-	
-	// TEST 7 : DELETE
-		console.log('\nTest 7: Crear usuario para delete');
+  if (!aliceByEmail) process.exit(1);
+  console.log("Password inicial:", aliceByEmail.passwordHash);
+  console.log("Online inicial:", aliceByEmail.isOnline);
 
-	let pepe: UserTypes.User | null = null;
-	try { 	
-		const createUserData: UserTypes.CreateUserData = {
-			username: "Pepe",
-			email: "pepe@test.com",
-			passwordHash: `Timesamped_${Date.now()}`, // simulado ya hasheado
-			avatar: 'https://image.com/myimage.png'	
-		} as UserTypes.CreateUserData;	
-		
-		let pepe = await userRepo.create(createUserData);
-		console.warn('Pepe se creó');
-	} catch {
-		console.warn('Pepe ya está en la base de datos y no se creó');
-	} finally {
-		if (!pepe) pepe = await userRepo.findByUsername('Pepe');
-		console.log('Recuprado Pepe de la base de datos');
-	}
-	
-	if (pepe) userExists(pepe);
-	else process.exit(1);
+  await userRepo.updatePassword(aliceByEmail.id, `Timesamped_${Date.now()}`);
+  console.log("Password actualizado");
 
-	await userRepo.delete(pepe.id);
-	console.log('Pepe borrado');
-	const updatePepe = await userRepo.findByUsername('pepe');
-	userExists(updatePepe);
+  await userRepo.setOnlineStatus(
+    aliceByEmail.id,
+    !aliceByEmail.isOnline
+  );
+  console.log("Status online cambiado");
+
+  const updatedAlice = await userRepo.findByEmail("alice@test.com" as Email);
+  console.log("Password nuevo:", updatedAlice?.passwordHash);
+  console.log("Online nuevo:", updatedAlice?.isOnline);
+
+  // ============================================================================
+  // TEST 6: Validations
+  // ============================================================================
+  console.log("\n--- TEST 6: Validations ---");
+
+  console.log(
+    `isEmailTaken('alice@test.com'): ${await userRepo.isEmailTaken(
+      "alice@test.com" as Email
+    )}`
+  );
+  console.log(
+    `isEmailTaken('pepe@test.com'): ${await userRepo.isEmailTaken(
+      "pepe@test.com" as Email
+    )}`
+  );
+
+  console.log(
+    `isEmailTaken('alICE@test.com'): ${await userRepo.isEmailTaken(
+      "alICE@test.com" as Email
+    )}`
+  );
+  console.log(
+    `isEmailTaken('pEpe@test.COM'): ${await userRepo.isEmailTaken(
+      "pEpe@test.COM" as Email
+    )}`
+  );
+
+  console.log(
+    `isUsernameTaken('Alice'): ${await userRepo.isUsernameTaken("Alice")}`
+  );
+  console.log(
+    `isUsernameTaken('Pepe'): ${await userRepo.isUsernameTaken("Pepe")}`
+  );
+
+  console.log(
+    `isUsernameTaken('ALICE'): ${await userRepo.isUsernameTaken("AliCE")}`
+  );
+  console.log(
+    `isUsernameTaken('pePE'): ${await userRepo.isUsernameTaken("pePE")}`
+  );
+
+  // ============================================================================
+  // TEST 7: delete
+  // ============================================================================
+  console.log("\n--- TEST 7: delete ---");
+
+  let pepe: UserTypes.User | null = null;
+  try {
+    const createUserData: UserTypes.CreateUserData = {
+      username: "Pepe",
+      email: "pepe@test.com" as Email,
+      passwordHash: `Timesamped_${Date.now()}`,
+      avatar: "https://image.com/myimage.png",
+    };
+    pepe = await userRepo.create(createUserData);
+    console.log("Pepe creado correctamente");
+  } catch {
+    console.warn("Pepe ya estaba en la base de datos");
+  } finally {
+    if (!pepe) pepe = await userRepo.findByUsername("Pepe");
+    console.log("Recuperado Pepe de la base de datos");
+  }
+
+  if (pepe) userExists(pepe);
+  else process.exit(1);
+
+  await userRepo.delete(pepe.id);
+  console.log("Pepe borrado");
+
+  const deletedPepe = await userRepo.findByUsername("pepe");
+  userExists(deletedPepe);
+
+  // ============================================================================
+  // CLEANUP
+  // ============================================================================
+  console.log("\n--- CLEANUP ---");
+  db.exec("DELETE FROM users");
+  console.log("DB limpiada");
+
+  console.log("\n=== TEST COMPLETO ===");
+  db.close();
 }
 
 testUserRepository();
+*/

@@ -15,25 +15,6 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
-  packages/api-gateway:
-    dependencies:
-      '@transcendence/database':
-        specifier: workspace:*
-        version: link:../database
-      dotenv:
-        specifier: 17.2.3
-        version: 17.2.3
-      fastify:
-        specifier: 5.6.1
-        version: 5.6.1
-      tsx:
-        specifier: 4.20.6
-        version: 4.20.6
-    devDependencies:
-      '@types/node':
-        specifier: 24.7.2
-        version: 24.7.2
-
   packages/database:
     dependencies:
       better-sqlite3:
@@ -70,26 +51,10 @@ importers:
         version: 5.9.3
 
   packages/shared:
-    dependencies:
-      '@transcendence/database':
-        specifier: workspace:*
-        version: link:../database
-      '@transcendence/shared':
-        specifier: workspace:*
-        version: 'link:'
-      dotenv:
-        specifier: 17.2.3
-        version: 17.2.3
-      fastify:
-        specifier: 5.6.1
-        version: 5.6.1
     devDependencies:
       '@types/node':
         specifier: 24.7.2
         version: 24.7.2
-      tsx:
-        specifier: 4.20.6
-        version: 4.20.6
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -541,8 +506,8 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  get-tsconfig@4.12.0:
-    resolution: {integrity: sha512-LScr2aNr2FbjAjZh2C6X6BxRx1/x+aTDExct/xyq2XKbYOiG5c0aK7pMsSuyc0brz3ibr/lbQiHD9jzt4lccJw==}
+  get-tsconfig@4.13.0:
+    resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
@@ -1134,7 +1099,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  get-tsconfig@4.12.0:
+  get-tsconfig@4.13.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
@@ -1354,7 +1319,7 @@ snapshots:
   tsx@4.20.6:
     dependencies:
       esbuild: 0.25.11
-      get-tsconfig: 4.12.0
+      get-tsconfig: 4.13.0
     optionalDependencies:
       fsevents: 2.3.3
 

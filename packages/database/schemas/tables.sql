@@ -1,65 +1,83 @@
-/*
-Tablas del sistema
- */
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   tables.sql                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mvisca-g <mvisca-g@student.42barcelona.    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/20 by mvisca-g                  #+#    #+#             */
+/*   Updated: 2025/10/23 by mvisca-g                 ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
+-- ============================================================================
+-- TABLA: users
+-- ============================================================================
 CREATE TABLE IF NOT EXISTS users (
-	id TEXT PRIMARY KEY,
-	username TEXT UNIQUE NOT NULL,
-	email TEXT UNIQUE,
-	password_hash TEXT NOT NULL,
-	avatar TEXT,
-	is_online INTEGER DEFAULT 0,
-	created_at INTEGER NOT NULL,
-	updated_at INTEGER NOT NULL
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,
+  avatar TEXT,
+  is_online INTEGER DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS user_stats (
-	user_id TEXT PRIMARY KEY,
-	total_matches INTEGER DEFAULT 0,
-	wins INTEGER DEFAULT 0,
-	losses INTEGER DEFAULT 0,
-	win_rate REAL DEFAULT 0.0,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
+-- ============================================================================
+-- TABLA: friendships
+-- ============================================================================
 CREATE TABLE IF NOT EXISTS friendships (
-	user_id TEXT NOT NULL,
-	friend_id TEXT NOT NULL,
-	status TEXT NOT NULL,
-	created_at INTEGER NOT NULL,
-	updated_at INTEGER NOT NULL,
-	PRIMARY KEY (user_id, friend_id),
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-	FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
-	CHECK (user_id != friend_id)
+  user_id TEXT NOT NULL,
+  friend_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, friend_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+  CHECK (user_id < friend_id)
 );
 
+-- ============================================================================
+-- TABLA: matches
+-- ============================================================================
+-- Partidas 1v1 de Pong
+-- winner_id es NULL mientras la partida está activa
+-- finished_at es NULL mientras la partida está activa
 CREATE TABLE IF NOT EXISTS matches (
-	id TEXT PRIMARY KEY,
-	game_title TEXT NOT NULL,
-	court_type TEXT NOT NULL,
-	status TEXT NOT NULL,
-	winner_id TEXT,
-	created_at INTEGER NOT NULL,
-	finished_at INTEGER,
-	FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
+  id TEXT PRIMARY KEY,
+  status TEXT NOT NULL DEFAULT 'active',
+  winner_id TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS match_participants (
-	match_id TEXT NOT NULL,
-	user_id TEXT NOT NULL,
-	player_slot TEXt NOT NULL,
-	position TEXT NOT NULL,
-	score INTEGER DEFAULT 0,
-	PRIMARY KEY (match_id, user_id),
-	FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+-- ============================================================================
+-- TABLA: match_participants
+-- ============================================================================
+-- Jugadores en cada partida (siempre 2 para 1v1)
+-- player_slot: "Player1" o "Player2"
+-- player_position: "left" o "right"
+CREATE TABLE IF NOT EXISTS match_players (
+  match_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  player_slot TEXT NOT NULL,
+  player_position TEXT NOT NULL,
+  score INTEGER DEFAULT 0,
+  PRIMARY KEY (match_id, user_id),
+  FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- ============================================================================
+-- TABLA: tournaments
+-- ============================================================================
 CREATE TABLE IF NOT EXISTS tournaments (
-	id TEXT NOT NULL,
-	number_of_players INTEGER,
-	users_ids INTEGER[],
-	playoffs JSON,
-	PRIMARY KEY (id)
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  number_of_players INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  finished_at INTEGER
 );

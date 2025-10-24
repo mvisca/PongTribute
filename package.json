@@ -1,25 +1,27 @@
 {
-	"name": "transcendence",
-	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"packageManager": "pnpm@10.18.2",
-	"engines": {
-		"node": ">=20.0.0 <23.0.0",
-		"pnpm": "10.18.2"
-	},
-	"scripts": {
-		"preinstall": "npx only-allow pnpm",
-		"dev": "pnpm --parallel --filter '@transcendence/*' dev",
-		"build": "pnpm -r build",
-		"clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
-		"test": "echo \"Error: no test specified\" && exit 1"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"devDependencies": {
-		"@types/node": "24.7.2",
-		"typescript": "5.9.3"
-	}
+  "name": "transcendence",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "packageManager": "pnpm@10.18.2",
+  "engines": {
+    "node": ">=20.0.0 <23.0.0",
+    "pnpm": "10.18.2"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "pnpm --parallel --filter '@transcendence/*' dev",
+    "build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
+    "clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
+    "test": "pnpm -r --no-bail test",
+	"test:db-user": "pnpm --filter '@transcendence/database' test:user",
+	"test:db-friendship" : "pnpm --filter @transcendence/database test:friendship"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "typescript": "5.9.3"
+  }
 }

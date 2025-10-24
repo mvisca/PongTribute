@@ -23,7 +23,6 @@
 		"skipDefaultLibCheck": true
 	},
 	"references": [
-		{ "path": "./packages/api-gateway" },
 		{ "path": "./packages/database" },
 		{ "path": "./packages/frontend" },
 		{ "path": "./packages/shared" },

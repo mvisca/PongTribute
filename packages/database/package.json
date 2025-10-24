@@ -5,8 +5,8 @@
   "main": "./dist/connection.js",
   "scripts": {
     "build": "tsc",
-    "test:user": "tsx ./test/test-user-repository.ts",
-	"test:friendship": "tsx ./test/test-friendship-repository.ts"
+    "test:db-user": "tsx ./test/test-user-repository.ts",
+	"test:db-friendship": "tsx ./test/test-friendship-repository.ts"
   },
   "dependencies": {
     "better-sqlite3": "12.4.1",

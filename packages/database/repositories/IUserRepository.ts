@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   IUserRepository.ts                                 :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:45:10 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:39:15 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 import { Email, UserId } from '@transcendence/shared';
 import * as UserTypes from '@transcendence/shared';
 
@@ -33,7 +21,7 @@ import * as UserTypes from '@transcendence/shared';
  * Permite implementar SQLite sin poner lógica de DB en lógica de negocio.
  */
 export interface IUserRepository {
-
+	
 	/**
 	 * Crear nuevo usuario \
 	 * @param newUser de tipo {@link UserTypes.CreateUserData} \

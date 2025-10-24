@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   IFriendshipRepository.ts                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/21 15:49:35 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:33:19 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 import { FriendshipStatus } from '@transcendence/shared'; 
 import { UserId } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';

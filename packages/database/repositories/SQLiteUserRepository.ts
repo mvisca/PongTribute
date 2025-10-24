@@ -1,21 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   SQLiteUserRepository.ts                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 12:17:05 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:39:56 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-/**
- * Se usará aquí el branded type UserId \
- * Pero ya se importó en 'user.types.ts' \
- * Por no ser redundante lo omitimos \
- * import { UserId } from "../../types/branded.types"; \ 
- */
 import Database from 'better-sqlite3';
 import { Email, UserId } from '@transcendence/shared';
 import * as UserTypes from '@transcendence/shared';
@@ -26,108 +8,105 @@ import { generateUserId } from '@transcendence/shared';
 export class SQLiteUserRepository implements IUserRepository {
 	
 	constructor(private db: Database.Database) {}
-	
+
+	/** 
+	 * Busca un usuario por su ID.
+	 * Retorna el registro completo o null si no existe.
+	 */
 	private async getRowUserById(id: UserId): Promise<UserTypes.User | null> {
-		// Se puede hacer en una línea pero lo divido para comprensión paso a paso
-		// return this.db.prepare(`SELECT * FROM users WHERE id = ?`).get(id);
-
-		// Crear linea de comandos SQL para recuperar el nuevo usuario
 		const inserted = this.db.prepare(`SELECT * FROM users WHERE id = ?`);
-
-		// Ejecuta línea de comandos SQL para recuperar el nuevo usuario
 		const selectedUser = inserted.get(id) as UserTypes.User | undefined;
-
-		// Retornar el usuario seleccionado
 		return selectedUser || null;
 	}
 
+	/** 
+	 * Crea un nuevo usuario en la base de datos.
+	 * - Genera ID y fechas.
+	 * - Inserta en la tabla `users`.
+	 * - Retorna el usuario recién creado sin el campo `password_hash`.
+	 */
 	async create(data: UserTypes.CreateUserData): Promise<UserTypes.UserResponse> {
-		// Crear el objeto completo agregando lo que falta
 		const now = new Date();
 		const newUser: UserTypes.User = {
 			id: generateUserId(),
 			...data,
-			isOnline: false, // será true al generar token (AuthService), se crea false
+			isOnline: false,
 			createdAt: now,
 			updatedAt: now
 		};
 		
-		// Mapper para traducir objeto a fila de base de datos
 		const row = UserMapper.dataToInsert(newUser);
-		
-		// Crea el linea de comandos SQL
-		const toInsert = this.db.prepare(`
+
+		this.db.prepare(`
 			INSERT INTO users (
 				id, username, email, password_hash,
 				avatar, is_online, created_at, updated_at
-				)
-				VALUES (
-					@id, LOWER(@username), LOWER(@email), @password_hash,
-					@avatar, @is_online, @created_at, @updated_at
+			) VALUES (
+				@id, LOWER(@username), LOWER(@email), @password_hash,
+				@avatar, @is_online, @created_at, @updated_at
 			)
-		`);
-		
-		// Ejecuta la línea de comandos SQL
-		toInsert.run(row);
-		
-		// Retorna el user recien creado mapeado al tipo UserResponse
+		`).run(row);
+
 		return UserMapper.rowToUserResponse(await this.getRowUserById(row.id));
 	}
 
+	/** 
+	 * Actualiza campos de un usuario existente.
+	 * Solo modifica las claves presentes en el objeto recibido.
+	 */
 	async update(userId: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse> {
-		// Como puede ser que no todos los parametros esten en data, hay que extraer los key presentes
-		// Primero se convierte el type UserUpdate a row, el mapper filtra campos no presentes
-		// Generar un objeto anónimo, sin tipo
-
 		const validatedData = {};
 		try {
 			UserMapper.validateUpdate(data);
 		} catch (error) {
-			console.error(`La validación ha arrojado errores: ${error}`);
-			throw (error);			
+			console.error(`Validación fallida: ${error}`);
+			throw error;			
 		}
 
 		const mappedData = UserMapper.dataToSet(validatedData);
+		const finalData = { ...mappedData, updated_at: Date.now() };
 
-		const finalData = {
-			...mappedData,
-			updated_at: Date.now()
-		};
-
-		// Genera un string en formato ok para SET de SQL "username = @username, ..." solo con keys presentes
 		const fields = Object.keys(finalData)
 			.map(key => `${key} = @${key}`)
 			.join(', ');
 
-		// Actualiza expandiendo 'fields' y pasando a 'run()' el objeto anónimo con key: value, y la id del target de users
 		this.db
-			.prepare(`UPDATE users SET ${fields} WHERE id = @id `)
-			.run( { ...finalData, userId } );
+			.prepare(`UPDATE users SET ${fields} WHERE id = @id`)
+			.run({ ...finalData, userId });
 
-		// Retorna el record modificado mapeado al tipo UserResponse
 		return UserMapper.rowToUserResponse(await this.getRowUserById(userId));
 	}
 
+	/** 
+	 * Actualiza la contraseña (hash) de un usuario.
+	 */
 	async updatePassword(id: UserId, newPasswordHash: string): Promise<void> {
-		const targetUser = this.db.prepare(`
+		this.db.prepare(`
 			UPDATE users
 			SET password_hash = ?, updated_at = ?
 			WHERE id = ?
-		`).run({newPasswordHash, now: Date.now(), id: id});
+		`).run(newPasswordHash, Date.now(), id);
 	}
 
+	/** 
+	 * Elimina un usuario por su ID.
+	 */
 	async delete(id: UserId): Promise<void> {
-		this.db.prepare(`
-			DELETE FROM users
-			WHERE id = ?
-		`).run(id);
+		this.db.prepare(`DELETE FROM users WHERE id = ?`).run(id);
 	}
 
+	/** 
+	 * Busca y retorna un usuario por ID (sin password_hash).
+	 */
 	async findById(id: UserId): Promise<UserTypes.UserResponse | null> {
 		const row = await this.getRowUserById(id);
-		return row ? UserMapper.rowToUserResponse(row) :null;
+		return row ? UserMapper.rowToUserResponse(row) : null;
 	}
 
+	/** 
+	 * Busca usuario por email (insensible a mayúsculas).
+	 * Retorna el objeto completo con password_hash.
+	 */
 	async findByEmail(email: Email): Promise<UserTypes.User | null> {
 		const row = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(email) = ?`)
@@ -135,6 +114,10 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToUser(row) : null;
 	}
 
+	/** 
+	 * Busca usuario por nombre de usuario (insensible a mayúsculas).
+	 * Retorna el objeto sin password_hash.
+	 */
 	async findByUsername(username: string): Promise<UserTypes.UserResponse | null> {
 		const row = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
@@ -142,6 +125,9 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToUserResponse(row) : null;
 	}
 
+	/** 
+	 * Verifica si un nombre de usuario ya está en uso.
+	 */
 	async isUsernameTaken(username: string): Promise<boolean> {
 		const user = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
@@ -149,24 +135,28 @@ export class SQLiteUserRepository implements IUserRepository {
 		return !!user;
 	}
 
+	/** 
+	 * Verifica si un email ya está registrado.
+	 */
 	async isEmailTaken(email: Email): Promise<boolean> {
 		const user = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(email) = ?`)
 			.get(email.toLowerCase());
-		return !!user; // Equivale a 'return user !== null && user !== undefined;'
+		return !!user;
 	}
 
+	/** 
+	 * Cambia el estado de conexión (`is_online`) del usuario.
+	 * Retorna el usuario actualizado sin `password_hash`.
+	 */
 	async setOnlineStatus(id: UserId, isOnline: boolean): Promise<UserTypes.UserResponse> {
-		this.db
-			.prepare(`UPDATE users
-				SET is_online = @is_online, updated_at = @updated_at
-				WHERE id = @id`)
-			.run({is_online: isOnline ? 1 : 0, updated_at: Date.now(), id: id});
+		this.db.prepare(`
+			UPDATE users
+			SET is_online = @is_online, updated_at = @updated_at
+			WHERE id = @id
+		`).run({ is_online: isOnline ? 1 : 0, updated_at: Date.now(), id });
 
-		// Recupera el usuario recién actualizado
 		const targetUser = await this.getRowUserById(id);
-
-		// Retorna el usuario sin 'password_hash'
 		return UserMapper.rowToUserResponse(targetUser);
 	}
 }

@@ -1,15 +1,94 @@
-=== ARCHIVO: ./pnpm-workspace.yaml ===
---- CONTENIDO ---
-packages:
-  - 'packages/api-gateway'
-  - 'packages/database'
-  - 'packages/frontend'
-  - 'packages/shared'
-  - 'packages/user'
-=== FIN ARCHIVO ===
+🌳 ESTRUCTURA DEL PROYECTO
+==============================================
 
-=== ARCHIVO: ./packages/frontend/vite.config.ts ===
---- CONTENIDO ---
+.
+├── db-data
+│   └── transcendence.db
+├── .gitignore
+├── make_status.sh
+├── .npmrc
+├── package.json
+├── packages
+│   ├── database
+│   │   ├── connection.ts
+│   │   ├── mappers
+│   │   │   ├── FriendshipMapper.ts
+│   │   │   ├── MatchRepository.ts
+│   │   │   └── UserMapper.ts
+│   │   ├── package.json
+│   │   ├── repositories
+│   │   │   ├── IFriendshipRepository.ts
+│   │   │   ├── IMatchRepository.ts
+│   │   │   ├── IUserRepository.ts
+│   │   │   ├── SQLiteFriendshipRepository.ts
+│   │   │   ├── SQLiteMatchRepository.ts
+│   │   │   └── SQLiteUserRepository.ts
+│   │   ├── schemas
+│   │   │   ├── indexes.sql
+│   │   │   └── tables.sql
+│   │   ├── test
+│   │   │   ├── test-friendship-repository.ts
+│   │   │   └── test-user-repository.ts
+│   │   └── tsconfig.json
+│   ├── frontend
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   └── main.ts
+│   │   ├── tsconfig.json
+│   │   └── vite.config.ts
+│   ├── shared
+│   │   ├── package.json
+│   │   ├── src
+│   │   │   ├── constants
+│   │   │   │   ├── friendship.constants.ts
+│   │   │   │   ├── game.constants.ts
+│   │   │   │   ├── match.constants.ts
+│   │   │   │   └── user.constants.ts
+│   │   │   ├── events
+│   │   │   │   ├── base
+│   │   │   │   │   └── BaseEvent.ts
+│   │   │   │   ├── friendship
+│   │   │   │   │   └── FriendshipEvents.ts
+│   │   │   │   ├── game
+│   │   │   │   │   └── GameEvents.ts
+│   │   │   │   ├── matchmaking
+│   │   │   │   │   └── MatchmakingEvents.ts
+│   │   │   │   └── user
+│   │   │   │       └── UserEvents.ts
+│   │   │   ├── index.ts
+│   │   │   ├── types
+│   │   │   │   ├── branded.types.ts
+│   │   │   │   ├── friendship.types.ts
+│   │   │   │   ├── game.types.ts
+│   │   │   │   ├── match.types.ts
+│   │   │   │   └── user.types.ts
+│   │   │   └── utils
+│   │   │       └── uuidGenerator.ts
+│   │   ├── tsconfig.json
+│   │   └── tsconfig.tsbuildinfo
+│   └── user
+│       ├── package.json
+│       ├── src
+│       │   ├── changePassword
+│       │   └── server.ts
+│       ├── tsconfig.json
+│       └── tsconfig.tsbuildinfo
+├── pnpm-lock.yaml
+├── pnpm-workspace.yaml
+├── README.md
+├── status.txt
+└── tsconfig.json
+
+23 directories, 55 files
+
+
+
+🎯 TYPESCRIPT FILES
+==============================================
+
+📁 ARCHIVO: ./packages/frontend/vite.config.ts
+────────────────────────────────────────────────
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
@@ -42,231 +121,25 @@ export default defineConfig({
 		include: ['babylonjs']
 	}
 });
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/frontend/src/main.ts ===
---- CONTENIDO ---
 
-=== FIN ARCHIVO ===
+📁 ARCHIVO: ./packages/frontend/src/main.ts
+────────────────────────────────────────────────
 
-=== ARCHIVO: ./packages/frontend/tsconfig.json ===
---- CONTENIDO ---
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "composite": true,
-    "noEmit": true,
-    "outDir": "./dist"
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../shared" }
-  ]
-}
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/frontend/package.json ===
---- CONTENIDO ---
-{
-	"name": "@transcendence/frontend",
-	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"packageManager": "pnpm@10.18.2",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"preinstall": "npx only-allow pnpm",
-		"dev": "vite",
-		"build": "vite build",
-		"preview": "vite preview"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"dependencies": {
-		"babylonjs": "8.31.0",
-		"vite": "7.1.9"
-	},
-	"devDependencies": {
-		"typescript": "5.9.3"
-	}
-}
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/user/src/server.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/user/src/server.ts
+────────────────────────────────────────────────
 
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/user/tsconfig.json ===
---- CONTENIDO ---
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "types": ["node"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "composite": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "references": [
-    { "path": "../shared" },
-    { "path": "../database" }
-  ]
-}
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/user/package.json ===
---- CONTENIDO ---
-{
-  "name": "@transcendence/user",
-  "version": "1.0.0",
-  "type": "module",
-  "packageManager": "pnpm@10.18.2",
-  "scripts": {
-    "preinstall": "npx only-allow pnpm",
-    "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js"
-  },
-  "dependencies": {
-    "@transcendence/shared": "workspace:*",
-    "@transcendence/database": "workspace:*",
-    "fastify": "5.6.1",
-    "dotenv": "17.2.3"
-  },
-  "devDependencies": {
-    "@types/node": "24.7.2",
-    "tsx": "4.20.6",
-    "typescript": "5.9.3"
-  }
-}
-=== FIN ARCHIVO ===
+📁 ARCHIVO: ./packages/database/mappers/MatchRepository.ts
+────────────────────────────────────────────────
 
-=== ARCHIVO: ./packages/database/schemas/indexes.sql ===
---- CONTENIDO ---
-/* Indices para optimizar consultas frecuentes 
-Permite hacer consultas como:
-SELECT * WHERE number_of_players = 8
-SELECT * WHEHE 1234 = ANY(users_ids)
-SELECT * WHERE playoffs->>'status' = 'active'
-Estos índices se deben revisitar al finalizar el proyecto para quitar o agregar los relacionados a las consulta más frecuentes
-TODO: no es necesario para tables pequeñas, realizado aquí solo con fines de aprendizaje
- */
 
--- Búsqueda de usuarios
-CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_online ON users(is_online);
 
--- Búsqueda de amistades
-CREATE INDEX IF NOT EXISTS idx_friendships_user ON friendships(user_id);
-CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships(friend_id);
-CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);
-
--- Historial de partidas
-CREATE INDEX IF NOT EXISTS idx_match_participants_user ON match_participants(user_id);
-CREATE INDEX IF NOT EXISTS idx_matches_created ON matches(created_at);
-
--- Búsqueda de torneos
-CREATE INDEX IF NOT EXISTS idx_tournaments_players ON tournaments(number_of_players);
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/database/schemas/tables.sql ===
---- CONTENIDO ---
-/*
-Tablas del sistema
- */
-
-CREATE TABLE IF NOT EXISTS users (
-	id TEXT PRIMARY KEY,
-	username TEXT UNIQUE NOT NULL,
-	email TEXT UNIQUE,
-	password_hash TEXT NOT NULL,
-	avatar TEXT,
-	is_online INTEGER DEFAULT 0,
-	created_at INTEGER NOT NULL,
-	updated_at INTEGER NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS user_stats (
-	user_id TEXT PRIMARY KEY,
-	total_matches INTEGER DEFAULT 0,
-	wins INTEGER DEFAULT 0,
-	losses INTEGER DEFAULT 0,
-	win_rate REAL DEFAULT 0.0,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS friendships (
-	user_id TEXT NOT NULL,
-	friend_id TEXT NOT NULL,
-	status TEXT NOT NULL,
-	created_at INTEGER NOT NULL,
-	updated_at INTEGER NOT NULL,
-	PRIMARY KEY (user_id, friend_id),
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-	FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
-	CHECK (user_id != friend_id)
-);
-
-CREATE TABLE IF NOT EXISTS matches (
-	id TEXT PRIMARY KEY,
-	game_title TEXT NOT NULL,
-	court_type TEXT NOT NULL,
-	status TEXT NOT NULL,
-	winner_id TEXT,
-	created_at INTEGER NOT NULL,
-	finished_at INTEGER,
-	FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS match_participants (
-	match_id TEXT NOT NULL,
-	user_id TEXT NOT NULL,
-	player_slot TEXt NOT NULL,
-	position TEXT NOT NULL,
-	score INTEGER DEFAULT 0,
-	PRIMARY KEY (match_id, user_id),
-	FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS tournaments (
-	id TEXT NOT NULL,
-	number_of_players INTEGER,
-	users_ids INTEGER[],
-	playoffs JSON,
-	PRIMARY KEY (id)
-);
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/database/mappers/MatchRepository.ts ===
---- CONTENIDO ---
-
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/database/mappers/UserMapper.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/database/mappers/UserMapper.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -461,10 +334,10 @@ export class UserMapper {
 	}
 // Fin clase
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/mappers/FriendshipMapper.ts ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./packages/database/mappers/FriendshipMapper.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -526,45 +399,10 @@ export class FriendshipMapper {
 		}
 	}
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/tsconfig.json ===
---- CONTENIDO ---
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "types": ["node"],
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "outDir": "./dist",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "composite": true
-  },
-  "include": [
-    "connection.ts",
-    "mappers/**/*.ts",
-    "repositories/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "**/*.d.ts"
-  ],
-  "references": [
-    { "path": "../shared" }
-  ]
-}
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/connection.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/database/connection.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -621,22 +459,10 @@ export function closeDatabase(): void {
 		console.log('DB cerrada: ', __filename);
 	}
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/repositories/IFriendshipRepository.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   IFriendshipRepository.ts                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/21 15:49:35 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:33:19 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
+📁 ARCHIVO: ./packages/database/repositories/IFriendshipRepository.ts
+────────────────────────────────────────────────
 import { FriendshipStatus } from '@transcendence/shared'; 
 import { UserId } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';
@@ -698,28 +524,10 @@ export interface IFriendshipRepository {
 		status: FriendshipStatus
 	): Promise<FriendshipTypes.Friendship[]>;
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/repositories/SQLiteUserRepository.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   SQLiteUserRepository.ts                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 12:17:05 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:39:56 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
-/**
- * Se usará aquí el branded type UserId \
- * Pero ya se importó en 'user.types.ts' \
- * Por no ser redundante lo omitimos \
- * import { UserId } from "../../types/branded.types"; \ 
- */
+📁 ARCHIVO: ./packages/database/repositories/SQLiteUserRepository.ts
+────────────────────────────────────────────────
 import Database from 'better-sqlite3';
 import { Email, UserId } from '@transcendence/shared';
 import * as UserTypes from '@transcendence/shared';
@@ -730,108 +538,105 @@ import { generateUserId } from '@transcendence/shared';
 export class SQLiteUserRepository implements IUserRepository {
 	
 	constructor(private db: Database.Database) {}
-	
+
+	/** 
+	 * Busca un usuario por su ID.
+	 * Retorna el registro completo o null si no existe.
+	 */
 	private async getRowUserById(id: UserId): Promise<UserTypes.User | null> {
-		// Se puede hacer en una línea pero lo divido para comprensión paso a paso
-		// return this.db.prepare(`SELECT * FROM users WHERE id = ?`).get(id);
-
-		// Crear linea de comandos SQL para recuperar el nuevo usuario
 		const inserted = this.db.prepare(`SELECT * FROM users WHERE id = ?`);
-
-		// Ejecuta línea de comandos SQL para recuperar el nuevo usuario
 		const selectedUser = inserted.get(id) as UserTypes.User | undefined;
-
-		// Retornar el usuario seleccionado
 		return selectedUser || null;
 	}
 
+	/** 
+	 * Crea un nuevo usuario en la base de datos.
+	 * - Genera ID y fechas.
+	 * - Inserta en la tabla `users`.
+	 * - Retorna el usuario recién creado sin el campo `password_hash`.
+	 */
 	async create(data: UserTypes.CreateUserData): Promise<UserTypes.UserResponse> {
-		// Crear el objeto completo agregando lo que falta
 		const now = new Date();
 		const newUser: UserTypes.User = {
 			id: generateUserId(),
 			...data,
-			isOnline: false, // será true al generar token (AuthService), se crea false
+			isOnline: false,
 			createdAt: now,
 			updatedAt: now
 		};
 		
-		// Mapper para traducir objeto a fila de base de datos
 		const row = UserMapper.dataToInsert(newUser);
-		
-		// Crea el linea de comandos SQL
-		const toInsert = this.db.prepare(`
+
+		this.db.prepare(`
 			INSERT INTO users (
 				id, username, email, password_hash,
 				avatar, is_online, created_at, updated_at
-				)
-				VALUES (
-					@id, LOWER(@username), LOWER(@email), @password_hash,
-					@avatar, @is_online, @created_at, @updated_at
+			) VALUES (
+				@id, LOWER(@username), LOWER(@email), @password_hash,
+				@avatar, @is_online, @created_at, @updated_at
 			)
-		`);
-		
-		// Ejecuta la línea de comandos SQL
-		toInsert.run(row);
-		
-		// Retorna el user recien creado mapeado al tipo UserResponse
+		`).run(row);
+
 		return UserMapper.rowToUserResponse(await this.getRowUserById(row.id));
 	}
 
+	/** 
+	 * Actualiza campos de un usuario existente.
+	 * Solo modifica las claves presentes en el objeto recibido.
+	 */
 	async update(userId: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse> {
-		// Como puede ser que no todos los parametros esten en data, hay que extraer los key presentes
-		// Primero se convierte el type UserUpdate a row, el mapper filtra campos no presentes
-		// Generar un objeto anónimo, sin tipo
-
 		const validatedData = {};
 		try {
 			UserMapper.validateUpdate(data);
 		} catch (error) {
-			console.error(`La validación ha arrojado errores: ${error}`);
-			throw (error);			
+			console.error(`Validación fallida: ${error}`);
+			throw error;			
 		}
 
 		const mappedData = UserMapper.dataToSet(validatedData);
+		const finalData = { ...mappedData, updated_at: Date.now() };
 
-		const finalData = {
-			...mappedData,
-			updated_at: Date.now()
-		};
-
-		// Genera un string en formato ok para SET de SQL "username = @username, ..." solo con keys presentes
 		const fields = Object.keys(finalData)
 			.map(key => `${key} = @${key}`)
 			.join(', ');
 
-		// Actualiza expandiendo 'fields' y pasando a 'run()' el objeto anónimo con key: value, y la id del target de users
 		this.db
-			.prepare(`UPDATE users SET ${fields} WHERE id = @id `)
-			.run( { ...finalData, userId } );
+			.prepare(`UPDATE users SET ${fields} WHERE id = @id`)
+			.run({ ...finalData, userId });
 
-		// Retorna el record modificado mapeado al tipo UserResponse
 		return UserMapper.rowToUserResponse(await this.getRowUserById(userId));
 	}
 
+	/** 
+	 * Actualiza la contraseña (hash) de un usuario.
+	 */
 	async updatePassword(id: UserId, newPasswordHash: string): Promise<void> {
-		const targetUser = this.db.prepare(`
+		this.db.prepare(`
 			UPDATE users
 			SET password_hash = ?, updated_at = ?
 			WHERE id = ?
-		`).run({newPasswordHash, now: Date.now(), id: id});
+		`).run(newPasswordHash, Date.now(), id);
 	}
 
+	/** 
+	 * Elimina un usuario por su ID.
+	 */
 	async delete(id: UserId): Promise<void> {
-		this.db.prepare(`
-			DELETE FROM users
-			WHERE id = ?
-		`).run(id);
+		this.db.prepare(`DELETE FROM users WHERE id = ?`).run(id);
 	}
 
+	/** 
+	 * Busca y retorna un usuario por ID (sin password_hash).
+	 */
 	async findById(id: UserId): Promise<UserTypes.UserResponse | null> {
 		const row = await this.getRowUserById(id);
-		return row ? UserMapper.rowToUserResponse(row) :null;
+		return row ? UserMapper.rowToUserResponse(row) : null;
 	}
 
+	/** 
+	 * Busca usuario por email (insensible a mayúsculas).
+	 * Retorna el objeto completo con password_hash.
+	 */
 	async findByEmail(email: Email): Promise<UserTypes.User | null> {
 		const row = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(email) = ?`)
@@ -839,6 +644,10 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToUser(row) : null;
 	}
 
+	/** 
+	 * Busca usuario por nombre de usuario (insensible a mayúsculas).
+	 * Retorna el objeto sin password_hash.
+	 */
 	async findByUsername(username: string): Promise<UserTypes.UserResponse | null> {
 		const row = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
@@ -846,6 +655,9 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToUserResponse(row) : null;
 	}
 
+	/** 
+	 * Verifica si un nombre de usuario ya está en uso.
+	 */
 	async isUsernameTaken(username: string): Promise<boolean> {
 		const user = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(username) = ?`)
@@ -853,43 +665,35 @@ export class SQLiteUserRepository implements IUserRepository {
 		return !!user;
 	}
 
+	/** 
+	 * Verifica si un email ya está registrado.
+	 */
 	async isEmailTaken(email: Email): Promise<boolean> {
 		const user = this.db
 			.prepare(`SELECT * FROM users WHERE LOWER(email) = ?`)
 			.get(email.toLowerCase());
-		return !!user; // Equivale a 'return user !== null && user !== undefined;'
+		return !!user;
 	}
 
+	/** 
+	 * Cambia el estado de conexión (`is_online`) del usuario.
+	 * Retorna el usuario actualizado sin `password_hash`.
+	 */
 	async setOnlineStatus(id: UserId, isOnline: boolean): Promise<UserTypes.UserResponse> {
-		this.db
-			.prepare(`UPDATE users
-				SET is_online = @is_online, updated_at = @updated_at
-				WHERE id = @id`)
-			.run({is_online: isOnline ? 1 : 0, updated_at: Date.now(), id: id});
+		this.db.prepare(`
+			UPDATE users
+			SET is_online = @is_online, updated_at = @updated_at
+			WHERE id = @id
+		`).run({ is_online: isOnline ? 1 : 0, updated_at: Date.now(), id });
 
-		// Recupera el usuario recién actualizado
 		const targetUser = await this.getRowUserById(id);
-
-		// Retorna el usuario sin 'password_hash'
 		return UserMapper.rowToUserResponse(targetUser);
 	}
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/repositories/IUserRepository.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   IUserRepository.ts                                 :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:45:10 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:39:15 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
+📁 ARCHIVO: ./packages/database/repositories/IUserRepository.ts
+────────────────────────────────────────────────
 import { Email, UserId } from '@transcendence/shared';
 import * as UserTypes from '@transcendence/shared';
 
@@ -913,7 +717,7 @@ import * as UserTypes from '@transcendence/shared';
  * Permite implementar SQLite sin poner lógica de DB en lógica de negocio.
  */
 export interface IUserRepository {
-
+	
 	/**
 	 * Crear nuevo usuario \
 	 * @param newUser de tipo {@link UserTypes.CreateUserData} \
@@ -989,22 +793,10 @@ export interface IUserRepository {
 	 */
     setOnlineStatus(id: UserId, isOnline: boolean): Promise<UserTypes.UserResponse>;
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/repositories/SQLiteFriendshipRepository.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   SQLiteFriendshipRepository.ts                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 12:17:05 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:40:26 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
+📁 ARCHIVO: ./packages/database/repositories/SQLiteFriendshipRepository.ts
+────────────────────────────────────────────────
 import Database from 'better-sqlite3';
 import { UserId, FriendshipStatus } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';
@@ -1015,6 +807,14 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 
 	constructor(private db: Database.Database) {}
 
+	// =========================================================================
+	// MÉTODOS PRIVADOS
+	// =========================================================================
+	
+	/**
+	 * Busca una amistad entre dos usuarios,\
+	 * sin importar el orden en que se insertaron.
+	 */
 	private getRowFriendsByIds(userId: UserId, friendId: UserId): any {
 		return this.db.prepare(`
 			SELECT * FROM friendships 
@@ -1023,12 +823,22 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 		`).get({ user_id: userId, friend_id: friendId });
 	}
 
+	/**
+	 * Ordena los IDs alfabéticamente para mantener\
+	 * consistencia en el almacenamiento y evitar duplicados.\
+	 * Estilo canónico.
+	 */
 	private sortIds(userId: UserId, friendId: UserId): UserId[] {
 		return userId < friendId
 			? [userId, friendId]
 			: [friendId, userId];
 	}
 
+	/**
+	 * Prepara los datos antes de insertar:\
+	 * - Ordena los IDs.\
+	 * - Añade timestamps.
+	 */
 	private prepareData(data: FriendshipTypes.CreateFriendshipData): FriendshipTypes.Friendship {
 		const now = new Date();
 		const [userId, friendId] = this.sortIds(data.userId, data.friendId);
@@ -1041,58 +851,72 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 		};
 	}
 	
+	// =========================================================================
+	// MÉTODOS PÚBLICOS
+	// =========================================================================
+	
+	/**
+	 * Crea una nueva amistad entre dos usuarios.\
+	 * Devuelve el registro insertado como `Friendship`.
+	 */
 	async create(
 		data: FriendshipTypes.CreateFriendshipData
 	): Promise<FriendshipTypes.Friendship> {
 
-		const newFriendship: FriendshipTypes.Friendship = this.prepareData(data);
+		const newFriendship = this.prepareData(data);
 		const row = FriendshipMapper.dataToInsert(newFriendship);
 
-		this.db
-			.prepare(`
-				INSERT INTO friendships (user_id, friend_id, status, created_at, updated_at)
-				VALUES (@user_id, @friend_id, @status, @created_at, @updated_at)`)
-			.run(row);
+		this.db.prepare(`
+			INSERT INTO friendships (user_id, friend_id, status, created_at, updated_at)
+			VALUES (@user_id, @friend_id, @status, @created_at, @updated_at)
+		`).run(row);
 
 		return FriendshipMapper.rowToFriendshipResponse(
 			this.getRowFriendsByIds(row.user_id as UserId, row.friend_id as UserId)
 		);
 	}
 
+	/**
+	 * Actualiza el estado de una amistad existente.\
+	 * Retorna el registro actualizado.
+	 */
 	async update(
 		data: FriendshipTypes.UpdateFriendshipData
 	): Promise<FriendshipTypes.Friendship> {
 
 		const [userId, friendId] = this.sortIds(data.userId, data.friendId);
-		const sortedData = {
+		const updateData = FriendshipMapper.dataToSet({
 			...data,
 			userId,
 			friendId
-		};
-		const updateData = FriendshipMapper.dataToSet(sortedData);
+		});
 
-		this.db
-			.prepare(`
-				UPDATE friendships
-				SET status = @status, updated_at = @updated_at 
-				WHERE (user_id = @user_id AND friend_id = @friend_id)
-			`)
-			.run( { ...updateData} );
+		this.db.prepare(`
+			UPDATE friendships
+			SET status = @status, updated_at = @updated_at 
+			WHERE (user_id = @user_id AND friend_id = @friend_id)
+		`).run(updateData);
 
 		return FriendshipMapper.rowToFriendshipResponse(
-			this.getRowFriendsByIds(data.userId, data.friendId));
+			this.getRowFriendsByIds(data.userId, data.friendId)
+		);
 	}
 
+	/**
+	 * Elimina amistad entre dos usuarios.
+	 */
 	async delete(userId: UserId, friendId: UserId): Promise<void> {
-
 		const [userId2, friendId2] = this.sortIds(userId, friendId);
-		
 		this.db.prepare(`
 			DELETE FROM friendships
 			WHERE user_id = ? AND friend_id = ?
 		`).run(userId2, friendId2);
 	}
 
+	/**
+	 * Busca una relación específica entre dos usuarios.\
+	 * Retorna `null` si no existe.
+	 */
 	async findByUserAndFriend(
 		userId: UserId, friendId: UserId
 	): Promise<FriendshipTypes.Friendship | null> {
@@ -1100,799 +924,805 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 		return row ? FriendshipMapper.rowToFriendshipResponse(row) : null;
 	}
 
+	/**
+	 * Busca todas las relaciones de amistad de un usuario\
+	 * (tanto enviadas como recibidas).
+	 */
 	async findByUser(userId: UserId): Promise<FriendshipTypes.Friendship[]> {
-		const rows = this.db
-			.prepare(`
-				SELECT * FROM friendships
-				WHERE user_id = ? OR friend_id = ?
-			`)
-			.all(userId, userId);
-		return rows.map(
-			row => FriendshipMapper
-			.rowToFriendshipResponse(row as FriendshipTypes.FriendshipRow));
+		const rows = this.db.prepare(`
+			SELECT * FROM friendships
+			WHERE user_id = ? OR friend_id = ?
+		`).all(userId, userId);
+
+		return rows.map(row =>
+			FriendshipMapper.rowToFriendshipResponse(row as FriendshipTypes.FriendshipRow)
+		);
 	}
 
+	/**
+	 * Busca todas las relaciones de amistad de un usuario\
+	 * filtradas por estado (pending o accepted).
+	 */
 	async findByUserAndStatus(
 		userId: UserId, status: FriendshipStatus
 	): Promise<FriendshipTypes.Friendship[]> {
-		const rows = this.db
-			.prepare(`
-				SELECT * FROM friendships
-				WHERE (user_id = ? OR friend_id = ?)
-				AND (status = ?)
-				`)
-			.all(userId, userId, status);
-		return rows.map(
-			row => FriendshipMapper
-			.rowToFriendshipResponse(row as FriendshipTypes.FriendshipRow)
+		const rows = this.db.prepare(`
+			SELECT * FROM friendships
+			WHERE (user_id = ? OR friend_id = ?)
+			AND (status = ?)
+		`).all(userId, userId, status);
+
+		return rows.map(row =>
+			FriendshipMapper.rowToFriendshipResponse(row as FriendshipTypes.FriendshipRow)
 		);
 	}
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/repositories/IMatchRepository.ts ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./packages/database/repositories/SQLiteMatchRepository.ts
+────────────────────────────────────────────────
+import Database from "better-sqlite3";
+import { IMatchRepository } from "./IMatchRepository";
+import { UserId, MatchId, generateMatchId } from "@transcendence/shared";
+import * as MatchTypes from "@transcendence/shared"
+
+export class SQLiteMatchRepository implements IMatchRepository {
+
+	constructor(private db: Database.Database) {}
+
+	private getMatchRow(matchId: MatchId): MatchTypes.MatchRow | null {
+		const row = this.db
+			.prepare('SELECT * FROM matches WHERE id = ?')
+			.get(matchId);
+		return row ? row as MatchTypes.MatchRow: null;
+	}
+
+	private getPlayerRows(matchId: MatchId): MatchTypes.MatchPlayerRow[] {
+		const rows = this.db
+			.prepare('SELECT * FROM match_players WHERE player_id = ?')
+			.get(matchId);
+		return rows as MatchTypes.MatchPlayerRow[];
+	}
+
+	private getCompleteMatch(matchId: MatchId): MatchTypes.Match | null {
+		const matchRow = this.getMatchRow(matchId);
+		if (!matchRow) return null;
+			
+		const playerRows = this.getPlayerRows(matchId);
+
+		if (playerRows.length !== 2) {
+			throw new Error(`
+				Match ${matchId} tiene ${playerRows.length} players (esperados: 2)
+			`);
+		}
+		return MatchMapper.rowToMatchResponse(matchRow, playerRows);
+	}
+
+	async create(data: MatchTypes.CreateMatchData): MatchTypes.Match {
+		const now = new Date;
+
+		const newMatch: MatchTypes.Match = {
+			matchId: generateMatchId(),
+			winnerId: null,
+			status: MatchTypes.MatchStatus,
+			players: [data.players[0], data.players[1]],
+			createdAt: now
+		}
+
+/* 		  id: MatchId;
+		  winnerId: UserId | null;
+		  finishedAt: Date | null;
+		  players: TwoMatchPlayers;
+		  isFinished: boolean;
+		  createdAt: Date; */
+
+		const row = MatchMapper.dataToInsert(newMatch);
+
+		this.db.prepare(`
+			INSERT INTO matches (
+				id, winner_id, finished_at, 
+			)	
+		`)
+	}
+}
+
+
+
+📁 ARCHIVO: ./packages/database/repositories/IMatchRepository.ts
+────────────────────────────────────────────────
+import { MatchId, UserId } from "@transcendence/shared";
+import * as MatchTypes from '@transcendence/shared';
+
 /**
- * * - findByWinner(userId)		→ Busca partidas ganadas de user
- * - findActiveMatches()
- */
-
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/database/dist/mappers/FriendshipMapper.d.ts ===
---- CONTENIDO ---
-import * as SharedTypes from '../../shared';
-/**
- * @class FriendshipMapper
- *
- * Funciones puras para convertir entre representaciones del usuario:\
+ * Interfaz que define el contrato para el repositorio de Match.\
+ * Especifica QUÉ operaciones deben implementarse, sin definir CÓMO.\
  * \
- * - **rowToUserResponse(row)** → Convierte una fila de SQLite en `UserResponse`. \
- * - **rowToUser(row)** → Convierte una fila de SQLite en `User` (incluye `passwordHash`). \
- * - **dataToInsert(data)** → Transforma un `User` del dominio en un objeto listo para `INSERT` SQL. \
- * - **dataToUpdate(data)** → Transforma un `UserUpdate` en un objeto parcial para `UPDATE` SQL.
+ * Operaciones principales:\
+ * - create(data)              → Crear nueva partida con 2 jugadores\
+ * - findById(id)              → Buscar partida por ID\
+ * - findByUser(userId)        → Buscar todas las partidas de un usuario\
+ * - findActive()              → Buscar partidas en curso\
+ * - finish(matchId, data)     → Finalizar partida con ganador y scores\
+ * - updateScore(matchId, ...) → Actualizar score durante el juego\
  * \
- * Notas: \
- * - Usa `SharedTypes` del módulo `shared` para mantener tipos consistentes entre dominio y persistencia. \
- * - Convierte fechas (`createdAt`, `updatedAt`) a `Date` al leer y a `timestamp` numérico al escribir. \
- * - Los nombres de columnas en la base de datos siguen `snake_case`.
- * - Las queries se hacen con LOWER al igual que el envío de parámentros desde repository.
+ * Un Match siempre maneja:\
+ * - 1 fila en tabla 'matches'\
+ * - 2 filas en tabla 'match_participants' (1v1)\
+ * \
+ * Las operaciones deben ser transaccionales (ambas tablas o ninguna).
  */
-export declare class FriendshipMapper {
-    static rowToFriendshipResponse(row: SharedTypes.FriendshipRow): SharedTypes.Friendship;
-    static dataToInsert(data: SharedTypes.Friendship): SharedTypes.FriendshipRow;
-    static dataToSet(data: SharedTypes.UpdateFriendshipData): SharedTypes.UpdateFriendshipRow;
-}
-//# sourceMappingURL=FriendshipMapper.d.ts.map
-=== FIN ARCHIVO ===
+export interface IMatchRepository {
 
-=== ARCHIVO: ./packages/database/dist/mappers/MatchRepository.d.ts ===
---- CONTENIDO ---
-//# sourceMappingURL=MatchRepository.d.ts.map
-=== FIN ARCHIVO ===
+	/**
+	 * Crear partida con 2 jugadores\
+	 * Inserta primero 2 rows en match_players y despues 1 row en matches\
+	 * Transaccional (todo o nada)\
+	 * @param data 2 players en formato TwoCreateMatchPlayer dentro de CreateMatchData\
+	 * @returns Match con id completo en tipo MatchResponse
+	 */
+	create(data: MatchTypes.CreateMatchData): MatchTypes.MatchResponse;
+	
+	/**
+	 * Busca partida por id\
+	 * Incluye 2 players\
+	 * @param id de la partida\
+	 * @returns Match con id completo en tipo MatchResponse 
+	 */
+	findById(matchId: MatchId): Promise<MatchTypes.MatchResponse | null>;
 
-=== ARCHIVO: ./packages/database/dist/mappers/UserMapper.d.ts ===
---- CONTENIDO ---
-import * as SharedTypes from '../../shared';
-/**
-* @class UserMapper
-*
-* Funciones puras para convertir entre representaciones del usuario:\
-* \
-* - **rowToUserResponse(row)** → Convierte una fila de SQLite en `UserResponse`. \
-* - **rowToUser(row)** → Convierte una fila de SQLite en `User` (incluye `passwordHash`). \
-* - **dataToInsert(data)** → Transforma un `User` del dominio en un objeto listo para `INSERT` SQL. \
-* - **dataToUpdate(data)** → Transforma un `UserUpdate` en un objeto parcial para `UPDATE` SQL.
-* \
-* Notas: \
-* - Usa `SharedTypes` del módulo `shared` para mantener tipos consistentes entre dominio y persistencia. \
-* - Convierte fechas (`createdAt`, `updatedAt`) a `Date` al leer y a `timestamp` numérico al escribir. \
-* - Los nombres de columnas en la base de datos siguen `snake_case`.
-*/
-export declare class UserMapper {
-    static rowToUserResponse(row: any): SharedTypes.UserResponse;
-    static rowToUser(row: any): SharedTypes.User;
-    static dataToInsert(data: SharedTypes.User): {
-        id: SharedTypes.UserId;
-        username: string;
-        email: SharedTypes.Email;
-        password_hash: string;
-        avatar: string | null;
-        is_online: number;
-        created_at: number;
-        updated_at: number;
-    };
-    static dataToSet(data: SharedTypes.UserUpdate): any;
-    /**
-    * Metodos de validacion
-    */
-    /**
-    * Limpia y valida datos para update
-    * @throws erros si hay datos invalidos
-    */
-    static validateUpdate(data: unknown): SharedTypes.UserUpdate;
-    /**
- * Valida que:
- * current y new existan
- * current !== new
- * New password tenga al menos 8 char
- */
-    static validatePasswordUpdate(data: unknown): {
-        currentPassword: string;
-        newPassword: string;
-    };
-}
-//# sourceMappingURL=UserMapper.d.ts.map
-=== FIN ARCHIVO ===
+	/**
+	 * Busca todas las partidas de un userId\
+	 * Sin distinción MatchStatus\
+	 * Ordenadas por fecha de creación (más recientes primero)
+	 */
+	findByUser(userId: UserId): Promise<MatchTypes.MatchResponse[]>;
 
-=== ARCHIVO: ./packages/database/dist/connection.d.ts ===
---- CONTENIDO ---
-import Database from 'better-sqlite3';
-export declare function getDatabase(): Database.Database;
-export declare function closeDatabase(): void;
-//# sourceMappingURL=connection.d.ts.map
-=== FIN ARCHIVO ===
+	/**
+	 * Busca todas las partidas activas\
+	 * Ordenadas por fecha de creación (más recientes primero)
+	 */
+	findActive(): Promise<MatchTypes.MatchResponse[]>;
 
-=== ARCHIVO: ./packages/database/dist/repositories/IFriendshipRepository.d.ts ===
---- CONTENIDO ---
-import { FriendshipStatus } from "../../shared/constants/friendship.constants";
-import { UserId } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
-/**
- * Interfaz que define el contrato para el repositorio de Friendship.
- * Especifica QUÉ operaciones deben implementarse, sin definir CÓMO.
- *
- * Operaciones CRUD básicas:
- * - create()     → Crear usuario
- * - update(id, data) → Actualizar usuario
- * - delete(id)       → Eliminar usuario
- *
- * Consultas específicas:
- * - findByUsers(userId)		→ Buscar por ID de ambos
- * - findPendingRequest(userId)	→ Buscar por nombre status pending para id
- * - updateStatus(id, status)	→ Actualiza amistad
- *
- * Permite implementar SQLite sin poner lógica de DB en lógica de negocio.
- */
-export interface IFriendshipRepository {
-    /**
-     * Crear nueva amistad entre dos usuarios
-    */
-    create(data: FriendshipTypes.CreateFriendshipData): Promise<FriendshipTypes.Friendship>;
-    /**
-     * Actualiza estado de amistad
-     */
-    update(data: FriendshipTypes.UpdateFriendshipData): Promise<FriendshipTypes.Friendship>;
-    /**
-     * Elimiar amistad específica entre dos users
-     */
-    delete(userId: UserId, friendId: UserId): Promise<void>;
-    /**
-     * Busca amistad específica entre dos users
-     */
-    findByUserAndFriend(userId: UserId, friendId: UserId): Promise<FriendshipTypes.Friendship | null>;
-    /**
-     * Busca amistades de un user
-     */
-    findByUser(userId: UserId): Promise<FriendshipTypes.Friendship[]>;
-    /**
-     * El 'passwordHash' se incluye para validar la 'password' del usuario.
-     */
-    findByUserAndStatus(userId: UserId, status: FriendshipStatus): Promise<FriendshipTypes.Friendship[]>;
-}
-//# sourceMappingURL=IFriendshipRepository.d.ts.map
-=== FIN ARCHIVO ===
+	/**
+	 * Busca todas las partidas terminadas de un usuario\
+	 * Ordenadas por fecha de creación (más recientes primero)
+	 */
+	findFinishedByUser(userId: UserId): Promise<MatchTypes.MatchResponse[]>;
 
-=== ARCHIVO: ./packages/database/dist/repositories/SQLiteUserRepository.d.ts ===
---- CONTENIDO ---
-/**
- * Se usará aquí el branded type UserId \
- * Pero ya se importó en 'user.types.ts' \
- * Por no ser redundante lo omitimos \
- * import { UserId } from "../../types/branded.types"; \
- */
-import Database from 'better-sqlite3';
-import { IUserRepository } from './IUserRepository';
-import { Email, UserId } from '@transcendence/shared';
-import * as UserTypes from '@transcendence/shared';
-export declare class SQLiteUserRepository implements IUserRepository {
-    private db;
-    constructor(db: Database.Database);
-    private getRowUserById;
-    create(data: UserTypes.CreateUserData): Promise<UserTypes.UserResponse>;
-    update(userId: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse>;
-    updatePassword(id: UserId, newPasswordHash: string): Promise<void>;
-    delete(id: UserId): Promise<void>;
-    findById(id: UserId): Promise<UserTypes.UserResponse | null>;
-    findByEmail(email: Email): Promise<UserTypes.User | null>;
-    findByUsername(username: string): Promise<UserTypes.UserResponse | null>;
-    isUsernameTaken(username: string): Promise<boolean>;
-    isEmailTaken(email: Email): Promise<boolean>;
-    setOnlineStatus(id: UserId, isOnline: boolean): Promise<UserTypes.UserResponse>;
-}
-//# sourceMappingURL=SQLiteUserRepository.d.ts.map
-=== FIN ARCHIVO ===
+	/**
+	 * Finaliza una partida\
+	 * Actualiza:\
+	 * 	- winner_id\
+	 * 	- finished_at\
+	 *	- score\
+	 * \
+	 * @param matchId id de la partida\
+	 * @param winnerId id del ganador\
+	 * @param scores: objeto con resultado { userId: score, userId: score }\
+	 * @returns match en formato MatchResponse
+	 * @throws Erros si el matchno existe o ya está MATCH_STATS.FINISHED
+	 */
+	finish(
+		matchId: MatchId, userId: UserId, scores: { [key: string]: number}
+	): Promise<MatchTypes.MatchResponse>
 
-=== ARCHIVO: ./packages/database/dist/repositories/SQLiteFriendshipRepository.d.ts ===
---- CONTENIDO ---
-import Database from 'better-sqlite3';
-import { IFriendshipRepository } from './IFriendshipRepository';
-import { UserId } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
-import { FriendshipStatus } from '../../shared/constants/friendship.constants';
-export declare class SQLiteFriendshipRepository implements IFriendshipRepository {
-    private db;
-    constructor(db: Database.Database);
-    private getRowFriendsByIds;
-    private sortIds;
-    private prepareData;
-    create(data: FriendshipTypes.CreateFriendshipData): Promise<FriendshipTypes.Friendship>;
-    update(data: FriendshipTypes.UpdateFriendshipData): Promise<FriendshipTypes.Friendship>;
-    delete(userId: UserId, friendId: UserId): Promise<void>;
-    findByUserAndFriend(userId: UserId, friendId: UserId): Promise<FriendshipTypes.Friendship | null>;
-    findByUser(userId: UserId): Promise<FriendshipTypes.Friendship[]>;
-    findByUserAndStatus(userId: UserId, status: FriendshipStatus): Promise<FriendshipTypes.Friendship[]>;
-}
-//# sourceMappingURL=SQLiteFriendshipRepository.d.ts.map
-=== FIN ARCHIVO ===
+	/**
+	 * Actualiza score
+	 * Bastante útil para actualizar score durante partida
+	 * Puede usarse o guardar solo en memoria
+	 */
+	updateScore(
+		matchId: MatchId, userId: UserId, score: number
+	): Promise<void>;
 
-=== ARCHIVO: ./packages/database/dist/repositories/IMatchRepository.d.ts ===
---- CONTENIDO ---
-/**
- * * - findByWinner(userId)		→ Busca partidas ganadas de user
- * - findActiveMatches()
- */
-//# sourceMappingURL=IMatchRepository.d.ts.map
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/database/dist/repositories/IUserRepository.d.ts ===
---- CONTENIDO ---
-import { Email, UserId } from "../../shared/types/branded.types";
-import * as UserTypes from "../../shared/types/user.types";
-/**
- * Interfaz que define el contrato para el repositorio de Usuarios.
- * Especifica QUÉ operaciones deben implementarse, sin definir CÓMO.
- *
- * Operaciones CRUD básicas:
- * - create(user)     → Crear usuario
- * - update(id, data) → Actualizar usuario
- * - delete(id)       → Eliminar usuario
- *
- * Consultas específicas:
- * - findById(id)           → Buscar por ID
- * - findByUsername(username) → Buscar por nombre de usuario
- * - findByEmail(email)     → Buscar por email
- * - findAll()              → Obtener todos los usuarios
- * - isUsernameTaken(username) → Verificar si username existe
- * - isEmailTaken(email)    → Verificar si email existe
- *
- * Permite implementar SQLite sin poner lógica de DB en lógica de negocio.
- */
-export interface IUserRepository {
-    /**
-     * Crear nuevo usuario \
-     * @param newUser de tipo {@link UserTypes.CreateUserData} \
-     * El Create User Data se compone a partir del {@link UserTypes.UserRegister} \
-     * Este tipo es cómo lo enviará el Front. \
-     * @returns {@link UserTypes.UserResponse} \
-     * Es cómo lo debe esperar el front en el response.
-    */
-    create(data: UserTypes.CreateUserData): Promise<UserTypes.UserResponse>;
-    /**
-     * Actualiza el User \
-     * @param id del User que se quiere actualizar \
-     * @param data los datos Partial que se quieren agregar \
-     * @returns record User sin 'passwordHash'
-     */
-    update(id: UserId, data: UserTypes.UserUpdate): Promise<UserTypes.UserResponse>;
-    /**
-     * Actualizar el password del usuario \
-     * @param id del User del que se quiere actualizar la password \
-     * @param data con currentPasswordHash y newPassword
-     */
-    updatePassword(id: UserId, newPasswordHass: string): Promise<void>;
-    /**
-     * Elimina el User \
-     * @param id del User que se quiere eliminar \
-     */
-    delete(id: UserId): Promise<void>;
-    /**
-     * Busca el usuario por 'id' y si existe los devuelve \
-     * @param id del User que se quiere encontrar \
-     * @return record User sin 'passwordHash' o 'null' \
-     */
-    findById(id: UserId): Promise<UserTypes.UserResponse | null>;
-    /**
-     * Busca el usuario por 'username' y si existe lo devuelve \
-     * @param username del User que se busca
-     * @returns record User sin 'passwordHash' o 'null' \
-     */
-    findByUsername(username: string): Promise<UserTypes.UserResponse | null>;
-    /**
-     * Busca el usuario por 'email' y si existe lo devuelve \
-     * @param email del User que se busca
-     * @returns record User completo o 'null'
-     * Esta interfaz se aplicará en autenticación.
-     * El 'passwordHash' se incluye para validar la 'password' del usuario.
-     */
-    findByEmail(email: Email): Promise<UserTypes.User | null>;
-    /**
-     * Valida que 'username' esté disponible para crear nuevo User. \
-     * Wrapper de 'findByUsername()' \
-     * No valida tipo string de 'username', solo uniqueness.
-     */
-    isUsernameTaken(username: string): Promise<boolean>;
-    /**
-     * Valida que 'email' esté disponible para crear nuevo User. \
-     * Wrapper de 'findByEmail()' \
-     * No valida tipo Email de 'email', solo uniqueness.
-     */
-    isEmailTaken(email: Email): Promise<boolean>;
-    /**
-     * Actualiza el valor de isOnline del User. \
-     * Se altera cuando el User hace login, logout, desconecta o reconecta. \
-     * @param id del User cuyo estado se quiere actualizar. \
-     */
-    setOnlineStatus(id: UserId, isOnline: boolean): Promise<UserTypes.UserResponse>;
-}
-//# sourceMappingURL=IUserRepository.d.ts.map
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/database/package.json ===
---- CONTENIDO ---
-{
-  "name": "@transcendence/database",
-  "version": "1.1.0",
-  "type": "commonjs",
-  "main": "./dist/connection.js",
-  "scripts": {
-    "build": "tsc",
-    "test:user": "tsx ./test/test-user-repository.ts",
-	"test:friendship": "tsx ./test/test-friendship-repository.ts"
-  },
-  "dependencies": {
-    "better-sqlite3": "12.4.1",
-    "uuid": "13.0.0"
-  },
-  "devDependencies": {
-    "@types/better-sqlite3": "7.6.13",
-    "@types/node": "24.7.2",
-    "tsx": "4.20.6",
-    "typescript": "5.9.3"
-  }
+	/**
+	 * Borra partida
+	 * I
+	 */
+	delete(matchId: MatchId): Promise<void>;
 }
 
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/test/test-friendship-repository.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/database/test/test-friendship-repository.ts
+────────────────────────────────────────────────
+// ============================================================================
+// TEST FRIENDSHIP REPOSITORY
 // packages/database/test/test-friendship-repository.ts
+// ============================================================================
 
-import { getDatabase, closeDatabase } from '../connection';
-import { FRIENDSHIP_STATUS, Email } from '@transcendence/shared';
-import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
-import { SQLiteFriendshipRepository } from '../repositories/SQLiteFriendshipRepository';
+import { UserId, Email, FRIENDSHIP_STATUS } from "../../shared/src";
+import * as UserTypes from "../../shared/src";
+import assert from "node:assert";
+
+import { SQLiteFriendshipRepository } from "../repositories/SQLiteFriendshipRepository";
+import { IFriendshipRepository } from "../repositories/IFriendshipRepository";
+import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
+import { IUserRepository } from "../repositories/IUserRepository";
+
+import { UserMapper } from "../mappers/UserMapper";
+import { getDatabase } from "../connection";
 
 async function testFriendshipRepository() {
-	console.log("=== TEST FRIENDSHIP REPOSITORY ===\n");
-	
-	const db = getDatabase();
-	db.exec('DELETE FROM friendships');
-	db.exec('DELETE FROM users');
-	
-	const userRepo = new SQLiteUserRepository(db);
-	const friendRepo = new SQLiteFriendshipRepository(db);
-	
-	// CREAR 3 USUARIOS
-	console.log("\n--- CREAR USERS ---");
-	const ana = await userRepo.create({
-		username: "Ana",
-		email: "aNa@test.com" as Email,
-		passwordHash: "sdieuwekwnsdf",
-		avatar: "antoher.com/image"
-	});
-	
-	const beto = await userRepo.create({
-		username: "beto",
-		email: "beto@test.com" as Email,
-		passwordHash: "jñksdlfaksdjf",
-		avatar: "myimage.com/image"
-	});
-	
-	const coco = await userRepo.create({
-		username: "coco",
-		email: "coco@test.com" as Email,
-		passwordHash: "sdklfjasfkdjfajkdfs",
-		avatar: "more.com/images"
-	});
-	
-	console.log(`ana: ${ana.id}`);
-	console.log(`beto: ${beto.id}`);
-	console.log(`coco: ${coco.id}\n`);
-	
-	// CREAR RELACIONES
-	console.log("--- CREAR FRIENDSHIPS ---");
-	
-	// A-B pending
-	const abPending = await friendRepo.create({
-		userId: ana.id,
-		friendId: beto.id,
-		status: FRIENDSHIP_STATUS.PENDING
-	});
-	console.log(`A-B: ${abPending.status}`);
+  console.log("=== TEST FRIENDSHIP REPOSITORY ===\n");
 
-	// A-C accepted
-	const acAccepted = await friendRepo.create({
-		userId: ana.id,
-		friendId: coco.id,
-		status: FRIENDSHIP_STATUS.ACCEPTED
-	});
-	console.log(`A-C: ${acAccepted.status}\n`);
-	
-	// TEST 1: Buscar todas para A
-	console.log("--- TEST 1: findByUser(ana) ---");
-	const anaFriends = await friendRepo.findByUser(ana.id);
-	console.log(`Total: ${anaFriends.length}`);
-	anaFriends.forEach(f => 
-		console.log(` - ${f.userId} ↔ ${f.friendId}: ${f.status}`)
-	);
-	
-	// TEST 2: Buscar específicas
-	console.log("\n--- TEST 2: findByUserAndFriend ---");
-	const ab = await friendRepo.findByUserAndFriend(ana.id, beto.id);
-	console.log(`A-B: ${ab ? ab.status : 'null'}`);
-	
-	const bc = await friendRepo.findByUserAndFriend(beto.id, coco.id);
-	console.log(`B-C: ${bc ? bc.status : 'null'}`);
-	
-	// TEST 3: Aceptar A-B
-	console.log("\n--- TEST 3: update A-B → accepted ---");
-	const updating = new Date();
-	await friendRepo.update({
-		userId: ana.id,
-		friendId: beto.id,
-		status: FRIENDSHIP_STATUS.ACCEPTED,
-		updatedAt: updating
-	});
-	const abUpdated = await friendRepo.findByUserAndFriend(ana.id, beto.id);
-	console.log(`A-B actualizado: ${abUpdated?.status}`);
-	
-	// TEST 4: Buscar accepted para A
-	console.log("\n--- TEST 4: findByUserAndStatus(ana, accepted) ---");
-	const anaAccepted = await friendRepo.findByUserAndStatus(
-		ana.id, 
-		FRIENDSHIP_STATUS.ACCEPTED
-	);
-	console.log(`Total accepted: ${anaAccepted.length}`);
-	anaAccepted.forEach(f => 
-		console.log(` - ${f.userId} ↔ ${f.friendId}`)
-	);
-	
-	// TEST 4.5: Borrar Ana
-/* 	console.log("\n--- TEST 4.5: delete Ana ---");
+  const db = getDatabase();
+  db.exec("DELETE FROM friendships");
+  db.exec("DELETE FROM users");
 
-	const anaByUsername = await userRepo.findByUsername("ANA");
-	if (anaByUsername) {
-		console.log(`El id de Ana es: ${anaByUsername.id}`)
-		userRepo.delete(anaByUsername.id);
-	}
-	console.log("Ana delete");
-	const anaByUsername2 = await userRepo.findByUsername("ANA");
-	if (!anaByUsername2)
-		console.log("Ana no existe"); */
+  const userRepo = new SQLiteUserRepository(db);
+  const friendRepo = new SQLiteFriendshipRepository(db);
 
-	// TEST 5: Borrar A-B
-	console.log("\n--- TEST 5: delete A-B ---");
-	// Descomentar 4.5, comentar la linea de abajo
-	// Valida que delete(Ana) elimina en cascada \
-	// los records friendship que tiene su UserId
-	await friendRepo.delete(ana.id, beto.id);
-	const abDeleted = await friendRepo.findByUserAndFriend(ana.id, beto.id);
-	console.log(`A-B después delete: ${abDeleted ? 'existe' : 'null '}`);
-	
-	// TEST 6: Crear B-C
-	console.log("\n--- TEST 6: create B-C ---");
-	const showFriendship = await friendRepo.create({
-		userId: beto.id,
-		friendId: coco.id,
-		status: FRIENDSHIP_STATUS.PENDING
-	});
-	console.log('Show friendship: ', showFriendship);
-	const bcPending = await friendRepo.findByUserAndFriend(beto.id, coco.id);
-	console.log(`B-C ${bcPending?.status}`);
-	
-	// TEST 7: Listar todas para B
-	console.log("\n--- TEST 7: findByUser(beto) ---");
-	const betoFriends = await friendRepo.findByUser(beto.id);
-	console.log(`Total: ${betoFriends.length}`);
-	betoFriends.forEach(f => 
-		console.log(` - ${f.userId} ↔ ${f.friendId}: ${f.status}`)
-	);
-	
-	// TEST 8: Bidireccionalidad
-	console.log("\n--- TEST 8: Bidireccionalidad ---");
-	// Crear con beto primero (orden invertido)
-	const cbInverted = await friendRepo.findByUserAndFriend(coco.id, beto.id);
-	console.log(`C-B (invertido): ${cbInverted ? cbInverted.status : 'null'}`);
-	// Debe encontrar B-C creado antes
-	
-	// TEST 9: Edge cases
-	console.log("\n--- TEST 9: Edge cases ---");
-	// Usuario sin amigos
-	const noFriends = await friendRepo.findByUser(coco.id);
-	console.log(`coco amigos: ${noFriends.length}`);
-	
-	// TEST 10: Cleanup
-	console.log("\n--- CLEANUP ---");
-	db.exec('DELETE FROM friendships');
-	db.exec('DELETE FROM users');
-	console.log(' DB limpiada');
-	
-	console.log("\n=== TEST COMPLETO ===");
-	closeDatabase();
+  // ============================================================================
+  // CREAR USUARIOS
+  // ============================================================================
+  console.log("\n--- CREAR USERS ---");
+
+  const ana = await userRepo.create({
+    username: "Ana",
+    email: "aNa@test.com" as Email,
+    passwordHash: "sdieuwekwnsdf",
+    avatar: "antoher.com/image",
+  });
+
+  const beto = await userRepo.create({
+    username: "beto",
+    email: "beto@test.com" as Email,
+    passwordHash: "jñksdlfaksdjf",
+    avatar: "myimage.com/image",
+  });
+
+  const coco = await userRepo.create({
+    username: "coco",
+    email: "coco@test.com" as Email,
+    passwordHash: "sdklfjasfkdjfajkdfs",
+    avatar: "more.com/images",
+  });
+
+  console.log(`ana: ${ana.id}`);
+  console.log(`beto: ${beto.id}`);
+  console.log(`coco: ${coco.id}\n`);
+
+  // ============================================================================
+  // CREAR RELACIONES
+  // ============================================================================
+  console.log("--- CREAR FRIENDSHIPS ---");
+
+  const abPending = await friendRepo.create({
+    userId: ana.id,
+    friendId: beto.id,
+    status: FRIENDSHIP_STATUS.PENDING,
+  });
+  console.log(`A-B: ${abPending.status}`);
+
+  const acAccepted = await friendRepo.create({
+    userId: ana.id,
+    friendId: coco.id,
+    status: FRIENDSHIP_STATUS.ACCEPTED,
+  });
+  console.log(`A-C: ${acAccepted.status}\n`);
+
+  // ============================================================================
+  // TEST 1: Buscar todas para Ana
+  // ============================================================================
+  console.log("--- TEST 1: findByUser(ana) ---");
+  const anaFriends = await friendRepo.findByUser(ana.id);
+  console.log(`Total: ${anaFriends.length}`);
+  anaFriends.forEach((f) =>
+    console.log(` - ${f.userId} ↔ ${f.friendId}: ${f.status}`)
+  );
+
+  // ============================================================================
+  // TEST 2: Buscar relaciones específicas
+  // ============================================================================
+  console.log("\n--- TEST 2: findByUserAndFriend ---");
+  const ab = await friendRepo.findByUserAndFriend(ana.id, beto.id);
+  console.log(`A-B: ${ab ? ab.status : "null"}`);
+
+  const bc = await friendRepo.findByUserAndFriend(beto.id, coco.id);
+  console.log(`B-C: ${bc ? bc.status : "null"}`);
+
+  // ============================================================================
+  // TEST 3: Aceptar A-B
+  // ============================================================================
+  console.log("\n--- TEST 3: update A-B → accepted ---");
+  const updating = new Date();
+  await friendRepo.update({
+    userId: ana.id,
+    friendId: beto.id,
+    status: FRIENDSHIP_STATUS.ACCEPTED,
+    updatedAt: updating,
+  });
+  const abUpdated = await friendRepo.findByUserAndFriend(ana.id, beto.id);
+  console.log(`A-B actualizado: ${abUpdated?.status}`);
+
+  // ============================================================================
+  // TEST 4: Buscar accepted para Ana
+  // ============================================================================
+  console.log("\n--- TEST 4: findByUserAndStatus(ana, accepted) ---");
+  const anaAccepted = await friendRepo.findByUserAndStatus(
+    ana.id,
+    FRIENDSHIP_STATUS.ACCEPTED
+  );
+  console.log(`Total accepted: ${anaAccepted.length}`);
+  anaAccepted.forEach((f) =>
+    console.log(` - ${f.userId} ↔ ${f.friendId}`)
+  );
+
+  // ============================================================================
+  // TEST 5: Borrar A-B
+  // ============================================================================
+  console.log("\n--- TEST 5: delete A-B ---");
+  await friendRepo.delete(ana.id, beto.id);
+  const abDeleted = await friendRepo.findByUserAndFriend(ana.id, beto.id);
+  console.log(`A-B después delete: ${abDeleted ? "existe" : "null"}`);
+
+  // ============================================================================
+  // TEST 6: Crear B-C
+  // ============================================================================
+  console.log("\n--- TEST 6: create B-C ---");
+  const showFriendship = await friendRepo.create({
+    userId: beto.id,
+    friendId: coco.id,
+    status: FRIENDSHIP_STATUS.PENDING,
+  });
+  console.log("Show friendship: ", showFriendship);
+  const bcPending = await friendRepo.findByUserAndFriend(beto.id, coco.id);
+  console.log(`B-C ${bcPending?.status}`);
+
+  // ============================================================================
+  // TEST 7: Listar todas para Beto
+  // ============================================================================
+  console.log("\n--- TEST 7: findByUser(beto) ---");
+  const betoFriends = await friendRepo.findByUser(beto.id);
+  console.log(`Total: ${betoFriends.length}`);
+  betoFriends.forEach((f) =>
+    console.log(` - ${f.userId} ↔ ${f.friendId}: ${f.status}`)
+  );
+
+  // ============================================================================
+  // TEST 8: Bidireccionalidad
+  // ============================================================================
+  console.log("\n--- TEST 8: Bidireccionalidad ---");
+  const cbInverted = await friendRepo.findByUserAndFriend(coco.id, beto.id);
+  console.log(`C-B (invertido): ${cbInverted ? cbInverted.status : "null"}`);
+
+  // ============================================================================
+  // TEST 9: Edge cases
+  // ============================================================================
+  console.log("\n--- TEST 9: Edge cases ---");
+  const noFriends = await friendRepo.findByUser(coco.id);
+  console.log(`coco amigos: ${noFriends.length}`);
+
+  // ============================================================================
+  // CLEANUP
+  // ============================================================================
+  console.log("\n--- CLEANUP ---");
+  db.exec("DELETE FROM friendships");
+  db.exec("DELETE FROM users");
+  console.log(" DB limpiada");
+
+  console.log("\n=== TEST COMPLETO ===");
+  db.close();
 }
 
 testFriendshipRepository();
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/database/test/test-user-repository.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   test-user-repository.ts                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 21:46:12 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 20:35:30 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
-import { getDatabase, closeDatabase } from '../connection';
-import { SQLiteUserRepository } from '@transcendence/shared';
-import { generateUserId, UserId, Email, UserLoggedInEvent } from '@transcendence/shared';
-import * as UserTypes from '@transcendence/shared';
-import assert from "node:assert";
-import { UserMapper } from '@transcendence/shared';
 
-const SQL = SQLiteUserRepository;
+📁 ARCHIVO: ./packages/database/test/test-user-repository.ts
+────────────────────────────────────────────────
+import { getDatabase, closeDatabase } from "../connection";
+import { UserId, Email } from "../../shared/src";
+import * as UserTypes from "../../shared/src";
+import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
 
 function userExists(user: UserTypes.User | UserTypes.UserResponse | null) {
-	!!user
-		? console.log('User recuperado: \
-			', user)
-		: console.log('No existe');
+  !!user
+    ? console.log("User recuperado:", user)
+    : console.log("No existe");
 }
 
 async function testUserRepository() {
-	console.log("Iniciando test de UserRepository\n");
-	
-	// Setup
-	const db = getDatabase();
-	const userRepo = new SQLiteUserRepository(db);
-	console.log('Conexión DB establecida');
-	
-	// TEST 1 : Crear Usuario
-	console.log('\nTest 1: Crear usuario');
+  console.log("=== TEST USER REPOSITORY ===\n");
 
-	let alice: UserTypes.User | null = null;
-	try { 	
-		const createUserData: UserTypes.CreateUserData = {
-			username: "Alice",
-			email: "alice@test.com",
-			passwordHash: `Timesamped_${Date.now()}`, // simulado ya hasheado
-			avatar: 'https://image.com/myimage.png'	
-		} as UserTypes.CreateUserData;	
-		
-		let alice = await userRepo.create(createUserData);
-		console.warn('Alice se creó');
-	} catch {
-		console.warn('Alice ya está en la base de datos y no se creó');
-	} finally {
-		if (!alice) alice = await userRepo.findByUsername('Alice');
-		console.log('Recuprada Alice de la base de datos');
-	}
-	
-	if (alice) userExists(alice);
-	else process.exit(1);
-	
-	// TEST 2 : Leer Usuario
-	console.log('\nTest 2: findByEmail');
-	console.log('Es UserType.User con \'password_hash\' porque es el campo usado para login')
+  // ============================================================================
+  // SETUP
+  // ============================================================================
+  const db = getDatabase();
+  const userRepo = new SQLiteUserRepository(db);
+  console.log("Conexión DB establecida");
 
-	console.log('\nTest 2.1: User existe - Alice');
-	const aliceByEmail = await userRepo.findByEmail('alice@test.com' as Email);
-	!!aliceByEmail
-		? console.log(`User recuperad: `, aliceByEmail)
-		: console.log('No existe');
+  // ============================================================================
+  // TEST 1: Crear usuario
+  // ============================================================================
+  console.log("\n--- TEST 1: Crear usuario ---");
 
-	console.log('\nTest 2.2: User NO existe - undefined | null');
-	const noExsistByEmail = await userRepo.findByEmail('no-alice@test.com' as Email) as UserTypes.User;
-	console.log(!!noExsistByEmail ? 'User recuperado con email: ' + noExsistByEmail : 'No existe');
+  let alice: UserTypes.User | null = null;
+  try {
+    const createUserData: UserTypes.CreateUserData = {
+      username: "Alice",
+      email: "alice@test.com" as Email,
+      passwordHash: `Timesamped_${Date.now()}`,
+      avatar: "https://image.com/myimage.png",
+    };
+    alice = await userRepo.create(createUserData);
+    console.log("Alice creada correctamente");
+  } catch {
+    console.warn("Alice ya estaba en la base de datos");
+  } finally {
+    if (!alice) alice = await userRepo.findByUsername("Alice");
+    console.log("Recuperada Alice de la base de datos");
+  }
 
-	console.log('Fin test findByEmail\n');
+  if (alice) userExists(alice);
+  else process.exit(1);
 
-	// TEST 3 : Leer usuario
-	console.log('\nTest 3: findById')
-	
-	console.log('\nTest 3.1: User existe - Alice');
-	const aliceById = await userRepo.findById(alice.id);
-	userExists(aliceById);
+  // ============================================================================
+  // TEST 2: findByEmail
+  // ============================================================================
+  console.log("\n--- TEST 2: findByEmail ---");
 
-	console.log('\nTest 3.2: User NO existe - undefined | null');
-	const noExsistById = await userRepo.findById("sdfjerjfljflaskldf" as UserId);
-	userExists(aliceById);
+  console.log("2.1: User existe - Alice");
+  const aliceByEmail = await userRepo.findByEmail("alice@test.com" as Email);
+  userExists(aliceByEmail);
 
-	console.log('Fin test findById\n');
+  console.log("\n2.2: User NO existe");
+  const notExistByEmail = await userRepo.findByEmail(
+    "no-alice@test.com" as Email
+  );
+  userExists(notExistByEmail);
 
-	// TEST 4 : Leer Usuario
-	console.log('\nTest 4: findByUsername');
-	console.log('Es UserType.User con \'password_hash\' porque es el campo usado para login')
+  // ============================================================================
+  // TEST 3: findById
+  // ============================================================================
+  console.log("\n--- TEST 3: findById ---");
 
-	console.log('\nTest 4.1: User existe - Alice');
-	const aliceByUsername = await userRepo.findByUsername(alice.username);
-	userExists(aliceByUsername);
+  console.log("3.1: User existe - Alice");
+  const aliceById = await userRepo.findById(alice.id);
+  userExists(aliceById);
 
-	console.log('\nTest 4.2: User NO existe - undefined | null');
-	const noExsistByUsername = await userRepo.findByUsername('Pepe');
-	userExists(noExsistByUsername);
-	
-	console.log('Fin test findByUsername\n');
+  console.log("\n3.2: User NO existe");
+  const notExistById = await userRepo.findById(
+    "nonexistent-id-123" as UserId
+  );
+  userExists(notExistById);
 
-	// TEST 5 : UPDATE PASSWORD & AND TOGGLE ONLINE STATUS
-	console.log('\nTest 5: updatePassword & setOnlineStatus');
+  // ============================================================================
+  // TEST 4: findByUsername
+  // ============================================================================
+  console.log("\n--- TEST 4: findByUsername ---");
 
-	if (!aliceByEmail) process.exit(1);
-	console.log('Password inicial: ', aliceByEmail.passwordHash);
-	console.log('Online status inicial: ', aliceByEmail.isOnline);
-	userRepo.updatePassword(aliceByEmail.id, `Timesamped_${Date.now()}`);
-	console.log('Password cambiado');
-	userRepo.setOnlineStatus(aliceByEmail.id, aliceByEmail.isOnline ? false : true);
-	console.log('Status cambiado');
-	const updateAlice = await userRepo.findByEmail('alice@test.com' as Email);
-	console.log('Password actualizado: ', updateAlice?.passwordHash);
-	console.log('Online status cambiado: ', updateAlice?.isOnline);
+  console.log("4.1: User existe - Alice");
+  const aliceByUsername = await userRepo.findByUsername(alice.username);
+  userExists(aliceByUsername);
 
-	// TEST 6 : VALIDATIONS
-	console.log('\nTest 6: Validations');
+  console.log("\n4.2: User NO existe");
+  const notExistByUsername = await userRepo.findByUsername("Pepe");
+  userExists(notExistByUsername);
 
-	console.log(`isEmailTaken('alice@test.com): ${await userRepo.isEmailTaken('alice@test.com' as Email)}`);
-	console.log(`isEmailTaken('pepe@test.com): ${await userRepo.isEmailTaken('pepe@test.com' as Email)}`);
-	
-	console.log(`isEmailTaken('alICE@test.com): ${await userRepo.isEmailTaken('alICE@test.com' as Email)}`);
-	console.log(`isEmailTaken('pEpe@test.COM): ${await userRepo.isEmailTaken('pEpe@test.COM' as Email)}`);
-	
-	console.log(`isEmailUsername('Alice'): ${await userRepo.isUsernameTaken('Alice')}`);
-	console.log(`isEmailUsername('Pepe'): ${await userRepo.isUsernameTaken('Pepe')}`);
+  // ============================================================================
+  // TEST 5: updatePassword & setOnlineStatus
+  // ============================================================================
+  console.log("\n--- TEST 5: updatePassword & setOnlineStatus ---");
 
-	console.log(`isEmailUsername('ALICE'): ${await userRepo.isUsernameTaken('AliCE')}`);
-	console.log(`isEmailUsername('pePE'): ${await userRepo.isUsernameTaken('pePE')}`);
-	
-	// TEST 7 : DELETE
-		console.log('\nTest 7: Crear usuario para delete');
+  if (!aliceByEmail) process.exit(1);
+  console.log("Password inicial:", aliceByEmail.passwordHash);
+  console.log("Online inicial:", aliceByEmail.isOnline);
 
-	let pepe: UserTypes.User | null = null;
-	try { 	
-		const createUserData: UserTypes.CreateUserData = {
-			username: "Pepe",
-			email: "pepe@test.com",
-			passwordHash: `Timesamped_${Date.now()}`, // simulado ya hasheado
-			avatar: 'https://image.com/myimage.png'	
-		} as UserTypes.CreateUserData;	
-		
-		let pepe = await userRepo.create(createUserData);
-		console.warn('Pepe se creó');
-	} catch {
-		console.warn('Pepe ya está en la base de datos y no se creó');
-	} finally {
-		if (!pepe) pepe = await userRepo.findByUsername('Pepe');
-		console.log('Recuprado Pepe de la base de datos');
-	}
-	
-	if (pepe) userExists(pepe);
-	else process.exit(1);
+  await userRepo.updatePassword(aliceByEmail.id, `Timesamped_${Date.now()}`);
+  console.log("Password actualizado");
 
-	await userRepo.delete(pepe.id);
-	console.log('Pepe borrado');
-	const updatePepe = await userRepo.findByUsername('pepe');
-	userExists(updatePepe);
+  await userRepo.setOnlineStatus(
+    aliceByEmail.id,
+    !aliceByEmail.isOnline
+  );
+  console.log("Status online cambiado");
+
+  const updatedAlice = await userRepo.findByEmail("alice@test.com" as Email);
+  console.log("Password nuevo:", updatedAlice?.passwordHash);
+  console.log("Online nuevo:", updatedAlice?.isOnline);
+
+  // ============================================================================
+  // TEST 6: Validations
+  // ============================================================================
+  console.log("\n--- TEST 6: Validations ---");
+
+  console.log(
+    `isEmailTaken('alice@test.com'): ${await userRepo.isEmailTaken(
+      "alice@test.com" as Email
+    )}`
+  );
+  console.log(
+    `isEmailTaken('pepe@test.com'): ${await userRepo.isEmailTaken(
+      "pepe@test.com" as Email
+    )}`
+  );
+
+  console.log(
+    `isEmailTaken('alICE@test.com'): ${await userRepo.isEmailTaken(
+      "alICE@test.com" as Email
+    )}`
+  );
+  console.log(
+    `isEmailTaken('pEpe@test.COM'): ${await userRepo.isEmailTaken(
+      "pEpe@test.COM" as Email
+    )}`
+  );
+
+  console.log(
+    `isUsernameTaken('Alice'): ${await userRepo.isUsernameTaken("Alice")}`
+  );
+  console.log(
+    `isUsernameTaken('Pepe'): ${await userRepo.isUsernameTaken("Pepe")}`
+  );
+
+  console.log(
+    `isUsernameTaken('ALICE'): ${await userRepo.isUsernameTaken("AliCE")}`
+  );
+  console.log(
+    `isUsernameTaken('pePE'): ${await userRepo.isUsernameTaken("pePE")}`
+  );
+
+  // ============================================================================
+  // TEST 7: delete
+  // ============================================================================
+  console.log("\n--- TEST 7: delete ---");
+
+  let pepe: UserTypes.User | null = null;
+  try {
+    const createUserData: UserTypes.CreateUserData = {
+      username: "Pepe",
+      email: "pepe@test.com" as Email,
+      passwordHash: `Timesamped_${Date.now()}`,
+      avatar: "https://image.com/myimage.png",
+    };
+    pepe = await userRepo.create(createUserData);
+    console.log("Pepe creado correctamente");
+  } catch {
+    console.warn("Pepe ya estaba en la base de datos");
+  } finally {
+    if (!pepe) pepe = await userRepo.findByUsername("Pepe");
+    console.log("Recuperado Pepe de la base de datos");
+  }
+
+  if (pepe) userExists(pepe);
+  else process.exit(1);
+
+  await userRepo.delete(pepe.id);
+  console.log("Pepe borrado");
+
+  const deletedPepe = await userRepo.findByUsername("pepe");
+  userExists(deletedPepe);
+
+  // ============================================================================
+  // CLEANUP
+  // ============================================================================
+  console.log("\n--- CLEANUP ---");
+  db.exec("DELETE FROM users");
+  console.log("DB limpiada");
+
+  console.log("\n=== TEST COMPLETO ===");
+  db.close();
 }
 
 testUserRepository();
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/constants/game.constants.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   game.constants.ts                                  :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 01:39:46 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
+
+📁 ARCHIVO: ./packages/shared/src/constants/match.constants.ts
+────────────────────────────────────────────────
+// ============================================================================
+// PLAYER SLOTS
+// ============================================================================
+
+/**
+ * Slots para partidas\
+ * Cada partida tiene dos slots
+ */
+export const PLAYER_SLOT = {
+	PLAYER1: "player1",
+	PLAYER2: "player2"
+} as const;
+
+/**
+ * Tipo de tupla literal derivado de slots
+ */
+export type PlayerSlot = typeof PLAYER_SLOT[keyof typeof PLAYER_SLOT];
+
+// ============================================================================
+// PLAYER POSITIONS
+// ============================================================================
+
+/**
+ * Ubicacion en el campo
+ */
+export const PLAYER_POSITION = {
+	LEFT: "left",
+	RIGHT: "right"
+} as const;
+
+/**
+ * Tipo tupla literal derivado de position
+ */
+export type PlayerPosition = typeof PLAYER_POSITION[keyof typeof PLAYER_POSITION];
+
+// ============================================================================
+// CONFIGURACION DE MATCH
+// ============================================================================
+
+/**
+ * Constantes Match de una partida
+ */
+export const MATCH_CONFIG = {
+	
+	/**
+	 * Puntaje para ganar una partida
+	 */
+	WINNING_SCORE: 5,
+	
+	/**
+	 * Numero de players por Match
+	*/
+	PLAYERS_PER_MATCH: 2,
+
+	/**
+	 * Límite de tiempo para una partida\
+	 */
+	MAX_DURATION_SECONDS: 150, 
+	// TODO, como manejar un empate en DB?
+	// O se acelera la pelota para que sea imposible que no haya un ganador?
+
+	/**
+	 * Puntaje mínimo para una victoria\
+	 * Evitar victoria por abandono en un 0-0
+	 */
+	MIN_VALID_SCORE: 1
+} as const;
+
+// ============================================================================
+// MATCH STATUS
+// ============================================================================
+// Se relacionan con finishedAt
+
+/**
+ * Estados posibles de una partida
+ */
+export const MATCH_STATUS = {
+	
+	/**
+	 * Partida creada pero noiniciada\
+	 * Puede no usarse si la partida empieza de inmediato al crearse el match
+	 */
+	PENDING: "pending",
+
+	/**
+	 * Partida activa
+	 */
+	ACTIVE: "active",
+
+	/**
+	 * Partida terminada
+	 */
+	FINISHED: "finished"
+}as const;
+
+export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];
+
+// ============================================================================
+// VALIDATION RULES
+// ============================================================================
+
+/**
+ * Validación de partidas
+ */
+export const MATCH_VALIDATION = {
+
+	/**
+	 * Score minimo
+	 */
+	MIN_SOCRE: 0,
+
+	/**
+	 * Score máximo
+	 */
+	MAX_SCORE: 99,
+} as const;
+
+
+📁 ARCHIVO: ./packages/shared/src/constants/game.constants.ts
+────────────────────────────────────────────────
+// ============================================================================
+// GAME CONSTANTS
+// ============================================================================
+
+/**
+ * Configuración base del juego Pong
+ */
 export const GAME_CONSTANTS = {
+
+  /**
+   * Dimensiones del campo de juego
+   */
   COURT_WIDTH: 800,
   COURT_HEIGHT: 600,
+
+  /**
+   * Dimensiones de las paletas de los jugadores
+   */
   PADDLE_WIDTH: 10,
   PADDLE_HEIGHT: 100,
+
+  /**
+   * Tamaño y velocidad inicial de la pelota
+   */
   BALL_SIZE: 10,
   BALL_SPEED: 5,
+
+  /**
+   * Fotogramas por segundo del bucle principal del juego
+   */
   FPS: 60,
+
+  /**
+   * Duración de la cuenta regresiva antes de iniciar una partida
+   */
   COUNTDOWN_SECONDS: 3
+
 } as const;
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/constants/game.constants.d.ts ===
---- CONTENIDO ---
-export declare const GAME_CONSTANTS: {
-    readonly COURT_WIDTH: 800;
-    readonly COURT_HEIGHT: 600;
-    readonly PADDLE_WIDTH: 10;
-    readonly PADDLE_HEIGHT: 100;
-    readonly BALL_SIZE: 10;
-    readonly BALL_SPEED: 5;
-    readonly FPS: 60;
-    readonly COUNTDOWN_SECONDS: 3;
-};
-//# sourceMappingURL=game.constants.d.ts.map
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/constants/friendship.constants.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   friendship.constants.ts                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/21 16:29:43 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 02:29:33 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
+📁 ARCHIVO: ./packages/shared/src/constants/user.constants.ts
+────────────────────────────────────────────────
+// ============================================================================
+// PLAYER SLOTS
+// ============================================================================
+
+/**
+ * Slots para partidas\
+ * Cada partida tiene dos slots
+ */
+export const PLAYUSER_VALIDATION = {
+	MIN_USERNAME_LENGTH: 3,
+	MAX_USERNAME_LENGTH: 20,
+	MIN_PASSWORD_LENGTH: 8,
+	MAX_PASSWORD_LENGTH: 128,
+	EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+} as const;
+
+
+📁 ARCHIVO: ./packages/shared/src/constants/friendship.constants.ts
+────────────────────────────────────────────────
+// ============================================================================
+// FRIENDSHIP STATUS
+// ============================================================================
+
+/**
+ * Estados posibles de una relación de amistad
+ */
 export const FRIENDSHIP_STATUS = {
-	PENDING: 'pending',
-	ACCEPTED: 'accepted'
+
+	/**
+	 * Solicitud enviada, pendiente de aceptación
+	 */
+	PENDING: "pending",
+
+	/**
+	 * Solicitud aceptada, amistad activa
+	 */
+	ACCEPTED: "accepted"
+
 } as const;
 
-export type FriendshipStatus = typeof FRIENDSHIP_STATUS[keyof typeof FRIENDSHIP_STATUS];
-=== FIN ARCHIVO ===
+/**
+ * Tipo literal derivado de FRIENDSHIP_STATUS
+ */
+export type FriendshipStatus =
+	typeof FRIENDSHIP_STATUS[keyof typeof FRIENDSHIP_STATUS];
 
-=== ARCHIVO: ./packages/shared/constants/friendship.constants.d.ts ===
---- CONTENIDO ---
-export declare const FRIENDSHIP_STATUS: {
-    readonly PENDING: "pending";
-    readonly ACCEPTED: "accepted";
-};
-export type FriendshipStatus = typeof FRIENDSHIP_STATUS[keyof typeof FRIENDSHIP_STATUS];
-//# sourceMappingURL=friendship.constants.d.ts.map
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/events/base/BaseEvent.d.ts ===
---- CONTENIDO ---
-import { EventId } from "../../types/branded.types";
-export declare abstract class BaseEvent {
-    readonly id: EventId;
-    readonly eventType: string;
-    readonly timestamp: number;
-    readonly version: number;
-    readonly source: string;
-    constructor(eventType: string, source: string);
-    abstract toJSON(): object;
-    toString(): string;
-}
-//# sourceMappingURL=BaseEvent.d.ts.map
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/shared/events/base/BaseEvent.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/shared/src/events/base/BaseEvent.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -1901,7 +1731,7 @@ export declare abstract class BaseEvent {
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 19:27:04 by m                ###   ########.fr       */
+/*   Updated: 2025/10/23 12:22:35 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -1929,69 +1759,10 @@ export abstract class BaseEvent {
     return `[${this.source}] ${this.eventType} (${this.id})`;
   }
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/events/user/UserEvents.d.ts ===
---- CONTENIDO ---
-import { BaseEvent } from '../base/BaseEvent';
-import { UserId } from '../../types/branded.types';
-import { UserResponse } from '../../types/user.types';
-/**
- * Evento: Usuario registrado exitosamente
- */
-export declare class UserRegisteredEvent extends BaseEvent {
-    readonly user: UserResponse;
-    constructor(user: UserResponse);
-    toJSON(): object;
-}
-/**
- * Evento: Usuario inició sesión
- */
-export declare class UserLoggedInEvent extends BaseEvent {
-    readonly userId: UserId;
-    readonly alias: string;
-    constructor(userId: UserId, alias: string);
-    toJSON(): object;
-}
-/**
- * Evento: Usuario cerró sesión
- */
-export declare class UserLoggedOutEvent extends BaseEvent {
-    readonly userId: UserId;
-    constructor(userId: UserId);
-    toJSON(): object;
-}
-/**
- * Evento: Perfil de usuario actualizado
- */
-export declare class UserProfileUpdatedEvent extends BaseEvent {
-    readonly userId: UserId;
-    readonly updatedFields: string[];
-    constructor(userId: UserId, updatedFields: string[]);
-    toJSON(): object;
-}
-/**
- * Evento: Usuario cambió estado online/offline
- */
-export declare class UserStatusChangedEvent extends BaseEvent {
-    readonly userId: UserId;
-    readonly isOnline: boolean;
-    constructor(userId: UserId, isOnline: boolean);
-    toJSON(): object;
-}
-/**
- * Evento: Usuario eliminado
- */
-export declare class UserDeletedEvent extends BaseEvent {
-    readonly userId: UserId;
-    constructor(userId: UserId);
-    toJSON(): object;
-}
-//# sourceMappingURL=UserEvents.d.ts.map
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/events/user/UserEvents.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/shared/src/events/user/UserEvents.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -2000,7 +1771,7 @@ export declare class UserDeletedEvent extends BaseEvent {
 /*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/20 01:35:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 01:35:50 by m                ###   ########.fr       */
+/*   Updated: 2025/10/23 12:04:40 by m                ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -2127,10 +1898,10 @@ export class UserDeletedEvent extends BaseEvent {
     };
   }
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/events/friendship/FriendshipEvents.ts ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./packages/shared/src/events/friendship/FriendshipEvents.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -2144,10 +1915,10 @@ export class UserDeletedEvent extends BaseEvent {
 /* ************************************************************************** */
 
 // waiting
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/events/game/GameEvents.ts ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./packages/shared/src/events/game/GameEvents.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -2184,10 +1955,10 @@ export abstract class BaseEvent {
     return `[${this.source}] ${this.eventType} (${this.id})`;
   }
 } */
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/events/matchmaking/MatchmakingEvents.ts ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./packages/shared/src/events/matchmaking/MatchmakingEvents.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -2202,65 +1973,10 @@ export abstract class BaseEvent {
 
 // import { BaseEvent, MatchFoundEvent } from '../..';
 
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/types/friendship.types.d.ts ===
---- CONTENIDO ---
-import { UserId } from './branded.types';
-import type { FriendshipStatus } from '../constants/friendship.constants';
-/**
- * Entidad completa para BD
- */
-export interface Friendship {
-    userId: UserId;
-    friendId: UserId;
-    status: FriendshipStatus;
-    createdAt: Date;
-    updatedAt: Date;
-}
-/**
- * DTO IN - Crear amistad
- */
-export interface CreateFriendshipData {
-    userId: UserId;
-    friendId: UserId;
-    status: FriendshipStatus;
-}
-/**
- * DTO IN - Actualizar amistad (solo status y updatedAt)
- */
-export interface UpdateFriendshipData {
-    userId: UserId;
-    friendId: UserId;
-    status: FriendshipStatus;
-    updatedAt: Date;
-}
-/**
- * Estructura exacta de una row de SQLite (tabla friendship)
- * Con snake_case como está en la DB
- */
-export interface FriendshipRow {
-    user_id: string;
-    friend_id: string;
-    status: string;
-    created_at: number;
-    updated_at: number;
-}
-/**
- * Estructura limitada de SQLite para update de status (tabla friendship)
- * Con snake_case como está en la DB
- */
-export interface UpdateFriendshipRow {
-    user_id: string;
-    friend_id: string;
-    status: string;
-    updated_at: number;
-}
-//# sourceMappingURL=friendship.types.d.ts.map
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/types/game.types.ts ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/shared/src/types/game.types.ts
+────────────────────────────────────────────────
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
@@ -2335,421 +2051,330 @@ export interface GameState {
   score: GameScore;
   winner: PlayerSlot | null;
 } */
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/types/user.types.d.ts ===
---- CONTENIDO ---
-import { UserId, Email } from './branded.types';
+
+📁 ARCHIVO: ./packages/shared/src/types/match.types.ts
+────────────────────────────────────────────────
+import { MatchId, UserId } from "./branded.types";
+import { PlayerSlot, PlayerPosition } from "../constants/match.constants";
+
+// ============================================================================
+// ENTIDADES DE DOMINIO
+// ============================================================================
+
 /**
-* DTO IN - Registro desde frontend
+* Participante en una partida
+* Representa a un jugador y su info dentro de un Match
 */
-export interface UserRegister {
-    username: string;
-    email: Email;
-    avatar?: string;
-    password: string;
-}
-/**
-* DATA - Para crear en DB (con password hasheado)
-*/
-export interface CreateUserData {
-    username: string;
-    email: Email;
-    avatar?: string;
-    passwordHash: string;
-}
-/**
-* Entidad completa en DB
-*/
-export interface User {
-    id: UserId;
-    username: string;
-    email: Email;
-    avatar?: string;
-    passwordHash: string;
-    isOnline: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-}
-/**
-* DTO OUT - Sin passwordHash
-*/
-export type UserResponse = Omit<User, 'passwordHash'>;
-/**
-* DTO IN - Actualizar usuario
-*/
-export interface UserUpdate {
-    email?: Email;
-    username?: string;
-    avatar?: string;
-}
-/**
-* DTO IN - Login
-*/
-export interface UserLogin {
-    email: Email;
-    password: string;
-}
-/**
- * DTO IN - Update password
- */
-export interface UserPasswordUpdate {
-    currentPasswordHash: string;
-    newPasswordHash: string;
-}
-//# sourceMappingURL=user.types.d.ts.map
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/shared/types/branded.types.d.ts ===
---- CONTENIDO ---
-/**
- * Tipos branded para IDs únicos.
- */
-export type EventId = string & {
-    readonly __brand: 'EventId';
-};
-export type UserId = string & {
-    readonly __brand: 'UserId';
-};
-export type MatchId = string & {
-    readonly __brand: 'MatchId';
-};
-export type GameId = string & {
-    readonly __brand: 'GameId';
-};
-export type TournamentId = string & {
-    readonly __brand: 'TournamentId';
-};
-export type Email = string & {
-    readonly __brand: 'Email';
-};
-//# sourceMappingURL=branded.types.d.ts.map
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/shared/types/matchmaking.types.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   matchmaking.types.ts                               :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 21:09:38 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-/* import { UserId, MatchId } from "./branded.types";
-import { GameTitle, CourtType, Position, PlayerSlot } from "./game.types";
-
-export interface MatchFoundEvent {
-  eventType: "match.found";
-  matchId: MatchId;
-  gameTitle: GameTitle;
-  courtType: CourtType;
-  timestamp: number;
-  expiresAt: number;
-  opponent: {
-    id: UserId;
-    alias: string;
-    avatar?: string;
-  };
-  availablePositions: Position[];
-}
-
-export interface MatchConfirmedEvent {
-  eventType: "match.confirmed";
-  matchId: MatchId;
-  gameTitle: GameTitle;
-  courtType: CourtType;
-  timestamp: number;
-  players: Record<PlayerSlot, { userId: UserId; position: Position }>;
-} */
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/shared/types/branded.types.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   branded.types.ts                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 01:50:20 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
- /**
-  * Tipos branded para IDs únicos.
-  */
-export type EventId = string & { readonly __brand: 'EventId' };
-export type UserId = string & { readonly __brand: 'UserId' };
-export type MatchId = string & { readonly __brand: 'MatchId' };
-export type GameId = string & { readonly __brand: 'GameId' };
-export type TournamentId = string & { readonly __brand: 'TournamentId' };
-export type Email = string & { readonly __brand: 'Email' };
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/shared/types/user.types.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   user.types.ts                                      :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 18:06:57 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-import { UserId, Email } from './branded.types';
-
-/**
-* DTO IN - Registro desde frontend
-*/
-export interface UserRegister {
-	username: string;
-	email: Email;
-	avatar?: string;
-	password: string; // Texto plano
+export interface MatchPlayerData {
+	matchId: MatchId;
+	userId: UserId;
+	playerSlot: PlayerSlot;
+	playerPosition: PlayerPosition;
+	score: number;
 }
 
 /**
-* DATA - Para crear en DB (con password hasheado)
+* Tipo de array de exactamente dos MatchPlayer
 */
-export interface CreateUserData {
-	username: string;
-	email: Email;
-	avatar?: string;
-	passwordHash: string; // Hasheado
-}
+export type TwoMatchPlayersData = [MatchPlayerData, MatchPlayerData];
 
 /**
-* Entidad completa en DB
+* Partida completa (Aggregate Root)
+* Siempre tiene exactamente 2 jugadores (1v1)
 */
-export interface User {
-	id: UserId;
-	username: string;
-	email: Email;
-	avatar?: string;
-	passwordHash: string; // Hasheado
-	isOnline: boolean;
+export interface Match {
+	natchId: MatchId;
+	status: Date | null;
+	players: TwoMatchPlayersData;
+	winnerId: UserId | null;
 	createdAt: Date;
-	updatedAt: Date;
+}
+
+// ============================================================================
+// DTOs - INPUT (Crear)
+// ============================================================================
+
+/**
+* Datos para crear Match
+* Enviados por el backend para iniciar partida
+*/
+export interface CreateMatchData {
+	players: TwoMatchPlayersData;
+}
+
+// ============================================================================
+// DTOs - OUTPUT (Respuestas)
+// ============================================================================
+
+/**
+* Respuesta de Match para el frontend
+* Incluye toda la información de la partida
+* Enviada por el repository al backend con la partida creada
+*/
+export interface Match {
+	matchId: MatchId;
+	winnerId: UserId | null;
+	players: TwoMatchPlayersData;
+	status: ;
+	createdAt: Date;
+}
+
+// ============================================================================
+// REPRESENTACIÓN SQL (Snake_case)
+// ============================================================================
+
+/**
+* Row exacta de tabla 'matches'
+* Expresa keys snake_case con los tipos de la tabla
+*/
+export interface MatchRow {
+	id: string;
+	status: string;
+	winner_id: string | null;
+	created_at: number;
 }
 
 /**
-* DTO OUT - Sin passwordHash
+* Row exacta de tabla 'match_participants'
+* Expresa keys snake_case con los tipos de la tabla
 */
-export type UserResponse = Omit<User, 'passwordHash'>;
+export interface MatchPlayerRow {
+	user_id: string;
+	match_id: string;
+	player_slot: string;
+	player_position: string;
+	score: number;
+}
+
+
+📁 ARCHIVO: ./packages/shared/src/types/branded.types.ts
+────────────────────────────────────────────────
+/**
+ * Tipos branded para IDs únicos
+ * Distingue entidades con mismo tipo base (string)
+ */
+export type EventId = string & { readonly __brand: "EventId" };
+export type UserId = string & { readonly __brand: "UserId" };
+export type MatchId = string & { readonly __brand: "MatchId" };
+export type GameId = string & { readonly __brand: "GameId" };
+export type TournamentId = string & { readonly __brand: "TournamentId" };
 
 /**
-* DTO IN - Actualizar usuario
-*/
-export interface UserUpdate {
-	email?: Email;
-	username?: string;
-	avatar?: string;	
-};
+ * Tipo branded para emails
+ * Para no confundir un string común con un email válido
+ */
+export type Email = string & { readonly __brand: "Email" };
+
+
+
+📁 ARCHIVO: ./packages/shared/src/types/user.types.ts
+────────────────────────────────────────────────
+import { UserId, Email } from "./branded.types";
+
+// ============================================================================
+// DTOs - INPUT (Crear / Login / Update)
+// ============================================================================
 
 /**
-* DTO IN - Login
-*/
+ * DTO IN - Registro desde frontend
+ * Datos enviados por el usuario al registrarse
+ */
+export interface UserRegister {
+  username: string;
+  email: Email;
+  avatar?: string;
+  password: string; // Texto plano
+}
+
+/**
+ * Datos para crear usuario en DB
+ * Password ya hasheado
+ */
+export interface CreateUserData {
+  username: string;
+  email: Email;
+  avatar?: string;
+  passwordHash: string; // Hasheado
+}
+
+/**
+ * DTO IN - Login
+ * Credenciales del usuario
+ */
 export interface UserLogin {
-	email: Email;
-	password: string;
+  email: Email;
+  password: string;
 }
+
 /**
  * DTO IN - Update password
+ * Passwords ya hasheadas
  */
 export interface UserPasswordUpdate {
-	currentPasswordHash: string;
-	newPasswordHash: string;
+  currentPasswordHash: string;
+  newPasswordHash: string;
 }
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/shared/types/friendship.types.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   friendship.types.ts                                :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/21 16:06:08 by m                 #+#    #+#             */
-/*   Updated: 2025/10/22 00:17:27 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-import { UserId } from './branded.types';
-import type { FriendshipStatus } from '../constants/friendship.constants';
 
 /**
- * Entidad completa para BD
+ * DTO IN - Actualizar usuario
+ * Datos editables
+ */
+export interface UserUpdate {
+  email?: Email;
+  username?: string;
+  avatar?: string;
+}
+
+// ============================================================================
+// ENTIDAD DE DOMINIO
+// ============================================================================
+
+/**
+ * Usuario completo en DB
+ * Representa la entidad persistida
+ */
+export interface User {
+  id: UserId;
+  username: string;
+  email: Email;
+  avatar?: string;
+  passwordHash: string; // Hasheado
+  isOnline: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// ============================================================================
+// DTOs - OUTPUT
+// ============================================================================
+
+/**
+ * DTO OUT - Usuario sin passwordHash
+ * Enviado al frontend
+ */
+export type UserResponse = Omit<User, "passwordHash">;
+
+
+
+📁 ARCHIVO: ./packages/shared/src/types/friendship.types.ts
+────────────────────────────────────────────────
+import { UserId } from "./branded.types";
+import type { FriendshipStatus } from "../constants/friendship.constants";
+
+// ============================================================================
+// ENTIDAD DE DOMINIO
+// ============================================================================
+
+/**
+ * Amistad entre dos usuarios
+ * Representa la relación y su estado actual
  */
 export interface Friendship {
-	userId: UserId;
-	friendId: UserId;
-	status: FriendshipStatus;
-	createdAt: Date;
-	updatedAt: Date;
+  userId: UserId;
+  friendId: UserId;
+  status: FriendshipStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
+
+// ============================================================================
+// DTOs - INPUT (Crear / Actualizar)
+// ============================================================================
 
 /**
  * DTO IN - Crear amistad
+ * Enviada por el backend al crear relación
  */
 export interface CreateFriendshipData {
-	userId: UserId;
-	friendId: UserId;
-	status: FriendshipStatus; // default 'pending'
-	
+  userId: UserId;
+  friendId: UserId;
+  status: FriendshipStatus; // default 'pending'
 }
 
 /**
- * DTO IN - Actualizar amistad (solo status y updatedAt)
+ * DTO IN - Actualizar amistad
+ * Solo puede cambiar status y updatedAt
  */
 export interface UpdateFriendshipData {
-	userId: UserId;
-	friendId: UserId;
-	status: FriendshipStatus;
-	updatedAt: Date;
+  userId: UserId;
+  friendId: UserId;
+  status: FriendshipStatus;
+  updatedAt: Date;
 }
 
+// ============================================================================
+// REPRESENTACIÓN SQL (Snake_case)
+// ============================================================================
+
 /**
- * Estructura exacta de una row de SQLite (tabla friendship)
- * Con snake_case como está en la DB
+ * Row exacta de tabla 'friendships'
+ * Expresa keys snake_case con los tipos de la tabla
  */
 export interface FriendshipRow {
-	user_id: string;
-	friend_id: string;
-	status: string;
-	created_at: number;
-	updated_at: number;
+  user_id: string;      // UserId (UUID)
+  friend_id: string;    // UserId (UUID)
+  status: string;       // FriendshipStatus
+  created_at: number;   // Unix timestamp
+  updated_at: number;   // Unix timestamp
 }
 
 /**
- * Estructura limitada de SQLite para update de status (tabla friendship)
- * Con snake_case como está en la DB
+ * Row limitada para update parcial
+ * Solo status y updated_at
  */
 export interface UpdateFriendshipRow {
-	user_id: string;
-	friend_id: string;
-	status: string;
-	updated_at: number;
+  user_id: string;      // UserId (UUID)
+  friend_id: string;    // UserId (UUID)
+  status: string;       // FriendshipStatus
+  updated_at: number;   // Unix timestamp
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/index.d.ts ===
---- CONTENIDO ---
-export * from './types/branded.types';
-export * from './types/user.types';
-export * from './types/friendship.types';
-export * from './events/base/BaseEvent';
-export * from './events/user/UserEvents';
-export * from './constants/game.constants';
-export * from './constants/friendship.constants';
-export * from './utils/uuidGenerator';
-//# sourceMappingURL=index.d.ts.map
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/tsconfig.json ===
---- CONTENIDO ---
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "declaration": true,
-    "declarationMap": true,
-    "composite": true,
-    "outDir": "./dist",
-    "rootDir": "."
-  },
-  "include": [
-    "types/**/*",
-    "events/**/*",
-    "constants/**/*",
-    "utils/**/*",
-    "index.ts"
-  ],
-  "exclude": ["node_modules", "dist"]
-}
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/index.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   index.ts                                           :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/21 18:10:50 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+📁 ARCHIVO: ./packages/shared/src/index.ts
+────────────────────────────────────────────────
+// ============================================================================
+// EXPORTS - TYPES
+// ============================================================================
 
-export * from './types/branded.types';
-export * from './types/user.types';
-export * from './types/friendship.types';
-// export * from './types/game.types';
-// export * from './types/matchmaking.types';
+export * from "./types/branded.types";
+export * from "./types/user.types";
+export * from "./types/friendship.types";
+export * from "./types/match.types";
+// export * from "./types/matchmaking.types";
+// export * from "./types/game.types";
 
-// Events
-export * from './events/base/BaseEvent';
-export * from './events/user/UserEvents';
-// export * from './events/friendship/FriendshipEvents';
-// export * from './events/game/GameEvents';
-// export * from './events/matchmaking/MatchmakingEvents';
+// ============================================================================
+// EXPORTS - EVENTS
+// ============================================================================
 
-// Constants
-export * from './constants/game.constants';
-export * from './constants/friendship.constants';
+export * from "./events/base/BaseEvent";
+export * from "./events/user/UserEvents";
+// export * from "./events/friendship/FriendshipEvents";
+// export * from "./events/game/GameEvents";
+// export * from "./events/matchmaking/MatchmakingEvents";
 
-// Utils
-export * from './utils/uuidGenerator';
+// ============================================================================
+// EXPORTS - CONSTANTS
+// ============================================================================
 
-=== FIN ARCHIVO ===
+export * from "./constants/friendship.constants";
+export * from "./constants/game.constants";
+export * from "./constants/match.constants";
 
-=== ARCHIVO: ./packages/shared/utils/uuidGenerator.d.ts ===
---- CONTENIDO ---
-import * as SharedTypes from "..";
-export declare function generateEventId(): SharedTypes.EventId;
-export declare function generateUserId(): SharedTypes.UserId;
-export declare function generateMatchId(): SharedTypes.MatchId;
-export declare function generateGameId(): SharedTypes.GameId;
-export declare function generateTournamentId(): SharedTypes.TournamentId;
-//# sourceMappingURL=uuidGenerator.d.ts.map
-=== FIN ARCHIVO ===
+// ============================================================================
+// EXPORTS - UTILS
+// ============================================================================
 
-=== ARCHIVO: ./packages/shared/utils/uuidGenerator.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   uuidGenerator.ts                                   :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: m <m@student.42.fr>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/20 01:30:00 by m                 #+#    #+#             */
-/*   Updated: 2025/10/20 02:59:13 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+export * from "./utils/uuidGenerator";
 
+
+
+📁 ARCHIVO: ./packages/shared/src/utils/uuidGenerator.ts
+────────────────────────────────────────────────
 import { randomUUID } from "crypto";
-import * as SharedTypes from "..";
+import * as SharedTypes from "@transcendence/shared";
 
 export function generateEventId(): SharedTypes.EventId {
 	return randomUUID() as SharedTypes.EventId;
@@ -2770,61 +2395,65 @@ export function generateGameId(): SharedTypes.GameId {
 export function generateTournamentId(): SharedTypes.TournamentId {
 	return randomUUID() as SharedTypes.TournamentId;
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/shared/package.json ===
---- CONTENIDO ---
+
+🎯 JSON FILES
+==============================================
+
+📁 ARCHIVO: ./packages/frontend/tsconfig.json
+────────────────────────────────────────────────
 {
-	"name": "@transcendence/shared",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "composite": true,
+    "noEmit": true,
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../shared" }
+  ]
+}
+
+
+📁 ARCHIVO: ./packages/frontend/package.json
+────────────────────────────────────────────────
+{
+	"name": "@transcendence/frontend",
 	"version": "1.0.0",
-	"type": "module",
-	"packageManager": "pnpm@10.19.0",
+	"description": "",
+	"main": "index.js",
+	"packageManager": "pnpm@10.18.2",
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		"dev": "tsx watch src/server.ts",
-		"build": "tsc",
-		"start": "node dist/server.js"
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview"
 	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
 	"dependencies": {
-		"@transcendence/shared": "workspace:*",
-		"@transcendence/database": "workspace:*",
-		"fastify": "5.6.1",
-		"dotenv": "17.2.3"
+		"babylonjs": "8.31.0",
+		"vite": "7.1.9"
 	},
 	"devDependencies": {
-		"@types/node": "24.7.2",
-		"tsx": "4.20.6",
 		"typescript": "5.9.3"
 	}
 }
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/api-gateway/src/modules/game/gameService.ts ===
---- CONTENIDO ---
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   gameService.ts                                     :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: mvisca-g <mvisca-g@student.42barcelona.com>                        +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/10/15 01:08:37 by m                 #+#    #+#             */
-/*   Updated: 2025/10/15 01:08:52 by m                ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
-// import { GameState, GAME_CONSTANTS, GameStatus } from '@transcendence/shared/database';
 
 
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/api-gateway/src/server.ts ===
---- CONTENIDO ---
-// port 3001
-=== FIN ARCHIVO ===
-
-=== ARCHIVO: ./packages/api-gateway/tsconfig.json ===
---- CONTENIDO ---
+📁 ARCHIVO: ./packages/user/tsconfig.json
+────────────────────────────────────────────────
 {
   "compilerOptions": {
     "target": "ES2022",
@@ -2849,40 +2478,147 @@ export function generateTournamentId(): SharedTypes.TournamentId {
     { "path": "../database" }
   ]
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./packages/api-gateway/package.json ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./packages/user/package.json
+────────────────────────────────────────────────
 {
-	"name": "@transcendence/api-gateway",
+  "name": "@transcendence/user",
+  "version": "1.0.0",
+  "type": "module",
+  "packageManager": "pnpm@10.18.2",
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@transcendence/shared": "workspace:*",
+    "@transcendence/database": "workspace:*",
+    "fastify": "5.6.1",
+    "dotenv": "17.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}
+
+
+📁 ARCHIVO: ./packages/database/tsconfig.json
+────────────────────────────────────────────────
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    
+    "baseUrl": ".",
+    "paths": {
+      "@transcendence/shared": ["../shared/dist/index.d.ts"],
+      "@transcendence/shared/*": ["../shared/dist/*"]
+    }
+  },
+  "include": [
+    "connection.ts",
+    "mappers/**/*.ts",
+    "repositories/**/*.ts",
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.d.ts"
+  ],
+  "references": [
+    { "path": "../shared" }
+  ]
+}
+
+
+📁 ARCHIVO: ./packages/database/package.json
+────────────────────────────────────────────────
+{
+  "name": "@transcendence/database",
+  "version": "1.1.0",
+  "type": "commonjs",
+  "main": "./dist/connection.js",
+  "scripts": {
+    "build": "tsc",
+    "test:db-user": "tsx ./test/test-user-repository.ts",
+	"test:db-friendship": "tsx ./test/test-friendship-repository.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "12.4.1",
+    "uuid": "13.0.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
+    "@types/node": "24.7.2",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}
+
+
+
+📁 ARCHIVO: ./packages/shared/tsconfig.json
+────────────────────────────────────────────────
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
+
+
+📁 ARCHIVO: ./packages/shared/package.json
+────────────────────────────────────────────────
+{
+	"name": "@transcendence/shared",
 	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"packageManager": "pnpm@10.18.2",
-	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"preinstall": "npx only-allow pnpm",
-		"dev": "tsx watch src/server.ts",
-		"build": "tsc",
-		"start": "node dist/server.js"
+	"type": "module",
+	"packageManager": "pnpm@10.19.0",
+	"exports": {
+		".": "./dist/index.js"
 	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"dependencies": {
-		"@transcendence/database": "workspace:*",
-		"dotenv": "17.2.3",
-		"fastify": "5.6.1",
-		"tsx": "4.20.6"
+	"scripts": {
+		"build": "tsc"
 	},
 	"devDependencies": {
-		"@types/node": "24.7.2"
+		"@types/node": "24.7.2",
+		"typescript": "5.9.3"
 	}
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./tsconfig.json ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./tsconfig.json
+────────────────────────────────────────────────
 {
 	"compilerOptions": {
 		"target": "ES2022",
@@ -2908,7 +2644,6 @@ export function generateTournamentId(): SharedTypes.TournamentId {
 		"skipDefaultLibCheck": true
 	},
 	"references": [
-		{ "path": "./packages/api-gateway" },
 		{ "path": "./packages/database" },
 		{ "path": "./packages/frontend" },
 		{ "path": "./packages/shared" },
@@ -2916,10 +2651,61 @@ export function generateTournamentId(): SharedTypes.TournamentId {
 	],
 	"files": []
 }
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./pnpm-lock.yaml ===
---- CONTENIDO ---
+
+📁 ARCHIVO: ./package.json
+────────────────────────────────────────────────
+{
+  "name": "transcendence",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "packageManager": "pnpm@10.18.2",
+  "engines": {
+    "node": ">=20.0.0 <23.0.0",
+    "pnpm": "10.18.2"
+  },
+  "scripts": {
+    "preinstall": "npx only-allow pnpm",
+    "dev": "pnpm --parallel --filter '@transcendence/*' dev",
+    "build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
+    "clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
+    "test": "pnpm -r --no-bail test",
+	"test:db-user": "pnpm --filter '@transcendence/database' test:user",
+	"test:db-friendship" : "pnpm --filter @transcendence/database test:friendship"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "typescript": "5.9.3"
+  }
+}
+
+
+🎯 YAML FILES
+==============================================
+
+📁 ARCHIVO: ./pnpm-workspace.yaml
+────────────────────────────────────────────────
+packages:
+  - packages/database
+  - packages/frontend
+  - packages/shared
+  - packages/user
+
+ignoredBuiltDependencies:
+  - babylonjs
+
+onlyBuiltDependencies:
+  - better-sqlite3
+  - esbuild
+
+
+
+📁 ARCHIVO: ./pnpm-lock.yaml
+────────────────────────────────────────────────
 lockfileVersion: '9.0'
 
 settings:
@@ -2936,25 +2722,6 @@ importers:
       typescript:
         specifier: 5.9.3
         version: 5.9.3
-
-  packages/api-gateway:
-    dependencies:
-      '@transcendence/database':
-        specifier: workspace:*
-        version: link:../database
-      dotenv:
-        specifier: 17.2.3
-        version: 17.2.3
-      fastify:
-        specifier: 5.6.1
-        version: 5.6.1
-      tsx:
-        specifier: 4.20.6
-        version: 4.20.6
-    devDependencies:
-      '@types/node':
-        specifier: 24.7.2
-        version: 24.7.2
 
   packages/database:
     dependencies:
@@ -2992,26 +2759,10 @@ importers:
         version: 5.9.3
 
   packages/shared:
-    dependencies:
-      '@transcendence/database':
-        specifier: workspace:*
-        version: link:../database
-      '@transcendence/shared':
-        specifier: workspace:*
-        version: 'link:'
-      dotenv:
-        specifier: 17.2.3
-        version: 17.2.3
-      fastify:
-        specifier: 5.6.1
-        version: 5.6.1
     devDependencies:
       '@types/node':
         specifier: 24.7.2
         version: 24.7.2
-      tsx:
-        specifier: 4.20.6
-        version: 4.20.6
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -3463,8 +3214,8 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  get-tsconfig@4.12.0:
-    resolution: {integrity: sha512-LScr2aNr2FbjAjZh2C6X6BxRx1/x+aTDExct/xyq2XKbYOiG5c0aK7pMsSuyc0brz3ibr/lbQiHD9jzt4lccJw==}
+  get-tsconfig@4.13.0:
+    resolution: {integrity: sha512-1VKTZJCwBrvbd+Wn3AOgQP/2Av+TfTCOlE4AcRJE72W1ksZXbAx8PPBR9RzgTeSPzlPMHrbANMH3LbltH73wxQ==}
 
   github-from-package@0.0.0:
     resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
@@ -4056,7 +3807,7 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  get-tsconfig@4.12.0:
+  get-tsconfig@4.13.0:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
@@ -4276,7 +4027,7 @@ snapshots:
   tsx@4.20.6:
     dependencies:
       esbuild: 0.25.11
-      get-tsconfig: 4.12.0
+      get-tsconfig: 4.13.0
     optionalDependencies:
       fsevents: 2.3.3
 
@@ -4307,35 +4058,178 @@ snapshots:
 
   wrappy@1.0.2: {}
 
-=== FIN ARCHIVO ===
 
-=== ARCHIVO: ./package.json ===
---- CONTENIDO ---
-{
-	"name": "transcendence",
-	"version": "1.0.0",
-	"description": "",
-	"main": "index.js",
-	"packageManager": "pnpm@10.18.2",
-	"engines": {
-		"node": ">=20.0.0 <23.0.0",
-		"pnpm": "10.18.2"
+
+🎯 SQL FILES
+==============================================
+
+📁 ARCHIVO: ./packages/database/schemas/indexes.sql
+────────────────────────────────────────────────
+-- Índices para optimizar consultas frecuentes
+
+-- ============================================================================
+-- USERS
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_online ON users(is_online);
+
+-- ============================================================================
+-- FRIENDSHIPS
+-- ============================================================================
+CREATE INDEX IF NOT EXISTS idx_friendships_user ON friendships(user_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships(friend_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);
+
+-- ============================================================================
+-- MATCHES
+-- ============================================================================
+-- Búsqueda por fecha de creación (historial ordenado cronológicamente)
+CREATE INDEX IF NOT EXISTS idx_matches_created_at ON matches(created_at);
+
+-- Búsqueda por fecha de finalización (partidas activas vs finalizadas)
+CREATE INDEX IF NOT EXISTS idx_matches_finished_at ON matches(finished_at);
+
+-- Búsqueda por ganador (stats de victorias por usuario)
+CREATE INDEX IF NOT EXISTS idx_matches_winner_id ON matches(winner_id);
+
+-- ============================================================================
+-- MATCH_PARTICIPANTS
+-- ============================================================================
+-- Búsqueda de todas las partidas de un usuario (historial de jugador)
+CREATE INDEX IF NOT EXISTS idx_match_players_user_id ON match_players(user_id);
+
+-- Búsqueda de participantes de una partida específica
+CREATE INDEX IF NOT EXISTS idx_match_players_match_id ON match_players(match_id);
+
+
+📁 ARCHIVO: ./packages/database/schemas/tables.sql
+────────────────────────────────────────────────
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   tables.sql                                         :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: mvisca-g <mvisca-g@student.42barcelona.    +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/10/20 by mvisca-g                  #+#    #+#             */
+/*   Updated: 2025/10/23 by mvisca-g                 ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+-- ============================================================================
+-- TABLA: users
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS users (
+  id TEXT PRIMARY KEY,
+  username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  password_hash TEXT NOT NULL,
+  avatar TEXT,
+  is_online INTEGER DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+-- ============================================================================
+-- TABLA: friendships
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS friendships (
+  user_id TEXT NOT NULL,
+  friend_id TEXT NOT NULL,
+  status TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (user_id, friend_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE,
+  CHECK (user_id < friend_id)
+);
+
+-- ============================================================================
+-- TABLA: matches
+-- ============================================================================
+-- Partidas 1v1 de Pong
+-- winner_id es NULL mientras la partida está activa
+-- finished_at es NULL mientras la partida está activa
+CREATE TABLE IF NOT EXISTS matches (
+  id TEXT PRIMARY KEY,
+  status TEXT NOT NULL,
+  winner_id TEXT,
+  created_at INTEGER NOT NULL,
+  FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- ============================================================================
+-- TABLA: match_participants
+-- ============================================================================
+-- Jugadores en cada partida (siempre 2 para 1v1)
+-- player_slot: "Player1" o "Player2"
+-- player_position: "left" o "right"
+CREATE TABLE IF NOT EXISTS match_players (
+  user_id TEXT NOT NULL,
+  match_id TEXT NOT NULL,
+  player_slot TEXT NOT NULL,
+  player_position TEXT NOT NULL,
+  score INTEGER DEFAULT 0,
+  PRIMARY KEY (match_id, user_id),
+  FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- TABLA: tournaments
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS tournaments (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  number_of_players INTEGER NOT NULL,
+  status TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  finished_at INTEGER
+);
+
+
+🎯 CONFIG FILES
+==============================================
+
+📁 ARCHIVO: ./packages/frontend/vite.config.ts
+────────────────────────────────────────────────
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
+
+export default defineConfig({
+	resolve: {
+		alias: {
+			'@': resolve(__dirname, './src'),
+			'@shared': resolve(__dirname, '../shared')
+		}
 	},
-	"scripts": {
-		"preinstall": "npx only-allow pnpm",
-		"dev": "pnpm --parallel --filter '@transcendence/*' dev",
-		"build": "pnpm -r build",
-		"clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
-		"test": "echo \"Error: no test specified\" && exit 1"
+	// Evita: import { Game } from '../../../shared/index';
+	// Permite: import { Game } from '@shared';
+
+	server: {
+		port: 3000,
+		strictPort: false,
+		host: true,
+		open: false
 	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"devDependencies": {
-		"@types/node": "24.7.2",
-		"typescript": "5.9.3"
+
+	build: {
+		outDir: 'dist',
+		sourcemap: true, // para ver código typescript original en DevTools
+		emptyOutDir: true,
+		minify: 'esbuild',
+		target: 'es2022'
+	},
+
+	optimizeDeps: {
+		include: ['babylonjs']
 	}
-}
+});
 
-=== FIN ARCHIVO ===
 
+✅ PROCESO COMPLETADO
+==============================================
+Archivo generado: status.txt
+Total líneas: 4234

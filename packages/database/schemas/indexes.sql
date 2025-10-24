@@ -1,25 +1,36 @@
-/* Indices para optimizar consultas frecuentes 
-Permite hacer consultas como:
-SELECT * WHERE number_of_players = 8
-SELECT * WHEHE 1234 = ANY(users_ids)
-SELECT * WHERE playoffs->>'status' = 'active'
-Estos índices se deben revisitar al finalizar el proyecto para quitar o agregar los relacionados a las consulta más frecuentes
-TODO: no es necesario para tables pequeñas, realizado aquí solo con fines de aprendizaje
- */
+-- Índices para optimizar consultas frecuentes
 
--- Búsqueda de usuarios
+-- ============================================================================
+-- USERS
+-- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_online ON users(is_online);
 
--- Búsqueda de amistades
+-- ============================================================================
+-- FRIENDSHIPS
+-- ============================================================================
 CREATE INDEX IF NOT EXISTS idx_friendships_user ON friendships(user_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_friend ON friendships(friend_id);
 CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);
 
--- Historial de partidas
-CREATE INDEX IF NOT EXISTS idx_match_participants_user ON match_participants(user_id);
-CREATE INDEX IF NOT EXISTS idx_matches_created ON matches(created_at);
+-- ============================================================================
+-- MATCHES
+-- ============================================================================
+-- Búsqueda por fecha de creación (historial ordenado cronológicamente)
+CREATE INDEX IF NOT EXISTS idx_matches_created_at ON matches(created_at);
 
--- Búsqueda de torneos
-CREATE INDEX IF NOT EXISTS idx_tournaments_players ON tournaments(number_of_players);
+-- Búsqueda por fecha de finalización (partidas activas vs finalizadas)
+CREATE INDEX IF NOT EXISTS idx_matches_finished_at ON matches(finished_at);
+
+-- Búsqueda por ganador (stats de victorias por usuario)
+CREATE INDEX IF NOT EXISTS idx_matches_winner_id ON matches(winner_id);
+
+-- ============================================================================
+-- MATCH_PARTICIPANTS
+-- ============================================================================
+-- Búsqueda de todas las partidas de un usuario (historial de jugador)
+CREATE INDEX IF NOT EXISTS idx_match_players_user_id ON match_players(user_id);
+
+-- Búsqueda de participantes de una partida específica
+CREATE INDEX IF NOT EXISTS idx_match_players_match_id ON match_players(match_id);

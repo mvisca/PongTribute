@@ -25,7 +25,6 @@
     "connection.ts",
     "mappers/**/*.ts",
     "repositories/**/*.ts",
-    "test/**/*.ts"              // ← Agregar esta línea
   ],
   "exclude": [
     "node_modules",
