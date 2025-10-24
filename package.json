@@ -14,8 +14,8 @@
     "build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
     "clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
     "test": "pnpm -r --no-bail test",
-	"test:db-user": "pnpm --filter '@transcendence/database' test:user",
-	"test:db-friendship" : "pnpm --filter @transcendence/database test:friendship"
+	"test:db-user": "pnpm --filter '@transcendence/database' test:db-user",
+	"test:db-friendship" : "pnpm --filter @transcendence/database test:db-friendship"
   },
   "keywords": [],
   "author": "",

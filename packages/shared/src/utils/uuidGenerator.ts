@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import * as SharedTypes from "@transcendence/shared";
 
+
 export function generateEventId(): SharedTypes.EventId {
 	return randomUUID() as SharedTypes.EventId;
 }

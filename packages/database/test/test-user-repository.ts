@@ -1,4 +1,4 @@
-/*import { getDatabase, closeDatabase } from "../connection";
+import { getDatabase, closeDatabase } from "../connection";
 import { UserId, Email } from "../../shared/src";
 import * as UserTypes from "../../shared/src";
 import * as MatchTypes from "../../shared/src";
@@ -13,9 +13,6 @@ function userExists(user: UserTypes.User | UserTypes.UserResponse | null) {
     ? console.log("User recuperado:", user)
     : console.log("No existe");
 }
-
-function matchExist(match: UserTypes.MatchResponse | Matchty
-)
 
 async function testUserRepository() {
   console.log("=== TEST USER REPOSITORY ===\n");
@@ -201,4 +198,3 @@ async function testUserRepository() {
 }
 
 testUserRepository();
-*/
