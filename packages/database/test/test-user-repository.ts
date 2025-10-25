@@ -1,7 +1,6 @@
 import { getDatabase, closeDatabase } from "../connection";
 import { UserId, Email } from "../../shared/src";
 import * as UserTypes from "../../shared/src";
-import * as MatchTypes from "../../shared/src";
 import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
 
 // ============================================================================

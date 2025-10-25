@@ -6,7 +6,8 @@
   "scripts": {
     "build": "tsc",
     "test:db-user": "tsx ./test/test-user-repository.ts",
-	"test:db-friendship": "tsx ./test/test-friendship-repository.ts"
+	"test:db-friendship": "tsx ./test/test-friendship-repository.ts",
+	"test:db-match": "tsx ./test/test-match-repository.ts"
   },
   "dependencies": {
     "better-sqlite3": "12.4.1",

@@ -6,7 +6,6 @@ export * from "./types/branded.types";
 export * from "./types/user.types";
 export * from "./types/friendship.types";
 export * from "./types/match.types";
-// export * from "./types/matchmaking.types";
 // export * from "./types/game.types";
 
 // ============================================================================

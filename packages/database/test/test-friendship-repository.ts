@@ -4,15 +4,10 @@
 // ============================================================================
 
 import { UserId, Email, FRIENDSHIP_STATUS } from "../../shared/src";
-import * as UserTypes from "../../shared/src";
-import assert from "node:assert";
 
 import { SQLiteFriendshipRepository } from "../repositories/SQLiteFriendshipRepository";
-import { IFriendshipRepository } from "../repositories/IFriendshipRepository";
 import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
-import { IUserRepository } from "../repositories/IUserRepository";
 
-import { UserMapper } from "../mappers/UserMapper";
 import { getDatabase } from "../connection";
 
 async function testFriendshipRepository() {
