@@ -1,5 +1,6 @@
 import * as SharedTypes from '@transcendence/shared';
 import { MATCH_STATUS } from '@transcendence/shared';
+import { pbkdf2, pseudoRandomBytes } from 'crypto';
 import { create } from 'domain';
 import { stat } from 'fs';
 
@@ -28,9 +29,9 @@ export class MatchMapper {
 			throw new Error(`Match debe tener 2 jugadores, recibidos: ${playerRows.length}`);
 		}
 
-		const players = playerRows.map(row =>
-			this.rowToMatchPlayer(row)
-		) as SharedTypes.TwoMatchPlayers;
+		const player1 = this.rowToMatchPlayer(playerRows[0]);
+		const player2 = this.rowToMatchPlayer(playerRows[1]);
+		const players: SharedTypes.MatchPlayers = [player1, player2];
 
 		const match = {
 			id: matchRow.id as SharedTypes.MatchId,
@@ -40,10 +41,6 @@ export class MatchMapper {
 			players
 		} as SharedTypes.Match;
 		return match;
-	}
-
-	static matchToResponse(match: SharedTypes.Match): SharedTypes.MatchResponse {
-		return {...match};
 	}
 
 	// DTO IN Match domain to SQL
@@ -69,29 +66,89 @@ export class MatchMapper {
 		return row;
 	}
 
-	// DTO IN Data to Match
+	// Compone Data de Match y Data de players en un data de Match
 	static createDataToMatch(data: SharedTypes.CreateMatchData): SharedTypes.Match {
 		const matchId = SharedTypes.generateMatchId();
 		const now = new Date();
 
-		const players: SharedTypes.TwoMatchPlayers = data.players.map(playerData => ({
-			matchId,
-			userId: playerData.userId,
-			playerSlot: playerData.playerSlot,
-			playerPosition: playerData.playerPosition,
-			score: 0
-		})) as SharedTypes.TwoMatchPlayers;
+		const matchPlayers: SharedTypes.MatchPlayers = [
+			{
+				matchId: matchId,
+				userId: data[0].userId,
+				playerPosition: data[0].playerPosition,
+				playerSlot: data[0].playerSlot,
+				score: 0
+			},
+			{
+				matchId: matchId,
+				userId: data[1].userId,
+				playerPosition: data[1].playerPosition,
+				playerSlot: data[1].playerSlot,
+				score: 0
+			}
+		];
 
 		const match: SharedTypes.Match = {
 			id: matchId,
 			status: MATCH_STATUS.ACTIVE,
 			winnerId: null,
-			players: players,
+			players: matchPlayers,
 			createdAt: now
 		}
 
 		return match;
 	}
+
+	/**
+	 * Crea el array de players necesario para crear el Match\
+	 * @param p1id el player1\
+	 * @param p2id el player2\
+	 * @returns Array de tipo CreatePlayerData[] => [CreatePlayerData, CreatePlayerData]\
+	 * CreatePlayerData es una estructura mínima previa de MatchPlayer, sin score ni matchId
+	 */
+	static cretateMatchPlayers(
+		p1id: SharedTypes.UserId, p2id: SharedTypes.UserId
+	): SharedTypes.CreateMatchData {
+		return ([
+			{
+				userId: p1id,
+				playerPosition: "left",
+				playerSlot: "player1"
+			},
+			{
+				userId: p2id,
+				playerPosition: "right",
+				playerSlot: "player2"
+			}
+		]);
+	}
+
+	/**
+	 * Extrae players de Match como array tipado\
+	 * Útil para iteracionesque pierden tipo de tupla\
+	 * Por ejemplo... currentMatch.players.forEach(p => ...); \
+	 * Aquí 'p' pierde el tipado\
+	 * Mejor usar esta funcion para obtener un array de los players\
+	 * @param match Match completo
+	 * @returns Array de tipo MatchPlayer[] o undefined si no existe
+	 */
+	static getPlayersArray(match: SharedTypes.Match): SharedTypes.MatchPlayer[] {
+		return [...match.players];
+	}
+
+	/**
+	 * Encuentra un player específico en el match
+	 * @param match Match completo
+	 * @param userId del usuario que se busca del match
+	 * @return MatchPlayer o undefined si no existe
+	 */
+	static findPlayerInMatch(
+		match: SharedTypes.Match, userId: SharedTypes.UserId
+	): SharedTypes.MatchPlayer | undefined {
+		const players = this.getPlayersArray(match);
+		return players.find(p => p.userId === userId);
+	}
+	
 
 	// Fin de clase
 }

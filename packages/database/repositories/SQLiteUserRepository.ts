@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from "better-sqlite3";
 import { Email, UserId } from '@transcendence/shared';
 import * as UserTypes from '@transcendence/shared';
 import { IUserRepository } from './IUserRepository';
@@ -7,7 +7,7 @@ import { generateUserId } from '@transcendence/shared';
 
 export class SQLiteUserRepository implements IUserRepository {
 	
-	constructor(private db: Database.Database) {}
+	constructor(private db: BetterSqlite3.Database) {}
 
 	/** 
 	 * Busca un usuario por su ID.

@@ -13,7 +13,7 @@
 │   │   ├── connection.ts
 │   │   ├── mappers
 │   │   │   ├── FriendshipMapper.ts
-│   │   │   ├── MatchRepository.ts
+│   │   │   ├── MatchMapper.ts
 │   │   │   └── UserMapper.ts
 │   │   ├── package.json
 │   │   ├── repositories
@@ -28,6 +28,7 @@
 │   │   │   └── tables.sql
 │   │   ├── test
 │   │   │   ├── test-friendship-repository.ts
+│   │   │   ├── test-match-repository.ts
 │   │   │   └── test-user-repository.ts
 │   │   └── tsconfig.json
 │   ├── frontend
@@ -64,6 +65,7 @@
 │   │   │   │   ├── match.types.ts
 │   │   │   │   └── user.types.ts
 │   │   │   └── utils
+│   │   │       ├── colors.ts
 │   │   │       └── uuidGenerator.ts
 │   │   ├── tsconfig.json
 │   │   └── tsconfig.tsbuildinfo
@@ -80,7 +82,7 @@
 ├── status.txt
 └── tsconfig.json
 
-23 directories, 55 files
+23 directories, 57 files
 
 
 
@@ -129,11 +131,6 @@ export default defineConfig({
 
 
 📁 ARCHIVO: ./packages/user/src/server.ts
-────────────────────────────────────────────────
-
-
-
-📁 ARCHIVO: ./packages/database/mappers/MatchRepository.ts
 ────────────────────────────────────────────────
 
 
@@ -333,6 +330,133 @@ export class UserMapper {
 		}
 	}
 // Fin clase
+}
+
+
+📁 ARCHIVO: ./packages/database/mappers/MatchMapper.ts
+────────────────────────────────────────────────
+import * as SharedTypes from '@transcendence/shared';
+import { MATCH_STATUS } from '@transcendence/shared';
+import { pseudoRandomBytes } from 'crypto';
+import { create } from 'domain';
+import { stat } from 'fs';
+
+export class MatchMapper {
+
+	// DTO OUT Player
+	static rowToMatchPlayer(playerRow: SharedTypes.MatchPlayerRow): SharedTypes.MatchPlayer {
+		const player = {
+			matchId: playerRow.match_id as SharedTypes.MatchId,
+			userId: playerRow.user_id as SharedTypes.UserId,
+			playerSlot: playerRow.player_slot as SharedTypes.PlayerSlot,
+			playerPosition: playerRow.player_position as SharedTypes.PlayerPosition,
+			score: playerRow.score 
+		};
+
+		return player;
+	}
+
+	//DTO OUT Match from database a Domain
+	static rowToMatch(
+		matchRow: SharedTypes.MatchRow,
+		playerRows: SharedTypes.MatchPlayerRow[]
+	): SharedTypes.Match {
+
+		if (playerRows.length !== 2) {
+			throw new Error(`Match debe tener 2 jugadores, recibidos: ${playerRows.length}`);
+		}
+
+		const players = playerRows.map(row =>
+			this.rowToMatchPlayer(row)
+		) as SharedTypes.MatchPlayers;
+
+		const match = {
+			id: matchRow.id as SharedTypes.MatchId,
+			status: matchRow.status as SharedTypes.MatchStatus,
+			winnerId: matchRow.winner_id ? (matchRow.winner_id as SharedTypes.UserId) : null,
+			createdAt: new Date(matchRow.created_at),
+			players
+		} as SharedTypes.Match;
+		return match;
+	}
+
+	static matchToResponse(match: SharedTypes.Match): SharedTypes.MatchResponse {
+		return {...match};
+	}
+
+	// DTO IN Match domain to SQL
+	static matchToRow(match: SharedTypes.Match): SharedTypes.MatchRow {
+		const row: SharedTypes.MatchRow = {
+			id: match.id,
+			status: match.status,
+			winner_id: match.winnerId,
+			created_at: match.createdAt.getTime()
+		}
+		return row;
+	}
+
+	// DTO IN Player domain to SQL
+	static matchPlayerToRow(player: SharedTypes.MatchPlayer): SharedTypes.MatchPlayerRow {
+		const row: SharedTypes.MatchPlayerRow = {
+			match_id: player.matchId,
+			user_id: player.userId,
+			player_slot: player.playerSlot,
+			player_position: player.playerPosition,
+			score: player.score
+		}
+		return row;
+	}
+
+	// Compone Data de Match y Data de players en un data de Match
+	static createDataToMatch(data: SharedTypes.CreateMatchData): SharedTypes.Match {
+		const matchId = SharedTypes.generateMatchId();
+		const now = new Date();
+
+		const matchPlayers: SharedTypes.MatchPlayers = [
+			{
+				matchId: matchId,
+				userId: data[0].userId,
+				playerPosition: data[0].playerPosition,
+				playerSlot: data[0].playerSlot,
+				score: 0
+			},
+			{
+				matchId: matchId,
+				userId: data[1].userId,
+				playerPosition: data[1].playerPosition,
+				playerSlot: data[1].playerSlot,
+				score: 0
+			}
+		];
+
+		const match: SharedTypes.Match = {
+			id: matchId,
+			status: MATCH_STATUS.ACTIVE,
+			winnerId: null,
+			players: matchPlayers,
+			createdAt: now
+		}
+
+		return match;
+	}
+
+	static cretateMatchPlayers(
+		p1id: SharedTypes.UserId, p2id: SharedTypes.UserId
+	): SharedTypes.CreateMatchData {
+		return ([
+			{
+				userId: p1id,
+				playerPosition: "left",
+				playerSlot: "player1"
+			},
+			{
+				userId: p2id,
+				playerPosition: "right",
+				playerSlot: "player2"
+			}
+		]);
+	}
+	// Fin de clase
 }
 
 
@@ -965,67 +1089,258 @@ import Database from "better-sqlite3";
 import { IMatchRepository } from "./IMatchRepository";
 import { UserId, MatchId, generateMatchId } from "@transcendence/shared";
 import * as MatchTypes from "@transcendence/shared"
+import { MatchMapper } from "mappers/MatchMapper";
+import { match } from "assert";
 
 export class SQLiteMatchRepository implements IMatchRepository {
-
+	
 	constructor(private db: Database.Database) {}
 
+	// ============================================================================
+	// MÉTODOS PRIVADOS
+	// ============================================================================
+
+	/**
+	 * Recupera una row de 'matches' por matchId
+	 */
 	private getMatchRow(matchId: MatchId): MatchTypes.MatchRow | null {
 		const row = this.db
 			.prepare('SELECT * FROM matches WHERE id = ?')
 			.get(matchId);
-		return row ? row as MatchTypes.MatchRow: null;
+		return row ? row as MatchTypes.MatchRow : null;
 	}
-
+	
+	/**
+	 * Recupera los 'match_players' de un 'match'
+	 */
 	private getPlayerRows(matchId: MatchId): MatchTypes.MatchPlayerRow[] {
 		const rows = this.db
-			.prepare('SELECT * FROM match_players WHERE player_id = ?')
-			.get(matchId);
+			.prepare('SELECT * FROM match_players WHERE match_id = ?')
+			.all(matchId);
 		return rows as MatchTypes.MatchPlayerRow[];
 	}
-
+	
+	/**
+	 * Monta un objeto Match completo (Match + Players)
+	 */
 	private getCompleteMatch(matchId: MatchId): MatchTypes.Match | null {
 		const matchRow = this.getMatchRow(matchId);
 		if (!matchRow) return null;
-			
+		
 		const playerRows = this.getPlayerRows(matchId);
-
+		
 		if (playerRows.length !== 2) {
-			throw new Error(`
-				Match ${matchId} tiene ${playerRows.length} players (esperados: 2)
-			`);
+			throw new Error(`Match ${matchId} tiene ${playerRows.length} players (esperados: 2)`);
 		}
-		return MatchMapper.rowToMatchResponse(matchRow, playerRows);
+		return MatchMapper.rowToMatch(matchRow, playerRows);
 	}
 
-	async create(data: MatchTypes.CreateMatchData): MatchTypes.Match {
-		const now = new Date;
+	// ============================================================================
+	// CREAR
+	// ============================================================================
 
-		const newMatch: MatchTypes.Match = {
-			matchId: generateMatchId(),
-			winnerId: null,
-			status: MatchTypes.MatchStatus,
-			players: [data.players[0], data.players[1]],
-			createdAt: now
+	/**
+	 * Crea un nuevo record 'match' y sus dos 'players'\
+	 * Se transacción para asegurar consistencia de db, todo o nada
+	 */
+	async create(data: MatchTypes.CreateMatchData): Promise<MatchTypes.MatchResponse> {
+		const match = MatchMapper.createDataToMatch(data);
+		const matchRow = MatchMapper.matchToRow(match);
+		const playerRows = match.players.map(MatchMapper.matchPlayerToRow);
+
+		const transaction = this.db.transaction(() => {
+			// Insertar partida
+			this.db.prepare(`
+				INSERT INTO matches (id, status, winner_id, created_at)
+				VALUES (?, ?, ?, ?)
+			`).run(matchRow.id, matchRow.status, matchRow.winner_id, matchRow.created_at);
+			
+			// Prepara para insertar players 
+			const insertPlayer = this.db.prepare(`
+				INSERT INTO match_players (match_id, user_id, player_slot, player_position, score)
+				VALUES (?, ?, ?, ?, ?)
+			`);
+
+			// Aqui los inserta iterando
+			playerRows.forEach(player =>
+				insertPlayer.run(
+					player.match_id,
+					player.user_id,
+					player.player_slot,
+					player.player_position,
+					player.score
+				)
+			);
+		});
+
+		transaction();
+
+		const createdMatch = this.getCompleteMatch(match.id);
+		if (!createdMatch) throw new Error(`No se pudo crear match: ${match.id}`);
+
+		return MatchMapper.matchToResponse(createdMatch);
+	}
+
+	// ============================================================================
+	// CONSULTAS
+	// ============================================================================
+
+	/**
+	 * Busca un match completo por su 'matchId'
+	 */
+	async findById(matchId: MatchId): Promise<MatchTypes.MatchResponse | null> {
+		const match = this.getCompleteMatch(matchId);
+		if (match === null)
+			throw new Error(`Match con id ${matchId} no existe`);
+		return match as MatchTypes.MatchResponse;
+	}
+
+	/**
+	 * Busca todos los 'matches' del 'userId'\
+	 * Response ordenada descendente
+	 */
+	async findByUser(userId: UserId): Promise<MatchTypes.MatchResponse[]> {
+		const matchIds = this.db
+			.prepare(`
+				SELECT DISTINCT match_id
+				FROM match_players
+				WHERE user_id = ?
+			`)
+			.all(userId)
+			.map((row: any) => row.match_id as MatchId);
+
+		const matches: MatchTypes.Match[] = [];
+		for (const matchId of matchIds) {
+			const match = this.getCompleteMatch(matchId);
+			if (match) matches.push(match);
 		}
 
-/* 		  id: MatchId;
-		  winnerId: UserId | null;
-		  finishedAt: Date | null;
-		  players: TwoMatchPlayers;
-		  isFinished: boolean;
-		  createdAt: Date; */
+		matches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+		return matches.map(MatchMapper.matchToResponse);
+	}
 
-		const row = MatchMapper.dataToInsert(newMatch);
+	/**
+	 * Devuelve 'matches' con 'status = ACTIVE'\
+	 * Response ordenada desc
+	 */
+	async findActive(): Promise<MatchTypes.MatchResponse[]> {
+		const matchRows = this.db
+			.prepare(`
+				SELECT * FROM matches
+				WHERE status = ?
+				ORDER BY created_at DESC
+			`)
+			.all(MatchTypes.MATCH_STATUS.ACTIVE) as MatchTypes.MatchRow[];
 
-		this.db.prepare(`
-			INSERT INTO matches (
-				id, winner_id, finished_at, 
-			)	
-		`)
+		const matches: MatchTypes.Match[] = [];
+		for (const matchRow of matchRows) {
+			const playerRows = this.getPlayerRows(matchRow.id as MatchId);
+			if (playerRows.length === 2) {
+				matches.push(MatchMapper.rowToMatch(matchRow, playerRows));
+			}
+		}
+		return matches.map(MatchMapper.matchToResponse);
+	}
+
+	/**
+	 * Devuelve 'matches' finalizados de 'userId'\
+	 * Response ordenado desc
+	 */
+	async findFinishedByUser(userId: UserId): Promise<MatchTypes.MatchResponse[]> {
+		const matchIdRows = this.db
+			.prepare(`
+				SELECT DISTINCT match_id
+				FROM match_players
+				WHERE user_id = ?
+			`)
+			.all(userId);
+
+		const matchIds = matchIdRows.map((row: any) => row.match_id as MatchId);
+
+		const finishedMatches: MatchTypes.Match[] = [];
+		for (const id of matchIds) {
+			const matchRow = this.getMatchRow(id);
+			if (matchRow && matchRow.status === MatchTypes.MATCH_STATUS.FINISHED) {
+				const match = this.getCompleteMatch(id);
+				if (match) finishedMatches.push(match);
+			}
+		}
+
+		finishedMatches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+		return finishedMatches.map(MatchMapper.matchToResponse);
+	}
+
+	// ============================================================================
+	// ACTUALIZACIÓN Y FINALIZACIÓN
+	// ============================================================================
+
+	/**
+	 * Marca un 'match' como status = FINISHED\
+	 * Guarda el ganador y actualiza los puntajes\
+	 * Usa transaction, todo o nada
+	 */
+	async finish(
+		matchId: MatchId,
+		winnerId: UserId,
+		scores: { [key: string]: number }
+	): Promise<MatchTypes.MatchResponse> {
+
+		const match = this.getCompleteMatch(matchId);
+		if (!match) throw new Error(`El match no existe: ${matchId}`);
+		if (match.status === MatchTypes.MATCH_STATUS.FINISHED)
+			throw new Error(`Match ${matchId} ya está finalizado`);
+
+		const transaction = this.db.transaction(() => {
+			this.db.prepare(`
+				UPDATE matches
+				SET status = ?, winner_id = ?
+				WHERE id = ?
+			`).run(MatchTypes.MATCH_STATUS.FINISHED, winnerId, matchId);
+	
+			const updateScore = this.db.prepare(`
+				UPDATE match_players
+				SET score = ?
+				WHERE match_id = ? AND user_id = ? 
+			`);
+
+			for (const [userId, score] of Object.entries(scores)) {
+				updateScore.run(score, matchId, userId);
+			}
+		});
+
+		transaction();
+		
+		const finishedMatch = this.getCompleteMatch(matchId);
+		if (!finishedMatch)
+			throw new Error(`Fallo al recuperar el match terminado: ${matchId}`);
+
+		return MatchMapper.matchToResponse(finishedMatch);
+	}
+
+	/**
+	 * Actualiza el puntaje de un 'player' de un 'matchId'
+	 */
+	async updateScore(matchId: MatchId, userId: UserId, score: number): Promise<void> {
+		this.db
+			.prepare(`
+				UPDATE match_players
+				SET score = ?
+				WHERE match_id = ? AND user_id = ?
+			`).run(score, matchId, userId);
+	}
+
+	// ============================================================================
+	// ELIMINAR
+	// ============================================================================
+
+	/**
+	 * Elimina un 'match'\
+	 * Los 'players' asociados se eliminan también (CASCADE del tables.sql)
+	 */
+	async delete(matchId: MatchId): Promise<void> {
+		this.db.prepare(`DELETE FROM matches WHERE id = ?`).run(matchId);
 	}
 }
-
 
 
 📁 ARCHIVO: ./packages/database/repositories/IMatchRepository.ts
@@ -1060,7 +1375,7 @@ export interface IMatchRepository {
 	 * @param data 2 players en formato TwoCreateMatchPlayer dentro de CreateMatchData\
 	 * @returns Match con id completo en tipo MatchResponse
 	 */
-	create(data: MatchTypes.CreateMatchData): MatchTypes.MatchResponse;
+	create(data: MatchTypes.CreateMatchData): Promise<MatchTypes.MatchResponse>;
 	
 	/**
 	 * Busca partida por id\
@@ -1103,7 +1418,7 @@ export interface IMatchRepository {
 	 * @throws Erros si el matchno existe o ya está MATCH_STATS.FINISHED
 	 */
 	finish(
-		matchId: MatchId, userId: UserId, scores: { [key: string]: number}
+		matchId: MatchId, winnerId: UserId, scores: { [key: string]: number}
 	): Promise<MatchTypes.MatchResponse>
 
 	/**
@@ -1131,15 +1446,10 @@ export interface IMatchRepository {
 // ============================================================================
 
 import { UserId, Email, FRIENDSHIP_STATUS } from "../../shared/src";
-import * as UserTypes from "../../shared/src";
-import assert from "node:assert";
 
 import { SQLiteFriendshipRepository } from "../repositories/SQLiteFriendshipRepository";
-import { IFriendshipRepository } from "../repositories/IFriendshipRepository";
 import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
-import { IUserRepository } from "../repositories/IUserRepository";
 
-import { UserMapper } from "../mappers/UserMapper";
 import { getDatabase } from "../connection";
 
 async function testFriendshipRepository() {
@@ -1309,12 +1619,220 @@ testFriendshipRepository();
 
 
 
+📁 ARCHIVO: ./packages/database/test/test-match-repository.ts
+────────────────────────────────────────────────
+// ============================================================================
+// TEST MATCH REPOSITORY
+// packages/database/test/test-match-repository.ts
+// ============================================================================
+
+import * as SharedTypes from "../../shared/src";
+import { SQLiteMatchRepository } from "../repositories/SQLiteMatchRepository";
+import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
+
+import { getDatabase } from "../connection";
+import { getDefaultHighWaterMark } from "stream";
+import { log } from "console";
+import { MatchMapper } from "../mappers/MatchMapper";
+
+async function testMatchRepository() {
+
+	console.log('=== TEST MATCH REPOSITORY ===');
+	
+	const db = getDatabase();
+	db.exec("DELETE FROM matches");
+	db.exec("DELETE FROM match_players");
+	db.exec("DELETE FROM friendships");
+	db.exec("DELETE FROM users");
+
+	const userRepo = new SQLiteUserRepository(db);
+	const matchRepo = new SQLiteMatchRepository(db);
+
+	// ============================================================================
+	// CREAR USUARIOS
+	// ============================================================================
+
+	console.log('Creando Usuarios');
+	const toto = await userRepo.create({
+		username: "toto",
+		email: "toto@tita.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "url/picture" 
+	});
+
+	const pepe = await userRepo.create({
+		username: "pepe",
+		email: "pepe@pepe.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "image/path"
+	});
+
+	const tita = await userRepo.create({
+		username: "tita",
+		email: "tita@tita.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "otra/image"
+	});
+
+	console.log("\n=== CREAR USERS ===");
+	console.log(`Usuario 1 creado: ${toto.username} [${toto.id}]`);
+	console.log(`Usuario 2 creado: ${pepe.username} [${pepe.id}]`);
+	console.log(`Usuario 3 creado: ${tita.username} [${tita.id}]`);
+
+	// ============================================================================
+	// CREAR MATCH
+	// ============================================================================
+
+	console.log("\n=== CREAR MATCHES ===");
+
+	console.log('Nuevo match: pepe vs toto');
+	const pepeVsTotoData: SharedTypes.CreateMatchData = MatchMapper
+		.cretateMatchPlayers(pepe.id, toto.id);
+	const pepeVsToto = await matchRepo.create(pepeVsTotoData);
+	console.log(`Match created ('pepe' vs 'toto')`, pepeVsToto);
+
+	console.log('\Nuevo match: toto vs pepe');
+	const totoVsPepeData: SharedTypes.CreateMatchData = MatchMapper
+		.cretateMatchPlayers(toto.id, pepe.id);
+	const totoVsPepe = await matchRepo.create(totoVsPepeData);
+	console.log(`Match created ('pepe' vs 'toto')`, totoVsPepe);
+	console.log(`En el módulo match, donde se generan los matches se debe validar que el player no tenga una partida active`);
+
+	
+}
+
+testMatchRepository();
+/* PEPE TOTO TITA
+Crear match1 (Alice vs Bob):
+  - Player1: Alice, slot=Player1, position=left, score=0
+  - Player2: Bob, slot=Player2, position=right, score=0
+
+Verificar:
+  ✓ Match tiene ID
+  ✓ status = "active"
+  ✓ winnerId = null
+  ✓ 2 jugadores
+  ✓ scores = 0, 0
+
+// ============================================================================
+// TEST 2: FIND BY ID
+// ============================================================================
+
+Buscar match1 por ID → debe existir
+Buscar "fake-id" → debe retornar null
+
+// ============================================================================
+// TEST 3: FIND BY USER
+// ============================================================================
+
+Crear match2 (Alice vs Charlie)
+Crear match3 (Bob vs Charlie)
+
+Buscar matches de Alice → debe retornar 2 (match1, match2)
+Buscar matches de Charlie → debe retornar 2 (match2, match3)
+Buscar matches de Bob → debe retornar 2 (match1, match3)
+
+Verificar orden cronológico descendente
+
+// ============================================================================
+// TEST 4: FIND ACTIVE
+// ============================================================================
+
+Buscar todas las activas → debe retornar 3 (match1, match2, match3)
+
+Verificar que todas tienen:
+  ✓ status = "active"
+  ✓ winnerId = null
+
+// ============================================================================
+// TEST 5: UPDATE SCORE
+// ============================================================================
+
+En match1:
+  - Actualizar score de Alice a 3
+  - Actualizar score de Bob a 2
+
+Buscar match1 de nuevo
+Verificar scores actualizados (3, 2)
+
+// ============================================================================
+// TEST 6: FINISH MATCH
+// ============================================================================
+
+Finalizar match1:
+  - winnerId = Alice
+  - scores finales: Alice=5, Bob=3
+
+Verificar:
+  ✓ status = "finished"
+  ✓ winnerId = Alice.id
+  ✓ scores = 5, 3
+
+// ============================================================================
+// TEST 7: FIND FINISHED BY USER
+// ============================================================================
+
+Finalizar match2 (ganador: Charlie)
+
+Buscar finished de Alice → debe retornar 2 (match1, match2)
+Buscar finished de Bob → debe retornar 1 (match1)
+Buscar finished de Charlie → debe retornar 1 (match2)
+
+// ============================================================================
+// TEST 8: FIND ACTIVE DESPUÉS DE FINISH
+// ============================================================================
+
+Buscar activas → debe retornar 1 (solo match3)
+
+// ============================================================================
+// TEST 9: ERRORES ESPERADOS
+// ============================================================================
+
+Intentar finalizar match1 de nuevo → debe fallar (ya finished)
+Intentar finalizar "fake-id" → debe fallar (no existe)
+
+// ============================================================================
+// TEST 10: DELETE
+// ============================================================================
+
+Eliminar match3
+
+Verificar:
+  ✓ match3 no existe (findById retorna null)
+  ✓ Bob ahora tiene solo 1 match (CASCADE eliminó participant)
+
+// ============================================================================
+// TEST 11: EDGE CASES
+// ============================================================================
+
+Crear usuario nuevo (sin matches)
+
+Buscar matches → retorna array vacío
+Buscar finished → retorna array vacío
+
+// ============================================================================
+// CLEANUP
+// ============================================================================
+
+Limpiar todas las tablas
+Cerrar DB
+Mostrar "TEST COMPLETO"
+
+FIN TEST
+*/
+
+
+
 📁 ARCHIVO: ./packages/database/test/test-user-repository.ts
 ────────────────────────────────────────────────
 import { getDatabase, closeDatabase } from "../connection";
 import { UserId, Email } from "../../shared/src";
 import * as UserTypes from "../../shared/src";
 import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
+
+// ============================================================================
+// AUXILIAR
+// ============================================================================
 
 function userExists(user: UserTypes.User | UserTypes.UserResponse | null) {
   !!user
@@ -2056,7 +2574,14 @@ export interface GameState {
 📁 ARCHIVO: ./packages/shared/src/types/match.types.ts
 ────────────────────────────────────────────────
 import { MatchId, UserId } from "./branded.types";
-import { PlayerSlot, PlayerPosition } from "../constants/match.constants";
+import { PlayerSlot, PlayerPosition, MatchStatus } from "../constants/match.constants";
+
+// ============================================================================
+// ENTIDADES DE DOMINIO
+// ============================================================================
+
+// export type PlayerSlot = "Player1" | "Player2";
+// export type PlayerPosition = "left" | "right";
 
 // ============================================================================
 // ENTIDADES DE DOMINIO
@@ -2066,27 +2591,32 @@ import { PlayerSlot, PlayerPosition } from "../constants/match.constants";
 * Participante en una partida
 * Representa a un jugador y su info dentro de un Match
 */
-export interface MatchPlayerData {
+export interface MatchPlayer {
 	matchId: MatchId;
 	userId: UserId;
 	playerSlot: PlayerSlot;
 	playerPosition: PlayerPosition;
 	score: number;
-}
+};
 
 /**
 * Tipo de array de exactamente dos MatchPlayer
+* 	id: MatchId;\
+* 	status: MatchStatus;\
+* 	players: MatchPlayers;\
+* 	winnerId: UserId | null;\
+* 	createdAt: Date;
 */
-export type TwoMatchPlayersData = [MatchPlayerData, MatchPlayerData];
+export type MatchPlayers = [MatchPlayer, MatchPlayer];
 
 /**
 * Partida completa (Aggregate Root)
 * Siempre tiene exactamente 2 jugadores (1v1)
 */
 export interface Match {
-	natchId: MatchId;
-	status: Date | null;
-	players: TwoMatchPlayersData;
+	id: MatchId;
+	status: MatchStatus;
+	players: MatchPlayers;
 	winnerId: UserId | null;
 	createdAt: Date;
 }
@@ -2096,12 +2626,21 @@ export interface Match {
 // ============================================================================
 
 /**
-* Datos para crear Match
-* Enviados por el backend para iniciar partida
+* Datos para crear Player
+* Enviados por el backend para crear la partida
 */
-export interface CreateMatchData {
-	players: TwoMatchPlayersData;
+export interface CreatePlayerData {
+	userId: UserId;
+	playerSlot: PlayerSlot;
+	playerPosition: PlayerPosition;
 }
+
+/**
+ * Data que se pasa al metodo 'create()' de Match \
+ * @param '[CreatePlayerData, CreatePlayerData]'\
+ * CreatePlayerData = {UserId, PlayerSlot, PlayerPosition} 
+ */
+export type CreateMatchData = [CreatePlayerData, CreatePlayerData];
 
 // ============================================================================
 // DTOs - OUTPUT (Respuestas)
@@ -2112,11 +2651,11 @@ export interface CreateMatchData {
 * Incluye toda la información de la partida
 * Enviada por el repository al backend con la partida creada
 */
-export interface Match {
-	matchId: MatchId;
+export interface MatchResponse {
+	id: MatchId;
+	status: MatchStatus;
 	winnerId: UserId | null;
-	players: TwoMatchPlayersData;
-	status: ;
+	players: MatchPlayers;
 	createdAt: Date;
 }
 
@@ -2342,7 +2881,6 @@ export * from "./types/branded.types";
 export * from "./types/user.types";
 export * from "./types/friendship.types";
 export * from "./types/match.types";
-// export * from "./types/matchmaking.types";
 // export * from "./types/game.types";
 
 // ============================================================================
@@ -2371,10 +2909,26 @@ export * from "./utils/uuidGenerator";
 
 
 
+📁 ARCHIVO: ./packages/shared/src/utils/colors.ts
+────────────────────────────────────────────────
+
+const colors = {
+    reset: '\x1b[0m',
+    red: '\x1b[31m',
+    green: '\x1b[32m',
+    yellow: '\x1b[33m'
+};
+
+function colorizar(texto, color) {
+    return `${colors[color]}${texto}${colors.reset}`;
+}
+
+
 📁 ARCHIVO: ./packages/shared/src/utils/uuidGenerator.ts
 ────────────────────────────────────────────────
 import { randomUUID } from "crypto";
 import * as SharedTypes from "@transcendence/shared";
+
 
 export function generateEventId(): SharedTypes.EventId {
 	return randomUUID() as SharedTypes.EventId;
@@ -2558,7 +3112,8 @@ export function generateTournamentId(): SharedTypes.TournamentId {
   "scripts": {
     "build": "tsc",
     "test:db-user": "tsx ./test/test-user-repository.ts",
-	"test:db-friendship": "tsx ./test/test-friendship-repository.ts"
+	"test:db-friendship": "tsx ./test/test-friendship-repository.ts",
+	"test:db-match": "tsx ./test/test-match-repository.ts"
   },
   "dependencies": {
     "better-sqlite3": "12.4.1",
@@ -2671,8 +3226,9 @@ export function generateTournamentId(): SharedTypes.TournamentId {
     "build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
     "clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
     "test": "pnpm -r --no-bail test",
-	"test:db-user": "pnpm --filter '@transcendence/database' test:user",
-	"test:db-friendship" : "pnpm --filter @transcendence/database test:friendship"
+	"test:db-user": "pnpm --filter '@transcendence/database' test:db-user",
+	"test:db-friendship" : "pnpm --filter @transcendence/database test:db-friendship",
+	"test:db-match" : "pnpm --filter @transcendence/database test:db-match"
   },
   "keywords": [],
   "author": "",
@@ -4087,20 +4643,32 @@ CREATE INDEX IF NOT EXISTS idx_friendships_status ON friendships(status);
 -- Búsqueda por fecha de creación (historial ordenado cronológicamente)
 CREATE INDEX IF NOT EXISTS idx_matches_created_at ON matches(created_at);
 
--- Búsqueda por fecha de finalización (partidas activas vs finalizadas)
-CREATE INDEX IF NOT EXISTS idx_matches_finished_at ON matches(finished_at);
+-- Búsqueda por estado (partidas activas vs finalizadas)
+CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 
 -- Búsqueda por ganador (stats de victorias por usuario)
 CREATE INDEX IF NOT EXISTS idx_matches_winner_id ON matches(winner_id);
 
 -- ============================================================================
--- MATCH_PARTICIPANTS
+-- MATCH_PLAYERS (antes match_participants)
 -- ============================================================================
 -- Búsqueda de todas las partidas de un usuario (historial de jugador)
 CREATE INDEX IF NOT EXISTS idx_match_players_user_id ON match_players(user_id);
 
 -- Búsqueda de participantes de una partida específica
 CREATE INDEX IF NOT EXISTS idx_match_players_match_id ON match_players(match_id);
+
+-- ============================================================================
+-- TOURNAMENTS
+-- ============================================================================
+-- Búsqueda por estado (activos, finalizados, cancelados)
+CREATE INDEX IF NOT EXISTS idx_tournaments_status ON tournaments(status);
+
+-- Búsqueda por fecha de creación
+CREATE INDEX IF NOT EXISTS idx_tournaments_created_at ON tournaments(created_at);
+
+-- Búsqueda por fecha de finalización (historial de torneos completados)
+CREATE INDEX IF NOT EXISTS idx_tournaments_finished_at ON tournaments(finished_at);
 
 
 📁 ARCHIVO: ./packages/database/schemas/tables.sql
@@ -4154,7 +4722,7 @@ CREATE TABLE IF NOT EXISTS friendships (
 -- finished_at es NULL mientras la partida está activa
 CREATE TABLE IF NOT EXISTS matches (
   id TEXT PRIMARY KEY,
-  status TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
   winner_id TEXT,
   created_at INTEGER NOT NULL,
   FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
@@ -4167,8 +4735,8 @@ CREATE TABLE IF NOT EXISTS matches (
 -- player_slot: "Player1" o "Player2"
 -- player_position: "left" o "right"
 CREATE TABLE IF NOT EXISTS match_players (
-  user_id TEXT NOT NULL,
   match_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
   player_slot TEXT NOT NULL,
   player_position TEXT NOT NULL,
   score INTEGER DEFAULT 0,
@@ -4232,4 +4800,4 @@ export default defineConfig({
 ✅ PROCESO COMPLETADO
 ==============================================
 Archivo generado: status.txt
-Total líneas: 4234
+Total líneas: 4802

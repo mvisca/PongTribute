@@ -1,13 +1,12 @@
-import Database from "better-sqlite3";
+import BetterSqlite3 from "better-sqlite3";
 import { IMatchRepository } from "./IMatchRepository";
 import { UserId, MatchId, generateMatchId } from "@transcendence/shared";
 import * as MatchTypes from "@transcendence/shared"
 import { MatchMapper } from "mappers/MatchMapper";
-import { match } from "assert";
 
 export class SQLiteMatchRepository implements IMatchRepository {
 	
-	constructor(private db: Database.Database) {}
+	constructor(private db: BetterSqlite3.Database) {}
 
 	// ============================================================================
 	// MÉTODOS PRIVADOS
@@ -16,7 +15,7 @@ export class SQLiteMatchRepository implements IMatchRepository {
 	/**
 	 * Recupera una row de 'matches' por matchId
 	 */
-	private getMatchRow(matchId: MatchId): MatchTypes.MatchRow | null {
+	private async getMatchRow(matchId: MatchId): Promise<MatchTypes.MatchRow | null> {
 		const row = this.db
 			.prepare('SELECT * FROM matches WHERE id = ?')
 			.get(matchId);
@@ -26,7 +25,7 @@ export class SQLiteMatchRepository implements IMatchRepository {
 	/**
 	 * Recupera los 'match_players' de un 'match'
 	 */
-	private getPlayerRows(matchId: MatchId): MatchTypes.MatchPlayerRow[] {
+	private async getPlayerRows(matchId: MatchId): Promise<MatchTypes.MatchPlayerRow[]> {
 		const rows = this.db
 			.prepare('SELECT * FROM match_players WHERE match_id = ?')
 			.all(matchId);
@@ -36,11 +35,11 @@ export class SQLiteMatchRepository implements IMatchRepository {
 	/**
 	 * Monta un objeto Match completo (Match + Players)
 	 */
-	private getCompleteMatch(matchId: MatchId): MatchTypes.Match | null {
-		const matchRow = this.getMatchRow(matchId);
+	private async getCompleteMatch(matchId: MatchId): Promise<MatchTypes.Match | null> {
+		const matchRow = await this.getMatchRow(matchId);
 		if (!matchRow) return null;
 		
-		const playerRows = this.getPlayerRows(matchId);
+		const playerRows = await this.getPlayerRows(matchId);
 		
 		if (playerRows.length !== 2) {
 			throw new Error(`Match ${matchId} tiene ${playerRows.length} players (esperados: 2)`);
@@ -56,7 +55,7 @@ export class SQLiteMatchRepository implements IMatchRepository {
 	 * Crea un nuevo record 'match' y sus dos 'players'\
 	 * Se transacción para asegurar consistencia de db, todo o nada
 	 */
-	async create(data: MatchTypes.CreateMatchData): Promise<MatchTypes.MatchResponse> {
+	async create(data: MatchTypes.CreateMatchData): Promise<MatchTypes.Match> {
 		const match = MatchMapper.createDataToMatch(data);
 		const matchRow = MatchMapper.matchToRow(match);
 		const playerRows = match.players.map(MatchMapper.matchPlayerToRow);
@@ -88,10 +87,10 @@ export class SQLiteMatchRepository implements IMatchRepository {
 
 		transaction();
 
-		const createdMatch = this.getCompleteMatch(match.id);
+		const createdMatch = await this.getCompleteMatch(match.id);
 		if (!createdMatch) throw new Error(`No se pudo crear match: ${match.id}`);
 
-		return MatchMapper.matchToResponse(createdMatch);
+		return createdMatch;
 	}
 
 	// ============================================================================
@@ -101,18 +100,18 @@ export class SQLiteMatchRepository implements IMatchRepository {
 	/**
 	 * Busca un match completo por su 'matchId'
 	 */
-	async findById(matchId: MatchId): Promise<MatchTypes.MatchResponse | null> {
+	async findById(matchId: MatchId): Promise<MatchTypes.Match | null> {
 		const match = this.getCompleteMatch(matchId);
-		if (match === null)
+		if (!match)
 			throw new Error(`Match con id ${matchId} no existe`);
-		return match as MatchTypes.MatchResponse;
+		return match;
 	}
 
 	/**
 	 * Busca todos los 'matches' del 'userId'\
 	 * Response ordenada descendente
 	 */
-	async findByUser(userId: UserId): Promise<MatchTypes.MatchResponse[]> {
+	async findByUser(userId: UserId): Promise<MatchTypes.Match[]> {
 		const matchIds = this.db
 			.prepare(`
 				SELECT DISTINCT match_id
@@ -124,19 +123,20 @@ export class SQLiteMatchRepository implements IMatchRepository {
 
 		const matches: MatchTypes.Match[] = [];
 		for (const matchId of matchIds) {
-			const match = this.getCompleteMatch(matchId);
-			if (match) matches.push(match);
+			const match = await this.getCompleteMatch(matchId);
+			if (!match) throw new Error(`Match ${matchId} not found`);
+			matches.push(match);
 		}
 
 		matches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-		return matches.map(MatchMapper.matchToResponse);
+		return matches;
 	}
 
 	/**
 	 * Devuelve 'matches' con 'status = ACTIVE'\
 	 * Response ordenada desc
 	 */
-	async findActive(): Promise<MatchTypes.MatchResponse[]> {
+	async findActive(): Promise<MatchTypes.Match[]> {
 		const matchRows = this.db
 			.prepare(`
 				SELECT * FROM matches
@@ -147,19 +147,19 @@ export class SQLiteMatchRepository implements IMatchRepository {
 
 		const matches: MatchTypes.Match[] = [];
 		for (const matchRow of matchRows) {
-			const playerRows = this.getPlayerRows(matchRow.id as MatchId);
+			const playerRows = await this.getPlayerRows(matchRow.id as MatchId);
 			if (playerRows.length === 2) {
 				matches.push(MatchMapper.rowToMatch(matchRow, playerRows));
 			}
 		}
-		return matches.map(MatchMapper.matchToResponse);
+		return matches;
 	}
 
 	/**
 	 * Devuelve 'matches' finalizados de 'userId'\
 	 * Response ordenado desc
 	 */
-	async findFinishedByUser(userId: UserId): Promise<MatchTypes.MatchResponse[]> {
+	async findFinishedByUser(userId: UserId): Promise<MatchTypes.Match[]> {
 		const matchIdRows = this.db
 			.prepare(`
 				SELECT DISTINCT match_id
@@ -172,15 +172,15 @@ export class SQLiteMatchRepository implements IMatchRepository {
 
 		const finishedMatches: MatchTypes.Match[] = [];
 		for (const id of matchIds) {
-			const matchRow = this.getMatchRow(id);
+			const matchRow = await this.getMatchRow(id);
 			if (matchRow && matchRow.status === MatchTypes.MATCH_STATUS.FINISHED) {
-				const match = this.getCompleteMatch(id);
+				const match = await this.getCompleteMatch(id);
 				if (match) finishedMatches.push(match);
 			}
 		}
 
 		finishedMatches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-		return finishedMatches.map(MatchMapper.matchToResponse);
+		return finishedMatches;
 	}
 
 	// ============================================================================
@@ -188,58 +188,50 @@ export class SQLiteMatchRepository implements IMatchRepository {
 	// ============================================================================
 
 	/**
-	 * Marca un 'match' como status = FINISHED\
-	 * Guarda el ganador y actualiza los puntajes\
-	 * Usa transaction, todo o nada
-	 */
-	async finish(
-		matchId: MatchId,
-		winnerId: UserId,
-		scores: { [key: string]: number }
-	): Promise<MatchTypes.MatchResponse> {
-
-		const match = this.getCompleteMatch(matchId);
-		if (!match) throw new Error(`El match no existe: ${matchId}`);
-		if (match.status === MatchTypes.MATCH_STATUS.FINISHED)
-			throw new Error(`Match ${matchId} ya está finalizado`);
-
-		const transaction = this.db.transaction(() => {
-			this.db.prepare(`
-				UPDATE matches
-				SET status = ?, winner_id = ?
-				WHERE id = ?
-			`).run(MatchTypes.MATCH_STATUS.FINISHED, winnerId, matchId);
-	
-			const updateScore = this.db.prepare(`
-				UPDATE match_players
-				SET score = ?
-				WHERE match_id = ? AND user_id = ? 
-			`);
-
-			for (const [userId, score] of Object.entries(scores)) {
-				updateScore.run(score, matchId, userId);
-			}
-		});
-
-		transaction();
-		
-		const finishedMatch = this.getCompleteMatch(matchId);
-		if (!finishedMatch)
-			throw new Error(`Fallo al recuperar el match terminado: ${matchId}`);
-
-		return MatchMapper.matchToResponse(finishedMatch);
-	}
-
-	/**
 	 * Actualiza el puntaje de un 'player' de un 'matchId'
 	 */
 	async updateScore(matchId: MatchId, userId: UserId, score: number): Promise<void> {
+		const match = await this.findById(matchId);
+		if (match && match.status !== MatchTypes.MATCH_STATUS.ACTIVE)
+			throw new Error(`La partida no está activa: ${match.id}`);
 		this.db
 			.prepare(`
 				UPDATE match_players
 				SET score = ?
 				WHERE match_id = ? AND user_id = ?
 			`).run(score, matchId, userId);
+	}
+
+	/**
+	 * Marca un 'match' como status = FINISHED\
+	 * Determina el ganador en base al score de cada player\
+	 */
+	async finish(matchId: MatchId): Promise<MatchTypes.Match> {
+
+		const match = await this.getCompleteMatch(matchId);
+		if (!match) throw new Error(`El match no existe: ${matchId}`);
+		if (match.status === MatchTypes.MATCH_STATUS.FINISHED)
+			throw new Error(`Match ${matchId} ya está finalizado`);
+
+		// Conseguir el UserId del ganador 
+		const matchPlayers = MatchMapper.getPlayersArray(match);
+		let winnerId: MatchTypes.UserId | null = null;
+		if (matchPlayers[0].score !== matchPlayers[1].score)
+			winnerId = matchPlayers[0].score > matchPlayers[1].score
+			? matchPlayers[0].userId
+			: matchPlayers[1].userId;
+
+		this.db.prepare(`
+			UPDATE matches
+			SET status = ?, winner_id = ?
+			WHERE id = ?
+		`).run(MatchTypes.MATCH_STATUS.FINISHED, winnerId, matchId);
+
+		const finishedMatch = await this.getCompleteMatch(matchId);
+		if (!finishedMatch)
+			throw new Error(`Fallo al recuperar el match terminado: ${matchId}`);
+
+		return finishedMatch;
 	}
 
 	// ============================================================================

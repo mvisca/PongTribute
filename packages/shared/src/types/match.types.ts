@@ -22,12 +22,17 @@ export interface MatchPlayer {
 	playerSlot: PlayerSlot;
 	playerPosition: PlayerPosition;
 	score: number;
-}
+};
 
 /**
-* Tipo de array de exactamente dos MatchPlayer
+* Tipo de array de exactamente dos MatchPlayer\
+* 	id: MatchId;\
+* 	status: MatchStatus;\
+* 	players: MatchPlayers;\
+* 	winnerId: UserId | null;\
+* 	createdAt: Date;
 */
-export type TwoMatchPlayers = [MatchPlayer, MatchPlayer];
+export type MatchPlayers = [MatchPlayer, MatchPlayer];
 
 /**
 * Partida completa (Aggregate Root)
@@ -36,7 +41,7 @@ export type TwoMatchPlayers = [MatchPlayer, MatchPlayer];
 export interface Match {
 	id: MatchId;
 	status: MatchStatus;
-	players: TwoMatchPlayers;
+	players: MatchPlayers;
 	winnerId: UserId | null;
 	createdAt: Date;
 }
@@ -56,31 +61,11 @@ export interface CreatePlayerData {
 }
 
 /**
-* Datos para crear Match
-* Enviados por el backend para iniciar partida
-*/
-export type TwoPlayersData = [CreatePlayerData, CreatePlayerData];
-
-export interface CreateMatchData {
-	players: TwoPlayersData;
-}
-
-// ============================================================================
-// DTOs - OUTPUT (Respuestas)
-// ============================================================================
-
-/**
-* Respuesta de Match para el frontend
-* Incluye toda la información de la partida
-* Enviada por el repository al backend con la partida creada
-*/
-export interface MatchResponse {
-	id: MatchId;
-	status: MatchStatus;
-	winnerId: UserId | null;
-	players: TwoMatchPlayers;
-	createdAt: Date;
-}
+ * Data que se pasa al metodo 'create()' de Match \
+ * @param '[CreatePlayerData, CreatePlayerData]'\
+ * CreatePlayerData = {UserId, PlayerSlot, PlayerPosition} 
+ */
+export type CreateMatchData = [CreatePlayerData, CreatePlayerData];
 
 // ============================================================================
 // REPRESENTACIÓN SQL (Snake_case)

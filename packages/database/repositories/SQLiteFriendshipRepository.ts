@@ -1,4 +1,4 @@
-import Database from 'better-sqlite3';
+import BetterSqlite3 from "better-sqlite3";
 import { UserId, FriendshipStatus } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';
 import { IFriendshipRepository } from './IFriendshipRepository';      // ← Local
@@ -6,7 +6,7 @@ import { FriendshipMapper } from '../mappers/FriendshipMapper';
 
 export class SQLiteFriendshipRepository implements IFriendshipRepository {
 
-	constructor(private db: Database.Database) {}
+	constructor(private db: BetterSqlite3.Database) {}
 
 	// =========================================================================
 	// MÉTODOS PRIVADOS
