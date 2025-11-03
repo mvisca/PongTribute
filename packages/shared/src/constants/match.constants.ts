@@ -94,23 +94,3 @@ export const MATCH_STATUS = {
 }as const;
 
 export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];
-
-// ============================================================================
-// VALIDATION RULES
-// ============================================================================
-
-/**
- * Validación de partidas
- */
-export const MATCH_VALIDATION = {
-
-	/**
-	 * Score minimo
-	 */
-	MIN_SOCRE: 0,
-
-	/**
-	 * Score máximo
-	 */
-	MAX_SCORE: 99,
-} as const;

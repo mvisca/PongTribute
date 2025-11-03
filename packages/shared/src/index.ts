@@ -1,33 +1,15 @@
 // ============================================================================
-// EXPORTS - TYPES
+// INTERNAL TYPES
 // ============================================================================
 
-export * from "./types/branded.types";
-export * from "./types/user.types";
-export * from "./types/friendship.types";
-export * from "./types/match.types";
-// export * from "./types/game.types";
+export type * from './types';
 
 // ============================================================================
-// EXPORTS - EVENTS
+// NAMESPACES
 // ============================================================================
 
-export * from "./events/base/BaseEvent";
-export * from "./events/user/UserEvents";
-// export * from "./events/friendship/FriendshipEvents";
-// export * from "./events/game/GameEvents";
-// export * from "./events/matchmaking/MatchmakingEvents";
+export * as Constants from './constants';
+export * as Events from './events';
+export { Types, Schemas } from './schemas';
+export * as Utils from './utils';
 
-// ============================================================================
-// EXPORTS - CONSTANTS
-// ============================================================================
-
-export * from "./constants/friendship.constants";
-export * from "./constants/game.constants";
-export * from "./constants/match.constants";
-
-// ============================================================================
-// EXPORTS - UTILS
-// ============================================================================
-
-export * from "./utils/uuidGenerator";

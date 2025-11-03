@@ -1,5 +1,4 @@
-import { MatchId, UserId } from "./branded.types";
-import { PlayerSlot, PlayerPosition, MatchStatus } from "../constants/match.constants";
+import { PlayerPosition, PlayerSlot, MatchStatus } from "../constants"; 
 
 // ============================================================================
 // ENTIDADES DE DOMINIO
@@ -17,8 +16,8 @@ import { PlayerSlot, PlayerPosition, MatchStatus } from "../constants/match.cons
 * Representa a un jugador y su info dentro de un Match
 */
 export interface MatchPlayer {
-	matchId: MatchId;
-	userId: UserId;
+	matchId: string;
+	userId: string;
 	playerSlot: PlayerSlot;
 	playerPosition: PlayerPosition;
 	score: number;
@@ -26,10 +25,10 @@ export interface MatchPlayer {
 
 /**
 * Tipo de array de exactamente dos MatchPlayer\
-* 	id: MatchId;\
+* 	id: string;\
 * 	status: MatchStatus;\
 * 	players: MatchPlayers;\
-* 	winnerId: UserId | null;\
+* 	winnerId: string | null;\
 * 	createdAt: Date;
 */
 export type MatchPlayers = [MatchPlayer, MatchPlayer];
@@ -39,10 +38,10 @@ export type MatchPlayers = [MatchPlayer, MatchPlayer];
 * Siempre tiene exactamente 2 jugadores (1v1)
 */
 export interface Match {
-	id: MatchId;
+	id: string;
 	status: MatchStatus;
 	players: MatchPlayers;
-	winnerId: UserId | null;
+	winnerId: string | null;
 	createdAt: Date;
 }
 
@@ -55,7 +54,7 @@ export interface Match {
 * Enviados por el backend para crear la partida
 */
 export interface CreatePlayerData {
-	userId: UserId;
+	userId: string;
 	playerSlot: PlayerSlot;
 	playerPosition: PlayerPosition;
 }

@@ -1,14 +1,11 @@
 // ============================================================================
 // TEST FRIENDSHIP REPOSITORY
-// packages/database/test/test-friendship-repository.ts
 // ============================================================================
 
-import { UserId, Email, FRIENDSHIP_STATUS } from "../../shared/src";
-
-import { SQLiteFriendshipRepository } from "../repositories/SQLiteFriendshipRepository";
-import { SQLiteUserRepository } from "../repositories/SQLiteUserRepository";
-
-import { getDatabase } from "../connection";
+import { Email, FRIENDSHIP_STATUS } from "../../shared/src";
+import { SQLiteFriendshipRepository } from "../src/repositories/SQLiteFriendshipRepository";
+import { SQLiteUserRepository } from "../src/repositories/SQLiteUserRepository";
+import { getDatabase } from "../src/connection";
 
 async function testFriendshipRepository() {
   console.log("=== TEST FRIENDSHIP REPOSITORY ===\n");
@@ -166,11 +163,14 @@ async function testFriendshipRepository() {
   // ============================================================================
   console.log("\n--- CLEANUP ---");
   db.exec("DELETE FROM friendships");
+  db.exec("DELETE FROM match_players");
+  db.exec("DELETE FROM matches");
   db.exec("DELETE FROM users");
-  console.log(" DB limpiada");
 
-  console.log("\n=== TEST COMPLETO ===");
-  db.close();
+  console.log(" *- DB limpia");
+
+  console.log("\n=== TEST FRIENDSHIP COMPLETO ===");
+ db.close();
 }
 
 testFriendshipRepository();

@@ -2,6 +2,7 @@
 // GAME CONSTANTS
 // ============================================================================
 
+const COURT_HEIGHT = 600;
 /**
  * Configuración base del juego Pong
  */
@@ -10,14 +11,14 @@ export const GAME_CONSTANTS = {
   /**
    * Dimensiones del campo de juego
    */
-  COURT_WIDTH: 800,
-  COURT_HEIGHT: 600,
+  COURT_WIDTH: COURT_HEIGHT * 1.3,
+  COURT_HEIGHT: COURT_HEIGHT,
 
   /**
    * Dimensiones de las paletas de los jugadores
    */
-  PADDLE_WIDTH: 10,
-  PADDLE_HEIGHT: 100,
+  PADDLE_WIDTH: COURT_HEIGHT / 100,
+  PADDLE_HEIGHT: COURT_HEIGHT / 10,
 
   /**
    * Tamaño y velocidad inicial de la pelota

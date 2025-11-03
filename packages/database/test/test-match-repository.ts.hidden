@@ -1,0 +1,247 @@
+// ============================================================================
+// TEST MATCH REPOSITORY
+// ============================================================================
+
+import * as SharedTypes from "../../shared/src";
+import { SQLiteMatchRepository } from "../src/repositories/SQLiteMatchRepository";
+import { SQLiteUserRepository } from "../src/repositories/SQLiteUserRepository";
+
+import { getDatabase } from "../src/connection";
+import { MatchMapper } from "../src/mappers/MatchMapper";
+import { MockPropertyContext } from "node:test";
+import { match } from "assert";
+
+// ============================================================================
+// CREAR USUARIOS
+// ============================================================================
+
+function showScore(
+	match: SharedTypes.Match, p1: SharedTypes.UserId, p2: SharedTypes.UserId
+): void {
+	let p1Complete = MatchMapper.findPlayerInMatch(match, p1);
+	let p2Complete = MatchMapper.findPlayerInMatch(match, p2);
+	console.log("=== SCORE UPDATE ===");
+	console.log(`${p2Complete.playerSlot}: ${p1Complete.playerPosition} : ${p1Complete.score}`);
+	console.log(`${p2Complete.playerSlot}: ${p2Complete.playerPosition} : ${p2Complete.score}`);
+}
+
+async function testMatchRepository() {
+
+	console.log('=== TEST MATCH REPOSITORY ===');
+	
+	const db = getDatabase();
+	db.exec("DELETE FROM matches");
+	db.exec("DELETE FROM match_players");
+	db.exec("DELETE FROM friendships");
+	db.exec("DELETE FROM users");
+
+	const userRepo = new SQLiteUserRepository(db);
+	const matchRepo = new SQLiteMatchRepository(db);
+
+	// ============================================================================
+	// CREAR USUARIOS
+	// ============================================================================
+
+	console.log('Creando Usuarios');
+	const toto = await userRepo.create({
+		username: "toto",
+		email: "toto@tita.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "url/picture" 
+	});
+
+	const pepe = await userRepo.create({
+		username: "pepe",
+		email: "pepe@pepe.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "image/path"
+	});
+
+	const tita = await userRepo.create({
+		username: "tita",
+		email: "tita@tita.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "otra/image"
+	});
+
+	const lulu = await userRepo.create({
+		username: "lulu",
+		email: "lulu@tita.com" as SharedTypes.Email,
+		passwordHash: "passwordraw",
+		avatar: "otra/image"
+	});
+
+	console.log("\n=== CREAR USERS ===");
+	console.log(`Usuario 1 creado: ${toto.username} [${toto.id}]`);
+	console.log(`Usuario 2 creado: ${pepe.username} [${pepe.id}]`);
+	console.log(`Usuario 3 creado: ${tita.username} [${tita.id}]`);
+
+	// ============================================================================
+	// CREAR MATCH PLAYERS + MATCH
+	// ============================================================================
+
+	console.log("\n=== CREAR MATCHES ===");
+
+	// === MATCH 1
+	// Create MatchPlayers
+	console.log('Match 1 === pepe toto');
+	const pepeVsTotoData: SharedTypes.CreateMatchData = MatchMapper
+		.cretateMatchPlayers(pepe.id, toto.id);
+	console.log(`Players creados: `, pepeVsTotoData);
+	// Create Match 2
+	const pepeVsToto = await matchRepo.create(pepeVsTotoData);
+	console.log(`Match created ('pepe' vs 'toto')`, pepeVsToto);
+
+	// ============================================================================
+	// CREAR MATCH + SCORE + FINISH
+	// ============================================================================
+	// === MATCH 2
+	// Create MatchPlayers
+	console.log('Match 2 === toto tita');
+	const totoVsTitaData: SharedTypes.CreateMatchData = MatchMapper
+		.cretateMatchPlayers(toto.id, tita.id);
+	console.log(`Players creados: `, totoVsTitaData);
+	// Create Match 2
+	let totoVsTita = await matchRepo.create(totoVsTitaData);
+	console.log(`Match created: `, totoVsTita);
+	// Update Score toto
+	console.log('Match 2 === toto scores');
+	matchRepo.updateScore(totoVsTita.id, toto.id, 1);
+	totoVsTita = await matchRepo.findById(totoVsTita.id);
+	showScore(totoVsTita, toto.id, tita.id)
+	// Update socre tita
+	console.log('Match 2 === tita scores');
+	let titaPlayer = MatchMapper.findPlayerInMatch(totoVsTita, tita.id);
+	await matchRepo.updateScore(totoVsTita.id, tita.id, titaPlayer.score + 1);
+	totoVsTita = await matchRepo.findById(totoVsTita.id);
+	showScore(totoVsTita, toto.id, tita.id)
+	// Update score tita
+	console.log('Match 2 === tita scores');
+	titaPlayer = MatchMapper.findPlayerInMatch(totoVsTita, tita.id);
+	await matchRepo.updateScore(totoVsTita.id, tita.id, titaPlayer.score + 1);
+	totoVsTita = await matchRepo.findById(totoVsTita.id);
+	showScore(totoVsTita, toto.id, tita.id);
+
+	// Terminar el partido (pasar el id, no el objeto)
+	totoVsTita = await matchRepo.finish(totoVsTita.id);
+
+	console.log(`Partida terminada: `, totoVsTita);
+
+	// MATCH 3
+	console.log('Match 3 === tita pepe');
+	const titaVsPepeData = await MatchMapper.cretateMatchPlayers(tita.id, pepe.id);
+	let titaVsPepe = await matchRepo.create(titaVsPepeData);
+	await matchRepo.updateScore(titaVsPepe.id, tita.id, 1);
+	await matchRepo.updateScore(titaVsPepe.id, pepe.id, 1);
+	await matchRepo.finish(titaVsPepe.id);
+	titaVsPepe = await matchRepo.findById(titaVsPepe.id);
+	console.log(`Partida terminada: `, titaVsPepe);
+
+	// ============================================================================
+	// DIFERENTES METODOS FIND
+	// ============================================================================
+
+	// Active
+	const activeMatches = await matchRepo.findActive();
+	console.log(`=== FIND ACTIVE ===`);
+	console.log(`Activas: `, JSON.stringify(activeMatches, null, 2));
+
+	// Finished by User
+	console.log(`\n=== FIND FINISHED BY USER ===`);
+	const finishedByTita = await matchRepo.findFinishedByUser(tita.id);
+	console.log(`User CON partidas terminadas`, JSON.stringify(finishedByTita, null, 2));
+
+	let finishedByLulu = await matchRepo.findFinishedByUser(lulu.id);
+	console.log(`==> User SIN partidas`, JSON.stringify(finishedByLulu, null, 2));
+	const totoVsLuluData = await MatchMapper.cretateMatchPlayers(toto.id, lulu.id);
+	const totoVsLulu = await matchRepo.create(totoVsLuluData);
+	finishedByLulu = await matchRepo.findFinishedByUser(lulu.id);
+	console.log(`==> User con partidas y sin partidas terminadas`, JSON.stringify(finishedByLulu, null, 2));
+
+	// Find by user
+	console.log(`\n=== FIND BY USER ===`);
+	const titaMatches = await matchRepo.findByUser(tita.id);
+	console.log(`By user id ${tita.id}`, JSON.stringify(titaMatches, null, 2));
+
+	// ============================================================================
+	// CASOS LÍMITE
+	// ============================================================================
+
+	// Finish una partida ya finished
+	console.log(`\n=== FINISH ALREADY FINISHED MATCH ===`);
+	try {
+		const alreadyFinished = await matchRepo.finish(finishedByTita[0].id);
+	} catch (err) {
+		console.error(`${err}`);
+	}
+
+	// Finish una partida que no existe
+	console.log(`\n=== FINISH UNEXSISTENT MATCH ===`);
+	try {
+		const alreadyFinished = await matchRepo.finish("abcd-efg-hijk-lmno-pqrs-tuvw-xyz0");
+	} catch (err) {
+		console.error(`${err}`);
+	}
+
+	// ============================================================================
+	// ELIMINACIÓN
+	// ============================================================================
+
+	// Eliminar una partida, debe desaparecer su player
+	console.log(`\n=== DELETE MATCH ===`);
+	let luluMatchesAfterDelete = await matchRepo.findByUser(lulu.id);
+	console.log(`Matches BEFORE delete for: ${lulu.id}`);
+	console.log(JSON.stringify(luluMatchesAfterDelete, null, 2));
+	await matchRepo.delete(totoVsLulu.id);
+	try {
+		const deletedTotoVsLulu = await matchRepo.findById(totoVsLulu.id); 
+	} catch (err) {
+		console.log(err);
+	}
+	luluMatchesAfterDelete = await matchRepo.findByUser(lulu.id);
+	console.log(`Matches AFTER delete for: ${lulu.id}`);
+	console.log(JSON.stringify(luluMatchesAfterDelete, null, 2));
+
+	console.log("\n--- CLEAN UP ---");
+	db.exec("DELETE FROM friendships");
+	db.exec("DELETE FROM match_players");
+	db.exec("DELETE FROM matches");
+	db.exec("DELETE FROM users");
+
+	console.log(" *- DB limpia");
+
+	console.log("\n=== TEST MATCH COMPLETO ===");
+	db.close();
+}
+
+testMatchRepository();
+/* 
+// ============================================================================
+// TEST 10: DELETE
+// ============================================================================
+
+Eliminar match
+
+Verificar:
+  ✓ match3 no existe (findById retorna null)
+  ✓ Bob ahora tiene solo 1 match (CASCADE eliminó participant)
+
+// ============================================================================
+// TEST 11: EDGE CASES
+// ============================================================================
+
+Crear usuario nuevo (sin matches)
+
+Buscar matches → retorna array vacío
+Buscar finished → retorna array vacío
+
+// ============================================================================
+// CLEANUP
+// ============================================================================
+
+Limpiar todas las tablas
+Cerrar DB
+Mostrar "TEST COMPLETO"
+
+FIN TEST
+*/
