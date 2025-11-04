@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   username TEXT NOT NULL UNIQUE COLLATE NOCASE,
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
   password_hash TEXT NOT NULL,
-  avatar TEXT,
+  avatar TEXT NOT NULL,
   is_online INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -35,8 +35,8 @@ CREATE TABLE IF NOT EXISTS friendships (
 -- finished_at es NULL mientras la partida está activa
 CREATE TABLE IF NOT EXISTS matches (
   id TEXT PRIMARY KEY,
-  status TEXT NOT NULL DEFAULT 'active',
-  winner_id TEXT,
+  status TEXT NOT NULL DEFAULT 'pending',
+  winner_id TEXT DEFAULT NULL,
   created_at INTEGER NOT NULL,
   FOREIGN KEY (winner_id) REFERENCES users(id) ON DELETE SET NULL
 );

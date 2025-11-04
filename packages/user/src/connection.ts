@@ -12,7 +12,7 @@ export function getDatabase(): Database.Database {
 	// Para siguientes llamadas a getDatabse(), db ya está creada
 	if (!db) {
 		const dbPath = process.env.DB_PATH ||
-			path.join('../../db-data/transcendence.db');
+			path.join('../../db-data/user.db');
 		
 		db = new Database(dbPath);
 		/*

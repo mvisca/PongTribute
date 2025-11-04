@@ -5,10 +5,10 @@ import { userRoutes } from './routes/user.routes';
 
 /**
  * Crea y configuara la instancia de Fastfy\
- * \
+ * 
  * @returns instnacia de Fastify configurada, sin listen())
  */
-export function buildApp(): FastifyInstance {
+export function buildApp(): FastifyInstance { 
 	
 	// Crear instancia
 	const app = Fastify(getFastifyConfig());
@@ -24,7 +24,7 @@ export function buildApp(): FastifyInstance {
 	*/
 	app.get('/health', async(request, reply) => {
 		return {
-			status: 'ok',
+			status: 'Molt be! La app funcioona ok!',
 			service: 'database-service',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime()

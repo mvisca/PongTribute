@@ -1,5 +1,4 @@
 packages:
-  - packages/database
   - packages/frontend
   - packages/shared
   - packages/user

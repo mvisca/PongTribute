@@ -23,10 +23,9 @@
 		"skipDefaultLibCheck": true
 	},
 	"references": [
-		{ "path": "./packages/database" },
+		{ "path": "./packages/user" },
 		{ "path": "./packages/frontend" },
-		{ "path": "./packages/shared" },
-		{ "path": "./packages/user" }
+		{ "path": "./packages/shared" }
 	],
 	"files": []
 }

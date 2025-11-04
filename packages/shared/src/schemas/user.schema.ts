@@ -1,4 +1,4 @@
-import { Type, Static } from '@sinclair/typebox';
+import { Type } from '@sinclair/typebox';
 
 // ============================================================================
 // SCHEMAS DE BODY
@@ -19,10 +19,11 @@ export const CreateUserBody = Type.Object({
 		format: 'email',
 		description: 'Email válido'		
 	}),
-	passwordHash: Type.String({
-		minLength: 60,
-		maxLength: 60,
-		pattern: '^\\$2[aby]\\$\\d{2}\\$.{53}$'
+	password: Type.String({
+		minLength: 8,
+		maxLength: 32,
+		pattern: '^[a-zA-Z0-9]+$',
+		description: 'Password alphanum de 8-32 caracteres'
 	}),
 	avatar: Type.String({
 		format: 'uri',

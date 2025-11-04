@@ -52,7 +52,7 @@ async function runTests() {
 		db.prepare('DELETE FROM users').run();
 		
 		const juanUser = {
-			username: `Juan`,
+			username: `JOAN`,
 			email: `Juan@example.com`,
 			passwordHash: bcrypt.hashSync('pass123', 10),
 			avatar: 'https://example.com/avatar.png'
@@ -63,7 +63,7 @@ async function runTests() {
 		console.log('🔍 Logger type:', app.log.constructor.name);
 		console.log('🔍 Logger level:', app.log.level);
 		console.log('');
-
+		
 		let userId: string = '';
 		
 		console.log("\n" + "o".repeat(40));
@@ -93,6 +93,8 @@ async function runTests() {
 				test('CREATE', 'Email matches', juanUser.email, body.email);
 				test('CREATE', 'No password in response', undefined, body.passwordHash);
 			}
+			console.log('Output res.json');
+			console.log(res.json());
 		}
 		
 		// 1.2 Duplicate email
@@ -144,9 +146,9 @@ async function runTests() {
 				console.log (`${"!".repeat(40)}\nError catch at 1.4`);
 			}			
 			test('CREATE', 'Missing email returns 400', 400, res14?.statusCode || undefined);
-			app.log.level = 'info';
 		}
-		/*
+		app.log.level = 'info';
+		
 		// ====================================================================
 		// subject 2: READ
 		// ====================================================================
@@ -154,115 +156,116 @@ async function runTests() {
 		
 		// 2.1 Get by ID
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/${userId}`
-		});
-		
-		test('READ', 'Get by ID returns 200', 200, res.statusCode);
-		
-		if (res.statusCode === 200) {
-		const body = res.json();
-		test('READ', 'ID matches', userId, body.id);
-		}
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/${userId}`
+			});
+			
+			test('READ', 'Get by ID returns 200', 200, res.statusCode);
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('READ', 'ID matches', userId, body.id);
+			}
 		}
 		
 		// 2.2 Get non-existent
 		{
-		const fakeId = Utils.generateUserId();
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/${fakeId}`
-		});
-		
-		test('READ', 'Non-existent ID returns 404', 404, res.statusCode);
+			const fakeId = Utils.generateUserId();
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/${fakeId}`
+			});
+			
+			test('READ', 'Non-existent ID returns 404', 404, res.statusCode);
 		}
 		
 		// 2.3 Get by username
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/username/${juanUser.username}`
-		});
-		
-		test('READ', 'Get by username returns 200', 200, res.statusCode);
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/username/${juanUser.username}`
+			});
+			
+			test('READ', 'Get by username returns 200', 200, res.statusCode);
 		}
 		
 		// 2.4 Username case-insensitive
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/username/${juanUser.username.toUpperCase()}`
-		});
-		
-		test('READ', 'Username search case-insensitive', 200, res.statusCode);
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/username/${juanUser.username.toUpperCase()}`
+			});
+			
+			test('READ', 'Username search case-insensitive', 200, res.statusCode);
 		}
 		
 		// ====================================================================
 		// subject 3: CHECK AVAILABILITY
 		// ====================================================================
 		console.log('\n[CHECK AVAILABILITY]');
-		
+
 		// 3.1 Check available username
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/check-username/free${t}` // 10 chars max
-		});
-		
-		test('CHECK', 'Available username returns 200', 200, res.statusCode);
-		
-		if (res.statusCode === 200) {
-		const body = res.json();
-		test('CHECK', 'Username is available', true, body.available);
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/check-username/non-username` // 10 chars max
+			});
+
+			test('CHECK', 'Available username returns 200', 200, res.statusCode);
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('CHECK', 'Username is available', true, body.available);
+			}
 		}
-		}
-		
+
 		// 3.2 Check taken username
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/check-username/${juanUser.username}`
-		});
-		
-		test('CHECK', 'Taken username returns 200', 200, res.statusCode);
-		
-		if (res.statusCode === 200) {
-		const body = res.json();
-		test('CHECK', 'Username not available', false, body.available);
-		}
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/check-username/${juanUser.username}`
+			});
+			
+			test('CHECK', 'Taken username returns 200', 200, res.statusCode);
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('CHECK', 'Username not available', false, body.available);
+			}
 		}
 		
 		// 3.3 Check available email
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/check-email/free${t}@example.com`
-		});
-		
-		test('CHECK', 'Available email returns 200', 200, res.statusCode);
-		
-		if (res.statusCode === 200) {
-		const body = res.json();
-		test('CHECK', 'Email is available', true, body.available);
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/check-email/free-email@example.com`
+			});
+			
+			test('CHECK', 'Available email returns 200', 200, res.statusCode);
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('CHECK', 'Email is available', true, body.available);
+			}
 		}
-		}
-		
+
 		// 3.4 Check taken email
 		{
-		const res = await app.inject({
-		method: 'GET',
-		url: `/api/users/check-email/${juanUser.email}`
-		});
-		
-		test('CHECK', 'Taken email returns 200', 200, res.statusCode);
-		
-		if (res.statusCode === 200) {
-		const body = res.json();
-		test('CHECK', 'Email not available', false, body.available);
+			const res = await app.inject({
+				method: 'GET',
+				url: `/api/users/check-email/${juanUser.email}`
+			});
+			
+			test('CHECK', 'Taken email returns 200', 200, res.statusCode);
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('CHECK', 'Email not available', false, body.available);
+				console.log(body);
+			}
 		}
-		}
-		
+
 		// ====================================================================
 		// subject 4: UPDATE
 		// ====================================================================
@@ -270,87 +273,87 @@ async function runTests() {
 		
 		// 4.1 Update username only
 		{
-		const res = await app.inject({
-		method: 'PUT',
-		url: `/api/users/${userId}`,
-		payload: {
-		username: `new${t}` // 9 chars max
-		// NO email, NO avatar - campos opcionales
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${userId}`,
+				payload: {
+					username: `nuevoUser` // 9 chars max
+					// NO email, NO avatar - campos opcionales
+				}
+			});
+			
+			test('UPDATE', 'Update username returns 200', 200, res.statusCode);
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('UPDATE', 'Username updated', `nuevoUser`, body.username);
+				test('UPDATE', 'Email unchanged', juanUser.email, body.email);
+			}
 		}
-		});
-		
-		test('UPDATE', 'Update username returns 200', 200, res.statusCode);
-		
-		if (res.statusCode === 200) {
-		const body = res.json();
-		test('UPDATE', 'Username updated', `new${t}`, body.username);
-		test('UPDATE', 'Email unchanged', juanUser.email, body.email);
-		}
-		}
-		
+/*
 		// 4.2 Update to duplicate username
 		{
-		// Create second user
-		const user2 = await app.inject({
-		method: 'POST',
-		url: '/api/users',
-		payload: {
-		username: `u2${t}`, // 8 chars max
-		email: `u2${t}@example.com`,
-		passwordHash: juanUser.passwordHash
-		}
-		});
-		
-		if (user2.statusCode === 201) {
-		const user2Id = user2.json().id;
-		
-		// Try to update to existing username
-		const res = await app.inject({
-		method: 'PUT',
-		url: `/api/users/${user2Id}`,
-		payload: {
-		username: `new${t}` // Already taken by first user
-		}
-		});
-		
-		test('UPDATE', 'Duplicate username returns 409', 409, res.statusCode);
-		
-		// Cleanup
-		await app.inject({
-		method: 'DELETE',
-		url: `/api/users/${user2Id}`
-		});
-		} else {
-			test('UPDATE', 'Setup user2 for test', 201, user2.statusCode);
-		}
+			// Create second user
+			const user2 = await app.inject({
+				method: 'POST',
+				url: '/api/users',
+				payload: {
+					username: `u2${t}`, // 8 chars max
+					email: `u2${t}@example.com`,
+					passwordHash: juanUser.passwordHash
+				}
+			});
+			
+			if (user2.statusCode === 201) {
+				const user2Id = user2.json().id;
+				
+				// Try to update to existing username
+				const res = await app.inject({
+					method: 'PUT',
+					url: `/api/users/${user2Id}`,
+					payload: {
+						username: `new${t}` // Already taken by first user
+					}
+				});
+				
+				test('UPDATE', 'Duplicate username returns 409', 409, res.statusCode);
+				
+				// Cleanup
+				await app.inject({
+					method: 'DELETE',
+					url: `/api/users/${user2Id}`
+				});
+			} else {
+				test('UPDATE', 'Setup user2 for test', 201, user2.statusCode);
+			}
 		}
 		
 		// 4.3 Update non-existent user
 		{
-		const fakeId = Utils.generateUserId();
-		const res = await app.inject({
-		method: 'PUT',
-		url: `/api/users/${fakeId}`,
-		payload: {
-		username: 'whatever'
-		}
-		});
-		
-		test('UPDATE', 'Non-existent user returns 404', 404, res.statusCode);
+			const fakeId = Utils.generateUserId();
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${fakeId}`,
+				payload: {
+					username: 'whatever'
+				}
+			});
+			
+			test('UPDATE', 'Non-existent user returns 404', 404, res.statusCode);
 		}
 		
 		// 4.4 Update email only
 		{
-		const res = await app.inject({
-		method: 'PUT',
-		url: `/api/users/${userId}`,
-		payload: {
-		email: `newemail${t}@example.com`
-		// NO username, NO avatar
-		}
-		});
-		
-		test('UPDATE', 'Update email returns 200', 200, res.statusCode);
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${userId}`,
+				payload: {
+					email: `newemail${t}@example.com`
+					// NO username, NO avatar
+				}
+			});
+			
+			test('UPDATE', 'Update email returns 200', 200, res.statusCode);
 		}
 		
 		// ====================================================================
@@ -360,30 +363,30 @@ async function runTests() {
 		
 		// 5.1 Update password
 		{
-		const res = await app.inject({
-		method: 'PUT',
-		url: `/api/users/${userId}/password`,
-		payload: {
-		newPasswordHash: bcrypt.hashSync('newpass', 10)
-		}
-		});
-		
-		test('PASSWORD', 'Update password returns 204', 204, res.statusCode);
-		test('PASSWORD', 'Empty body', '', res.body);
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${userId}/password`,
+				payload: {
+					newPasswordHash: bcrypt.hashSync('newpass', 10)
+				}
+			});
+			
+			test('PASSWORD', 'Update password returns 204', 204, res.statusCode);
+			test('PASSWORD', 'Empty body', '', res.body);
 		}
 		
 		// 5.2 Update password non-existent
 		{
-		const fakeId = Utils.generateUserId();
-		const res = await app.inject({
-		method: 'PUT',
-		url: `/api/users/${fakeId}/password`,
-		payload: {
-		newPasswordHash: bcrypt.hashSync('newpass', 10)
-		}
-		});
-		
-		test('PASSWORD', 'Non-existent user returns 404', 404, res.statusCode);
+			const fakeId = Utils.generateUserId();
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${fakeId}/password`,
+				payload: {
+					newPasswordHash: bcrypt.hashSync('newpass', 10)
+				}
+			});
+			
+			test('PASSWORD', 'Non-existent user returns 404', 404, res.statusCode);
 		}
 		
 		// ====================================================================
@@ -393,32 +396,32 @@ async function runTests() {
 		
 		// 6.1 Delete existing user
 		{
-		const res = await app.inject({
-		method: 'DELETE',
-		url: `/api/users/${userId}`
-		});
-		
-		test('DELETE', 'Delete user returns 204', 204, res.statusCode);
-		test('DELETE', 'Empty body', '', res.body);
-		
-		// Verify deleted
-		const check = await app.inject({
-		method: 'GET',
-		url: `/api/users/${userId}`
-		});
-		
-		test('DELETE', 'Deleted user not found', 404, check.statusCode);
+			const res = await app.inject({
+				method: 'DELETE',
+				url: `/api/users/${userId}`
+			});
+			
+			test('DELETE', 'Delete user returns 204', 204, res.statusCode);
+			test('DELETE', 'Empty body', '', res.body);
+			
+			// Verify deleted
+			const check = await app.inject({
+				method: 'GET',
+				url: `/api/users/${userId}`
+			});
+			
+			test('DELETE', 'Deleted user not found', 404, check.statusCode);
 		}
 		
 		// 6.2 Delete non-existent
 		{
-		const fakeId = Utils.generateUserId();
-		const res = await app.inject({
-		method: 'DELETE',
-		url: `/api/users/${fakeId}`
-		});
-		
-		test('DELETE', 'Non-existent user returns 404', 404, res.statusCode);
+			const fakeId = Utils.generateUserId();
+			const res = await app.inject({
+				method: 'DELETE',
+				url: `/api/users/${fakeId}`
+			});
+			
+			test('DELETE', 'Non-existent user returns 404', 404, res.statusCode);
 		}
 		
 		STOP */

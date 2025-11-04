@@ -1,6 +1,6 @@
 import { Static } from '@sinclair/typebox';
 import * as UserSchemas from './user.schema';
-
+  
 export namespace Schemas { 
 	// User Schemas
 	export const createUserSchema = UserSchemas.createUserSchema;
@@ -13,7 +13,7 @@ export namespace Schemas {
 	export const checkUsernameSchema = UserSchemas.checkUsernameSchema;
 	export const checkEmailSchema = UserSchemas.checkEmailSchema;
 
-	// Friendship Schemas
+	// Friendship Schemas 
 	
 	// Match Schemas
 }

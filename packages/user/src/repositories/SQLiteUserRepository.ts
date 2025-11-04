@@ -1,4 +1,5 @@
 import BetterSqlite3 from "better-sqlite3";
+import bcrypt from 'bcryptjs';
 import { IUserRepository } from './IUserRepository';
 import { UserMapper } from '../mappers/UserMapper';
 import { Utils, Types, UserRow } from "@transcendence/shared";
@@ -32,7 +33,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: Utils.generateUserId(),
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			passwordHash: data.passwordHash,
+			passwordHash: bcrypt.hashSync(data.password),
 			avatar: data.avatar,
 			isOnline: false,
 			createdAt: now,

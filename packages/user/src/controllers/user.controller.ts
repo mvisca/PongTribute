@@ -25,21 +25,13 @@ export class UserController {
 	* @param reply\
 	* @returns tipo UserPublic
 	*/
-	async createUser(
-		request: FastifyRequest<{
-			Body: Types.CreateUserBody }>,
-		reply: FastifyReply
-	): Promise <void> {
+	async createUser(request: FastifyRequest<{Body: Types.CreateUserBody }>,reply: FastifyReply): Promise <void> {
 		try {
-			// extraer body, ya validado por JSON Schema de Fastify
+			console.log('HOLA: ', request.body);
 			const data = request.body;
-			
-			// Comprobación de que es único
-			// const emailUnique = await this.userRepo.isEmailTaken(data.email);
-			// const usernameUnique = await this.userRepo.isUsernameTaken(data.username);
-			// en secuecial es lento, con Promise.all es paralelo una sola llamada más rápida
+
 			const [emailTaken, usernameTaken] = await Promise.all([
-				this.userRepo.isEmailTaken(data.email),
+				this.userRepo.isEmailTaken(request.body.email),
 				this.userRepo.isUsernameTaken(data.username)
 			]);
 			
@@ -53,8 +45,7 @@ export class UserController {
 					field: 'email'
 				});
 			}
-			
-			// username usado
+
 			if (usernameTaken) {
 				return reply
 				.code(409)
@@ -64,11 +55,9 @@ export class UserController {
 					field: 'username'
 				});
 			}
-			
-			// creación
+
 			const newUser = await this.userRepo.create(data);
-			
-			// respuesta éxito
+
 			return reply
 			.code(201)
 			.header('Location', `/api/users/${newUser.id}`)
