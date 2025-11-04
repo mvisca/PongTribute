@@ -14,6 +14,8 @@ export function getDatabase(): Database.Database {
 		const dbPath = process.env.DB_PATH ||
 			path.join('../../db-data/transcendence.db');
 		
+		db = new Database(dbPath);
+		/*
 		db = new Database(dbPath, {
 			verbose: (sql) => {
 				if (process.env.NODE_ENV === 'development') {
@@ -21,6 +23,8 @@ export function getDatabase(): Database.Database {
 				}
 			}
 		});
+		*/
+		
 		// Write ahead loggin
 		db.pragma('journal_mode = WAL');
 		// Foreing keys está off por defecto

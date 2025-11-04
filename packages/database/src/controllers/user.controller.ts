@@ -96,7 +96,7 @@ export class UserController {
 	async updateUser(
 		request: FastifyRequest<{ 
 			Params: { id: string },
-			Body: Types.CreateUserBody
+			Body: Types.UpdateUserBody
 		}>,
 		reply: FastifyReply
 	): Promise<void> {
@@ -136,7 +136,7 @@ export class UserController {
 				}
 			}
 			
-			// verificar si el username está usaro
+			// verificar si el username está usado
 			// si está usado por otro user, terminar
 			if (data.username) {
 				// es el de otro usuario?

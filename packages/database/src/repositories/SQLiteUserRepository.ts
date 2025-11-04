@@ -1,5 +1,3 @@
-// TODO la conversion a tolower se hace en repositoy y en mapper, debería centralizase? deberia ser solo para las comparaciones pero almacenar string como lo proporciona el usuario
-
 import BetterSqlite3 from "better-sqlite3";
 import { IUserRepository } from './IUserRepository';
 import { UserMapper } from '../mappers/UserMapper';
@@ -128,7 +126,7 @@ export class SQLiteUserRepository implements IUserRepository {
 
 	/** 
 	* Busca usuario por email (insensible a mayúsculas)\
-	* Retorna el objeto completo con password_hash
+	* Retorna el objeto completo con passwordHash
 	*/
 	async findByEmail(email: string): Promise<Types.UserInternal | null> {
 		const normalizedEmail = Utils.UserNormalizer.email(email);

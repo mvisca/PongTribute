@@ -56,7 +56,7 @@ export interface IUserRepository {
 	/**
 	 * Buscar usuario por 'email' ( CON 'passwordHash' solo para Auth )
 	 */
-	findByEmail(email: string): Promise<Types.UserPublic | null>;
+	findByEmail(email: string): Promise<Types.UserInternal | null>;
 	
 	/**
 	 * Verficar 'username' disponible

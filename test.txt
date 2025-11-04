@@ -1,0 +1,12 @@
+
+> transcendence@1.0.0 test:db-api /home/m/code/transcendence
+> pnpm --filter '@transcendence/database' test:db-api
+
+
+> @transcendence/database@1.1.0 test:db-api /home/m/code/transcendence/packages/database
+> tsx ./test/test-user-api.ts
+
+/home/m/code/transcendence/packages/database:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @transcendence/database@1.1.0 test:db-api: `tsx ./test/test-user-api.ts`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
