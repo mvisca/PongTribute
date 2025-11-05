@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { buildApp } from '../src/app';
-import { UserTypes, Utils } from '../../shared/src';
+import { Utils } from '../../shared/src';
 import { getDatabase } from '../src/connection';
 
 // ============================================================================
@@ -46,7 +46,7 @@ async function runTests() {
 		// SETUP
 		app = buildApp();
 		await app.ready();
-		
+
 		// Limpiar DB
 		const db = getDatabase();
 		db.prepare('DELETE FROM users').run();
@@ -61,8 +61,7 @@ async function runTests() {
 		// Identificar logger
 		console.log(`\n${"o".repeat(10)} Identificar Logger ${"o".repeat(10)}`)
 		console.log('🔍 Logger type:', app.log.constructor.name);
-		console.log('🔍 Logger level:', app.log.level);
-		console.log('');
+		console.log('🔍 Logger level:', '');
 		
 		let userId: string = '';
 		
@@ -130,8 +129,7 @@ async function runTests() {
 		}
 		
 		// 1.4 Missing required field
-		app.log.level = 'fatal';
-		{
+				{
 			let res14 = undefined;
 			try {
 				
@@ -149,8 +147,7 @@ async function runTests() {
 			}			
 			test('CREATE', 'Missing email returns 400', 400, res14?.statusCode || undefined);
 		}
-		app.log.level = 'info';
-		
+				
 		// ====================================================================
 		// subject 2: READ
 		// ====================================================================

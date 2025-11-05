@@ -60,13 +60,13 @@ dotenv.config({
  * @returns un objeto de configuración
  */
 export const config: ServiceConfig = {
-	port: parseInt(process.env.PORT || '3333', 10),
+	port: parseInt(process.env.PORT || '3101', 10),
 	host: process.env.HOST || 'localhost',
 	nodeEnv: (process.env.NODE_ENV || 'development') as ServiceConfig['nodeEnv'],
 	logLevel: (process.env.LOG_LEVEL || 'info') as ServiceConfig['logLevel'],
 	dbPath: (
 		process.env.DB_PATH || 
-		path.resolve(__dirname, '../../db-data/transcendence.db')
+		path.resolve(__dirname, '../../db-data/user.db')
 	)
 };
 
