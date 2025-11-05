@@ -1,6 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
-import { getDatabase } from '../connection';
 import { UserTypes } from '@transcendence/shared';
 
 /**
@@ -11,8 +10,7 @@ export class UserController {
 	private userRepo: SQLiteUserRepository;
 	
 	constructor() {
-		const db = getDatabase();
-		this.userRepo = new SQLiteUserRepository(db);
+		this.userRepo = new SQLiteUserRepository();
 	}
 	
 	/**
