@@ -25,7 +25,10 @@ export class UserController {
 	* @param reply\
 	* @returns tipo UserPublic
 	*/
-	async createUser(request: FastifyRequest<{Body: UserTypes.CreateUserBody }>,reply: FastifyReply): Promise <void> {
+	async createUser(
+		request: FastifyRequest<{Body: UserTypes.CreateUserBody }>,
+		reply: FastifyReply
+	): Promise <void> {
 		try {
 			const data = request.body;
 
@@ -82,10 +85,7 @@ export class UserController {
 	* @returns tipo UserPublic
 	*/
 	async updateUser(
-		request: FastifyRequest<{ 
-			Params: { id: string },
-			Body: UserTypes.UpdateUserBody
-		}>,
+		request: FastifyRequest<{Params: { id: string }, Body: UserTypes.UpdateUserBody}>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
@@ -159,10 +159,7 @@ export class UserController {
 	* @returns void
 	*/
 	async updatePassword(
-		request: FastifyRequest<{
-			Params: { id: string }
-			Body: UserTypes.UpdatePasswordBody,
-		}>,
+		request: FastifyRequest<{Params: { id: string }, Body: UserTypes.UpdatePasswordBody }>,
 		reply: FastifyReply
 	): Promise <void> {
 		try {
@@ -197,15 +194,14 @@ export class UserController {
 	* @returns void
 	*/
 	async deleteUser(
-		request: FastifyRequest<{
-			Params: { id: string }
-		}>,
+		request: FastifyRequest<{Params: { id: string } }>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
 			const { id } = request.params;
 			
 			const user = await this.userRepo.findById(id);
+			
 			if (!user) {
 				return reply
 				.code(404)
@@ -233,9 +229,7 @@ export class UserController {
 	* @returns user de tipo UserPublic
 	*/
 	async getUserById(
-		request: FastifyRequest<{
-			Params: { id: string }
-		}>,
+		request: FastifyRequest<{Params: { id: string }}>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
@@ -268,9 +262,7 @@ export class UserController {
 	* @returns user de tipo UserPublic
 	*/
 	async getUserByUsername(
-		request: FastifyRequest<{
-			Params: { username: string }
-		}>,
+		request: FastifyRequest<{Params: { username: string }}>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
@@ -304,9 +296,7 @@ export class UserController {
 	* @returns user de tipo User (este incluye el hashPassword porque se usa para Auth)
 	*/
 	async getUserByEmail(
-		request: FastifyRequest<{
-			Params: { email: string }
-		}>,
+		request: FastifyRequest<{Params: { email: string }}>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
@@ -340,9 +330,7 @@ export class UserController {
 	* @returns { available: true | false, username: string }
 	*/
 	async checkUsername(
-		request: FastifyRequest<{
-			Params: { username: string }
-		}>,
+		request: FastifyRequest<{Params: { username: string }}>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
@@ -369,9 +357,7 @@ export class UserController {
 	* @returns { available: true | false, email: string }
 	*/
 	async checkEmail(
-		request: FastifyRequest<{
-			Params: { email: string }
-		}>,
+		request: FastifyRequest<{Params: { email: string }}>,
 		reply: FastifyReply
 	): Promise<void> {
 		try {

@@ -56,6 +56,9 @@ export namespace UserSchemas {
 		isOnline: Type.Boolean({
 			description: 'Estado de conexion del usuario'
 		}),
+		isDeleted: Type.Boolean({
+			description: 'Indica que usario ha sido anonimizado'
+		}),
 		createdAt: Type.String({
 			format: 'date-time',
 			description: 'Fecha de creación ISO 8601'
@@ -87,6 +90,7 @@ export namespace UserSchemas {
 			maxLength: 60
 		}),
 		isOnline: Type.Boolean(),
+		isDeleted: Type.Boolean(),
 		createdAt: Type.String({
 			format: 'date-time'
 		}),
@@ -331,7 +335,7 @@ export namespace UserSchemas {
 	};
 	
 	// ============================================================================
-	// UPDATE PASSWORD SCHEMAS
+	// DELETE SCHEMAS
 	// ============================================================================
 	
 	/**

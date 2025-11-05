@@ -11,7 +11,6 @@
 		"test:user": "tsx ./test/test-user-repository.ts",
 		"test:user-api": "tsx ./test/test-user-api.ts",
 		"test:friendship": "tsx ./test/test-friendship-repository.ts",
-		"test:match": "tsx ./test/test-match-repository.ts",
 		"test:other": "tsx ./test/other-test.ts"
 	},
 	"dependencies": {

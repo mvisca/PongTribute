@@ -13,6 +13,15 @@ export function buildApp(): FastifyInstance {
 	// Crear instancia
 	const app = Fastify(getFastifyConfig());
 	
+	// hooks
+	app.addHook('onRegister', (instance, opts) => {
+	  console.log('Plugin registrado: ', opts.prefix)
+	})
+
+	app.addHook('onRoute', (route) => {
+		console.log('Route registrada: ', route.url)
+	})
+
 	// registrar plugins, security headers
 	app.register(helmet, {
 		contentSecurityPolicy: false,
@@ -35,8 +44,6 @@ export function buildApp(): FastifyInstance {
 	 * Registrar todas las rutas del servicio
 	 */
 	app.register(userRoutes, { prefix: '/api' });
-//	app.register(friendshipRoutes, { prefix: '/api' });
-//	app.register(matchRoutes, { previx:'/api' });
 
 	/**
 	 * Manejo global de errores\
@@ -51,7 +58,7 @@ export function buildApp(): FastifyInstance {
 
 		if (error.validation) {
 			return reply.status(400).send({
-				error: 'Error de validación',
+				error: 'Ostras! Error de validación',
 				message: error.message,
 				details: error.validation
 			})

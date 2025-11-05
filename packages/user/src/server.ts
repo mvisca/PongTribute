@@ -10,6 +10,7 @@ async function start() {
 			host: config.host
 		});
 
+		app.log.fatal("HOLA!");
 		app.log.info(`Servicio database 'lisetning' en ${config.host}:${config.port}`);
 		app.log.info(`Environment: ${config.nodeEnv}`);
 		app.log.info(`Database: ${config.dbPath}`);

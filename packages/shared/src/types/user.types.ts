@@ -13,6 +13,7 @@ export namespace UserTypes {
 		password_hash: string;
 		avatar: string;
 		is_online: number;
+		is_deleted: number;
 		created_at: number;
 		updated_at: number;
 	}

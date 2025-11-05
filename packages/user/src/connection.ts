@@ -14,16 +14,13 @@ export function getDatabase(): Database.Database {
 		const dbPath = process.env.DB_PATH ||
 			path.join('../../db-data/user.db');
 		
-		db = new Database(dbPath);
-		/*
-		db = new Database(dbPath, {
+		db = new Database(dbPath); /*, {
 			verbose: (sql) => {
 				if (process.env.NODE_ENV === 'development') {
 					console.log('[SQL]', sql);
 				}
 			}
-		});
-		*/
+		});*/
 		
 		// Write ahead loggin
 		db.pragma('journal_mode = WAL');
@@ -35,15 +32,13 @@ export function getDatabase(): Database.Database {
 		// Se separan tablas de codigo, más mantenible
 		// Idempotencia = CREATE TABLE IF NOT EXISTS
 		// Es seguro ejecturar múltipes veces
+
 		const tablesSQL = fs.readFileSync(
-			path.join(__dirname, 'schemas/tables.sql'),
+			path.join(__dirname, 'schemas/users_tables.sql'),
 			'utf-8'
 		);
-		const indexesSQL = fs.readFileSync(
-			path.join(__dirname, 'schemas/indexes.sql'),
-			'utf-8');
+
 		db.exec(tablesSQL);
-		db.exec(indexesSQL);
 
 		console.log('DB inicializada: ', dbPath, '\n[ ', __filename, ' ]');
 	}

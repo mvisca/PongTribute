@@ -4,13 +4,13 @@
 
 import { getDatabase, closeDatabase } from "../src/connection";
 import { SQLiteUserRepository } from "../src/repositories/SQLiteUserRepository";
-import { Types } from "../../shared/src";
+import { UserTypes } from "../../shared";
 
 // ============================================================================
 // AUXILIAR
 // ============================================================================
 
-function userExists(user: Types.UserInternal | Types.UserPublic | null) {
+function userExists(user: UserTypes.UserInternal | UserTypes.UserPublic | null) {
 	!!user
 	? console.log("User recuperado:", user)
 	: console.log("No existe");
@@ -22,23 +22,33 @@ async function testUserRepository() {
 	// ============================================================================
 	// SETUP
 	// ============================================================================
-	const db = getDatabase();
-	const userRepo = new SQLiteUserRepository(db);
+
+	const userRepo = new SQLiteUserRepository();
+	console.log("\n" + "#".repeat(40));
 	console.log("Conexión DB establecida");
+	console.log("#".repeat(40) + "\n");
 	
 	// ============================================================================
 	// TEST 1: Crear usuario
 	// ============================================================================
-	console.log("\n--- TEST 1: Crear usuario ---");
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 1: Crear usuario ---");
+	console.log("#".repeat(40) + "\n");
 	
-	let alice: Types.UserPublic | null = null;
+	let alice: UserTypes.UserPublic | null = null;
 	try {
-		const createUserData: Types.CreateUserBody = {
+		const createUserData: UserTypes.CreateUserBody = {
 			username: "Alice",
 			email: "alice@test.com",
 			passwordHash: `Timesamped_${Date.now()}`,
 			avatar: "https://image.com/myimage.png",
 		};
+
+		const aliceExists = await userRepo.findByUsername('Alice');
+		if (aliceExists) {
+			userRepo.delete(aliceExists.id);
+		}
+
 		alice = await userRepo.create(createUserData);
 		console.log("Alice creada correctamente");
 	} catch (err) {
@@ -54,7 +64,9 @@ async function testUserRepository() {
 	// ============================================================================
 	// TEST 2: findByEmail
 	// ============================================================================
-	console.log("\n--- TEST 2: findByEmail ---");
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 2: findByEmail ---");
+	console.log("#".repeat(40) + "\n");
 	
 	console.log("2.1: User existe - Alice");
 	const aliceByEmail = await userRepo.findByEmail("alice@test.com");
@@ -67,7 +79,9 @@ async function testUserRepository() {
 	// ============================================================================
 	// TEST 3: findById
 	// ============================================================================
-	console.log("\n--- TEST 3: findById ---");
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 3: findById ---");
+	console.log("#".repeat(40) + "\n");
 	
 	console.log("3.1: User existe - Alice");
 	const aliceById = await userRepo.findById(alice.id);
@@ -80,8 +94,10 @@ async function testUserRepository() {
 	// ============================================================================
 	// TEST 4: findByUsername
 	// ============================================================================
-	console.log("\n--- TEST 4: findByUsername ---");
-	
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 4: findByUsername ---");
+	console.log("#".repeat(40) + "\n");
+
 	console.log("4.1: User existe - Alice");
 	const aliceByUsername = await userRepo.findByUsername(alice.username);
 	userExists(aliceByUsername);
@@ -93,7 +109,9 @@ async function testUserRepository() {
 	// ============================================================================
 	// TEST 5: updatePassword & setOnlineStatus
 	// ============================================================================
-	console.log("\n--- TEST 5: updatePassword & setOnlineStatus ---");
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 5: updatePassword & setOnlineStatus ---");
+	console.log("#".repeat(40) + "\n");
 	
 	if (!aliceByEmail) process.exit(1);
 	console.log("Password inicial:", aliceByEmail.passwordHash);
@@ -115,7 +133,9 @@ async function testUserRepository() {
 	// ============================================================================
 	// TEST 6: Validations
 	// ============================================================================
-	console.log("\n--- TEST 6: Validations ---");
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 6: Validations ---");
+	console.log("#".repeat(40) + "\n");
 	
 	console.log(
 		`isEmailTaken('alice@test.com'): ${await userRepo.isEmailTaken("alice@test.com")}`
@@ -148,11 +168,13 @@ async function testUserRepository() {
 	// ============================================================================
 	// TEST 7: delete
 	// ============================================================================
-	console.log("\n--- TEST 7: delete ---");
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 7: delete ---");
+	console.log("#".repeat(40) + "\n");
 	
-	let pepe: Types.UserPublic | null = null;
+	let pepe: UserTypes.UserPublic | null = null;
 	try {
-		const createUserData: Types.CreateUserBody = {
+		const createUserData: UserTypes.CreateUserBody = {
 			username: "Pepe",
 			email: "pepe@test.com",
 			passwordHash: `Timesamped_${Date.now()}`,
@@ -173,19 +195,21 @@ async function testUserRepository() {
 	await userRepo.delete(pepe.id);
 	console.log("Pepe borrado");
 	
-	const deletedPepe = await userRepo.findByUsername("pepe");
-	userExists(deletedPepe);
+	// Busca el nombre, no encontrara despues de borrado
+	const deletedPepeUsername = await userRepo.findByUsername("pepe");
+	userExists(deletedPepeUsername);
 	
+	// busca el id, encontrar despues de borrado => anonimizado
+	const deletedPepeId = await userRepo.findById(pepe.id);
+	userExists(deletedPepeId);
+	if (deletedPepeId) {
+		console.log(deletedPepeId);
+	}
 	// ============================================================================
 	// CLEANUP
 	// ============================================================================
-	// ============================================================================
-	// CLEANUP
-	// ============================================================================
-	console.log("\n--- CLEANUP ---");
-	db.exec("DELETE FROM friendships");
-	db.exec("DELETE FROM match_players");
-	db.exec("DELETE FROM matches");
+
+	console.log("--- CLEANUP ---");
 	db.exec("DELETE FROM users");
 	
 	console.log(" *- DB limpia");
