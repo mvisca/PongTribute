@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { Schemas } from '@transcendence/shared';
+import { UserSchemas } from '@transcendence/shared';
 import { UserController } from '../controllers/user.controller';
 
 /**
@@ -29,7 +29,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 	* Response: 201 con User | 409 si duplicado
 	*/
 	app.post('/users', {
-		schema: Schemas.createUserSchema,
+		schema: UserSchemas.createUserSchema,
 		handler: controller.createUser.bind(controller)
 	});
 	
@@ -41,7 +41,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 	* Response: 200 con User | 404 si no existe |  409 si ya existe
 	*/
 	app.put('/users/:id', {
-		schema: Schemas.updateUserSchema,
+		schema: UserSchemas.updateUserSchema,
 		handler: controller.updateUser.bind(controller)
 	});
 	
@@ -52,7 +52,7 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 	* Response: 204 sin contenido | 404 si no existe
 	*/
 	app.put('/users/:id/password', {
-		schema: Schemas.updatePasswordSchema,
+		schema: UserSchemas.updatePasswordSchema,
 		handler: controller.updatePassword.bind(controller)
 	});
 	
@@ -63,32 +63,32 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 	* Response: 204 sin contenido | 404 si no existe
 	*/
 	app.delete('/users/:id', {
-		schema: Schemas.deleteUserSchema,
+		schema: UserSchemas.deleteUserSchema,
 		handler: controller.deleteUser.bind(controller)
 	});
 	
 	app.get('/users/username/:username', {
-		schema: Schemas.getUserByUsernameSchema,
+		schema: UserSchemas.getUserByUsernameSchema,
 		handler: controller.getUserByUsername.bind(controller)
 	});
 	
 	app.get('/users/email/:email', {
-		schema: Schemas.getUserByEmailSchema,
+		schema: UserSchemas.getUserByEmailSchema,
 		handler: controller.getUserByEmail.bind(controller)
 	});
 	
 	app.get('/users/check-username/:username', {
-		schema: Schemas.checkUsernameSchema,
+		schema: UserSchemas.checkUsernameSchema,
 		handler: controller.checkUsername.bind(controller)
 	});
 	
 	app.get('/users/check-email/:email', {
-		schema: Schemas.checkEmailSchema,
+		schema: UserSchemas.checkEmailSchema,
 		handler: controller.checkEmail.bind(controller)
 	});
 	
 	app.get('/users/:id', {
-		schema: Schemas.getUserByIdSchema,
+		schema: UserSchemas.getUserByIdSchema,
 		handler: controller.getUserById.bind(controller)
 	});	
 }

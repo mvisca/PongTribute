@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
-import { buildApp } from '../src/app';
-import { Utils } from '../../shared/src';
 import bcrypt from 'bcryptjs';
+import { buildApp } from '../src/app';
+import { UserTypes, Utils } from '../../shared/src';
 import { getDatabase } from '../src/connection';
 
 // ============================================================================
@@ -51,13 +51,13 @@ async function runTests() {
 		const db = getDatabase();
 		db.prepare('DELETE FROM users').run();
 		
-		const juanUser = {
-			username: `JOAN`,
+		const createJuan = {
+			username: `JUAN`,
 			email: `Juan@example.com`,
 			passwordHash: bcrypt.hashSync('pass123', 10),
 			avatar: 'https://example.com/avatar.png'
 		};
-
+		
 		// Identificar logger
 		console.log(`\n${"o".repeat(10)} Identificar Logger ${"o".repeat(10)}`)
 		console.log('🔍 Logger type:', app.log.constructor.name);
@@ -74,25 +74,27 @@ async function runTests() {
 		// subject 1: CREATE
 		// ====================================================================
 		console.log('[CREATE USER]');
+		let juanUser = undefined;
 		
 		// 1.1 Create JUAN
 		{
 			const res = await app.inject({
 				method: 'POST',
 				url: '/api/users',
-				payload: juanUser
+				payload: createJuan
 			});
 			
 			test('CREATE', 'Create valid user', 201, res.statusCode);
 			
 			if (res.statusCode === 201) {
-				const body = res.json();
-				userId = body.id;
-				test('CREATE', 'Has ID', true, !!body.id);
-				test('CREATE', 'Username matches', juanUser.username, body.username);
-				test('CREATE', 'Email matches', juanUser.email, body.email);
-				test('CREATE', 'No password in response', undefined, body.passwordHash);
+				juanUser = res.json(); 
+				userId = juanUser.id;
+				test('CREATE', 'Has ID', true, !!juanUser.id);
+				test('CREATE', 'Username matches', createJuan.username, juanUser.username);
+				test('CREATE', 'Email matches', createJuan.email, juanUser.email);
+				test('CREATE', 'No password in response', undefined, juanUser.passwordHash);
 			}
+			
 			console.log('Output res.json');
 			console.log(res.json());
 		}
@@ -104,7 +106,7 @@ async function runTests() {
 				url: '/api/users',
 				payload: {
 					username: `otroUser`,
-					email: juanUser.email,
+					email: createJuan.email,
 					passwordHash: bcrypt.hashSync('unPasswword')
 				}
 			});
@@ -118,7 +120,7 @@ async function runTests() {
 				method: 'POST',
 				url: '/api/users',
 				payload: {
-					username: juanUser.username,
+					username: createJuan.username,
 					email: `otherUser@example.com`,
 					passwordHash: bcrypt.hashSync("morePass")
 				}
@@ -184,7 +186,7 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/username/${juanUser.username}`
+				url: `/api/users/username/${createJuan.username}`
 			});
 			
 			test('READ', 'Get by username returns 200', 200, res.statusCode);
@@ -194,7 +196,7 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/username/${juanUser.username.toUpperCase()}`
+				url: `/api/users/username/${createJuan.username.toUpperCase()}`
 			});
 			
 			test('READ', 'Username search case-insensitive', 200, res.statusCode);
@@ -204,14 +206,14 @@ async function runTests() {
 		// subject 3: CHECK AVAILABILITY
 		// ====================================================================
 		console.log('\n[CHECK AVAILABILITY]');
-
+		
 		// 3.1 Check available username
 		{
 			const res = await app.inject({
 				method: 'GET',
 				url: `/api/users/check-username/non-username` // 10 chars max
 			});
-
+			
 			test('CHECK', 'Available username returns 200', 200, res.statusCode);
 			
 			if (res.statusCode === 200) {
@@ -219,12 +221,12 @@ async function runTests() {
 				test('CHECK', 'Username is available', true, body.available);
 			}
 		}
-
+		
 		// 3.2 Check taken username
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/check-username/${juanUser.username}`
+				url: `/api/users/check-username/${createJuan.username}`
 			});
 			
 			test('CHECK', 'Taken username returns 200', 200, res.statusCode);
@@ -249,12 +251,13 @@ async function runTests() {
 				test('CHECK', 'Email is available', true, body.available);
 			}
 		}
-
+		
+		
 		// 3.4 Check taken email
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/check-email/${juanUser.email}`
+				url: `/api/users/check-email/${createJuan.email}`
 			});
 			
 			test('CHECK', 'Taken email returns 200', 200, res.statusCode);
@@ -265,7 +268,7 @@ async function runTests() {
 				console.log(body);
 			}
 		}
-
+		
 		// ====================================================================
 		// subject 4: UPDATE
 		// ====================================================================
@@ -275,9 +278,9 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'PUT',
-				url: `/api/users/${userId}`,
+				url: `/api/users/${juanUser.id}`,
 				payload: {
-					username: `nuevoUser` // 9 chars max
+					username: `ElNuevoJuan`
 					// NO email, NO avatar - campos opcionales
 				}
 			});
@@ -286,45 +289,52 @@ async function runTests() {
 			
 			if (res.statusCode === 200) {
 				const body = res.json();
-				test('UPDATE', 'Username updated', `nuevoUser`, body.username);
+				test('UPDATE', 'Username updated', `ElNuevoJuan`, body.username);
 				test('UPDATE', 'Email unchanged', juanUser.email, body.email);
 			}
+			juanUser = res.json();
 		}
-/*
+		
 		// 4.2 Update to duplicate username
 		{
-			// Create second user
-			const user2 = await app.inject({
+			const createOtro = {
+				username: `otroUser`,
+				email: `otro@example.com`,
+				passwordHash: bcrypt.hashSync('passwordHash'),
+				avatar: 'http://avatar.com/avatar.jpg'
+			};
+			
+			// Crear otr user (existe JUAN)
+			const res1 = await app.inject({
 				method: 'POST',
 				url: '/api/users',
-				payload: {
-					username: `u2${t}`, // 8 chars max
-					email: `u2${t}@example.com`,
-					passwordHash: juanUser.passwordHash
-				}
+				payload: createOtro
 			});
 			
-			if (user2.statusCode === 201) {
-				const user2Id = user2.json().id;
+			test('CREATE', 'Create valid user', 201, res1.statusCode);
+			
+			if (res1.statusCode === 201) {
+				const otroUser = res1.json();
+				const otroId = otroUser.id;
 				
-				// Try to update to existing username
-				const res = await app.inject({
+				// Update a nombre tomado
+				const res2 = await app.inject({
 					method: 'PUT',
-					url: `/api/users/${user2Id}`,
+					url: `/api/users/${otroId}`,
 					payload: {
-						username: `new${t}` // Already taken by first user
+						username: `ElNuevoJuan` // Ya está en uso
 					}
 				});
 				
-				test('UPDATE', 'Duplicate username returns 409', 409, res.statusCode);
+				test('UPDATE', 'Duplicate username returns 409', 409, res2.statusCode);
 				
 				// Cleanup
 				await app.inject({
 					method: 'DELETE',
-					url: `/api/users/${user2Id}`
+					url: `/api/users/${otroId}`
 				});
 			} else {
-				test('UPDATE', 'Setup user2 for test', 201, user2.statusCode);
+				test('UPDATE', 'Setup otroUser for test', 201, res1.statusCode);
 			}
 		}
 		
@@ -346,9 +356,9 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'PUT',
-				url: `/api/users/${userId}`,
+				url: `/api/users/${juanUser.id}`,
 				payload: {
-					email: `newemail${t}@example.com`
+					email: `otroEmailJuan@example.com`
 					// NO username, NO avatar
 				}
 			});
@@ -424,26 +434,24 @@ async function runTests() {
 			test('DELETE', 'Non-existent user returns 404', 404, res.statusCode);
 		}
 		
-		STOP */
 		// ====================================================================
 		// SUMMARY
 		// ====================================================================
 		
-		/*
-		console.log('\n' + '='.repeat(50));
+		
+		console.log('\n' + '='.repeat(50) + '\n');
 		const passed = results.filter(r => r.passed).length;
 		const failed = results.filter(r => !r.passed).length;
 		console.log(`TOTAL: ${results.length} | PASSED: ${passed} | FAILED: ${failed}`);
 		
 		if (failed > 0) {
-		console.log('\nFAILED TESTS:');
-		results.filter(r => !r.passed).forEach(r => {
-		console.log(`  ${r.test}: Expected ${r.expected}, got ${r.actual}`);
-		});
+			console.log('\nFAILED TESTS:');
+			results.filter(r => !r.passed).forEach(r => {
+				console.log(`  ${r.test}: Expected ${r.expected}, got ${r.actual}`);
+			});
 		}
 		
 		process.exitCode = failed > 0 ? 1 : 0;
-		*/
 		
 	} catch (error) {
 		console.error('FATAL:', error);

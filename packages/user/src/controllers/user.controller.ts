@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
 import { getDatabase } from '../connection';
-import { Types } from '@transcendence/shared';
+import { UserTypes } from '@transcendence/shared';
 
 /**
 * Controller de User\
@@ -25,9 +25,8 @@ export class UserController {
 	* @param reply\
 	* @returns tipo UserPublic
 	*/
-	async createUser(request: FastifyRequest<{Body: Types.CreateUserBody }>,reply: FastifyReply): Promise <void> {
+	async createUser(request: FastifyRequest<{Body: UserTypes.CreateUserBody }>,reply: FastifyReply): Promise <void> {
 		try {
-			console.log('HOLA: ', request.body);
 			const data = request.body;
 
 			const [emailTaken, usernameTaken] = await Promise.all([
@@ -85,7 +84,7 @@ export class UserController {
 	async updateUser(
 		request: FastifyRequest<{ 
 			Params: { id: string },
-			Body: Types.UpdateUserBody
+			Body: UserTypes.UpdateUserBody
 		}>,
 		reply: FastifyReply
 	): Promise<void> {
@@ -162,7 +161,7 @@ export class UserController {
 	async updatePassword(
 		request: FastifyRequest<{
 			Params: { id: string }
-			Body: Types.UpdatePasswordBody,
+			Body: UserTypes.UpdatePasswordBody,
 		}>,
 		reply: FastifyReply
 	): Promise <void> {

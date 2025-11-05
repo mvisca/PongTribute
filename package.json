@@ -14,11 +14,11 @@
     "build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
     "clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
     "test": "pnpm -r --no-bail test",
-	"test:db-user": "pnpm --filter '@transcendence/database' test:db-user",
-	"test:db-api": "pnpm --filter '@transcendence/database' test:db-api",
-	"test:db-friendship" : "pnpm --filter '@transcendence/database' test:db-friendship",
-	"test:db-match" : "pnpm --filter '@transcendence/database' test:db-match",
-	"test:db-other" : "pnpm --filter '@transcendence/database' test:db-other"
+	"test:user": "pnpm --filter '@transcendence/user' test:user",
+	"test:user-api": "pnpm --filter '@transcendence/user' test:user-api",
+	"test:friendship" : "pnpm --filter '@transcendence/friendship' test:friendship",
+	"test:match" : "pnpm --filter '@transcendence/match' test:match",
+	"test:other" : "pnpm --filter '@transcendence/user' test:other"
   },
   "keywords": [],
   "author": "",

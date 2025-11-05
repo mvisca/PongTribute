@@ -1,4 +1,4 @@
-import { Types, UserRow } from '@transcendence/shared';
+import { UserTypes } from '@transcendence/shared';
 
 /**
 * @class UserMapper\
@@ -14,7 +14,7 @@ export class UserMapper {
 	/**
 	* SQLite Row to Domain Entity, CON 'passwordHash'
 	*/
-	static rowToInternal(row: UserRow): Types.UserInternal {
+	static rowToInternal(row: UserTypes.UserRow): UserTypes.UserInternal {
 		return {
 			id: row.id,
 			username: row.username,
@@ -30,7 +30,7 @@ export class UserMapper {
 	/**
 	* SQLite Row to Domain Entity, SIN 'passwordHash'
 	*/
-	static rowToResponse(row: UserRow): Types.UserPublic {
+	static rowToResponse(row: UserTypes.UserRow): UserTypes.UserPublic {
 		const { passwordHash, ...response } = this.rowToInternal(row);
 		return response;
 	}
@@ -38,7 +38,7 @@ export class UserMapper {
 	/**
 	* Domain Entity to DB Row, SIN 'passwordHash'
 	*/
-	static internalToResponse(user: Types.UserInternal): Types.UserPublic {
+	static internalToResponse(user: UserTypes.UserInternal): UserTypes.UserPublic {
 		const { passwordHash, ...response } = user;
 		return response;
 	}
@@ -48,7 +48,7 @@ export class UserMapper {
 	* Necesita un User CON 'passwordHash'\
 	* @alert Un User.Response no lo tiene!
 	*/
-	static internalToRow(user: Types.UserInternal) {
+	static internalToRow(user: UserTypes.UserInternal) {
 		return {
 			id: user.id,
 			username: user.username,
@@ -66,8 +66,8 @@ export class UserMapper {
 	* Puede no estar completo, el Update tiene todo campos opcionales\
 	* Convierte solo los campos presentes
 	*/
-	static updateToRow(data: Types.UpdateUserBody): Partial<UserRow> {
-		const update: Partial<UserRow> = {};
+	static updateToRow(data: UserTypes.UpdateUserBody): Partial<UserTypes.UserRow> {
+		const update: Partial<UserTypes.UserRow> = {};
 		
 		if (data.username !== undefined) update.username = data.username;
 		if (data.avatar !== undefined) update.avatar = data.avatar;

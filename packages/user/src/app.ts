@@ -24,7 +24,7 @@ export function buildApp(): FastifyInstance {
 	*/
 	app.get('/health', async(request, reply) => {
 		return {
-			status: 'Molt be! La app funcioona ok!',
+			status: 'LA APP FUCNIONA OK!',
 			service: 'database-service',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime()
@@ -51,7 +51,7 @@ export function buildApp(): FastifyInstance {
 
 		if (error.validation) {
 			return reply.status(400).send({
-				error: 'Validation Error',
+				error: 'Error de validación',
 				message: error.message,
 				details: error.validation
 			})

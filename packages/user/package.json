@@ -8,11 +8,11 @@
 		"build": "tsc",
 		"start:dev": "tsx src/server.ts",
 		"start": "node dist/server.js",
-		"test:db-user": "tsx ./test/test-user-repository.ts",
-		"test:db-friendship": "tsx ./test/test-friendship-repository.ts",
-		"test:db-match": "tsx ./test/test-match-repository.ts",
-		"test:db-other": "tsx ./test/other-test.ts",
-		"test:db-api": "tsx ./test/test-user-api.ts"
+		"test:user": "tsx ./test/test-user-repository.ts",
+		"test:user-api": "tsx ./test/test-user-api.ts",
+		"test:friendship": "tsx ./test/test-friendship-repository.ts",
+		"test:match": "tsx ./test/test-match-repository.ts",
+		"test:other": "tsx ./test/other-test.ts"
 	},
 	"dependencies": {
 		"@fastify/helmet": "13.0.2",

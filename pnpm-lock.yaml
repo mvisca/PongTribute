@@ -15,7 +15,33 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
-  packages/database:
+  packages/frontend:
+    dependencies:
+      babylonjs:
+        specifier: 8.31.0
+        version: 8.31.0
+      vite:
+        specifier: 7.1.9
+        version: 7.1.9(@types/node@24.7.2)(tsx@4.20.6)
+    devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
+  packages/shared:
+    dependencies:
+      '@sinclair/typebox':
+        specifier: 0.34.41
+        version: 0.34.41
+    devDependencies:
+      '@types/node':
+        specifier: 24.7.2
+        version: 24.7.2
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
+  packages/user:
     dependencies:
       '@fastify/helmet':
         specifier: 13.0.2
@@ -48,57 +74,6 @@ importers:
       pino-pretty:
         specifier: 13.1.2
         version: 13.1.2
-      tsx:
-        specifier: 4.20.6
-        version: 4.20.6
-      typescript:
-        specifier: 5.9.3
-        version: 5.9.3
-
-  packages/frontend:
-    dependencies:
-      babylonjs:
-        specifier: 8.31.0
-        version: 8.31.0
-      vite:
-        specifier: 7.1.9
-        version: 7.1.9(@types/node@24.7.2)(tsx@4.20.6)
-    devDependencies:
-      typescript:
-        specifier: 5.9.3
-        version: 5.9.3
-
-  packages/shared:
-    dependencies:
-      '@sinclair/typebox':
-        specifier: 0.34.41
-        version: 0.34.41
-    devDependencies:
-      '@types/node':
-        specifier: 24.7.2
-        version: 24.7.2
-      typescript:
-        specifier: 5.9.3
-        version: 5.9.3
-
-  packages/user:
-    dependencies:
-      '@transcendence/database':
-        specifier: workspace:*
-        version: link:../database
-      '@transcendence/shared':
-        specifier: workspace:*
-        version: link:../shared
-      dotenv:
-        specifier: 17.2.3
-        version: 17.2.3
-      fastify:
-        specifier: 5.6.1
-        version: 5.6.1
-    devDependencies:
-      '@types/node':
-        specifier: 24.7.2
-        version: 24.7.2
       tsx:
         specifier: 4.20.6
         version: 4.20.6

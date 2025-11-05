@@ -1,12 +1,12 @@
 import { BaseEvent } from "./BaseEvent";
-import { Types } from "../schemas";
+import { UserTypes } from "../types";
 
 export namespace UserEvent {
 	/**
 	* Evento: Usuario registrado exitosamente
 	*/
 	class Registered extends BaseEvent {
-		constructor(public readonly user: Types.UserPublic) {
+		constructor(public readonly user: UserTypes.UserPublic) {
 			super('user.registered', 'auth-service');
 		}
 		

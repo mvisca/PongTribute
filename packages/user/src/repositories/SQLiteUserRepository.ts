@@ -2,7 +2,7 @@ import BetterSqlite3 from "better-sqlite3";
 import bcrypt from 'bcryptjs';
 import { IUserRepository } from './IUserRepository';
 import { UserMapper } from '../mappers/UserMapper';
-import { Utils, Types, UserRow } from "@transcendence/shared";
+import { Utils, UserTypes } from "@transcendence/shared";
 
 export class SQLiteUserRepository implements IUserRepository {
 	
@@ -11,10 +11,10 @@ export class SQLiteUserRepository implements IUserRepository {
 	/** 
 	* Buscar un usuario por su ID
 	*/
-	private getUserById(id: string): Types.UserPublic | null {
+	private getUserById(id: string): UserTypes.UserPublic | null {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE id = ?
-		`).get(id) as UserRow | undefined;
+		`).get(id) as UserTypes.UserRow | undefined;
 
 		return row ? UserMapper.rowToResponse(row) : null;
 	}
@@ -26,14 +26,14 @@ export class SQLiteUserRepository implements IUserRepository {
 	* - Normalizar datos\
 	* - Almacenar
 	*/
-	async create(data: Types.CreateUserBody): Promise<Types.UserPublic> {
+	async create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic> {
 		const now = new Date().toISOString();
 
-		const newUser: Types.UserInternal = {
+		const newUser: UserTypes.UserInternal = {
 			id: Utils.generateUserId(),
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			passwordHash: bcrypt.hashSync(data.password),
+			passwordHash: data.passwordHash,
 			avatar: data.avatar,
 			isOnline: false,
 			createdAt: now,
@@ -57,10 +57,10 @@ export class SQLiteUserRepository implements IUserRepository {
 	/** 
 	* Actualizar usuario
 	*/
-	async update(id: string, data: Types.UpdateUserBody): Promise<Types.UserPublic | null> {
+	async update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic | null> {
 		
 		// Normalizar
-		const updateData: Types.UpdateUserBody = {};
+		const updateData: UserTypes.UpdateUserBody = {};
 		if (data.username) updateData.username = Utils.UserNormalizer.usernameForStorage(data.username) || undefined;
 		if (data.email) updateData.email = Utils.UserNormalizer.email(data.email) || undefined;
 		if (data.avatar) updateData.avatar = Utils.UserNormalizer.avatar(data.avatar) || undefined;
@@ -121,7 +121,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	/** 
 	* Busca y retorna un usuario por ID (sin password_hash)
 	*/
-	async findById(id: string): Promise<Types.UserPublic | null> {
+	async findById(id: string): Promise<UserTypes.UserPublic | null> {
 		return this.getUserById(id) || null;
 	}
 
@@ -129,12 +129,12 @@ export class SQLiteUserRepository implements IUserRepository {
 	* Busca usuario por email (insensible a mayúsculas)\
 	* Retorna el objeto completo con passwordHash
 	*/
-	async findByEmail(email: string): Promise<Types.UserInternal | null> {
+	async findByEmail(email: string): Promise<UserTypes.UserInternal | null> {
 		const normalizedEmail = Utils.UserNormalizer.email(email);
 
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE LOWER(email) = ?
-		`).get(normalizedEmail) as UserRow | undefined;
+		`).get(normalizedEmail) as UserTypes.UserRow | undefined;
 
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
@@ -143,12 +143,12 @@ export class SQLiteUserRepository implements IUserRepository {
 	* Busca usuario por nombre de usuario (insensible a mayúsculas)\
 	* Retorna el objeto sin password_hash
 	*/
-	async findByUsername(username: string): Promise<Types.UserPublic | null> {
+	async findByUsername(username: string): Promise<UserTypes.UserPublic | null> {
 		const normalizedUsername = Utils.UserNormalizer.usernameForSearch(username);
 
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE LOWER(username) = ?
-		`).get(normalizedUsername) as UserRow | undefined;
+		`).get(normalizedUsername) as UserTypes.UserRow | undefined;
 
 		return row ? UserMapper.rowToResponse(row) : null;
 	}
@@ -183,7 +183,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	* Cambia el estado de conexión (`is_online`) del usuario.
 	* Retorna el usuario actualizado sin `password_hash`.
 	*/
-	async setOnlineStatus(id: string, isOnline: boolean): Promise<Types.UserPublic | null> {
+	async setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic | null> {
 		const row = this.db.prepare(`
 			UPDATE users SET is_online = ?, updated_at = ? WHERE id = ?
 		`).run(isOnline ? 1 : 0, Date.now(), id);

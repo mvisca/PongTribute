@@ -1,15 +1,10 @@
 // ============================================================================
-// INTERNAL TYPES
+// USER
 // ============================================================================
 
-export type * from './types';
-
-// ============================================================================
-// NAMESPACES
-// ============================================================================
+export { UserTypes } from './types';
+export { UserSchemas } from './schemas';
 
 export * as Constants from './constants';
 export * as Events from './events';
-export { Types, Schemas } from './schemas';
 export * as Utils from './utils';
-

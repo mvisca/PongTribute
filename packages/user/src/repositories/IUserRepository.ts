@@ -1,6 +1,6 @@
 // TODO estas interfaces deben estar en repository o en shared? por que?
 
-import { Types } from '@transcendence/shared';
+import { UserTypes } from '@transcendence/shared';
 
 /**
  * Interfaz que define el contrato para el repositorio de Usuarios.
@@ -26,12 +26,12 @@ export interface IUserRepository {
 	/**
 	 * Crear nuevo usuario
 	*/
-	create(data: Types.CreateUserBody): Promise <Types.UserPublic>;
+	create(data: UserTypes.CreateUserBody): Promise <UserTypes.UserPublic>;
 
 	/**
 	 * Actualizar usuario
 	 */
-	update(id: string, data: Types.UpdateUserBody): Promise<Types.UserPublic | null>;
+	update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic | null>;
 
 	/**
 	 * Actualizar el 'passwordHash' de usuario
@@ -46,17 +46,17 @@ export interface IUserRepository {
 	/**
 	 * Buscar usuario por 'id'
 	 */
-	findById(id: string): Promise<Types.UserPublic | null>;
+	findById(id: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
 	 * Buscar usuario por 'username'
 	 */
-	findByUsername(username: string): Promise<Types.UserPublic | null>;
+	findByUsername(username: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
 	 * Buscar usuario por 'email' ( CON 'passwordHash' solo para Auth )
 	 */
-	findByEmail(email: string): Promise<Types.UserInternal | null>;
+	findByEmail(email: string): Promise<UserTypes.UserInternal | null>;
 	
 	/**
 	 * Verficar 'username' disponible
@@ -71,5 +71,5 @@ export interface IUserRepository {
 	/**
 	 * Actualizar 'isOnline'
 	 */
-    setOnlineStatus(id: string, isOnline: boolean): Promise<Types.UserPublic | null>;
+    setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic | null>;
 }
