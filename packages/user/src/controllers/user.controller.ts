@@ -23,7 +23,7 @@ export class UserController {
 	* @param reply\
 	* @returns tipo UserPublic
 	*/
-	async createUser(
+	async createUser( 
 		request: FastifyRequest<{Body: UserTypes.CreateUserBody }>,
 		reply: FastifyReply
 	): Promise <void> {
@@ -96,7 +96,7 @@ export class UserController {
 			const user = await this.userRepo.findById(id);
 			
 			// si no existe terminar
-			if (!user) {
+			if (!user || user.isDeleted) {
 				return reply
 				.code(404)
 				.send({
@@ -165,7 +165,8 @@ export class UserController {
 			const data = request.body;
 			
 			const user = await this.userRepo.findById(id);
-			if (!user) {
+
+			if (!user || user.isDeleted) {
 				return reply
 				.code(404)
 				.send({
@@ -184,7 +185,43 @@ export class UserController {
 			throw err;
 		}
 	}
+
+	/**
+	* Borra el user si existe\
+	* @param request Param tipo{ id: string }\
+	* @param reply \
+	* @returns void
+	*/
 	
+	async anonymizeUser(
+		request: FastifyRequest<{Params: { id: string } }>,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const { id } = request.params;
+
+			const user = await this.userRepo.findById(id);
+
+			if (!user || user.isDeleted) {
+				return reply
+				.code(404)
+				.send({
+					error: 'Not found',
+					message: 'El user no existe',
+					field: 'id'
+				});
+			}
+
+			await this.userRepo.anonymize(id);
+
+			return reply.code(204).send();
+
+		} catch (err) {
+			request.log.error(err);
+			throw err;
+		}
+	}
+
 	/**
 	* Borra el user si existe\
 	* @param request Param tipo{ id: string }\
@@ -235,7 +272,7 @@ export class UserController {
 			
 			const user = await this.userRepo.findById(id);
 			
-			if (!user){
+			if (!user || user.isDeleted === true) {
 				return reply
 				.code(404)
 				.send({
@@ -269,7 +306,7 @@ export class UserController {
 			
 			const user = await this.userRepo.findByUsername(username);
 			
-			if (!user) {
+			if (!user || user.isDeleted === true) {
 				return reply
 				.code(404)
 				.send({
@@ -303,7 +340,7 @@ export class UserController {
 			
 			const user = await this.userRepo.findByEmail(email);
 			
-			if (!user) {
+			if (!user || user.isDeleted === true) {
 				return reply
 				.code(404)
 				.send({

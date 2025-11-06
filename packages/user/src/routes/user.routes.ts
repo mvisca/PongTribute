@@ -55,6 +55,17 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 		schema: UserSchemas.updatePasswordSchema,
 		handler: controller.updatePassword.bind(controller)
 	});
+
+	/**
+	* ANONYNIZE /users/:id
+	* Anonimiza usuario
+	* Param: { id: string }
+	* Response: 204 sin contenido | 404 si no existe
+	*/
+	app.put('/users/:id/anonymize', {
+		schema: UserSchemas.anonymizeUserSchema,
+		handler: controller.anonymizeUser.bind(controller)
+	});
 	
 	/**
 	* DELETE /users/:id

@@ -7,6 +7,18 @@ import * as path from 'path';
 // Será compartida por todas las llamadas a getDatabase()
 let db: Database.Database | null = null;
 
+process.on('SIGINT', () => {
+	console.log('SIGINT: Closing Database');
+	closeDatabase();
+	db = null;
+});
+
+process.on('SIGTERM', () => {
+	console.log('SIGTERM: Closing Database');
+	closeDatabase();
+	db = null;
+});
+
 export function getDatabase(): Database.Database {
 	// LAZY INIT: solo se inicializa si se necesita (1st call)
 	// Para siguientes llamadas a getDatabse(), db ya está creada

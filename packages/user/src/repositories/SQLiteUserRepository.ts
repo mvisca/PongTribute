@@ -1,7 +1,8 @@
 import { getDatabase, closeDatabase } from "src/connection";
 import { IUserRepository } from './IUserRepository';
 import { UserMapper } from '../mappers/UserMapper';
-import { Utils, UserTypes } from "@transcendence/shared";
+import { Utils, UserTypes, UserConstants } from "@transcendence/shared";
+import { toNamespacedPath } from "path";
 
 export class SQLiteUserRepository implements IUserRepository {
 	
@@ -96,27 +97,54 @@ export class SQLiteUserRepository implements IUserRepository {
 				
 		if (!updated) throw new Error(`No se ha podido recuperar usuario: ${id}`);
 		
-		return updated ? updated : null;
+		return updated;
 	}
 			
 	/** 
 	* Actualiza la contraseña (hash) de un usuario
 	*/
-	async updatePassword(id: string, newPasswordHash: string): Promise<void> {
+	async updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic | null> {
 		this.db.prepare(`
 			UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
 		`).run(newPasswordHash, Date.now(), id);
+
+		const updated = this.findByEmail(id);
+
+		if (!updated) throw new Error(`No se ha podido recuperar usuario: ${id}`)
+
+		return updated;
 	}
-			
+
 	/** 
 	* Elimina un usuario por su ID
 	*/
-	async delete(id: string): Promise<void> { // TODO cambiar a un update
+	async delete(id: string): Promise<void> {
 		this.db.prepare(`
 			DELETE FROM users WHERE id = ?
 		`).run(id);
 	}
-					
+
+	/** 
+	* Anonimiza el usuario por su ID
+	*/
+	async anonymize(id: string): Promise<UserTypes.UserPublic | null> {
+		const now = Date.now();
+		const username = `anon_${now}`;
+		const restult = this.db.prepare(`
+			UPDATE users SET
+			username = ?, email = ?, avatar = ?, updated_at = ?, is_deleted = ?, is_online = ?
+			WHERE id = ?
+		`).run(username, `${username}@deleted.email`, `${UserConstants.anon_avatar}`, now, 1, 0, id);
+
+		if (restult.changes === 0) throw new Error(`No se ha podido modificar el record: ${id}`);
+
+		const anonymized = this.findById(id);
+
+		if (!anonymized) throw new Error(`No se ha podido recuperar el usuario: ${id}`);
+	
+		return anonymized;
+	}
+	
 	/** 
 	* Busca y retorna un usuario por ID (sin password_hash)
 	*/
@@ -159,12 +187,12 @@ export class SQLiteUserRepository implements IUserRepository {
 		const normalizedUsername = Utils.UserNormalizer.usernameForSearch(username);
 								
 		const isUsername = this.db.prepare(`
-			SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = ?) AS taken
+			SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = ? AND is_deleted = '0') AS taken
 		`).get(normalizedUsername) as { taken: number };
 									
 		return isUsername.taken ? true : false;
 	}
-								
+					
 	/** 
 	* Verifica si un email ya está registrado
 	*/
@@ -172,7 +200,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		const normalizedEmail = Utils.UserNormalizer.email(email);
 		
 		const isEmail = this.db.prepare(`
-			SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = ?) AS taken
+			SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(email) = ? AND is_deleted = '0') AS taken
 		`).get(normalizedEmail) as { taken: number };
 	
 		return isEmail.taken ? true : false;

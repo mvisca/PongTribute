@@ -333,7 +333,27 @@ export namespace UserSchemas {
 			})
 		}
 	};
+
+	// ============================================================================
+	// ANONYMIZE SCHEMAS
+	// ============================================================================
 	
+	/**
+	* Schema para DELETE /api/users/:id
+	*/
+	export const anonymizeUserSchema = {
+		description: 'Anonimizar usuario',
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			204: Type.Null(),
+			404: Type.Object({
+				error: Type.String(),
+				message: Type.String()
+			})
+		}
+	};
+
 	// ============================================================================
 	// DELETE SCHEMAS
 	// ============================================================================

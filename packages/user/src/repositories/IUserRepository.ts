@@ -36,12 +36,17 @@ export interface IUserRepository {
 	/**
 	 * Actualizar el 'passwordHash' de usuario
 	 */
-	updatePassword(id: string, newPasswordHass: string): Promise<void>;
+	updatePassword(id: string, newPasswordHass: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
 	 * Eliminar usuario
 	 */
 	delete(id: string): Promise<void>;
+
+	/**
+	 * Anonimiza usuario
+	 */
+	anonymize(id: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
 	 * Buscar usuario por 'id'

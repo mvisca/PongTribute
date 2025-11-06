@@ -3,6 +3,26 @@ import helmet from '@fastify/helmet';
 import { config, getFastifyConfig } from './config';
 import { userRoutes } from './routes/user.routes';
 
+let currentApp: FastifyInstance | null = null;
+
+process.on('SIGINT', async () => {
+	console.log('Fastify Signal Handler: SIGINT received, closing HTTP server...');
+	if (currentApp) {
+		await currentApp.close();
+		currentApp = null;
+		console.log('HTTP Server closed')
+	}
+});
+
+process.on('SIGTERM', async () => {
+	console.log('Fastify Signal Handler: SIGTERM received, closing HTTP server...');
+	if (currentApp) {
+		await currentApp.close();
+		currentApp = null;
+		console.log('HTTP Server closed')
+	}
+});
+
 /**
  * Crea y configuara la instancia de Fastfy\
  * 
@@ -12,7 +32,8 @@ export function buildApp(): FastifyInstance {
 	
 	// Crear instancia
 	const app = Fastify(getFastifyConfig());
-	
+	currentApp = app;
+
 	// hooks
 	app.addHook('onRegister', (instance, opts) => {
 	  console.log('Plugin registrado: ', opts.prefix)

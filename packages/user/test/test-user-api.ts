@@ -41,7 +41,7 @@ function test(subject: string, name: string, expected: any, actual: any) {
 
 async function runTests() {
 	let app: FastifyInstance | null = null;
-	
+	 
 	try {
 		// SETUP
 		app = buildApp();
@@ -50,13 +50,6 @@ async function runTests() {
 		// Limpiar DB
 		const db = getDatabase();
 		db.prepare('DELETE FROM users').run();
-		
-		const createJuan = {
-			username: `JUAN`,
-			email: `Juan@example.com`,
-			passwordHash: bcrypt.hashSync('pass123', 10),
-			avatar: 'https://example.com/avatar.png'
-		};
 		
 		// Identificar logger
 		console.log(`\n${"o".repeat(10)} Identificar Logger ${"o".repeat(10)}`)
@@ -73,8 +66,16 @@ async function runTests() {
 		// subject 1: CREATE
 		// ====================================================================
 		console.log('[CREATE USER]');
-		let juanUser = undefined;
 		
+		const createJuan = {
+			username: `JUAN`,
+			email: `Juan@example.com`,
+			passwordHash: bcrypt.hashSync('pass123', 10),
+			avatar: 'https://example.com/avatar.png'
+		};
+		
+		let juanUser = undefined;
+
 		// 1.1 Create JUAN
 		{
 			const res = await app.inject({
@@ -395,13 +396,50 @@ async function runTests() {
 			
 			test('PASSWORD', 'Non-existent user returns 404', 404, res.statusCode);
 		}
-		
+
 		// ====================================================================
-		// subject 6: DELETE
+		// subject 6: ANONIMIZE
+		// ====================================================================
+
+		console.log('\n[ANONIMIZE USER]');
+		{
+			const createLulu = {
+				username: `Lulu`,
+				email: `Lulu@example.com`,
+				passwordHash: bcrypt.hashSync('pass123', 10),
+				avatar: 'https://example.com/avatar.png'
+			};
+
+			const res = await app.inject({
+				method: 'POST',
+				url: '/api/users',
+				payload: createLulu
+			});
+			
+			
+			if (res.statusCode === 201) {
+				let luluUser = res.json();
+				console.log('LuluUser: ', luluUser);
+				const luluId = luluUser.id;
+				
+				const anony = await app.inject({
+					method: 'GET',
+					url:`/api/users/${luluId}/anonymize`
+				});
+
+				luluUser = anony.json();
+
+				test('ANONYMIZE', 'User anonymized', 201, res.statusCode);
+				console.log('\nAnonimized user: ', luluUser);
+			}
+		}
+
+		// ====================================================================
+		// subject 7: DELETE
 		// ====================================================================
 		console.log('\n[DELETE USER]');
 		
-		// 6.1 Delete existing user
+		// 7.1 Delete existing user
 		{
 			const res = await app.inject({
 				method: 'DELETE',
@@ -420,7 +458,7 @@ async function runTests() {
 			test('DELETE', 'Deleted user not found', 404, check.statusCode);
 		}
 		
-		// 6.2 Delete non-existent
+		// 7.2 Delete non-existent
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({

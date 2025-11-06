@@ -2,7 +2,7 @@
 // TEST USER REPOSITORY
 // ============================================================================
 
-import { getDatabase, closeDatabase } from "../src/connection";
+import { closeDatabase } from "../src/connection";
 import { SQLiteUserRepository } from "../src/repositories/SQLiteUserRepository";
 import { UserTypes } from "../../shared";
 
@@ -166,45 +166,68 @@ async function testUserRepository() {
 	);
 
 	// ============================================================================
-	// TEST 7: delete
+	// TEST 7: anonymize
 	// ============================================================================
 	console.log("\n" + "#".repeat(40));
-	console.log("--- TEST 7: delete ---");
+	console.log("--- TEST 7: anonymize ---");
 	console.log("#".repeat(40) + "\n");
 
 	let pepe: UserTypes.UserPublic | null = null;
-	try {
-		const createUserData: UserTypes.CreateUserBody = {
-			username: "Pepe",
-			email: "pepe@test.com",
-			passwordHash: `Timesamped_${Date.now()}`,
-			avatar: "https://image.com/myimage.png",
-		};
-		pepe = await userRepo.create(createUserData);
-		console.log("Pepe creado correctamente");
-	} catch {
-		console.warn("Pepe ya estaba en la base de datos");
-	} finally {
-		if (!pepe) pepe = await userRepo.findByUsername("Pepe");
-		console.log("Recuperado Pepe de la base de datos");
+
+	const createUserData: UserTypes.CreateUserBody = {
+		username: "Pepe",
+		email: "pepe@test.com",
+		passwordHash: `Timesamped_${Date.now()}`,
+		avatar: "https://image.com/myimage.png",
+	};
+	
+	let pepeUsernameTaken: boolean | null = null;
+
+	pepeUsernameTaken = await userRepo.isUsernameTaken('Pepe');
+	let pepeNoEsta = 'NO EXISTE';
+	if (pepe) pepeNoEsta = 'Pepe';
+	console.log(`Antes de crear userPepe, el username "${pepeNoEsta}" y ${pepeUsernameTaken ? 'NO' : 'SI' } esta disponible`);
+	
+	pepe = await userRepo.create(createUserData);
+	userRepo.setOnlineStatus(pepe?.id as string, true);
+	pepe = await userRepo.findById(pepe?.id as string);
+	console.log("\nuserPepe creado correctamente: ", pepe);
+
+	let pepeId = undefined;
+	if (pepe) pepeId = pepe.id; 
+
+	pepeUsernameTaken = await userRepo.isUsernameTaken('Pepe');
+	console.log(`\nDespues de crear userPepe, el username ${pepe?.username} ${pepeUsernameTaken ? 'NO' : 'SI' } esta disponible`);
+	
+	console.log('\nAnonimizando userPepe...\n');
+	pepe = await userRepo.anonymize(pepe?.id as string);
+	
+	pepeUsernameTaken = await userRepo.isUsernameTaken('Pepe');
+	console.log(`Despues de anonimizar userPepe, el username Pepe ${pepeUsernameTaken ? 'NO' : 'SI' } esta disponible`);
+	pepeUsernameTaken = await userRepo.isUsernameTaken(pepe?.username as string);
+	console.log(`\nDespues de anonimizar userPepe, el username ${pepe?.username} ${pepeUsernameTaken ? 'NO' : 'SI' } esta disponible`);
+	console.log('Nota: porque los usuarios anonimizados son invisibles, incluso como username');
+
+	if (pepe) {
+		if (!pepe) process.exit(127);
+		console.log('\nAnonymized userPepe: ', pepe); 
 	}
 
-	if (pepe) userExists(pepe);
-	else process.exit(1);
+	// ============================================================================
+	// TEST 8: delete
+	// ============================================================================
+	console.log("\n" + "#".repeat(40));
+	console.log("--- TEST 8: delete ---");
+	console.log("#".repeat(40) + "\n");
 
-	await userRepo.delete(pepe.id);
-	console.log("Pepe borrado");
+	if (pepe) {	await userRepo.delete(pepe.id); }
+
+	console.log("Pepe borrado: ", );
 
 	// Busca el nombre, no encontrara despues de borrado
 	const deletedPepeUsername = await userRepo.findByUsername("pepe");
-	userExists(deletedPepeUsername);
+	console.log(`Pepe: ${userExists(deletedPepeUsername)}`);
 
-	// busca el id, encontrar despues de borrado => anonimizado
-	const deletedPepeId = await userRepo.findById(pepe.id);
-	userExists(deletedPepeId);
-	if (deletedPepeId) {
-		console.log(deletedPepeId);
-	}
 	// ============================================================================
 	// CLOSE
 	// ============================================================================

@@ -1,3 +1,4 @@
+import { appendFile } from 'fs';
 import { buildApp } from './app';
 import { config } from "./config";
 
@@ -21,12 +22,15 @@ async function start() {
 }
 
 process.on('SIGINT', async() => {
+	await new Promise(resolve => setTimeout(resolve, 1000));
 	console.log(`\nSTOP (SIGINT) recivido, cerrando el servidor`);
 	process.exit(0);
 });
 
 process.on('SIGTERM', async() => {
+	await new Promise(resolve => setTimeout(resolve, 1000));
 	console.log(`\nSTOP (SIGTERM) recivido, cerrando el servidor`);
+	process.exit(0);
 });
 
 start();
