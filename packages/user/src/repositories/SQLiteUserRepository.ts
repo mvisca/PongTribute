@@ -34,7 +34,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
 			passwordHash: data.passwordHash,
-			avatar: data.avatar,
+			avatar: data.avatar ?? UserConstants.DEFAULT_AVATAR, // TODO asume front sirve /public/avatars/default.png
 			isOnline: false,
 			isDeleted: false,
 			createdAt: now,
@@ -134,7 +134,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			UPDATE users SET
 			username = ?, email = ?, avatar = ?, updated_at = ?, is_deleted = ?, is_online = ?
 			WHERE id = ?
-		`).run(username, `${username}@deleted.email`, `${UserConstants.anon_avatar}`, now, 1, 0, id);
+		`).run(username, `${username}@deleted.email`, `${UserConstants.ANON_AVATAR}`, now, 1, 0, id);
 
 		if (restult.changes === 0) throw new Error(`No se ha podido modificar el record: ${id}`);
 

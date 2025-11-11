@@ -26,11 +26,9 @@ export namespace UserSchemas {
 			pattern: '^\\$2[aby]\\$\\d{2}\\$.{53}$',
 			description: 'Password hashed by bcrypt'
 		}),
-		avatar: Type.String({
-			format: 'uri',
-			default: 'https://api.dicebear.com/7.x/avataaars/svg?seed=default',
+		avatar: Type.Optional(Type.String({
 			description: 'URL del avatar del usuario'
-		})
+		}))
 	});
 	
 	// ============================================================================

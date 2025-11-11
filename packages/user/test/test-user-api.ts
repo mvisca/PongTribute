@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { buildApp } from '../src/app';
-import { Utils } from '../../shared/src';
+import { UserTypes, Utils } from '../../shared/src';
 import { getDatabase } from '../src/connection';
+import { userRoutes } from '../src/routes/user.routes';
 
 // ============================================================================
 // TODO
@@ -102,8 +103,7 @@ async function runTests() {
 				test('CREATE', 'No password in response', undefined, juanUser.passwordHash);
 			}
 			
-			console.log('Output res.json');
-			console.log(res.json());
+			console.log('Output res.json', res.json());
 		}
 		
 		// 1.2 Duplicate email
@@ -114,6 +114,7 @@ async function runTests() {
 				payload: {
 					username: `otroUser`,
 					email: createJuan.email,
+					avatar: 'http://avatar.com/image',
 					passwordHash: bcrypt.hashSync('unPasswword')
 				}
 			});
@@ -129,6 +130,7 @@ async function runTests() {
 				payload: {
 					username: createJuan.username,
 					email: `otherUser@example.com`,
+					avatar: 'http://avatar.com/image',
 					passwordHash: bcrypt.hashSync("morePass")
 				}
 			});
@@ -156,6 +158,200 @@ async function runTests() {
 			test('CREATE', 'Missing email returns 400', 400, res14?.statusCode || undefined);
 		}
 		
+		console.log('\n[VALIDATION - USERNAME]');
+		
+		// Test 1: Username muy corto
+		const res1 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'ab',
+				email: 'test@test.com',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('USERNAME', 'Username corto returns 400', 400, res1.statusCode);
+		
+		// Test 2: Username muy largo
+		const res2 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'a'.repeat(21),
+				email: 'test@test.com',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('USERNAME', 'Username largo returns 400', 400, res2.statusCode);
+		
+		// Test 3: Username con espacios
+		const res3 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'user name',
+				email: 'test@test.com',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('USERNAME', 'Username con espacio returns 400', 400, res3.statusCode);
+		
+		// Test 4: Username con caracteres especiales
+		const res4 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'user@123',
+				email: 'test@test.com',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('USERNAME', 'Username con caracteres especiales returns 400', 400, res4.statusCode);
+		
+		// Test 5: Username vacío
+		const res5 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: '', 
+				email: 'test@test.com',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('USERNAME', 'Username vacio returns 400', 400, res5.statusCode);
+		
+		console.log('\n[VALIDATION - EMAIL]');
+		
+		// Test 6: Email sin @
+		const res6 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'testuser',
+				email: 'notanemail',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('EMAIL', 'Email sin arroba returns 400', 400, res6.statusCode);
+		
+		// Test 7: Email incompleto
+		const res7 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'testuser',
+				email: 'test@',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('EMAIL', 'Email sin dominio returns 400', 400, res7.statusCode);
+		
+		const res8 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'testuser',
+				email: 'test @example.com',
+				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			}
+		});
+		
+		test('EMAIL', 'Email con espacios especiales returns 400', 400, res8.statusCode);
+		
+		console.log('\n[VALIDATION - PASSWORD]');
+		
+		// Test 9: Password hash muy corto
+		const res9 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'testuser',
+				email: 'test@test.com',
+				passwordHash: 'short'
+			}
+		});
+		
+		test('PASSWORD', 'PasswordHash corto returns 400', 400, res9.statusCode);
+		
+		// Test 10: Password hash formato incorrecto
+		const res10 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'testuser',
+				email: 'test@test.com',
+				passwordHash: 'a'.repeat(60)  // ❌ 60 chars pero no bcrypt
+			}
+		});
+		
+		test('PASSWORD', 'PasswordHash malformado returns 400', 400, res10.statusCode);
+		
+		// Test 11: Password hash vacío
+		const res11 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {
+				username: 'testuser',
+				email: 'test@test.com',
+				passwordHash: ''  // ❌ Vacío
+			}
+		});
+		
+		test('PASSWORD', 'PasswordHash vacío returns 400', 400, res11.statusCode);
+		
+		
+		console.log('\n[VALIDATION - CAMPOS OBLIGATOORIOS]');
+		
+		const fullTestUser = {
+			username: 'Dido',
+			email: 'test@test.com',
+			avatar: 'http://dido.com/avatar',
+			passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+		};
+		
+		const { username, ...sinUsername } = fullTestUser;
+		const { email, ...sinEmail } = fullTestUser;
+		const { passwordHash, ... sinPasswordHash } = fullTestUser;
+		
+		// Test 12: Sin username
+		const res12 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: { ...sinUsername }
+		});
+		test('CAMPOS OBLIGATORIOS', 'CreateUser sin username returns 400', 400, res12.statusCode);
+		
+		// Test 14: Sin email
+		const res14 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: { ...sinEmail }
+		});
+		test('CAMPOS OBLIGATORIOS', 'CreateUser sin email returns 400', 400, res14.statusCode);
+		
+		// Test 15: Sin PasswordHash
+		const res15 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: { ...sinPasswordHash }
+		});
+		test('CAMPOS OBLIGATORIOS', 'CreateUser sin passwordHash returns 400', 400, res15.statusCode);
+		
+		// Test 16: Body vacío
+		const res16 = await app.inject({
+			method: 'POST',
+			url: '/api/users',
+			payload: {}
+		});
+		test('CAMPOS OBLIGATORIOS', 'CreateUser sin body returns 400', 400, res16.statusCode);
+				
 		// ====================================================================
 		// subject 2: READ
 		// ====================================================================
@@ -207,6 +403,14 @@ async function runTests() {
 			test('READ', 'Username search case-insensitive', 200, res.statusCode);
 		}
 		
+		// Test 2.5: UUID inválido en GET
+		const res17 = await app.inject({
+			method: 'GET',
+			url: '/api/users/not-a-uuid'
+		});
+		
+		test('READ', 'GetUser con UUID invalido returns 400', 400, res17.statusCode);
+		
 		// ====================================================================
 		// subject 3: CHECK AVAILABILITY
 		// ====================================================================
@@ -256,7 +460,6 @@ async function runTests() {
 				test('CHECK', 'Email is available', true, body.available);
 			}
 		}
-		
 		
 		// 3.4 Check taken email
 		{
@@ -371,6 +574,12 @@ async function runTests() {
 			test('UPDATE', 'Update email returns 200', 200, res.statusCode);
 		}
 		
+		// 4.5: UUID inválido en PUT
+		const res18 = await app.inject({
+			method: 'PUT',
+			url: '/api/users/not-a-uuid'
+		});
+		test('UPDATE', 'PutUser con UUID invalido returns 400', 400, res18.statusCode);
 		// ====================================================================
 		// subject 5: UPDATE PASSWORD
 		// ====================================================================
@@ -414,7 +623,7 @@ async function runTests() {
 				username: `Lulu`,
 				email: `Lulu@example.com`,
 				passwordHash: bcrypt.hashSync('pass123', 10),
-				avatar: 'https://example.com/avatar.png'
+				avatar: null
 			};
 			
 			const res = await app.inject({
@@ -423,31 +632,26 @@ async function runTests() {
 				payload: createLulu
 			});
 			
+			console.log('Created Lulu: ', res.json());
 			
 			if (res.statusCode === 201) {
 				let luluUser = res.json();
-				console.log('LuluUser: ', luluUser);
 				const luluId = luluUser.id;
+				console.log('LuluUser: ', luluUser);
 				
 				const anony = await app.inject({
 					method: 'PUT',
-					url:`/api/users/${luluId}/anonymize`
+					url: `/api/users/${luluId}/anonymize`
 				});
-				
-				// DEBUG: Agrega esto para ver qué está pasando
-				console.log('Anonymize response status:', anony.statusCode);
-				console.log('Anonymize response body:', anony.body);
-				console.log('Anonymize response headers:', anony.headers);
-				
-				// Solo intenta parsear JSON si hay contenido
-				if (anony.body && anony.body.trim() !== '') {
-					luluUser = anony.json();
-				} else {
-					luluUser = null; // o maneja el caso de respuesta vacía
-				}
-				
-				test('ANONYMIZE', 'User anonymized', 201, res.statusCode);
-				console.log('\nAnonimized user: ', luluUser);
+					
+				test('ANONYMIZE', 'User anonymized', 204, anony.statusCode);
+
+				const res19 = await app.inject({
+					method: 'GET',
+					url: `/api/users/${luluId}`
+				});
+
+				test('ANONYMIZE', 'Should not find user', 404, res19.statusCode); 
 			}
 		}
 		
@@ -506,8 +710,8 @@ async function runTests() {
 		process.exitCode = failed > 0 ? 1 : 0;
 		
 	} catch (error) {
-		console.error('FATAL:', error);
-		process.exitCode = 1;
+		console.error('WARNING:', error);
+		process.exit(1);
 	} finally {
 		if (app) await app.close();
 	}
