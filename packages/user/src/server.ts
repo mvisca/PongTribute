@@ -2,6 +2,8 @@ import { appendFile } from 'fs';
 import { buildApp } from './app';
 import { config } from "./config";
 
+// TODO considerar la opcion de usar SCHWAGER, de ser asi quitar su validacion en runtime para no duplicar con ajv defastify
+
 async function start() {
 	const app = buildApp(); // LLAMADA
 

@@ -430,7 +430,7 @@ async function runTests() {
 				const luluId = luluUser.id;
 				
 				const anony = await app.inject({
-					method: 'GET',
+					method: 'PUT',
 					url:`/api/users/${luluId}/anonymize`
 				});
 

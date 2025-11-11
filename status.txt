@@ -6,27 +6,24 @@ FECHA:
 Este archivo contiene un snapshot del proyecto completo.
 Generado automaticamente por make_status.sh
 
-GENERADO: 2025-11-04 21:48:35
+GENERADO: 2025-11-11 08:56:46
 
 ESTRUCTURA DEL PROYECTO
 ================================================================================
 
 .
+|-- README.md
 |-- db-data
-|   |-- user.db-shm
-|   `-- user.db-wal
 |-- docs
-|   |-- docker-compse.yml.notas
-|   |-- dockerfile.ejemplo.notas
 |   |-- en.subject.pdf
-|   |-- estructuras.notas
 |   |-- notas-http-ws-redis
-|   |-- notas.txt
-|   |-- plan-priorizado.notas
 |   `-- tmp
 |-- make_status.sh
 |-- package.json
 |-- packages
+|   |-- api-gateway
+|   |   `-- tsconfig.tsbuildinfo
+|   |-- auth
 |   |-- frontend
 |   |   |-- index.html
 |   |   |-- package.json
@@ -35,6 +32,7 @@ ESTRUCTURA DEL PROYECTO
 |   |   |-- tsconfig.json
 |   |   `-- vite.config.ts
 |   |-- shared
+|   |   |-- index.ts
 |   |   |-- package.json
 |   |   |-- src
 |   |   |   |-- constants
@@ -63,11 +61,10 @@ ESTRUCTURA DEL PROYECTO
 |       |   `-- test-user-repository.ts
 |       `-- tsconfig.json
 |-- pnpm-workspace.yaml
-|-- README.md
 |-- status.txt
 `-- tsconfig.json
 
-21 directories, 34 files
+23 directories, 29 files
 
 
 ARCHIVOS DE CONFIGURACION
@@ -91,11 +88,11 @@ ARCHIVOS DE CONFIGURACION
     "build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
     "clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
     "test": "pnpm -r --no-bail test",
-	"test:db-user": "pnpm --filter '@transcendence/database' test:db-user",
-	"test:db-api": "pnpm --filter '@transcendence/database' test:db-api",
-	"test:db-friendship" : "pnpm --filter '@transcendence/database' test:db-friendship",
-	"test:db-match" : "pnpm --filter '@transcendence/database' test:db-match",
-	"test:db-other" : "pnpm --filter '@transcendence/database' test:db-other"
+	"test:user": "pnpm --filter '@transcendence/user' test:user",
+	"test:user-api": "pnpm --filter '@transcendence/user' test:user-api",
+	"test:friendship" : "pnpm --filter '@transcendence/friendship' test:friendship",
+	"test:match" : "pnpm --filter '@transcendence/match' test:match",
+	"test:other" : "pnpm --filter '@transcendence/user' test:other"
   },
   "keywords": [],
   "author": "",
@@ -120,6 +117,8 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 *.db
+*.db-shm
+*.db-wal
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -341,29 +340,78 @@ ARCHIVOS SQL
 TIPOS Y INTERFACES (shared)
 ================================================================================
 
->>> ARCHIVO: ./packages/shared/src/types/internal.ts
+>>> ARCHIVO: ./packages/shared/src/types/friendship.types.ts
 --------------------------------------------------------------------------------
+import type { FriendshipStatus } from "../constants/friendship.constants";
+
+// ============================================================================
+// ENTIDAD DE DOMINIO
+// ============================================================================
 
 /**
- * Tipo interno para User Mapper\
- * Define los campos 
- */
-export interface UserRow {
-	id: string;
-	username: string;
-	email: string;
-	password_hash: string;
-	avatar: string;
-	is_online: number;
-	created_at: number;
-	updated_at: number;
+* Amistad entre dos usuarios
+* Representa la relación y su estado actual
+*/
+export interface Friendship {
+	userId: string;
+	friendId: string;
+	status: FriendshipStatus;
+	createdAt: Date;
+	updatedAt: Date;
 }
 
->>> ARCHIVO: ./packages/shared/src/types/index.ts
---------------------------------------------------------------------------------
-export * from './friendship.types';
-export * from './match.types';
-export * from './internal';
+// ============================================================================
+// DTOs - INPUT (Crear / Actualizar)
+// ============================================================================
+
+/**
+* DTO IN - Crear amistad
+* Enviada por el backend al crear relación
+*/
+export interface CreateFriendshipData {
+	userId: string;
+	friendId: string;
+	status: FriendshipStatus; // default 'pending'
+}
+
+/**
+* DTO IN - Actualizar amistad
+* Solo puede cambiar status y updatedAt
+*/
+export interface UpdateFriendshipData {
+	userId: string;
+	friendId: string;
+	status: FriendshipStatus;
+	updatedAt: Date;
+}
+
+// ============================================================================
+// REPRESENTACIÓN SQL (Snake_case)
+// ============================================================================
+
+/**
+* Row exacta de tabla 'friendships'
+* Expresa keys snake_case con los tipos de la tabla
+*/
+export interface FriendshipRow {
+	user_id: string;      // UserId (UUID)
+	friend_id: string;    // UserId (UUID)
+	status: string;       // FriendshipStatus
+	created_at: number;   // Unix timestamp
+	updated_at: number;   // Unix timestamp
+}
+
+/**
+* Row limitada para update parcial
+* Solo status y updated_at
+*/
+export interface UpdateFriendshipRow {
+	user_id: string;      // UserId (UUID)
+	friend_id: string;    // UserId (UUID)
+	status: string;       // FriendshipStatus
+	updated_at: number;   // Unix timestamp
+}
+
 
 >>> ARCHIVO: ./packages/shared/src/types/match.types.ts
 --------------------------------------------------------------------------------
@@ -462,78 +510,50 @@ export interface MatchPlayerRow {
 	score: number;
 }
 
->>> ARCHIVO: ./packages/shared/src/types/friendship.types.ts
+>>> ARCHIVO: ./packages/shared/src/types/user.types.ts
 --------------------------------------------------------------------------------
-import type { FriendshipStatus } from "../constants/friendship.constants";
+import { Static } from '@sinclair/typebox';
+import { UserSchemas } from '../schemas/';
 
-// ============================================================================
-// ENTIDAD DE DOMINIO
-// ============================================================================
-
-/**
-* Amistad entre dos usuarios
-* Representa la relación y su estado actual
-*/
-export interface Friendship {
-	userId: string;
-	friendId: string;
-	status: FriendshipStatus;
-	createdAt: Date;
-	updatedAt: Date;
+export namespace UserTypes {
+	/**
+	 * Tipo interno para User Mapper\
+	 * Define los campos 
+	*/
+	export type UserRow = {
+		id: string;
+		username: string;
+		email: string;
+		password_hash: string;
+		avatar: string;
+		is_online: number;
+		is_deleted: number;
+		created_at: number;
+		updated_at: number;
+	}
+	
+	export type CreateUserBody = Static<typeof UserSchemas.CreateUserBody>;
+	export type UpdateUserBody = Static<typeof UserSchemas.UpdateUserBody>;
+	export type UpdatePasswordBody = Static<typeof UserSchemas.UpdatePasswordBody>;
+	export type UserIdParams = Static<typeof UserSchemas.UserIdParams>;
+	export type UsernameParams = Static<typeof UserSchemas.UsernameParams>;
+	export type EmailParams = Static<typeof UserSchemas.EmailParams>;
+	export type UserPublic = Static<typeof UserSchemas.UserPublic>;
+	export type UserInternal = Static<typeof UserSchemas.UserInternal>;	
 }
 
-// ============================================================================
-// DTOs - INPUT (Crear / Actualizar)
-// ============================================================================
+>>> ARCHIVO: ./packages/shared/src/types/index.ts
+--------------------------------------------------------------------------------
+export * from './friendship.types';
+export * from './match.types';
+export * from './user.types';
 
-/**
-* DTO IN - Crear amistad
-* Enviada por el backend al crear relación
-*/
-export interface CreateFriendshipData {
-	userId: string;
-	friendId: string;
-	status: FriendshipStatus; // default 'pending'
-}
-
-/**
-* DTO IN - Actualizar amistad
-* Solo puede cambiar status y updatedAt
-*/
-export interface UpdateFriendshipData {
-	userId: string;
-	friendId: string;
-	status: FriendshipStatus;
-	updatedAt: Date;
-}
-
-// ============================================================================
-// REPRESENTACIÓN SQL (Snake_case)
-// ============================================================================
-
-/**
-* Row exacta de tabla 'friendships'
-* Expresa keys snake_case con los tipos de la tabla
-*/
-export interface FriendshipRow {
-	user_id: string;      // UserId (UUID)
-	friend_id: string;    // UserId (UUID)
-	status: string;       // FriendshipStatus
-	created_at: number;   // Unix timestamp
-	updated_at: number;   // Unix timestamp
-}
-
-/**
-* Row limitada para update parcial
-* Solo status y updated_at
-*/
-export interface UpdateFriendshipRow {
-	user_id: string;      // UserId (UUID)
-	friend_id: string;    // UserId (UUID)
-	status: string;       // FriendshipStatus
-	updated_at: number;   // Unix timestamp
-}
-
+>>> ARCHIVO: ./packages/shared/src/constants/index.ts
+--------------------------------------------------------------------------------
+export * from './game.constants';
+export * from './friendship.constants';
+export * from './match.constants';
+export { UserConstants } from './user.constants';
 
 >>> ARCHIVO: ./packages/shared/src/constants/match.constants.ts
 --------------------------------------------------------------------------------
@@ -635,6 +655,41 @@ export const MATCH_STATUS = {
 export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];
 
 
+>>> ARCHIVO: ./packages/shared/src/constants/user.constants.ts
+--------------------------------------------------------------------------------
+export namespace UserConstants {
+	export const anon_avatar = 'http://noavatar.com/noavatar';
+}
+
+>>> ARCHIVO: ./packages/shared/src/constants/friendship.constants.ts
+--------------------------------------------------------------------------------
+// ============================================================================
+// FRIENDSHIP STATUS
+// ============================================================================
+
+/**
+ * Estados posibles de una relación de amistad
+ */
+export const FRIENDSHIP_STATUS = {
+
+	/**
+	 * Solicitud enviada, pendiente de aceptación
+	 */
+	PENDING: "pending",
+
+	/**
+	 * Solicitud aceptada, amistad activa
+	 */
+	ACCEPTED: "accepted"
+
+} as const;
+
+/**
+ * Tipo literal derivado de FRIENDSHIP_STATUS
+ */
+export type FriendshipStatus =
+	typeof FRIENDSHIP_STATUS[keyof typeof FRIENDSHIP_STATUS];
+
 >>> ARCHIVO: ./packages/shared/src/constants/game.constants.ts
 --------------------------------------------------------------------------------
 // ============================================================================
@@ -678,41 +733,6 @@ export const GAME_CONSTANTS = {
 } as const;
 
 
->>> ARCHIVO: ./packages/shared/src/constants/friendship.constants.ts
---------------------------------------------------------------------------------
-// ============================================================================
-// FRIENDSHIP STATUS
-// ============================================================================
-
-/**
- * Estados posibles de una relación de amistad
- */
-export const FRIENDSHIP_STATUS = {
-
-	/**
-	 * Solicitud enviada, pendiente de aceptación
-	 */
-	PENDING: "pending",
-
-	/**
-	 * Solicitud aceptada, amistad activa
-	 */
-	ACCEPTED: "accepted"
-
-} as const;
-
-/**
- * Tipo literal derivado de FRIENDSHIP_STATUS
- */
-export type FriendshipStatus =
-	typeof FRIENDSHIP_STATUS[keyof typeof FRIENDSHIP_STATUS];
-
->>> ARCHIVO: ./packages/shared/src/constants/index.ts
---------------------------------------------------------------------------------
-export * from './game.constants';
-export * from './friendship.constants';
-export * from './match.constants';
-
 REPOSITORIOS (database)
 ================================================================================
 
@@ -734,48 +754,17 @@ ARCHIVOS PRINCIPALES
 EVENTOS (shared)
 ================================================================================
 
->>> ARCHIVO: ./packages/shared/src/events/BaseEvent.ts
---------------------------------------------------------------------------------
-import { Utils } from "../index";
-
-export abstract class BaseEvent {
-	public readonly id: string;
-	public readonly eventType: string;
-	public readonly timestamp: number;
-	public readonly version: number;
-	public readonly source: string;
-	
-	constructor(eventType: string, source: string) {
-		this.id = Utils.generateEventId();
-		this.eventType = eventType;
-		this.timestamp = Date.now();
-		this.version = 1;
-		this.source = source;
-	}
-	
-	abstract toJSON(): object;
-	
-	toString(): string {
-		return `[${this.source}] ${this.eventType} (${this.id})`;
-	}
-}
-
->>> ARCHIVO: ./packages/shared/src/events/index.ts
---------------------------------------------------------------------------------
-export { BaseEvent } from './BaseEvent';
-export { UserEvent } from './UserEvents';
-
 >>> ARCHIVO: ./packages/shared/src/events/UserEvents.ts
 --------------------------------------------------------------------------------
 import { BaseEvent } from "./BaseEvent";
-import { Types } from "../schemas";
+import { UserTypes } from "../types";
 
 export namespace UserEvent {
 	/**
 	* Evento: Usuario registrado exitosamente
 	*/
 	class Registered extends BaseEvent {
-		constructor(public readonly user: Types.UserPublic) {
+		constructor(public readonly user: UserTypes.UserPublic) {
 			super('user.registered', 'auth-service');
 		}
 		
@@ -892,8 +881,44 @@ export namespace UserEvent {
 	}
 }
 
+>>> ARCHIVO: ./packages/shared/src/events/index.ts
+--------------------------------------------------------------------------------
+export { BaseEvent } from './BaseEvent';
+export { UserEvent } from './UserEvents';
+
+>>> ARCHIVO: ./packages/shared/src/events/BaseEvent.ts
+--------------------------------------------------------------------------------
+import { Utils } from "../index";
+
+export abstract class BaseEvent {
+	public readonly id: string;
+	public readonly eventType: string;
+	public readonly timestamp: number;
+	public readonly version: number;
+	public readonly source: string;
+	
+	constructor(eventType: string, source: string) {
+		this.id = Utils.generateEventId();
+		this.eventType = eventType;
+		this.timestamp = Date.now();
+		this.version = 1;
+		this.source = source;
+	}
+	
+	abstract toJSON(): object;
+	
+	toString(): string {
+		return `[${this.source}] ${this.eventType} (${this.id})`;
+	}
+}
+
 UTILS (shared)
 ================================================================================
+
+>>> ARCHIVO: ./packages/shared/src/utils/index.ts
+--------------------------------------------------------------------------------
+export * from './normalizers';
+export * from './uuidGenerator';
 
 >>> ARCHIVO: ./packages/shared/src/utils/normalizers.ts
 --------------------------------------------------------------------------------
@@ -937,11 +962,6 @@ export class UserNormalizer {
 	}
 }
 
->>> ARCHIVO: ./packages/shared/src/utils/index.ts
---------------------------------------------------------------------------------
-export * from './normalizers';
-export * from './uuidGenerator';
-
 >>> ARCHIVO: ./packages/shared/src/utils/uuidGenerator.ts
 --------------------------------------------------------------------------------
 import { randomUUID } from "crypto";
@@ -960,5 +980,5 @@ export function generateEventId(): string {
 
 
 ================================================================================
-FIN DEL STATUS - Generado: 2025-11-04 21:48:35
+FIN DEL STATUS - Generado: 2025-11-11 08:56:46
 ================================================================================

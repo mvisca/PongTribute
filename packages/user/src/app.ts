@@ -24,25 +24,29 @@ process.on('SIGTERM', async () => {
 });
 
 /**
- * Crea y configuara la instancia de Fastfy\
- * 
- * @returns instnacia de Fastify configurada, sin listen())
- */
+* Crea y configuara la instancia de Fastfy\
+* 
+* @returns instnacia de Fastify configurada, sin listen())
+*/
 export function buildApp(): FastifyInstance { 
 	
 	// Crear instancia
 	const app = Fastify(getFastifyConfig());
 	currentApp = app;
-
-	// hooks
-	app.addHook('onRegister', (instance, opts) => {
-	  console.log('Plugin registrado: ', opts.prefix)
-	})
-
+	
 	app.addHook('onRoute', (route) => {
+		const method = route.method;
+		const url = route.url;
+		const icon = {
+			POST: '📝',
+			GET: '📖',
+			PUT: '✏️',
+			DELETE: '🗑️',
+			PATCH: '🔧'
+		}[method as string] || '📌';
 		console.log('Route registrada: ', route.url)
 	})
-
+	
 	// registrar plugins, security headers
 	app.register(helmet, {
 		contentSecurityPolicy: false,
@@ -50,7 +54,7 @@ export function buildApp(): FastifyInstance {
 	});
 	
 	/**
-	 * endpoint de health check
+	* endpoint de health check
 	*/
 	app.get('/health', async(request, reply) => {
 		return {
@@ -62,21 +66,21 @@ export function buildApp(): FastifyInstance {
 	});
 	
 	/**
-	 * Registrar todas las rutas del servicio
-	 */
+	* Registrar todas las rutas del servicio
+	*/
 	app.register(userRoutes, { prefix: '/api' });
-
+	
 	/**
-	 * Manejo global de errores\
-	 * Captura cualquier error no manejado
-	 */
+	* Manejo global de errores\
+	* Captura cualquier error no manejado
+	*/
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error({
 			err: error,
 			url: request.url,
 			method: request.method
 		});
-
+		
 		if (error.validation) {
 			return reply.status(400).send({
 				error: 'Ostras! Error de validación',
@@ -84,28 +88,28 @@ export function buildApp(): FastifyInstance {
 				details: error.validation
 			})
 		}
-
+		
 		if (error.statusCode) {
 			return reply.status(error.statusCode).send({
 				error: error.name,
 				message: error.message
 			})
 		}
-
+		
 		return reply.status(500).send({
 			error: 'Internal server error',
 			message: config.nodeEnv === 'production'
-				? 'Algo salió mal'
-				: error.message
+			? 'Algo salió mal'
+			: error.message
 		});
 	});
-
+	
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
 			error: 'Not found',
 			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
-
+	
 	return app;
 }

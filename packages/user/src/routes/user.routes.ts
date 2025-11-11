@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { UserSchemas } from '@transcendence/shared';
 import { UserController } from '../controllers/user.controller';
 
+// TODO orden de rutas
 /**
 * Plugin de rutas de usuario\
 * Registra todos los endpoints relacionados con User\
@@ -22,6 +23,10 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 	// instancia unica de controller para todas las rutas
 	const controller = new UserController();
 	
+	// ============================================================================
+	// POST CREATE
+	// ============================================================================
+
 	/**
 	* POST /users
 	* Crear nuevo usuario
@@ -32,52 +37,11 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 		schema: UserSchemas.createUserSchema,
 		handler: controller.createUser.bind(controller)
 	});
-	
-	/**
-	* PUT /users/:id
-	* Actualiza usuario
-	* Body: { username?, email?, avatar? }
-	* Param: { id: string }
-	* Response: 200 con User | 404 si no existe |  409 si ya existe
-	*/
-	app.put('/users/:id', {
-		schema: UserSchemas.updateUserSchema,
-		handler: controller.updateUser.bind(controller)
-	});
-	
-	/**
-	* PUT /users/:id/password
-	* Actualiza password del usuario
-	* Param: { id: string }
-	* Response: 204 sin contenido | 404 si no existe
-	*/
-	app.put('/users/:id/password', {
-		schema: UserSchemas.updatePasswordSchema,
-		handler: controller.updatePassword.bind(controller)
-	});
 
-	/**
-	* ANONYNIZE /users/:id
-	* Anonimiza usuario
-	* Param: { id: string }
-	* Response: 204 sin contenido | 404 si no existe
-	*/
-	app.put('/users/:id/anonymize', {
-		schema: UserSchemas.anonymizeUserSchema,
-		handler: controller.anonymizeUser.bind(controller)
-	});
-	
-	/**
-	* DELETE /users/:id
-	* Borra usuario
-	* Param: { id: string }
-	* Response: 204 sin contenido | 404 si no existe
-	*/
-	app.delete('/users/:id', {
-		schema: UserSchemas.deleteUserSchema,
-		handler: controller.deleteUser.bind(controller)
-	});
-	
+	// ============================================================================
+	// GET READ / CHECKS & GETS
+	// ============================================================================
+
 	app.get('/users/username/:username', {
 		schema: UserSchemas.getUserByUsernameSchema,
 		handler: controller.getUserByUsername.bind(controller)
@@ -102,4 +66,57 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
 		schema: UserSchemas.getUserByIdSchema,
 		handler: controller.getUserById.bind(controller)
 	});	
+
+	// ============================================================================
+	// PUT UPDATE / SOFT DELETE
+	// ============================================================================
+
+	/**
+	* PUT /users/:id/password
+	* Actualiza password del usuario
+	* Param: { id: string }
+	* Response: 204 sin contenido | 404 si no existe
+	*/
+	app.put('/users/:id/password', {
+		schema: UserSchemas.updatePasswordSchema,
+		handler: controller.updatePassword.bind(controller)
+	});
+
+	/**
+	* ANONYMIZE /users/:id
+	* Anonimiza usuario
+	* Param: { id: string }
+	* Response: 204 sin contenido | 404 si no existe
+	*/
+	app.put('/users/:id/anonymize', {
+		schema: UserSchemas.anonymizeUserSchema,
+		handler: controller.anonymizeUser.bind(controller)
+	});
+	
+	/**
+	* PUT /users/:id
+	* Actualiza usuario
+	* Body: { username?, email?, avatar? }
+	* Param: { id: string }
+	* Response: 200 con User | 404 si no existe |  409 si ya existe
+	*/
+	app.put('/users/:id', {
+		schema: UserSchemas.updateUserSchema,
+		handler: controller.updateUser.bind(controller)
+	});
+
+	// ============================================================================
+	// DELETE / HARD DELETE
+	// ============================================================================
+
+	/**
+	* DELETE /users/:id
+	* Borra usuario
+	* Param: { id: string }
+	* Response: 204 sin contenido | 404 si no existe
+	*/
+	app.delete('/users/:id', {
+		schema: UserSchemas.deleteUserSchema,
+		handler: controller.deleteUser.bind(controller)
+	});
 }
