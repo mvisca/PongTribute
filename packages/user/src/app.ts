@@ -35,7 +35,11 @@ export function buildApp(): FastifyInstance {
 	currentApp = app;
 	
 	app.addHook('onRoute', (route) => {
-		const method = route.method;
+		const method = route.method.toString();
+		
+		if (method == 'HEAD')
+			return;
+		
 		const url = route.url;
 		const icon = {
 			POST: '📝',
@@ -44,7 +48,7 @@ export function buildApp(): FastifyInstance {
 			DELETE: '🗑️',
 			PATCH: '🔧'
 		}[method as string] || '📌';
-		console.log('Route registrada: ', route.url)
+		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
 	
 	// registrar plugins, security headers

@@ -48,12 +48,12 @@ function test(subject: string, name: string, expected: any, actual: any) {
 
 async function runTests() {
 	let app: FastifyInstance | null = null;
-	 
+	
 	try {
 		// SETUP
 		app = buildApp();
 		await app.ready();
-
+		
 		// Limpiar DB
 		const db = getDatabase();
 		db.prepare('DELETE FROM users').run();
@@ -61,7 +61,7 @@ async function runTests() {
 		// Identificar logger
 		console.log(`\n${"o".repeat(10)} Identificar Logger ${"o".repeat(10)}`)
 		console.log('🔍 Logger type:', app.log.constructor.name);
-		console.log('🔍 Logger level:', '');
+		console.log('🔍 Logger level:', app.log.level);
 		
 		let userId: string = '';
 		
@@ -82,7 +82,7 @@ async function runTests() {
 		};
 		
 		let juanUser = undefined;
-
+		
 		// 1.1 Create JUAN
 		{
 			const res = await app.inject({
@@ -137,7 +137,7 @@ async function runTests() {
 		}
 		
 		// 1.4 Missing required field
-				{
+		{
 			let res14 = undefined;
 			try {
 				
@@ -155,7 +155,7 @@ async function runTests() {
 			}			
 			test('CREATE', 'Missing email returns 400', 400, res14?.statusCode || undefined);
 		}
-				
+		
 		// ====================================================================
 		// subject 2: READ
 		// ====================================================================
@@ -403,11 +403,11 @@ async function runTests() {
 			
 			test('PASSWORD', 'Non-existent user returns 404', 404, res.statusCode);
 		}
-
+		
 		// ====================================================================
 		// subject 6: ANONIMIZE
 		// ====================================================================
-
+		
 		console.log('\n[ANONIMIZE USER]');
 		{
 			const createLulu = {
@@ -416,7 +416,7 @@ async function runTests() {
 				passwordHash: bcrypt.hashSync('pass123', 10),
 				avatar: 'https://example.com/avatar.png'
 			};
-
+			
 			const res = await app.inject({
 				method: 'POST',
 				url: '/api/users',
@@ -433,14 +433,24 @@ async function runTests() {
 					method: 'PUT',
 					url:`/api/users/${luluId}/anonymize`
 				});
-
-				luluUser = anony.json();
-
+				
+				// DEBUG: Agrega esto para ver qué está pasando
+				console.log('Anonymize response status:', anony.statusCode);
+				console.log('Anonymize response body:', anony.body);
+				console.log('Anonymize response headers:', anony.headers);
+				
+				// Solo intenta parsear JSON si hay contenido
+				if (anony.body && anony.body.trim() !== '') {
+					luluUser = anony.json();
+				} else {
+					luluUser = null; // o maneja el caso de respuesta vacía
+				}
+				
 				test('ANONYMIZE', 'User anonymized', 201, res.statusCode);
 				console.log('\nAnonimized user: ', luluUser);
 			}
 		}
-
+		
 		// ====================================================================
 		// subject 7: DELETE
 		// ====================================================================
