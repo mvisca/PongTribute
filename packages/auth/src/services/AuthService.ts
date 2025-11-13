@@ -17,6 +17,7 @@ export class AuthService {
 
 		if (!response.ok) {
 			if (response.status === 404) return null;
+			console.log('ERROR:', response.json());
 			throw new Error(`User service error: ${response.status}`);
 		}
 		

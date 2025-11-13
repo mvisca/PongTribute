@@ -43,11 +43,11 @@ export function buildApp(): FastifyInstance {
 		
 		const url = route.url;
 		const icon = {
-			POST: '📝',
-			GET: '📖',
-			PUT: '✏️',
-			DELETE: '🗑️',
-			PATCH: '🔧'
+			POST: 'USER 📝: ',
+			GET: 'USER 📖:',
+			PUT: 'USER ✏️:',
+			DELETE: 'USER 🗑️:',
+			PATCH: 'USER 🔧:'
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
@@ -64,7 +64,7 @@ export function buildApp(): FastifyInstance {
 	app.get('/health', async(request, reply) => {
 		return {
 			status: 'LA APP FUCNIONA OK!',
-			service: 'database-service',
+			service: 'USER SERVICE',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime()
 		};

@@ -10,7 +10,22 @@ export function buildApp(): FastifyInstance {
 		crossOriginEmbedderPolicy: false
 	});
 
-	app.register(authRoutes, { prefix: '/api' }); // TODO el prefix de auth debe ser el mismo que user
+	app.addHook('onRoute', (route) => {
+		const method = route.method.toString();
+		
+		if (method == 'HEAD')
+			return;
+		
+		const url = route.url;
+		const icon = {
+			POST: 'AUTH 📝: ',
+			GET: 'AUTH 📖:',
+			PUT: 'AUTH ✏️:',
+			DELETE: 'AUTH 🗑️:',
+			PATCH: 'AUTH 🔧:'
+		}[method as string] || '📌';
+		console.log(`${icon} ${method.padEnd(7)} ${url}`);
+	})
 
 	/**
 	* endpoint de health check
@@ -18,11 +33,14 @@ export function buildApp(): FastifyInstance {
 	app.get('/health', async(request, reply) => {
 		return {
 			status: 'LA APP FUCNIONA OK!',
-			service: 'database-service',
+			service: 'AUTH SERVICE',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime()
 		};
 	});
+
+	app.register(authRoutes, { prefix: '/api' }); // TODO el prefix de auth debe ser el mismo que user
+
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error(error);
 		return reply.status(500).send({
