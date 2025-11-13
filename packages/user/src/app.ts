@@ -1,7 +1,8 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import { config, getFastifyConfig } from './config';
-import { userRoutes } from './routes/user.routes';
+import { userRoutes } from './routes/user.publicRoutes';
+import { internalRoutes } from './routes/user.internalRoutes';
 
 let currentApp: FastifyInstance | null = null;
 
@@ -73,7 +74,8 @@ export function buildApp(): FastifyInstance {
 	* Registrar todas las rutas del servicio
 	*/
 	app.register(userRoutes, { prefix: '/api' });
-	
+	app.register(internalRoutes, { prefix: '/internal'});
+
 	/**
 	* Manejo global de errores\
 	* Captura cualquier error no manejado

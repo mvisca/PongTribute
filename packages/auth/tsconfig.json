@@ -1,28 +1,49 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "types": ["node"],
-    "outDir": "./dist",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "composite": true,
-    "baseUrl": ".",
-    "paths": {
-      "@transcendence/shared": ["../shared/dist/index.d.ts"],
-      "@transcendence/shared/*": ["../shared/dist/*"]
-    }
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.d.ts"],
-  "references": [
-    { "path": "../shared" }
-  ]
+	"compilerOptions": {
+		// compilacion
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "CommonJS",
+		"moduleResolution": "node",
+		
+		// interoperabilidad
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		
+		// type checking
+		"strict": true,
+		"skipLibCheck": true,
+		"types": ["node"],
+		
+		// salida
+		"outDir": "./dist",
+		"declaration": true,
+		"declarationMap": true,
+		"sourceMap": true,
+		
+		// resferencias de proyecto
+		"composite": true,
+		
+		// paths
+		"baseUrl": ".",
+		"paths": {
+			"@transcendence/shared": ["../shared/dist/index.d.ts"],
+			"@transcendence/shared/*": ["../shared/dist/*"]
+		}
+	},
+
+	"include": [
+		"src/**/*",
+		"../shared/src/schemas/user.schema.ts"
+	],
+
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.d.ts"
+	],
+
+	"references": [
+		{ "path": "../shared" }
+	]
 }

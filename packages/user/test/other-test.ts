@@ -35,18 +35,19 @@ console.log("\n=== TEST UserMapper ===\n");
 
 
 // Import to test
-import { UserRow, Utils } from '../../shared/src';
+import { UserTypes, Utils } from '../../shared/';
 import { UserMapper } from '../src/mappers/UserMapper';
 import { KeyOfPropertyEntries } from '@sinclair/typebox';
 
 // Simular una row de SQLite
-const row: UserRow = {
+const row: UserTypes.UserRow = {
   id: "abc-123",
   username: "testuser",
   email: "test@example.com",
   password_hash: "$2a$10$...",
   avatar: "https://example.com/avatar.jpg",
   is_online: 1,
+  is_deleted: 0,
   created_at: 1730304000000,
   updated_at: 1730304000000
 };

@@ -43,12 +43,26 @@ export interface FastifyConfig {
 // =====================================================
 // CARGAR .ENV
 // =====================================================
+// TODO mejorar el manejo global de variables de entorno
+// Que las port esten cetntralizadas y que las url de servicios internos se actualicen 
+// generar un punto de entrada centralizado o coherente y sencillo
 
 dotenv.config({
 	path: path.resolve(__dirname, '../.env'),
-	quiet: true,
-	override: false
+	quiet: true
 });
+
+dotenv.config({
+	path: path.resolve(__dirname, '../../../.env'),
+	quiet: true
+});
+
+console.log(`SERVICE_SECRET=${process.env.SERVICE_SECRET}`);
+
+export const SERVICE_SECRET = process.env.SERVICE_SECRET;
+if (!SERVICE_SECRET) {
+	throw new Error('SERVICE_SECRET must be defined in enviroment variables');
+}
 
 // =====================================================
 // CONFIGURACION  GENERAL

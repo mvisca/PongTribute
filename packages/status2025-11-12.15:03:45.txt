@@ -1,0 +1,158 @@
+================================================================================
+PROYECTO: ft_transcendence
+FECHA: 
+================================================================================
+
+Este archivo contiene un snapshot del proyecto completo.
+Generado automaticamente por make_status.sh
+
+GENERADO: 2025-11-12 15:03:45
+
+ESTRUCTURA DEL PROYECTO
+================================================================================
+
+.
+|-- auth
+|   |-- package.json
+|   |-- src
+|   |   |-- app.ts
+|   |   |-- config.ts
+|   |   |-- controllers
+|   |   |   `-- AuthController.ts
+|   |   |-- middleware
+|   |   |   `-- authenticate.ts
+|   |   |-- routes
+|   |   |   `-- authRoutes.ts
+|   |   |-- schemas
+|   |   |   `-- authSchemas.ts
+|   |   |-- server.ts
+|   |   `-- services
+|   |       `-- AuthService.ts
+|   |-- test
+|   |   `-- test-login-service.ts
+|   `-- tsconfig.json
+|-- friendship
+|-- frontend
+|   |-- index.html
+|   |-- package.json
+|   |-- src
+|   |   `-- main.ts
+|   |-- tsconfig.json
+|   `-- vite.config.ts
+|-- match
+|-- server-side-pong
+|-- shared
+|   |-- index.ts
+|   |-- package.json
+|   |-- src
+|   |   |-- constants
+|   |   |   |-- friendship.constants.ts
+|   |   |   |-- game.constants.ts
+|   |   |   |-- index.ts
+|   |   |   |-- match.constants.ts
+|   |   |   `-- user.constants.ts
+|   |   |-- events
+|   |   |   |-- BaseEvent.ts
+|   |   |   |-- index.ts
+|   |   |   `-- UserEvents.ts
+|   |   |-- index.ts
+|   |   |-- schemas
+|   |   |   |-- auth.schema.ts
+|   |   |   |-- friendship.schema.ts
+|   |   |   |-- index.ts
+|   |   |   |-- match.schema.ts
+|   |   |   `-- user.schema.ts
+|   |   |-- types
+|   |   |   |-- friendship.types.ts
+|   |   |   |-- index.ts
+|   |   |   |-- match.types.ts
+|   |   |   `-- user.types.ts
+|   |   `-- utils
+|   |       |-- index.ts
+|   |       |-- normalizers.ts
+|   |       `-- uuidGenerator.ts
+|   |-- tsconfig.json
+|   `-- tsconfig.tsbuildinfo
+|-- status2025-11-12.15:03:45.txt
+|-- tournament
+`-- user
+    |-- package.json
+    |-- src
+    |   |-- app.ts
+    |   |-- config.ts
+    |   |-- connection.ts
+    |   |-- controllers
+    |   |   |-- friendship.controller.ts
+    |   |   |-- match.controller.ts
+    |   |   `-- user.controller.ts
+    |   |-- mappers
+    |   |   |-- FriendshipMapper.ts.hidden
+    |   |   |-- MatchMapper.ts.hidden
+    |   |   `-- UserMapper.ts
+    |   |-- middleware
+    |   |   `-- validateServiceSecret.ts
+    |   |-- repositories
+    |   |   |-- IFriendshipRepository.ts.hidden
+    |   |   |-- IMatchRepository.ts.hidden
+    |   |   |-- IUserRepository.ts
+    |   |   |-- SQLiteFriendshipRepository.ts.hidden
+    |   |   |-- SQLiteMatchRepository.ts.hidden
+    |   |   `-- SQLiteUserRepository.ts
+    |   |-- routes
+    |   |   |-- friendship.routes.ts
+    |   |   |-- index.ts
+    |   |   |-- match.routes.ts
+    |   |   |-- user.internalRoutes.ts
+    |   |   `-- user.publicRoutes.ts
+    |   |-- schemas
+    |   |   |-- indexes.sql
+    |   |   |-- tables.sql
+    |   |   `-- users_tables.sql
+    |   `-- server.ts
+    |-- test
+    |   |-- other-test.ts
+    |   |-- test-friendship-repository.ts
+    |   |-- test-user-api.ts
+    |   `-- test-user-repository.ts
+    `-- tsconfig.json
+
+31 directories, 73 files
+
+
+ARCHIVOS DE CONFIGURACION
+================================================================================
+
+ARCHIVOS SQL
+================================================================================
+
+TIPOS Y INTERFACES (shared)
+================================================================================
+
+REPOSITORIOS (database)
+================================================================================
+
+MAPPERS (database)
+================================================================================
+
+CONTROLLERS (database)
+================================================================================
+
+ROUTES (database)
+================================================================================
+
+SCHEMAS DE VALIDACION (database)
+================================================================================
+
+ARCHIVOS PRINCIPALES
+================================================================================
+
+EVENTOS (shared)
+================================================================================
+
+UTILS (shared)
+================================================================================
+
+
+================================================================================
+FIN DEL STATUS - Generado: 2025-11-12 15:03:45
+================================================================================

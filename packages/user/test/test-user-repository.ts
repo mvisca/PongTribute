@@ -5,6 +5,8 @@
 import { closeDatabase } from "../src/connection";
 import { SQLiteUserRepository } from "../src/repositories/SQLiteUserRepository";
 import { UserTypes } from "../../shared";
+import { stringify } from 'querystring';
+import { PassThrough } from 'stream';
 
 // ============================================================================
 // AUXILIAR

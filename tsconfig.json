@@ -25,7 +25,9 @@
 	"references": [
 		{ "path": "./packages/user" },
 		{ "path": "./packages/frontend" },
-		{ "path": "./packages/shared" }
+		{ "path": "./packages/shared" },
+		{ "path": "./packages/auth" }
+
 	],
 	"files": []
 }

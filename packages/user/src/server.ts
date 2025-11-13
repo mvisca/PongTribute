@@ -12,8 +12,9 @@ async function start() {
 			port: config.port,
 			host: config.host
 		});
+		
+		console.log(`App log level: ${app.log.level}`);
 
-		app.log.fatal("HOLA!");
 		app.log.info(`Servicio database 'lisetning' en ${config.host}:${config.port}`);
 		app.log.info(`Environment: ${config.nodeEnv}`);
 		app.log.info(`Database: ${config.dbPath}`);

@@ -2,6 +2,7 @@ packages:
   - packages/frontend
   - packages/shared
   - packages/user
+  - packages/auth
 
 ignoredBuiltDependencies:
   - babylonjs

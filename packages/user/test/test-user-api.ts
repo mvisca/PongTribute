@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { buildApp } from '../src/app';
 import { UserTypes, Utils } from '../../shared/src';
 import { getDatabase } from '../src/connection';
-import { userRoutes } from '../src/routes/user.routes';
+import { userRoutes } from '../src/routes/user.publicRoutes';
 
 // ============================================================================
 // TODO

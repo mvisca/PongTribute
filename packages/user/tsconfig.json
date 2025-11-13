@@ -32,10 +32,12 @@
 		}
 	},
 
-	"include": ["src/**/*",
-				"../shared/src/schemas/friendship.schema.ts", 
-				"../shared/src/schemas/match.schema.ts",
-				"../shared/src/schemas/user.schema.ts"],
+	"include": [
+		"src/**/*",
+		"../shared/src/schemas/friendship.schema.ts", 
+		"../shared/src/schemas/user.schema.ts"
+	],
+	
 	"exclude": [
 		"node_modules",
 		"dist",

@@ -16,9 +16,9 @@
     "test": "pnpm -r --no-bail test",
 	"test:user": "pnpm --filter '@transcendence/user' test:user",
 	"test:user-api": "pnpm --filter '@transcendence/user' test:user-api",
+	"test:user-other" : "pnpm --filter '@transcendence/user' test:other",
 	"test:friendship" : "pnpm --filter '@transcendence/friendship' test:friendship",
-	"test:match" : "pnpm --filter '@transcendence/match' test:match",
-	"test:other" : "pnpm --filter '@transcendence/user' test:other"
+	"test:login" : "pnpm --filter '@transcendence/auth' test:login"
   },
   "keywords": [],
   "author": "",

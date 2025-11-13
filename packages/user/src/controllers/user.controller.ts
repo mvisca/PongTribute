@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
 import { UserTypes } from '@transcendence/shared';
+import { UserMapper } from 'src/mappers/UserMapper';
 
 /**
 * Controller de User\
@@ -350,6 +351,8 @@ export class UserController {
 				});
 			}
 			
+			const publicUser = UserMapper.internalToResponse(user);
+
 			return reply.code(200).send(user);
 			
 		} catch (err) {
@@ -410,5 +413,23 @@ export class UserController {
 			request.log.error(err);
 			throw err;
 		}
+	}
+
+	async getInternalUserByEmail(
+		request: FastifyRequest<{ Params: { email: string } }>,
+		reply: FastifyReply
+	): Promise <void> {
+		const { email } =   request.params;
+
+		const user = await this.userRepo.findByEmail(email);
+
+		if (!user){
+			return reply.code(404).send({
+				error: 'Not found',
+				message: 'User not found'
+			})
+		}
+
+		return reply.code(200).send(user);
 	}
 }
