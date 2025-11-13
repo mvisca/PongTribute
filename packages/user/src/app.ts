@@ -47,7 +47,8 @@ export function buildApp(): FastifyInstance {
 			GET: 'USER 📖:',
 			PUT: 'USER ✏️:',
 			DELETE: 'USER 🗑️:',
-			PATCH: 'USER 🔧:'
+			PATCH: 'USER 🔧:',
+			HEAD: 'HEAD (--):'
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
@@ -69,7 +70,7 @@ export function buildApp(): FastifyInstance {
 			uptime: process.uptime()
 		};
 	});
-	
+
 	/**
 	* Registrar todas las rutas del servicio
 	*/

@@ -4,9 +4,9 @@
 	"type": "commonjs",
 	"main": "./dist/server.js",
 	"scripts": {
-		"dev": "tsx watch src/server.ts",
+		"dev": "tsx src/server.ts",
 		"build": "tsc",
-		"start:dev": "tsx src/server.ts",
+		"start:dev": "tsx watch src/server.ts",
 		"start": "node dist/server.js",
 		"test:user": "tsx ./test/test-user-repository.ts",
 		"test:user-api": "tsx ./test/test-user-api.ts",

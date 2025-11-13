@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
 	"test:login": "tsx ./test/test-login-service.ts",
-	"test:user-api": "tsx ./test/test-login-api.ts"
+	"test:login-api": "tsx ./test/test-login-api.ts"
 
   },
   "dependencies": {

@@ -12,35 +12,52 @@ const userPassword = '1234abcd';
 const userPasswordHash = bcrypt.hashSync(userPassword, 10);
 
 async function createTestUser() {
-
-	const exists = await fetch(
+	
+	const res1 = await fetch(
 		`${process.env.USER_SERVICE_URL}/api/users/check-email/${userEmail}`
 	);
+	
+	const checkRes = await res1.json();
 
-	if (exists) return;
+	console.log(checkRes);
 
-	const response = await fetch(
-		`${process.env.USER_SERVICE_URL}/api/users`,
-		{
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				username: 'tester',
-				email: userEmail,
-				avatar: 'http://image.test/test',
-				passwordHash: userPasswordHash
-			})
+	if (checkRes.available === true) {
+		
+		const response = await fetch(
+			`${process.env.USER_SERVICE_URL}/api/users`,
+			{
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					username: 'tester',
+					email: userEmail,
+					avatar: 'http://image.test/test',
+					passwordHash: userPasswordHash
+				})
+			}
+		);
+
+		if (!response.ok) {
+			const error = await response.json();
+			console.log('error creando usuario: ', error);
+			throw new Error('Setup failed');
 		}
-	);
 
-	if (!response.ok) {
-		const error = await response.json();
-		console.log('error creando usuario: ', error);
-		throw new Error('Setup failed');
+		console.log('Usuario creado:');
+	} else {
+		console.log('Usuario existente:');
+	}
+	
+	const user = await fetch(
+		`${process.env.USER_SERVICE_URL}/api/users/by-email/${userEmail}`
+	)
+	
+	if (!user) {
+		console.log('Fallo al recuperar usuario con email:', userEmail);
+		process.exit(1);
 	}
 
-	const user = await response.json();
-	console.log('Usuario creado: ', user);
+	console.log(user);
 
 	return { email: userEmail, password: userPassword };
 }
@@ -48,12 +65,22 @@ async function createTestUser() {
 async function testLogin() {
 	const service = new AuthService();
 	const result = await service.login(userEmail, userPassword);
-
+	
 	if (result) {
 		console.log(`\n${'='.repeat(15)} Login OK! ${'='.repeat(15)}`);
 		console.log(result);
 	}
 }
 
-createTestUser();
-testLogin();
+async function main() {
+
+	console.log('\n' + '='.repeat(15) + 'Create user IN' + '='.repeat(15));
+	await createTestUser();
+	console.log('='.repeat(15) + 'Create user OUT' + '='.repeat(15) + '\n');
+
+	console.log('\n' + '='.repeat(15) + 'Test api IN' + '='.repeat(15));
+	await testLogin();
+	console.log('='.repeat(15) + 'Test api OUT' + '='.repeat(15) + '\n');
+}
+
+main();

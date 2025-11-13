@@ -40,7 +40,7 @@ export class AuthService {
 			{ expiresIn: AuthEnv.JWT_EXPIRES_IN } as SignOptions
 		);
 	}
-
+ 
 	async login(
 		email: string,
 		password: string

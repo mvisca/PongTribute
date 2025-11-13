@@ -11,8 +11,6 @@ async function testLogin() {
 		url: `/localhost:3001/api/user/check-email/${userEmail}`
 	});
 
-	console.log(`WIP este log tiene que indicar si es false que se cree el usuario. sugiere usar test-login-service.ts`);
-
 	const res = await app.inject({
 		method: 'POST',
 		url: '/api/auth/login',

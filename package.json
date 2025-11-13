@@ -12,6 +12,7 @@
 		"preinstall": "npx only-allow pnpm",
 		"start:dev": "pnpm --parallel --filter '@transcendence/*' start:dev",
 		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
+		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev",
 		"build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
 		"clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
 		"test": "pnpm -r --no-bail test",

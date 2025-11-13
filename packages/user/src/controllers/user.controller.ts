@@ -32,7 +32,7 @@ export class UserController {
 			const data = request.body;
 
 			const [emailTaken, usernameTaken] = await Promise.all([
-				this.userRepo.isEmailTaken(request.body.email),
+				this.userRepo.isEmailTaken(data.email),
 				this.userRepo.isUsernameTaken(data.username)
 			]);
 			

@@ -22,7 +22,8 @@ export function buildApp(): FastifyInstance {
 			GET: 'AUTH 📖:',
 			PUT: 'AUTH ✏️:',
 			DELETE: 'AUTH 🗑️:',
-			PATCH: 'AUTH 🔧:'
+			PATCH: 'AUTH 🔧:',
+			HEAD: 'HEAD (>:'
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
