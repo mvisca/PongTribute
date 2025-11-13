@@ -12,6 +12,17 @@ export function buildApp(): FastifyInstance {
 
 	app.register(authRoutes, { prefix: '/api' }); // TODO el prefix de auth debe ser el mismo que user
 
+	/**
+	* endpoint de health check
+	*/
+	app.get('/health', async(request, reply) => {
+		return {
+			status: 'LA APP FUCNIONA OK!',
+			service: 'database-service',
+			timestamp: new Date().toISOString(),
+			uptime: process.uptime()
+		};
+	});
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error(error);
 		return reply.status(500).send({

@@ -2,7 +2,13 @@ import { buildApp } from './app';
 import { AuthEnv } from './config';
 
 async function start() {
-	const app = buildApp();
+	let app;
+	try {
+		app = buildApp();
+	} catch (err) {
+		console.log('Error al lanzar:', err);
+		process.exit(1);
+	}
 
 	try {
 		await app.listen({ port: AuthEnv.PORT, host: '0.0.0.0' });

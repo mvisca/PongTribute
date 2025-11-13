@@ -8,15 +8,16 @@ export namespace AuthEnv {
 	const userServiceUrl = process.env.USER_SERVICE_URL;
 	
 	if (!jwtSecret || !serviceSecret || !userServiceUrl) {
-		throw new Error('Missing required environment variable');
+		console.error('Faltan ENV VARS. Crea un .env de .env.example:');
+		console.error('@/transcendence: cp .env.example .env');
+		console.error('Edita con tus valores');
+		process.exit(1);
 	}
 	
 	export const PORT: number = parseInt(process.env.PORT || '3332');
 	export const NODE_ENV: string = process.env.NODE_ENV || 'development';
-
 	export const JWT_SECRET: string = jwtSecret;
 	export const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || '1h';
-
 	export const SERVICE_SECRET: string = serviceSecret;
 	export const USER_SERVICE_URL: string = userServiceUrl;
 }
