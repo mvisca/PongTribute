@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { TestConstants } from './testConstants';
 import { AuthTypes, UserTypes } from '../types';
 import bcrypt from 'bcryptjs';
+import { appendFile } from 'fs';
+import { stringify } from 'querystring';
 
 export namespace TestUtils {
 
@@ -9,102 +11,156 @@ export namespace TestUtils {
 	// INTERFAZ DE ARGUMENTOS
 	// ============================================================================
 
-	// Para configurar servicios y app opcional
-	export interface SetupUserOptions {
-		app?: FastifyInstance;
-		baseUrl?: string;
-		authServiceUrl?: string;
-		userServiceUrl: string;
-		gameServiceUrl: string;
-	}
-
 	// Para método request (interno)
-	interface RequestOptions<TBody = any> {
+	interface RequestOptions<TPayload = any> {
 		method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-		url: string;
+		path: string;
 		serviceUrl?: string;
-		payload?: TBody;
+		payload?: TPayload;
 		headers?: Record<string, string>;
 		app?: FastifyInstance; 
 	}
 
+	// Para configurar servicios y app opcional
+	interface SetupUserOptions {
+		userServiceUrl?: string;
+		authServiceUrl?: string;
+		app?: FastifyInstance;
+	}
+
+	// Para fetchWithAuth
+	interface FetchWithAuthOptions<TPayload = any> {
+		method?: RequestOptions['method'];
+		payload?: TPayload;
+		headers?: Record<string, string>;
+		app?: FastifyInstance;
+	}
+
 	// ============================================================================
-	// LOGIN PROCESS
+	// PRIVATE METHODS
 	// ============================================================================
+
+	// En algnos casos los test se realizan con fetch, llamando a los endpoits via HTTP
+	// En otros casos se llama a los endpoints mediant inject de fastify para pruebas
+	// Este metodo abstrae este contexto y permite crear los usuarios de prueba en ambos contextos
+	// Para crearlos se deben hacer requests al repositorio users y se haran de forma abstracta
+	async function request<T = any, TPayload = any>(
+		options: RequestOptions<TPayload>
+	): Promise<T> {
+		const {
+			method,
+			path,
+			serviceUrl,
+			payload,
+			headers = {},
+			app
+		} = options;
+
+		// Metodo para contextos con inject
+		// Se proporciona el app devuelto por buildApp para llamar inject
+		if (app) {
+			const response = await app.inject({
+				method,
+				url: path,
+				...(payload && { payload: JSON.stringify(payload) }),
+				headers: {
+					'Content-Type': 'application/json',
+					...headers
+				}
+			});
+
+			if (response.statusCode >= 400) {
+				throw new Error(
+					`Request failed: ${method} ${path} - Status: ${response.statusCode}`
+				);
+			}
+
+			return response.json() as T;
+		}
+
+		// Metodo para contextos con fetch
+		// Primero se valida que haya serviceUrl donde dirigir la request
+		if (!serviceUrl) {
+			throw new Error(`serviceUrl es necesaria cuando app no se proporciona`)
+		}
+
+		const fullUrl = `${serviceUrl}${path}`;
+		const response = await fetch(fullUrl, {
+			method,
+			headers: {
+				'Content-Type': 'application/json',
+				...headers
+			},
+			...(payload && { body: JSON.stringify(payload) })
+		});
+
+		if (!response.ok) {
+			throw new Error(
+				`Requestfailed: ${method} ${fullUrl} - Status: ${response.status}`
+			)
+		}
+
+		return await response.json() as T;
+	}
 
 	async function doLogin(
 		email: string,
 		password: string,
-		options = {
-			userServiceUrl: 'http://localhost:3001',
-			authServiceUrl: 'http://localhost:3002'
-		}
+		options: SetupUserOptions = {}
 	): Promise<AuthTypes.LoginResponse> {
+
+		const authServiceUrl = options.authServiceUrl || 'http://localhost:3002';
+
 		// llamado a api/login
-		const sessionData = await fetch(
-			`${options.authServiceUrl}/api/login`,
-			{
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({ email, password })
-			}
-		);
-
-		// verifica login
-		if (!sessionData.ok) {
-			throw new Error(`Fallo autenticando user en doLogin: ${email}`);
-		}
-
-		// devuelve login response con user y token
-		return (await sessionData.json()) as AuthTypes.LoginResponse;
+		return await request<AuthTypes.LoginResponse>(
+		{
+			method: 'POST',
+			path: '/api/auth/login',
+			serviceUrl: authServiceUrl,
+			payload: { email, password },
+			...( options.app && { app: options.app } )
+		});
 	}
+
+	// ============================================================================
+	// PUBLIC METHODS
+	// ============================================================================
 
 	// si no existe, crea un user y lo logea
 	export async function setupUser(
 		key: TestConstants.TestUserKey,
-		options = {
-			userServiceUrl: 'http://localhost:3001',
-			authServiceUrl: 'http://localhost:3002'
-		}
+		options: SetupUserOptions = {}
 	): Promise<AuthTypes.LoginResponse> {
+
+		const userServiceUrl = options.userServiceUrl || 'http://localhost:3001';
+
 		// obtiene los datos para crear el user desde constantes
 		const userData = TestConstants.TEST_USERS[key];
 
 		// verifica que existe el user
-		const userExists = await fetch(
-			`${options.userServiceUrl}/api/users/check-email/${userData.email}`
-		);
+		const checkUser = await request<UserTypes.AvailabilityResponse>({
+			method: 'GET',
+			path: `/api/users/check-email/${userData.email}`,
+			serviceUrl: userServiceUrl,
+			app: options.app
+		});
 
 		// si no existe, lo crea
-		if (!userExists.ok) {
+		if (checkUser.available) {
+
 			const { password, ...rest } = userData;
 			const passwordHash = bcrypt.hashSync(userData.password);
-			const createUserData: UserTypes.CreateUserBody = {
-				...rest,
-				passwordHash
-			};
 
-			const response = await fetch(`${options.userServiceUrl}/api/users`, {
+			const response = await request<UserTypes.UserPublic>({
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
+				path: '/api/users',
+				serviceUrl: userServiceUrl,
+				payload: {
+					...rest,
+					passwordHash
 				},
-				body: JSON.stringify({
-					username: createUserData.username,
-					email: createUserData.email,
-					avatar: createUserData.avatar,
-					passwordHash: createUserData.passwordHash
-				})
+				app: options.app
 			});
-
-			if (!response.ok) {
-				throw new Error(`Fallo creando user: ${userData}`);
-			}
-
-			const sessionData = await doLogin(userData.email, userData.password, options);
-			return sessionData;
 		}
 
 		// Si existe, solo login
@@ -116,18 +172,32 @@ export namespace TestUtils {
 	// HTTP HELPERS
 	// ============================================================================
 	
-	export async function fetchWithAuth(
+	export async function fetchWithAuth<T, TPayload>(
 		url: string,
 		token: string,
-		options: RequestInit = {}
-	): Promise<Response> {
-		return fetch(url, {
-			...options,
-			headers: {
-				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${token}`,
-				...options.headers
-			}
+		options: FetchWithAuthOptions<TPayload>
+	): Promise<T> {
+
+		let serviceUrl: string | undefined;
+		let path: string;
+
+		if (url.startsWith('http://') || url.startsWith('https://')) {
+			const urlObj = new URL(url);
+			serviceUrl = `${urlObj.protocol}//${urlObj.host}`;
+			path = urlObj.pathname;
+		}
+		else {
+			path = url;
+			serviceUrl = undefined;
+		}
+
+		return await request<T, TPayload>({
+			method: options.method || 'GET',
+			path,
+			serviceUrl,
+			payload: options.payload,
+			headers: options.headers,
+			app: options.app
 		});
 	}
 	

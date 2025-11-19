@@ -26,5 +26,6 @@ export namespace UserTypes {
 	export type UsernameParams = Static<typeof UserSchemas.UsernameParams>;
 	export type EmailParams = Static<typeof UserSchemas.EmailParams>;
 	export type UserPublic = Static<typeof UserSchemas.UserPublic>;
-	export type UserInternal = Static<typeof UserSchemas.UserInternal>;	
+	export type UserInternal = Static<typeof UserSchemas.UserInternal>;
+	export type AvailabilityResponse = Static<typeof UserSchemas.AvailabilityResponse>;
 }

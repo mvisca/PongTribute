@@ -237,7 +237,7 @@ export namespace UserSchemas {
 	* Response para endpoints de verificación
 	* Retorna disponibilidad del recurso
 	*/
-	const AvailabilityResponse = Type.Object({
+	export const AvailabilityResponse = Type.Object({
 		available: Type.Boolean({
 			description: 'true si está disponible, false si ya existe'
 		}),
