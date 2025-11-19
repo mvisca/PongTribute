@@ -10,10 +10,13 @@
 		"build": "tsc"
 	},
 	"devDependencies": {
+		"@types/bcryptjs": "3.0.0",
 		"@types/node": "24.7.2",
+		"fastify": "5.6.2",
 		"typescript": "5.9.3"
 	},
 	"dependencies": {
-		"@sinclair/typebox": "0.34.41"
+		"@sinclair/typebox": "0.34.41",
+		"bcryptjs": "3.0.3"
 	}
 }

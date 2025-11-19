@@ -1,150 +1,144 @@
 import * as dotenv from 'dotenv';
-import path from 'path'; 
+import { SharedEnv } from '@transcendence/shared';
 
 // =====================================================
 // TIPOS
 // =====================================================
 
-/**
- * Configuración general del serivicio de base de datos
- */
-export interface ServiceConfig {
-	port: number;
-	host: string;
-	nodeEnv: 'development' | 'production' | 'test';
-	logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
-	dbPath: string;
-}
+export namespace UserEnv {
+	export interface ServiceConfig {
+		port: number;
+		host: string;
+		nodeEnv: 'development' | 'production' | 'test';
+		logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+		dbPath: string;
+	}
 
-/**
- * Opciones para el cosntructor de Fastify
- */
-export interface FastifyConfig {
-	logger: {
-		level: string;
-		transport?:{
-			target: string;
-			options: {
-				colorize: boolean;
-				translateTime: string;
-				ignore: string;
+	export interface FastifyConfig {
+		logger: {
+			level: string;
+			transport?: {
+				target: string;
+				options: {
+					colorize: boolean;
+					translateTime: string;
+					ignore: string;
+				};
 			};
 		};
-	};
-	ajv?: {
-		customOptions?: {
-			removeAdditional?: boolean | 'all' | 'failing';
-			coerceTypes?: boolean;
-			useDefaults?: boolean;
+		ajv?: {
+			customOptions?: {
+				removeAdditional?: boolean | 'all' | 'failing';
+				coerceTypes?: boolean;
+				useDefaults?: boolean;
+			};
 		};
 	}
-}
 
-// =====================================================
-// CARGAR .ENV
-// =====================================================
-// TODO mejorar el manejo global de variables de entorno
-// Que las port esten cetntralizadas y que las url de servicios internos se actualicen 
-// generar un punto de entrada centralizado o coherente y sencillo
+	// =====================================================
+	// CARGAR .ENV (PRIVADO)
+	// =====================================================
 
-dotenv.config({
-	path: path.resolve(__dirname, '../.env'),
-	quiet: true
-});
-
-dotenv.config({
-	path: path.resolve(__dirname, '../../../.env'),
-	quiet: true
-});
-
-console.log(`SERVICE_SECRET=${process.env.SERVICE_SECRET}`);
-
-export const SERVICE_SECRET = process.env.SERVICE_SECRET;
-if (!SERVICE_SECRET) {
-	throw new Error('SERVICE_SECRET must be defined in enviroment variables');
-}
-
-// =====================================================
-// CONFIGURACION  GENERAL
-// =====================================================
-
-/**
- * Generar un objeto de configuración de servidor fastify\
- * @throws error si port no existe o está fuera de rango (1024 <> 65535)\
- * @returns un objeto de configuración
- */
-export const config: ServiceConfig = {
-	port: parseInt(process.env.PORT || '3101', 10),
-	host: process.env.HOST || 'localhost',
-	nodeEnv: (process.env.NODE_ENV || 'development') as ServiceConfig['nodeEnv'],
-	logLevel: (process.env.LOG_LEVEL || 'info') as ServiceConfig['logLevel'],
-	dbPath: (
-		process.env.DB_PATH || 
-		path.resolve(__dirname, '../../db-data/user.db')
-	)
-};
-
-// =====================================================
-// VALIDACION 
-// =====================================================
-
-/**
- * Valida que port esté en el rango válido\
- * @throws error si el puerto es inválido
- */
-function validatePort(port: number): void {
-	if (!port || port < 1024 || port > 65535) {
-		throw new Error(
-			`[${__dirname}] : ${__filename}] Puerto inválido: ${port}. Debe estar entre 1024-65535`
-		);
+	function loadEnv(): void {
+		dotenv.config({
+			path: '../../.env',
+			quiet: true
+		});
 	}
-}
 
-/**
- * Valida que NODE_ENV sea válido\
- * @throws error si node env es inválido
- */
-function validateNodeEnv(env: string): void {
-	const validEnvs = ['development', 'production', 'test'];
-	if (!validEnvs.includes(env)) {
-		throw new Error(
-			`[${__dirname}] : ${__filename}] NODE_ENV inválido: ${env}. Debe ser: ${validEnvs.join(', ')}`
-		);
-	}
-}
+	// =====================================================
+	// VALIDACIÓN (PRIVADO)
+	// =====================================================
 
-validatePort(config.port);
-validateNodeEnv(config.nodeEnv); //TODO que hacen estos así
-
-// =====================================================
-// CONFIGURACION FASTIFY
-// =====================================================
-
-/**
- * Genera la configuración de Fastify
- * @returns configuracion de Fastify
- */
-export function getFastifyConfig(): FastifyConfig {
-	return {
-		logger: {
-			level: config.logLevel,
-			...(config.nodeEnv == 'development' && {
-				transport: {
-					target: 'pino-pretty',
-					options: {
-						colorize: true,
-						translateTime: 'HH:MM:ss Z',
-						ignore: 'pid,hostname'
-					}
-				}
-			})
-		},
-		ajv: {
-			customOptions: {
-				removeAdditional: false,
-				coerceTypes: true,
-				useDefaults: true
-			}
+	function validatePort(port: number): void {
+		if (!port || port < 1024 || port > 65535) {
+			throw new Error(
+				`Puerto inválido: ${port}. Debe estar entre 1024-65535`
+			);
 		}
+	}
+
+	function validateNodeEnv(env: string): void {
+		const validEnvs = ['development', 'production', 'test'];
+		if (!validEnvs.includes(env)) {
+			throw new Error(
+				`NODE_ENV inválido: ${env}. Debe ser: ${validEnvs.join(', ')}`
+			);
+		}
+	}
+
+	function validateSecrets(): void {
+		const required = ['SERVICE_SECRET'];
+		const missing = required.filter(key => !process.env[key]);
+
+		if (missing.length > 0) {
+			console.error(`❌ MISSING ENV VARS: ${missing.join(', ')}`);
+			console.error('   Create .env from .env.example: cp .env.example .env');
+			process.exit(1);
+		}
+	}
+
+	// =====================================================
+	// INICIALIZAR
+	// =====================================================
+
+	loadEnv();
+	const sharedEnv = SharedEnv.build();
+	validateSecrets();
+
+	// =====================================================
+	// EXPORTS PÚBLICOS - VALORES
+	// =====================================================
+
+	export const PORT: number = sharedEnv.USER_SERVICE_PORT || 3001;
+	export const HOST: string = sharedEnv.USER_SERVICE_HOST || 'localhost';
+	export const NODE_ENV: string = sharedEnv.NODE_ENV || 'development';
+	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL || 'info';
+	export const DB_PATH: string = sharedEnv.DB_PATH || '../../db-data/user.db';
+
+	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET!;
+
+	// =====================================================
+	// EXPORTS PÚBLICOS - OBJETOS
+	// =====================================================
+
+	validatePort(PORT);
+	validateNodeEnv(NODE_ENV);
+
+	export const serverConfig: ServiceConfig = {
+		port: PORT,
+		host: HOST,
+		nodeEnv: NODE_ENV as ServiceConfig['nodeEnv'],
+		logLevel: LOG_LEVEL as ServiceConfig['logLevel'],
+		dbPath: DB_PATH
 	};
+
+	// =====================================================
+	// EXPORTS PÚBLICOS - FUNCIONES
+	// =====================================================
+
+	export function getFastifyConfig(): FastifyConfig {
+		return {
+			logger: {
+				level: serverConfig.logLevel,
+				...(serverConfig.nodeEnv === 'development' && {
+					transport: {
+						target: 'pino-pretty',
+						options: {
+							colorize: true,
+							translateTime: 'HH:MM:ss Z',
+							ignore: 'pid,hostname'
+						}
+					}
+				})
+			},
+			ajv: {
+				customOptions: {
+					removeAdditional: false,
+					coerceTypes: true,
+					useDefaults: true
+				}
+			}
+		};
+	}
 }

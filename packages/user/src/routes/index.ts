@@ -1,3 +1,9 @@
-// TODO 
-// es necesario que el modulo database importe UUID cuando en shared hay unaformade hacerlo y es tipada?
-// es mejor hacerlo con la libreria UUID que con crypto?
+import { internalRoutes as INR } from "./user.internalRoutes";
+import { publicRoutes as PBR } from "./user.publicRoutes";
+import { protectedRoutes as PTR} from "./user.protectedRoutes";
+
+export namespace UserRoutes {
+	export const internalRoutes = INR;
+	export const publicRoutes = PBR;
+	export const protectedRoutes = PTR; 
+}

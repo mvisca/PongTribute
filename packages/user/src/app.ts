@@ -1,8 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
-import { config, getFastifyConfig } from './config';
-import { userRoutes } from './routes/user.publicRoutes';
-import { internalRoutes } from './routes/user.internalRoutes';
+import { UserEnv } from './config';
+import { UserRoutes } from './routes';
 
 let currentApp: FastifyInstance | null = null;
 
@@ -32,7 +31,7 @@ process.on('SIGTERM', async () => {
 export function buildApp(): FastifyInstance { 
 	
 	// Crear instancia
-	const app = Fastify(getFastifyConfig());
+	const app = Fastify(UserEnv.getFastifyConfig());
 	currentApp = app;
 	
 	app.addHook('onRoute', (route) => {
@@ -74,8 +73,12 @@ export function buildApp(): FastifyInstance {
 	/**
 	* Registrar todas las rutas del servicio
 	*/
-	app.register(userRoutes, { prefix: '/api' });
-	app.register(internalRoutes, { prefix: '/internal'});
+	console.log('REG INTERNAL');
+	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
+	console.log('REG PUBLIC');
+	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
+	console.log('REG PROTECTED');
+	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
 
 	/**
 	* Manejo global de errores\
@@ -103,9 +106,10 @@ export function buildApp(): FastifyInstance {
 			})
 		}
 		
+		// NOTA, esto tiene sentido? por que la condicion como valor del key message?
 		return reply.status(500).send({
 			error: 'Internal server error',
-			message: config.nodeEnv === 'production'
+			message: UserEnv.NODE_ENV === 'production'
 			? 'Algo salió mal'
 			: error.message
 		});
@@ -118,5 +122,6 @@ export function buildApp(): FastifyInstance {
 		});
 	});
 	
+	console.log('Returning App');
 	return app;
 }

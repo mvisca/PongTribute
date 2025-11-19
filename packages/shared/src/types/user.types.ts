@@ -18,6 +18,7 @@ export namespace UserTypes {
 		updated_at: number;
 	}
 	
+	export type CreateUserInput = Static<typeof UserSchemas.CreateUserInput>;
 	export type CreateUserBody = Static<typeof UserSchemas.CreateUserBody>;
 	export type UpdateUserBody = Static<typeof UserSchemas.UpdateUserBody>;
 	export type UpdatePasswordBody = Static<typeof UserSchemas.UpdatePasswordBody>;

@@ -11,7 +11,7 @@ async function start() {
 	}
 
 	try {
-		await app.listen({ port: AuthEnv.PORT, host: '0.0.0.0' });
+		await app.listen({ port: AuthEnv.PORT, host: AuthEnv.HOST });
 		console.log(`Auth service activo en puerto ${AuthEnv.PORT}`);
 	} catch (err) {
 		app.log.error(err);

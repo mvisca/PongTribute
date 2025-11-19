@@ -1,7 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
+import bcrypt from  'bcryptjs';
 import { UserTypes } from '@transcendence/shared';
 import { UserMapper } from 'src/mappers/UserMapper';
+import { PassThrough } from 'stream';
 
 /**
 * Controller de User\
@@ -25,7 +27,7 @@ export class UserController {
 	* @returns tipo UserPublic
 	*/
 	async createUser( 
-		request: FastifyRequest<{Body: UserTypes.CreateUserBody }>,
+		request: FastifyRequest<{Body: UserTypes.CreateUserInput }>,
 		reply: FastifyReply
 	): Promise <void> {
 		try {
@@ -57,7 +59,13 @@ export class UserController {
 				});
 			}
 
-			const newUser = await this.userRepo.create(data);
+			const { password, ...rest } = data;
+			const dataHash: UserTypes.CreateUserBody = {
+				...rest,
+				passwordHash: bcrypt.hashSync(password, 10)
+			}
+
+			const newUser = await this.userRepo.create(dataHash);
 
 			return reply
 			.code(201)

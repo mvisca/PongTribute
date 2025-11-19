@@ -5,6 +5,29 @@ import { Type } from '@sinclair/typebox';
 // ============================================================================
 
 export namespace UserSchemas { 
+
+	export const CreateUserInput = Type.Object({
+		username: Type.String({
+			minLength: 3,
+			maxLength: 20,
+			pattern: '^[a-zA-Z0-9_-]+$',
+			description: 'Username único, 3-20 char alphanum'
+		}),
+		email: Type.String({
+			format: 'email',
+			description: 'Email válido'
+		}),
+		password: Type.String({
+			minLength: 8,
+			maxLength: 32,
+			pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$',
+			description: 'Min 1 uppercase, 1 lowercase, 1 digit'
+		}),
+		avatar: Type.String({
+			description: 'URL del avatar del usuario'
+		})
+	});
+
 	/**
 	* Body para POST /api/users
 	* Valida datos de creacion de usuario
@@ -26,9 +49,9 @@ export namespace UserSchemas {
 			pattern: '^\\$2[aby]\\$\\d{2}\\$.{53}$',
 			description: 'Password hashed by bcrypt'
 		}),
-		avatar: Type.Optional(Type.String({
+		avatar: Type.String({
 			description: 'URL del avatar del usuario'
-		}))
+		})
 	});
 	
 	// ============================================================================
@@ -108,7 +131,7 @@ export namespace UserSchemas {
 	export const createUserSchema = {
 		description: 'Crea nuevo usuario',
 		tags: ['User'],
-		body: CreateUserBody,
+		body: CreateUserInput,
 		response: {
 			201: UserPublic,
 			409: Type.Object({

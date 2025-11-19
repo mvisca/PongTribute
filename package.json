@@ -21,7 +21,8 @@
 		"test:user-other" : "pnpm --filter '@transcendence/user' test:other",
 		"test:friendship" : "pnpm --filter '@transcendence/friendship' test:friendship",
 		"test:login" : "pnpm --filter '@transcendence/auth' test:login",
-		"test:login-api": "pnpm --filter '@transcendence/auth' test:login-api"
+		"test:login-api": "pnpm --filter '@transcendence/auth' test:login-api",
+		"test:jwt-api": "pnpm --filter '@transcendence/auth' test:jwt-api"
 	},
 	"keywords": [],
 	"author": "",

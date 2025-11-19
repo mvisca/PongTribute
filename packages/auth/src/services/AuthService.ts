@@ -1,9 +1,7 @@
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { UserTypes } from '@transcendence/shared';
+import { UserTypes, AuthTypes } from '@transcendence/shared';
 import { AuthEnv } from '../config';
-import { AuthTypes } from '../schemas/authSchemas';
-import { Sign } from 'crypto';
 
 export class AuthService {
 	
@@ -20,7 +18,7 @@ export class AuthService {
 			console.log('ERROR:', response.json());
 			throw new Error(`User service error: ${response.status}`);
 		}
-		
+
 		return await response.json() as UserTypes.UserInternal;
 	}
 
@@ -37,7 +35,7 @@ export class AuthService {
 		return jwt.sign(
 			user,
 			AuthEnv.JWT_SECRET,
-			{ expiresIn: AuthEnv.JWT_EXPIRES_IN } as SignOptions
+			{ expiresIn: AuthEnv.TOKEN_EXPIRY } as SignOptions
 		);
 	}
  

@@ -1,23 +1,37 @@
 import { buildApp } from '../src/app';
+import { TestUtils, TestConstants } from '@transcendence/shared';
 
 async function testLogin() {
 	const app = buildApp();
 
-	const userEmail = 'email@test.com';
-	const userPassword = '1234abcd';
+	const usersKeys = TestConstants.TEST_USERS_KEYS;
+	const user1 = await TestUtils.setupUser(usersKeys[0]);
+
+	if(!user1) {
+		return;
+	}
 
 	const res1 = await app.inject({
 		method: 'GET',
-		url: `/localhost:3001/api/user/check-email/${userEmail}`
+		url: `http://localhost:3001/api/user/check-email/${user1.user.email}`
 	});
 
-	const res = await app.inject({
+	console.log(`\nResponse.statu = ${res1.statusCode}`);
+
+	const res1json = await res1.json();
+	console.log("\nRES1JSON");
+	console.log(`${res1json}`);
+
+	const res2 = await app.inject({
 		method: 'POST',
 		url: '/api/auth/login',
-		payload: { email: userEmail, password: userPassword}
+		payload: {
+			email: `${user1.user.email}`,
+			password: `${TestConstants.TEST_USERS.user1.password}`
+		}
 	});
 
-	console.log(res.statusCode, res.json());
+	console.log(res2.statusCode, res2.json());
 }
 
 testLogin();

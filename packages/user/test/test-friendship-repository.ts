@@ -2,7 +2,7 @@
 // TEST FRIENDSHIP REPOSITORY
 // ============================================================================
 
-import { Email, FRIENDSHIP_STATUS } from "../../shared/src";
+import { FRIENDSHIP_STATUS } from "../../shared/src";
 import { SQLiteFriendshipRepository } from "../src/repositories/SQLiteFriendshipRepository";
 import { SQLiteUserRepository } from "../src/repositories/SQLiteUserRepository";
 import { getDatabase } from "../src/connection";
@@ -11,7 +11,7 @@ async function testFriendshipRepository() {
   console.log("=== TEST FRIENDSHIP REPOSITORY ===\n");
 
   const db = getDatabase();
-  db.exec("DELETE FROM friendships");
+  db.exec("DELETE FROM friendships"); FRIEN
   db.exec("DELETE FROM users");
 
   const userRepo = new SQLiteUserRepository(db);

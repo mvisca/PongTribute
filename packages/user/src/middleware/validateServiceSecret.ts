@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { SERVICE_SECRET } from '../config';
+import { UserEnv } from '../config';
 
 /**
 * Protección para acceso solo desde servicios internos
@@ -14,10 +14,10 @@ export async function validateServiceSecret(
 	
 	// TODO quitar log de middleware
 	console.log('📨 Header recibido:', providedSecret);
-	console.log('🔐 Secret esperado:', SERVICE_SECRET);
-	console.log('✅ Match:', providedSecret === SERVICE_SECRET);
+	console.log('🔐 Secret esperado:', UserEnv.SERVICE_SECRET);
+	console.log('✅ Match:', providedSecret === UserEnv.SERVICE_SECRET);
 	
-	if (!providedSecret || providedSecret !== SERVICE_SECRET) {
+	if (!providedSecret || providedSecret !== UserEnv.SERVICE_SECRET) {
 		return reply.status(403).send({
 			error: 'Forbidden',
 			message: 'Invalid or missing service secret'

@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { AuthTypes } from "../schemas/authSchemas";
+import { AuthTypes } from "@transcendence/shared";
 import { AuthService } from "../services/AuthService";
 
 export class AuthController {

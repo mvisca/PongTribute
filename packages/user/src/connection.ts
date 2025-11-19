@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UserEnv } from './config';
 
 // Declara variable Singleton
 // No inicializada
@@ -23,9 +24,10 @@ export function getDatabase(): Database.Database {
 	// LAZY INIT: solo se inicializa si se necesita (1st call)
 	// Para siguientes llamadas a getDatabse(), db ya está creada
 	if (!db) {
-		const dbPath = process.env.DB_PATH ||
+		const dbPath = UserEnv.DB_PATH + '/user.db' ||
 			path.join('../../db-data/user.db');
-		
+		// TODO recordar auditar como se resuelve la path de este archivo de base de datos para hacerlo más seguro en el caso de que que  en caso que en env se ponga un path terminado en '/' u otros casos
+
 		db = new Database(dbPath); /*, {
 			verbose: (sql) => {
 				if (process.env.NODE_ENV === 'development') {
