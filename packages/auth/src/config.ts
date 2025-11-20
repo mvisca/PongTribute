@@ -1,10 +1,4 @@
-import * as dotenv from 'dotenv';
 import { SharedEnv } from '@transcendence/shared';
-
-dotenv.config({
-	path: '../../.env',
-	debug: false
-});
 
 export namespace AuthEnv {
 

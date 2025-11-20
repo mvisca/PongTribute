@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import { UserEnv } from './config';
 import { UserRoutes } from './routes';
@@ -91,18 +91,19 @@ export function buildApp(): FastifyInstance {
 			method: request.method
 		});
 		
-		if (error.validation) {
+		if ((error as FastifyError).validation) {
 			return reply.status(400).send({
 				error: 'Ostras! Error de validación',
-				message: error.message,
-				details: error.validation
+				message: (error as FastifyError).message,
+				details: (error as FastifyError).validation
 			})
 		}
 		
-		if (error.statusCode) {
-			return reply.status(error.statusCode).send({
-				error: error.name,
-				message: error.message
+		const statusCode = (error as FastifyError).statusCode; // TODO arreglar este apanyo causado por type asertion para resolver conflicto de tipo Fastify Error
+		if (statusCode) {
+			return reply.status(statusCode).send({
+				error: (error as FastifyError).name,
+				message: (error as FastifyError).message
 			})
 		}
 		
@@ -111,7 +112,7 @@ export function buildApp(): FastifyInstance {
 			error: 'Internal server error',
 			message: UserEnv.NODE_ENV === 'production'
 			? 'Algo salió mal'
-			: error.message
+			: (error as FastifyError).message
 		});
 	});
 	

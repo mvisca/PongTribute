@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from "fastify";
+import Fastify, { FastifyError, FastifyInstance } from "fastify";
 import helmet from '@fastify/helmet';
 import { authRoutes } from './routes/authRoutes';
 
@@ -39,14 +39,20 @@ export function buildApp(): FastifyInstance {
 			uptime: process.uptime()
 		};
 	});
-
+ 
 	app.register(authRoutes, { prefix: '/api' }); // TODO el prefix de auth debe ser el mismo que user
 
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error(error);
 		return reply.status(500).send({
 			error: 'Internal Server Error',
-			message: error.message
+			message: (error as FastifyError).message // TODO evaluar soluciones
+			// OPCIONES:
+			// a Configurar pnpm para deduplicar 
+			// b Type Asertion (implementado) 
+			// c Mover FastifyInstance a peer dependencies (entenderlo mejor)
+			// d Reexportar tipos desde shared
+			// FIN: Solucion definitiva, migrar testUtils a package seapando test a su modulo
 		});
 	});
 

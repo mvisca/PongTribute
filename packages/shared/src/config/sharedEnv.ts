@@ -33,6 +33,40 @@ const DEFAULTS = {
 	TEST_MODE: false,
 } as const;
 
+// =====================================================
+// VALIDACIÓN (PRIVADO)
+// =====================================================
+
+// TODO implementar uso de validadores
+
+function validatePort(port: number): void {
+	if (!port || port < 1024 || port > 65535) {
+		throw new Error(
+			`Puerto inválido: ${port}. Debe estar entre 1024-65535`
+		);
+	}
+}
+
+function validateNodeEnv(env: string): void {
+	const validEnvs = ['development', 'production', 'test'];
+	if (!validEnvs.includes(env)) {
+		throw new Error(
+			`NODE_ENV inválido: ${env}. Debe ser: ${validEnvs.join(', ')}`
+		);
+	}
+}
+
+function validateSecrets(): void {
+	const required = ['SERVICE_SECRET'];
+	const missing = required.filter(key => !process.env[key]);
+
+	if (missing.length > 0) {
+		console.error(`❌ MISSING ENV VARS: ${missing.join(', ')}`);
+		console.error('   Create .env from .env.example: cp .env.example .env');
+		process.exit(1);
+	}
+}
+
 // ==================================================
 // BUILDER
 // ==================================================

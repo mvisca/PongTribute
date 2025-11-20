@@ -6,10 +6,6 @@ import { UserEnv } from "./config";
 async function start() {
 	const app = buildApp(); // LLAMADA
 
-	console.log(`📍 Intentando escuchar en ${UserEnv.HOST}:${UserEnv.PORT}`);
-	console.log(`   PORT value: ${UserEnv.PORT} (type: ${typeof UserEnv.PORT})`);
-	console.log(`   HOST value: ${UserEnv.HOST} (type: ${typeof UserEnv.HOST})`);
-
 	try {
 		await app.listen({
 			port: UserEnv.PORT,
