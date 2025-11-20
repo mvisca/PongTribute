@@ -144,3 +144,4 @@ vite.config.ts.timestamp-*
 # Notas
 notas.txt
 **.notas
+status*.txt

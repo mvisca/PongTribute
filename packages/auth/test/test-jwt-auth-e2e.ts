@@ -1,5 +1,6 @@
 import { AuthTypes, UserTypes, TestUtils, TestConstants } from '@transcendence/shared';
 import { AuthEnv } from '../src/config';
+import { FastifyReply } from 'fastify'
 
 // ============================================================================
 // INTERFACES Y VARIABLES LOCALES
@@ -58,8 +59,9 @@ async function loginTests(): Promise<void> {
       `${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
       userLoged.token
     );
-    results.push(test(key, 'GET by Id', 200, response.status));
+    results.push(test(key, 'GET by Id', 200, (response as FastifyReply).status));
   }
+//TODO arreglar es uso de type asertion con FastyfyError
 
   // Test PUT user
   console.log('\n✏️ PUT /api/users/:id (username)');
@@ -70,10 +72,10 @@ async function loginTests(): Promise<void> {
       userLoged.token,
       {
         method: 'PUT',
-        body: JSON.stringify({ username: `${key}_updated` })
+        payload: JSON.stringify({ username: `${key}_updated` })
       }
     );
-    results.push(test(key, 'PUT new username', 200, response.status));
+    results.push(test(key, 'PUT new username', 200, (response as FastifyReply).status));
   }
 
   // Test PUT Anonymize
@@ -85,7 +87,7 @@ async function loginTests(): Promise<void> {
       userLoged.token,
       { method: 'PUT' }
     );
-    results.push(test(key, 'PUT Anonymize user', 204, response.status));
+    results.push(test(key, 'PUT Anonymize user', 204, (response as FastifyReply).status));
 
     // Test DELETE
     if (key === 'user1') {
@@ -95,7 +97,7 @@ async function loginTests(): Promise<void> {
         userLoged.token,
         { method: 'DELETE' }
       );
-      results.push(test(key, 'DELETE user', 204, delResponse.status));
+      results.push(test(key, 'DELETE user', 204, (delResponse as FastifyReply).status));
 
       // Si DELETE pasó, recrear user1
       if (results.at(-1)?.passed) {
@@ -116,7 +118,9 @@ async function loginTests(): Promise<void> {
         `${userLoged.token}WRONG`,
         { method: 'DELETE' }
       );
-      results.push(test(key, 'DELETE user (invalid token)', 401, delResponse.status));
+
+	  const statusCode = (delResponse as FastifyReply).statusCode;
+      results.push(test(key, 'DELETE user (invalid token)', 401, (delResponse as FastifyReply).status));
     }
   }
 

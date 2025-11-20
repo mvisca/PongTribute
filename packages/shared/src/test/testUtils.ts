@@ -155,10 +155,7 @@ export namespace TestUtils {
 				method: 'POST',
 				path: '/api/users',
 				serviceUrl: userServiceUrl,
-				payload: {
-					...rest,
-					passwordHash
-				},
+				payload: { ...userData },
 				app: options.app
 			});
 		}
