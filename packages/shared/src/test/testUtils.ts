@@ -175,7 +175,7 @@ export namespace TestUtils {
 	export async function fetchWithAuth<T, TPayload>(
 		url: string,
 		token: string,
-		options: FetchWithAuthOptions<TPayload>
+		options: FetchWithAuthOptions<TPayload> = {}
 	): Promise<T> {
 
 		let serviceUrl: string | undefined;
@@ -184,7 +184,7 @@ export namespace TestUtils {
 		if (url.startsWith('http://') || url.startsWith('https://')) {
 			const urlObj = new URL(url);
 			serviceUrl = `${urlObj.protocol}//${urlObj.host}`;
-			path = urlObj.pathname;
+			path = urlObj.pathname + urlObj.search;
 		}
 		else {
 			path = url;
@@ -196,7 +196,10 @@ export namespace TestUtils {
 			path,
 			serviceUrl,
 			payload: options.payload,
-			headers: options.headers,
+			headers: {
+				...options.headers,
+				'Authorization': `Bearer ${token}`
+			},
 			app: options.app
 		});
 	}
@@ -206,10 +209,7 @@ export namespace TestUtils {
 	// ============================================================================
 	
 	export async function logAllUsers(
-		options = {
-			userServiceUrl: 'http://localhost:3001',
-			authServiceUrl: 'http://localhost:3002'
-		}
+		options: SetupUserOptions = {}
 	): Promise<Map<TestConstants.TestUserKey, AuthTypes.LoginResponse>> {
 		const sessions = new Map<TestConstants.TestUserKey, AuthTypes.LoginResponse>();
 		

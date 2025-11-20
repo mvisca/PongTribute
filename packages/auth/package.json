@@ -11,12 +11,12 @@
     "test:jwt-api": "tsx ./test/test-jwt-auth-e2e.ts"
   },
   "dependencies": {
-    "@fastify/helmet": "^13.0.2",
+    "@fastify/helmet": "13.0.2",
     "@fastify/jwt": "^8.0.0",
     "@sinclair/typebox": "^0.34.41",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
-    "fastify": "^5.6.1",
+    "fastify": "5.6.2",
     "jsonwebtoken": "9.0.2",
     "node-fetch": "^3.3.2"
   },

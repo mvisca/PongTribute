@@ -5,7 +5,7 @@ import { authRoutes } from './routes/authRoutes';
 export function buildApp(): FastifyInstance {
 	const app = Fastify({ logger: true });
 
-	app.register(helmet,{
+	app.register(helmet, {
 		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});

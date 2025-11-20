@@ -1,4 +1,4 @@
-import { TestUtils, TestConstants } from '@transcendence/shared';
+import { AuthTypes, UserTypes, TestUtils, TestConstants } from '@transcendence/shared';
 import { AuthEnv } from '../src/config';
 
 // ============================================================================
