@@ -20,8 +20,8 @@ export namespace UserSchemas {
 		password: Type.String({
 			minLength: 8,
 			maxLength: 32,
-			pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).*$',
-			description: 'Min 1 uppercase, 1 lowercase, 1 digit'
+			pattern: '^(?=.*[a-z])(?=.*\\d).*$',
+			description: 'Min 8 char, max 32 char, min 1 lowercase, min 1 digit'
 		}),
 		avatar: Type.String({
 			description: 'URL del avatar del usuario'

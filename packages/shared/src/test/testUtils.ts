@@ -148,14 +148,11 @@ export namespace TestUtils {
 		// si no existe, lo crea
 		if (checkUser.available) {
 
-			const { password, ...rest } = userData;
-			const passwordHash = bcrypt.hashSync(userData.password);
-
 			const response = await request<UserTypes.UserPublic>({
 				method: 'POST',
 				path: '/api/users',
 				serviceUrl: userServiceUrl,
-				payload: { ...userData },
+				payload: userData,
 				app: options.app
 			});
 		}

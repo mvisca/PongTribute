@@ -4,27 +4,29 @@
 
 import { AuthService } from '../src/services/AuthService';
 import bcrypt from 'bcryptjs';
-import * as dotenv from 'dotenv';
+import { SharedEnv } from '@transcendence/shared';
 
-dotenv.config({ debug: false });
 const userEmail = 'email@test.com';
 const userPassword = '1234abcd';
 const userPasswordHash = bcrypt.hashSync(userPassword, 10);
 
 async function createTestUser() {
-	
+	console.log('Test-Login-Service');
+	const sharedEnv = SharedEnv.build();
+
 	const res1 = await fetch(
-		`${process.env.USER_SERVICE_URL}/api/users/check-email/${userEmail}`
+		`${sharedEnv.USER_SERVICE_URL}/api/users/check-email/${userEmail}`,
 	);
 	
 	const checkRes = await res1.json();
 
+	console.log
 	console.log(checkRes);
 
 	if (checkRes.available === true) {
 		
 		const response = await fetch(
-			`${process.env.USER_SERVICE_URL}/api/users`,
+			`${sharedEnv.USER_SERVICE_URL}/api/users`,
 			{
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
@@ -32,14 +34,14 @@ async function createTestUser() {
 					username: 'tester',
 					email: userEmail,
 					avatar: 'http://image.test/test',
-					passwordHash: userPasswordHash
+					password: userPassword
 				})
 			}
 		);
 
 		if (!response.ok) {
 			const error = await response.json();
-			console.log('error creando usuario: ', error);
+			console.log('\nError creando usuario: ', error);
 			throw new Error('Setup failed');
 		}
 
@@ -47,17 +49,23 @@ async function createTestUser() {
 	} else {
 		console.log('Usuario existente:');
 	}
-	
-	const user = await fetch(
-		`${process.env.USER_SERVICE_URL}/api/users/by-email/${userEmail}`
-	)
-	
-	if (!user) {
+
+	const userResponse = await fetch(
+		`${sharedEnv.USER_SERVICE_URL}/internal/users/by-email/${userEmail}`,
+		{
+			headers: {
+				'X-Service-Secret': `${sharedEnv.SERVICE_SECRET}`
+			}
+		}
+	);
+
+	if (!userResponse) {
 		console.log('Fallo al recuperar usuario con email:', userEmail);
 		process.exit(1);
 	}
 
-	console.log(user);
+	const resUser = userResponse.json();
+	console.log(userResponse);
 
 	return { email: userEmail, password: userPassword };
 }
@@ -73,14 +81,8 @@ async function testLogin() {
 }
 
 async function main() {
-
-	console.log('\n' + '='.repeat(15) + 'Create user IN' + '='.repeat(15));
 	await createTestUser();
-	console.log('='.repeat(15) + 'Create user OUT' + '='.repeat(15) + '\n');
-
-	console.log('\n' + '='.repeat(15) + 'Test api IN' + '='.repeat(15));
 	await testLogin();
-	console.log('='.repeat(15) + 'Test api OUT' + '='.repeat(15) + '\n');
 }
 
 main();

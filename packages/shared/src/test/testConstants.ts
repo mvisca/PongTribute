@@ -8,19 +8,19 @@ export namespace TestConstants {
 			username: 'juan_test',
 			email: 'juan@test.com',
 			avatar: 'http://fotos.com/fotos.png',
-			password: 'password1234'
+			password: 'passwordA1234'
 		},
 		user2: {
 			username: 'maria_test',
 			email: 'maria@test.com',
 			avatar: 'http://fotos.com/fotos.png',
-			password: 'password1234'
+			password: 'passwordA1234'
 		},
 		user3: {
 			username: 'foo_test',
 			email: 'foo@test.com',
 			avatar: 'http://fotos.com/fotos.png',
-			password: 'password1234'
+			password: 'passwordA1234'
 		}
 	} satisfies Record<string, UserTypes.CreateUserInput>;
 	

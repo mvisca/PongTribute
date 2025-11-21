@@ -13,7 +13,7 @@ async function testLogin() {
 
 	const res1 = await app.inject({
 		method: 'GET',
-		url: `http://localhost:3001/api/user/check-email/${user1.user.email}`
+		url: `http://localhost:3001/api/users/check-email/${user1.user.email}`
 	});
 
 	console.log(`\nResponse.statu = ${res1.statusCode}`);

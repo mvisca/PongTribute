@@ -7,9 +7,9 @@ const DEFAULTS = {
 	AUTH_SERVICE_URL: 'http://localhost:3002',
 	AUTH_SERVICE_PORT: 3002,
 	AUTH_SERVICE_HOST: 'localhost',
-	JWT_SECRET: 'your_super_secret_key_here',
+	JWT_SECRET: 'default_super_secret_key_here',
 	TOKEN_EXPIRY: '1h',
-	REFRESH_TOKEN_EXPIRY: '7d',
+	REFRESH_TOKEN_EXPIRY: '365d',
 	
 	// User Servicenpx tsc --noEmit src/config/sharedEnv.ts
 	USER_SERVICE_URL: 'http://localhost:3001',
@@ -27,10 +27,10 @@ const DEFAULTS = {
 	LOG_LEVEL: 'fatal',
 
 	// Inter-Service Communication
-	SERVICE_SECRET: 'shared_secret_between_services',
+	SERVICE_SECRET: 'default_shared_secret_between_services',
 	
 	// Testing
-	TEST_MODE: false,
+	TEST_MODE: "default_values",
 } as const;
 
 // =====================================================
@@ -114,7 +114,7 @@ export namespace SharedEnv {
 			// ==================================================
 			// TESTING
 			// ==================================================
-			TEST_MODE: process.env.TEST === 'test_value',
+			TEST_MODE: process.env.TEST_MODE || DEFAULTS.TEST_MODE
 			
 		} as const;
 	}
