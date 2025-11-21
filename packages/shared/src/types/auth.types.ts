@@ -10,4 +10,6 @@ export namespace AuthTypes {
 
 	// Tipo para payload de generación de token
 	export type UserPayload = LoginResponse['user'];
+
+	export type UpdatePasswordBody = Static<typeof AuthSchemas.UpdatePasswordBody>;
 }

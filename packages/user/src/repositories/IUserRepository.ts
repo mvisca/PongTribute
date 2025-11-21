@@ -54,6 +54,11 @@ export interface IUserRepository {
 	findById(id: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
+	 * Buscar usuario por 'id'
+	 */
+	findByIdInternal(id: string): Promise<UserTypes.UserInternal | null>;
+
+	/**
 	 * Buscar usuario por 'username'
 	 */
 	findByUsername(username: string): Promise<UserTypes.UserPublic | null>;

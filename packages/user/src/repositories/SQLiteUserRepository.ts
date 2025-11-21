@@ -152,6 +152,15 @@ export class SQLiteUserRepository implements IUserRepository {
 		return this.getUserById(id) || null;
 	}
 	
+	async findByIdInternal(id: string): Promise<UserTypes.UserInternal | null> {
+		const row = this.db.prepare(`
+			SELECT * FROM users WHERE id = ?
+		`).get(id) as UserTypes.UserRow | undefined;
+			
+		return row ? UserMapper.rowToInternal(row) : null;
+	}
+
+
 	/** 
 	* Busca usuario por email (insensible a mayúsculas)\
 	* Retorna el objeto completo con passwordHash

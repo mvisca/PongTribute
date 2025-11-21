@@ -41,7 +41,7 @@ export function buildApp(): FastifyInstance {
 		};
 	});
  
-	app.register(authRoutes, { prefix: '/api' }); // TODO el prefix de auth debe ser el mismo que user
+	app.register(authRoutes, { prefix: '/api' });
 
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error(error);

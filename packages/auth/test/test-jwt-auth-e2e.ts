@@ -1,6 +1,5 @@
 import { AuthTypes, UserTypes, TestUtils, TestConstants } from '@transcendence/shared';
 import { AuthEnv } from '../src/config';
-import { FastifyReply } from 'fastify'
 
 // ============================================================================
 // INTERFACES Y VARIABLES LOCALES
@@ -55,72 +54,118 @@ async function loginTests(): Promise<void> {
   console.log('\n🔍 GET /api/users/:id');
   for (const [key, userLoged] of usersLoged) {
     const userId = userLoged.user.id;
-    const response = await TestUtils.fetchWithAuth(
+    const response = await TestUtils.fetchWithAuth<UserTypes.UserPublic>(
       `${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
       userLoged.token
     );
-    results.push(test(key, 'GET by Id', 200, (response as FastifyReply).status));
+    results.push(test(key, 'GET by Id', 200, response.status));
   }
-//TODO arreglar es uso de type asertion con FastyfyError
 
   // Test PUT user
-  console.log('\n✏️ PUT /api/users/:id (username)');
+  console.log('\nPUT /api/users/:id (username)');
   for (const [key, userLoged] of usersLoged) {
     const userId = userLoged.user.id;
-    const response = await TestUtils.fetchWithAuth(
+    const response = await TestUtils.fetchWithAuth<UserTypes.UserPublic>(
       `${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
       userLoged.token,
       {
         method: 'PUT',
-        payload: JSON.stringify({ username: `${key}_updated` })
+        payload: { username: `${key}_updated` }
       }
     );
-    results.push(test(key, 'PUT new username', 200, (response as FastifyReply).status));
+    results.push(test(key, 'PUT new username', 200, response.status));
   }
 
-  // Test PUT Anonymize
-  console.log('\n🔐 PUT /api/users/:id/anonymize');
-  for (const [key, userLoged] of usersLoged) {
-    const userId = userLoged.user.id;
-    const response = await TestUtils.fetchWithAuth(
-      `${AuthEnv.USER_SERVICE_URL}/api/users/${userId}/anonymize`,
-      userLoged.token,
-      { method: 'PUT' }
-    );
-    results.push(test(key, 'PUT Anonymize user', 204, (response as FastifyReply).status));
+  	// Test PUT Password
+	console.log('\nPUT /api/auth/:id/password');
+	const userSnapshot = usersLoged.get(TestConstants.TEST_USERS_KEYS[0]);
+	const userOldPassword = TestConstants.TEST_USERS.user1.password;
+	const userNewPassword = 'nuevaPass1';
+	
+  	console.log('\n', userSnapshot);
 
-    // Test DELETE
-    if (key === 'user1') {
-      console.log('\n🗑️ DELETE /api/users/:id (user1 - token válido)');
-      const delResponse = await TestUtils.fetchWithAuth(
-        `${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
-        userLoged.token,
-        { method: 'DELETE' }
-      );
-      results.push(test(key, 'DELETE user', 204, (delResponse as FastifyReply).status));
+	const updatePassRes = await TestUtils.fetchWithAuth<void>(
+		`${AuthEnv.AUTH_SERVICE_URL}/api/auth/${userSnapshot?.user.id}/password`,
+		userSnapshot?.token!,
+		{ 
+			method: 'PUT',
+			payload: {
+				oldPassword: userOldPassword,
+				newPassword: userNewPassword				
+			}
+		}
+	);
 
-      // Si DELETE pasó, recrear user1
-      if (results.at(-1)?.passed) {
-        const recreated = await TestUtils.logAllUsers();
-        // Actualizar token de user1 en usersLoged
-        const user1Session = recreated.get('user1');
-        if (user1Session) {
-          usersLoged.set('user1', user1Session);
-        }
-      }
+	console.log('\n', updatePassRes.status);
+	console.log('\n', updatePassRes.data);
+
+	if (updatePassRes.status === 200 || updatePassRes.status === 204) {
+		console.log('Cambio de password exitoso');
+	} else {
+		console.log('Cambio de password falló');
+	}
+
+		const backPassRes = await TestUtils.fetchWithAuth<void>(
+		`${AuthEnv.AUTH_SERVICE_URL}/api/auth/${userSnapshot?.user.id}/password`,
+		userSnapshot?.token!,
+		{ 
+			method: 'PUT',
+			payload: {
+				oldPassword: userNewPassword,
+				newPassword: userOldPassword				
+			}
+		}
+	);
+
+	console.log('\n', backPassRes.status);
+	console.log('\n', backPassRes.data);
+	if (backPassRes.status === 200 || backPassRes.status === 204) {
+		console.log('Restablcer password exitoso');
+	} else {
+		console.log('Restablecer password falló');
+	}
+
+	// Test PUT Anonymize
+	console.log('\nPUT /api/users/:id/anonymize');
+	for (const [key, userLoged] of usersLoged) {
+		const userId = userLoged.user.id;
+    	const response = await TestUtils.fetchWithAuth<void>(
+    		`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}/anonymize`,
+    		userLoged.token,
+    		{ method: 'PUT' }
+    	);
+    	results.push(test(key, 'PUT Anonymize user', 204, response.status));
+
+		// Test DELETE
+		if (key === 'user1') {
+		console.log('\nDELETE /api/users/:id (user1 - token válido)');
+		const delResponse = await TestUtils.fetchWithAuth<void>(
+			`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
+			userLoged.token,
+			{ method: 'DELETE' }
+		);
+		results.push(test(key, 'DELETE user', 204, delResponse.status));
+
+		// Si DELETE pasó, recrear user1
+		if (results.at(-1)?.passed) {
+			const recreated = await TestUtils.logAllUsers();
+			// Actualizar token de user1 en usersLoged
+			const user1Session = recreated.get('user1');
+			if (user1Session) {
+				usersLoged.set('user1', user1Session);
+        	}
+    	}
     }
 
     // Test DELETE con token inválido
     if (key === 'user2') {
       console.log('\n🚫 DELETE /api/users/:id (user2 - token inválido)');
-      const delResponse = await TestUtils.fetchWithAuth(
+      const delResponse = await TestUtils.fetchWithAuth<void>(
         `${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
         `${userLoged.token}WRONG`,
         { method: 'DELETE' }
       );
-
-	  const statusCode = (delResponse as FastifyReply).statusCode;
-      results.push(test(key, 'DELETE user (invalid token)', 401, (delResponse as FastifyReply).status));
+      results.push(test(key, 'DELETE user (invalid token)', 401, delResponse.status));
     }
   }
 

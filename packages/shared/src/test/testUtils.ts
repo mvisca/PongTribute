@@ -11,6 +11,12 @@ export namespace TestUtils {
 	// INTERFAZ DE ARGUMENTOS
 	// ============================================================================
 
+	// Respuesta con status code para tests
+	export interface TestResponse<T = any> {
+		data: T | null;
+		status: number;
+	}
+
 	// Para método request (interno)
 	interface RequestOptions<TPayload = any> {
 		method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -18,7 +24,7 @@ export namespace TestUtils {
 		serviceUrl?: string;
 		payload?: TPayload;
 		headers?: Record<string, string>;
-		app?: FastifyInstance; 
+		app?: FastifyInstance;
 	}
 
 	// Para configurar servicios y app opcional
@@ -165,12 +171,12 @@ export namespace TestUtils {
 	// ============================================================================
 	// HTTP HELPERS
 	// ============================================================================
-	
-	export async function fetchWithAuth<T, TPayload>(
+
+	export async function fetchWithAuth<T = any, TPayload = any>(
 		url: string,
 		token: string,
 		options: FetchWithAuthOptions<TPayload> = {}
-	): Promise<T> {
+	): Promise<TestResponse<T>> {
 
 		let serviceUrl: string | undefined;
 		let path: string;
@@ -185,17 +191,63 @@ export namespace TestUtils {
 			serviceUrl = undefined;
 		}
 
-		return await request<T, TPayload>({
+		// Para inject de Fastify
+		if (options.app) {
+			const injectHeaders: Record<string, string> = {
+				'Authorization': `Bearer ${token}`,
+				...options.headers
+			};
+			if (options.payload) {
+				injectHeaders['Content-Type'] = 'application/json';
+			}
+			const response = await options.app.inject({
+				method: options.method || 'GET',
+				url: path,
+				...(options.payload && { payload: JSON.stringify(options.payload) }),
+				headers: injectHeaders
+			});
+
+			let data: T | null = null;
+			try {
+				data = response.json() as T;
+			} catch {
+				// 204 No Content u otras respuestas sin body
+			}
+
+			return { data, status: response.statusCode };
+		}
+
+		// Para fetch HTTP
+		if (!serviceUrl) {
+			throw new Error(`serviceUrl es necesaria cuando app no se proporciona`);
+		}
+
+		const fullUrl = `${serviceUrl}${path}`;
+		const headers: Record<string, string> = {
+			'Authorization': `Bearer ${token}`,
+			...options.headers
+		};
+		// Solo añadir Content-Type si hay payload
+		if (options.payload) {
+			headers['Content-Type'] = 'application/json';
+		}
+		const response = await fetch(fullUrl, {
 			method: options.method || 'GET',
-			path,
-			serviceUrl,
-			payload: options.payload,
-			headers: {
-				...options.headers,
-				'Authorization': `Bearer ${token}`
-			},
-			app: options.app
+			headers,
+			...(options.payload && { body: JSON.stringify(options.payload) })
 		});
+
+		let data: T | null = null;
+		try {
+			const text = await response.text();
+			if (text) {
+				data = JSON.parse(text) as T;
+			}
+		} catch {
+			// 204 No Content u otras respuestas sin body
+		}
+
+		return { data, status: response.status };
 	}
 	
 	// ============================================================================

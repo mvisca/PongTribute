@@ -31,11 +31,6 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 	// GET READ / CHECKS & GETS
 	// ============================================================================
-
-	app.put('/users/:id/password', {
-		schema: UserSchemas.updatePasswordSchema,
-		handler: controller.updatePassword.bind(controller)
-	});
  
 	app.put('/users/:id/anonymize', {
 		schema: UserSchemas.anonymizeUserSchema,
@@ -43,7 +38,7 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	});
 
 	app.put('/users/:id', {
-		schema: UserSchemas.updateUserSchema,
+		schema: UserSchemas.UpdateUserSchema,
 		handler: controller.updateUser.bind(controller)
 	});
 

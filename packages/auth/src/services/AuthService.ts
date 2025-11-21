@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UserTypes, AuthTypes } from '@transcendence/shared';
 import { AuthEnv } from '../config';
+import { authRoutes } from 'src/routes/authRoutes';
 
 export class AuthService {
 	
@@ -62,4 +63,53 @@ export class AuthService {
 		};
 	}
 
+	async changePassword(
+		userId: string,
+		oldPassword: string,
+		newPassword: string
+	):Promise<boolean> {
+		const userResponse = await fetch(
+			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-id/${userId}`,
+			{
+				headers: {
+					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
+				}
+			}
+		);
+
+		if (!userResponse.ok) {
+			if (userResponse.status === 404) {
+				throw new Error('Usuario no encontrado');
+			}
+			throw new Error(`User service error: ${userResponse.status}`);
+		}
+
+		const user = await userResponse.json() as UserTypes.UserInternal;
+
+		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
+
+		if (!isPasswordValid) {
+			throw new Error(`Password actual incorrecta`);
+		}
+
+		const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+		const updateResponse = await fetch(
+			`${AuthEnv.USER_SERVICE_URL}/internal/users/${user.id}/password`,
+			{
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
+				},
+				body: JSON.stringify({newPasswordHash})
+			}
+		);
+
+		if (!updateResponse.ok) {
+			throw new Error(`Fallo al actualizar password: ${updateResponse.status}`);
+		}
+
+		return true;
+	}
 }

@@ -1,9 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { SQLiteUserRepository } from '../repositories/SQLiteUserRepository';
 import bcrypt from  'bcryptjs';
 import { UserTypes } from '@transcendence/shared';
 import { UserMapper } from 'src/mappers/UserMapper';
-import { PassThrough } from 'stream';
+import { SQLiteUserRepository } from 'src/repositories/SQLiteUserRepository';
 
 /**
 * Controller de User\
@@ -166,7 +165,7 @@ export class UserController {
 	* @returns void
 	*/
 	async updatePassword(
-		request: FastifyRequest<{Params: { id: string }, Body: UserTypes.UpdatePasswordBody }>,
+		request: FastifyRequest<{Params: { id: string }, Body: UserTypes.UpdatePasswordInternalBody }>,
 		reply: FastifyReply
 	): Promise <void> {
 		try {
@@ -430,6 +429,24 @@ export class UserController {
 		const { email } =   request.params;
 
 		const user = await this.userRepo.findByEmail(email);
+
+		if (!user){
+			return reply.code(404).send({
+				error: 'Not found',
+				message: 'User not found'
+			})
+		}
+
+		return reply.code(200).send(user);
+	}
+
+	async getInternalUserById(
+		request: FastifyRequest<{ Params: { id: string } }>,
+		reply: FastifyReply
+	): Promise <void> {
+		const id =   request.params.id;
+
+		const user = await this.userRepo.findByIdInternal(id);
 
 		if (!user){
 			return reply.code(404).send({

@@ -303,7 +303,7 @@ export namespace UserSchemas {
 	/**
 	* Schema para PUT /api/users/:id
 	*/
-	export const updateUserSchema = {
+	export const UpdateUserSchema = {
 		description: 'Actualizar usuario',
 		tags: ['User'],
 		params: UserIdParams,
@@ -329,7 +329,7 @@ export namespace UserSchemas {
 	/**
 	* Body para PUT /api/users/:id/password
 	*/
-	export const UpdatePasswordBody = Type.Object({
+	export const UpdatePasswordInternalBody = Type.Object({
 		newPasswordHash: Type.String({
 			minLength: 60,
 			maxLength: 60,
@@ -341,11 +341,11 @@ export namespace UserSchemas {
 	/**
 	* Schema para PUT /api/users/:id/password
 	*/
-	export const updatePasswordSchema = {
+	export const updatePasswordInternalSchema = {
 		description: 'Cambiar password de usuario',
 		tags: ['User'],
 		params: UserIdParams,
-		body: UpdatePasswordBody,
+		body: UpdatePasswordInternalBody,
 		response: {
 			204: Type.Null(),  // Sin contenido en respuesta exitosa
 			404: Type.Object({

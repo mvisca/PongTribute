@@ -21,7 +21,7 @@ export namespace UserTypes {
 	export type CreateUserInput = Static<typeof UserSchemas.CreateUserInput>;
 	export type CreateUserBody = Static<typeof UserSchemas.CreateUserBody>;
 	export type UpdateUserBody = Static<typeof UserSchemas.UpdateUserBody>;
-	export type UpdatePasswordBody = Static<typeof UserSchemas.UpdatePasswordBody>;
+	export type UpdatePasswordInternalBody = Static<typeof UserSchemas.UpdatePasswordInternalBody>;
 	export type UserIdParams = Static<typeof UserSchemas.UserIdParams>;
 	export type UsernameParams = Static<typeof UserSchemas.UsernameParams>;
 	export type EmailParams = Static<typeof UserSchemas.EmailParams>;

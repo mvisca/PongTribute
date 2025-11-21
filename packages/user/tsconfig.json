@@ -29,7 +29,8 @@
 		"paths": {
 			"@transcendence/shared": ["../shared/dist/index.d.ts"],
 			"@transcendence/shared/*": ["../shared/dist/*"]
-		}
+		},
+		"typeRoots": ["./node_modules/@types", "./src/types"]
 	},
 
 	"include": [

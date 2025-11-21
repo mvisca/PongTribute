@@ -3,6 +3,10 @@ import '@fastify/core';
 
 declare module 'fastify' {
 	interface FastifyRequest {
-		user?: any;
+		user?: {
+			id: string;
+			username: string;
+			email: string;
+		};
 	}
 }
