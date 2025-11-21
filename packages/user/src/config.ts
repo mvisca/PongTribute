@@ -24,7 +24,7 @@ export namespace UserEnv {
 					ignore: string;
 				};
 			};
-		};
+		} | boolean;
 		ajv?: {
 			customOptions?: {
 				removeAdditional?: boolean | 'all' | 'failing';
@@ -43,6 +43,18 @@ export namespace UserEnv {
 	// =====================================================
 	// EXPORTS PÚBLICOS - VALORES
 	// =====================================================
+
+	const jwtSecret = sharedEnv.JWT_SECRET;
+	const serviceSecret = sharedEnv.SERVICE_SECRET;
+	const userServiceUrl = sharedEnv.USER_SERVICE_URL;
+	const authServiceUrl = sharedEnv.AUTH_SERVICE_URL;
+	
+	if (!jwtSecret || !serviceSecret || !userServiceUrl || !authServiceUrl) {
+		console.error('Faltan ENV VARS. Crea un .env de .env.example:');
+		console.error('@/transcendence: cp .env.example .env');
+		console.error('Edita con tus valores');
+		process.exit(1);
+	}
 
 	export const PORT: number = sharedEnv.USER_SERVICE_PORT || 3001;
 	export const HOST: string = sharedEnv.USER_SERVICE_HOST || 'localhost';
