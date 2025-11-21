@@ -20,7 +20,7 @@ async function createTestUser() {
 	
 	const checkRes = await res1.json();
 
-	console.log
+	console.log('\nCheck Res');
 	console.log(checkRes);
 
 	if (checkRes.available === true) {
@@ -45,9 +45,9 @@ async function createTestUser() {
 			throw new Error('Setup failed');
 		}
 
-		console.log('Usuario creado:');
+		console.log('\nUsuario creado');
 	} else {
-		console.log('Usuario existente:');
+		console.log('\nUsuario existente');
 	}
 
 	const userResponse = await fetch(
@@ -64,8 +64,8 @@ async function createTestUser() {
 		process.exit(1);
 	}
 
-	const resUser = userResponse.json();
-	console.log(userResponse);
+	const resUser = await userResponse.json();
+	console.log(resUser);
 
 	return { email: userEmail, password: userPassword };
 }
