@@ -7,6 +7,11 @@ console.log("=== TEST PATH 'path.resolve()' ===\n");
 
 // Import to test
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const fullPath = path.resolve(__dirname, './concatEnv');
 console.log(`FULL_PATH=${fullPath}`);
@@ -35,9 +40,8 @@ console.log("\n=== TEST UserMapper ===\n");
 
 
 // Import to test
-import { UserTypes, Utils } from '../../shared/';
-import { UserMapper } from '../src/mappers/UserMapper';
-import { KeyOfPropertyEntries } from '@sinclair/typebox';
+import { UserTypes, Utils } from '@transcendence/shared';
+import { UserMapper } from '../src/mappers/UserMapper.js';
 
 // Simular una row de SQLite
 const row: UserTypes.UserRow = {
@@ -87,9 +91,9 @@ console.log('responseFromInternal includes "passwordHash"? ', (
 	Object.keys(responseFromInternal).includes('passwordHash') ? 'TRUE' : 'FALSE'
 ));
 
-// Convertir Response a Row
-const { password_hash, ...rowFromResponse } = UserMapper.internalToRow(responseFromInternal);
-console.log('\nrowFromResponse: ', rowFromResponse);
+// Convertir Response a Row (usando internal que tiene passwordHash)
+const { password_hash, ...rowFromResponse } = UserMapper.internalToRow(internalFromRow);
+console.log('\nrowFromResponse (sin password_hash): ', rowFromResponse);
 console.log('Typeof rowFromResponse.created_at: ', typeof(rowFromResponse.created_at));
 console.log('Typeof rowFromResponse.is_online: ', typeof(rowFromResponse.is_online));
 console.log('rowFromResponse includes "password_hash"? ', (

@@ -28,13 +28,19 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	);
 
 	// ============================================================================
-	// GET READ / CHECKS & GETS
+	// PUT UPDATE
 	// ============================================================================
- 
+
 	app.put('/users/:id/anonymize', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.anonymizeUserSchema,
 		handler: controller.anonymizeUser.bind(controller)
+	});
+
+	app.put('/users/:id/password', {
+		preHandler: [AuthMiddleware.verifyOwnership],
+		schema: UserSchemas.updatePasswordInternalSchema,
+		handler: controller.updatePassword.bind(controller)
 	});
 
 	app.put('/users/:id', {

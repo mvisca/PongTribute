@@ -535,20 +535,33 @@ async function runTests() {
 			if (res1.statusCode === 201) {
 				const otroUser = res1.json();
 				const otroId = otroUser.id;
-				const otroUserToken = ((await TestUtils.setupUser('user1')).token);
+				const otroUserToken = ((await TestUtils.setupUser('user2')).token);
 
-				// Update a nombre tomado
+				// Test: UPDATE con ownership - debería validar duplicate username
 				const res2 = await app.inject({
 					method: 'PUT',
 					url: `/api/users/${otroId}`,
 					headers: {
-						'Authorization': `Bearer ${user1.token}`
+						'Authorization': `Bearer ${otroUserToken}` // Token del dueño
 					},
 					payload: {
 						username: `ElNuevoJuan` // Ya está en uso
 					}
-				}); // TODO este debería fallar porque el token no pertenece al usuario. si 
+				});
 				test('UPDATE', 'Duplicate username returns 409', 409, res2.statusCode);
+
+				// Test: UPDATE sin ownership - debería devolver 403
+				const res3 = await app.inject({
+					method: 'PUT',
+					url: `/api/users/${otroId}`,
+					headers: {
+						'Authorization': `Bearer ${user1.token}` // Token de otro usuario
+					},
+					payload: {
+						username: `UnNombreCualquiera`
+					}
+				});
+				test('UPDATE', 'Update without ownership returns 403', 403, res3.statusCode);
 
 				// Cleanup
 				await app.inject({
@@ -563,18 +576,21 @@ async function runTests() {
 			}
 		}
 
-		// 4.3 Update non-existent user
+		// 4.3 Update non-existent user - sin ownership devuelve 403
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'PUT',
 				url: `/api/users/${fakeId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				},
 				payload: {
 					username: 'whatever'
 				}
 			});
-			
-			test('UPDATE', 'Non-existent user returns 404', 404, res.statusCode);
+
+			test('UPDATE', 'Non-existent user without ownership returns 403', 403, res.statusCode);
 		}
 		
 		// 4.4 Update email only
@@ -582,6 +598,9 @@ async function runTests() {
 			const res = await app.inject({
 				method: 'PUT',
 				url: `/api/users/${juanUser.id}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				},
 				payload: {
 					email: `otroEmailJuan@example.com`
 					// NO username, NO avatar
@@ -609,27 +628,33 @@ async function runTests() {
 			const res = await app.inject({
 				method: 'PUT',
 				url: `/api/users/${userId}/password`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				},
 				payload: {
 					newPasswordHash: bcrypt.hashSync('newpass', 10)
 				}
 			});
-			
+
 			test('PASSWORD', 'Update password returns 204', 204, res.statusCode);
 			test('PASSWORD', 'Empty body', '', res.body);
 		}
 		
-		// 5.2 Update password non-existent
+		// 5.2 Update password non-existent - sin ownership devuelve 403
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'PUT',
 				url: `/api/users/${fakeId}/password`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				},
 				payload: {
 					newPasswordHash: bcrypt.hashSync('newpass', 10)
 				}
 			});
-			
-			test('PASSWORD', 'Non-existent user returns 404', 404, res.statusCode);
+
+			test('PASSWORD', 'Non-existent user without ownership returns 403', 403, res.statusCode);
 		}
 		
 		// ====================================================================
@@ -683,30 +708,39 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'DELETE',
-				url: `/api/users/${userId}`
+				url: `/api/users/${userId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
-			
+
 			test('DELETE', 'Delete user returns 204', 204, res.statusCode);
 			test('DELETE', 'Empty body', '', res.body);
-			
+
 			// Verify deleted
 			const check = await app.inject({
 				method: 'GET',
-				url: `/api/users/${userId}`
+				url: `/api/users/${userId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
-			
+
 			test('DELETE', 'Deleted user not found', 404, check.statusCode);
 		}
 		
-		// 7.2 Delete non-existent
+		// 7.2 Delete non-existent - sin ownership devuelve 403
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'DELETE',
-				url: `/api/users/${fakeId}`
+				url: `/api/users/${fakeId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
-			
-			test('DELETE', 'Non-existent user returns 404', 404, res.statusCode);
+
+			test('DELETE', 'Non-existent user without ownership returns 403', 403, res.statusCode);
 		}
 		
 		// ====================================================================

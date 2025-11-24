@@ -1,7 +1,13 @@
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { UserEnv } from './index.js';
+
+// ES Module compatibility: Recrear __dirname y __filename que no existen en ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Declara variable Singleton
 // No inicializada
