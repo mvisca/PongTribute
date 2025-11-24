@@ -1,5 +1,5 @@
 import { Static } from '@sinclair/typebox';
-import { UserSchemas } from '../schemas/';
+import { UserSchemas } from '../index.js';
 
 export namespace UserTypes {
 	/**

@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { UserEnv } from '../config';
+import { UserEnv } from '../index.js';
 
 /**
 * Protección para acceso solo desde servicios internos

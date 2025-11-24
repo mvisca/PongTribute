@@ -1,11 +1,32 @@
 // ============================================================================
+// ENVIRONMENT
+// ============================================================================
+
+export * from './config/sharedEnv.js';
+
+// ============================================================================
+// MIDDLEWARE
+// ============================================================================
+
+export * from './middleware/index.js';
+
+// ============================================================================
+// UTILS
+// // ============================================================================
+
+export * as Utils from './utils/index.js';
+
+// ============================================================================
 // USER
 // ============================================================================
 
-export { UserTypes, AuthTypes } from './types';
-export { UserSchemas } from './schemas';
-export { UserConstants } from './constants';
-export { TestConstants, TestUtils } from './test';
-// export * as Events from './events';
-export * as Utils from './utils';
-export { SharedEnv } from './config/sharedEnv';
+export * from './constants/index.js';
+export * from './schemas/index.js';
+export * from './types/index.js';
+export * from './utils/index.js';
+
+// ============================================================================
+// TEST
+// ============================================================================
+
+export { TestConstants, TestUtils } from './test/index.js';

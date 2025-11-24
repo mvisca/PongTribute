@@ -1,7 +1,6 @@
 import Fastify, { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
-import { UserEnv } from './config';
-import { UserRoutes } from './routes';
+import { UserEnv, UserRoutes } from './index.js';
 
 let currentApp: FastifyInstance | null = null;
 

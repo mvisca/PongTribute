@@ -1,8 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { UserTypes, AuthTypes } from '@transcendence/shared';
-import { AuthEnv } from '../config';
-import { authRoutes } from 'src/routes/authRoutes';
+import { AuthEnv } from '../config.js';
 
 export class AuthService {
 	

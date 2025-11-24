@@ -1,4 +1,4 @@
-export * from './game.constants';
-export * from './friendship.constants';
-export * from './match.constants';
-export { UserConstants } from './user.constants';
+export * from './friendship.constants.js';
+export * from './user.constants.js';
+export * from './match.constants.js';
+export * from './game.constants.js';

@@ -1,4 +1,4 @@
-import type { FriendshipStatus } from "../constants/friendship.constants";
+import type { FriendshipStatus } from "../index.js";
 
 // ============================================================================
 // ENTIDAD DE DOMINIO

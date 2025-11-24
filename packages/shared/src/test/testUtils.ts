@@ -1,9 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { TestConstants } from './testConstants';
-import { AuthTypes, UserTypes } from '../types';
-import bcrypt from 'bcryptjs';
-import { appendFile } from 'fs';
-import { stringify } from 'querystring';
+import { TestConstants, AuthTypes, UserTypes } from '../index.js';
 
 export namespace TestUtils {
 
@@ -257,6 +253,7 @@ export namespace TestUtils {
 	export async function logAllUsers(
 		options: SetupUserOptions = {}
 	): Promise<Map<TestConstants.TestUserKey, AuthTypes.LoginResponse>> {
+		
 		const sessions = new Map<TestConstants.TestUserKey, AuthTypes.LoginResponse>();
 		
 		for (const key of TestConstants.TEST_USERS_KEYS) {

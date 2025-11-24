@@ -1,8 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from  'bcryptjs';
 import { UserTypes } from '@transcendence/shared';
-import { UserMapper } from 'src/mappers/UserMapper';
-import { SQLiteUserRepository } from 'src/repositories/SQLiteUserRepository';
+import { UserMapper } from '../index.js';
+import { SQLiteUserRepository } from '../index.js';
 
 /**
 * Controller de User\
@@ -26,11 +26,11 @@ export class UserController {
 	* @returns tipo UserPublic
 	*/
 	async createUser( 
-		request: FastifyRequest<{Body: UserTypes.CreateUserInput }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise <void> {
 		try {
-			const data = request.body;
+			const data = request.body as UserTypes.CreateUserInput;
 
 			const [emailTaken, usernameTaken] = await Promise.all([
 				this.userRepo.isEmailTaken(data.email),
@@ -91,18 +91,18 @@ export class UserController {
 	* @returns tipo UserPublic
 	*/
 	async updateUser(
-		request: FastifyRequest<{Params: { id: string }, Body: UserTypes.UpdateUserBody}>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			
+
 			// extraer el body y params
-			const data = request.body;
-			const { id } = request.params;
-			
+			const data = request.body as UserTypes.UpdateUserBody;
+			const { id } = request.params as { id: string };
+
 			// buscar user
 			const user = await this.userRepo.findById(id);
-			
+
 			// si no existe terminar
 			if (!user || user.isDeleted) {
 				return reply
@@ -113,7 +113,7 @@ export class UserController {
 					field: 'id'
 				});
 			}
-			
+
 			// verificar si el email esta usado
 			// si está usado por otro user, terminar
 			if (data.email) {
@@ -165,12 +165,12 @@ export class UserController {
 	* @returns void
 	*/
 	async updatePassword(
-		request: FastifyRequest<{Params: { id: string }, Body: UserTypes.UpdatePasswordInternalBody }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise <void> {
 		try {
-			const { id } = request.params;
-			const data = request.body;
+			const { id } = request.params as { id: string };
+			const data = request.body as UserTypes.UpdatePasswordInternalBody;
 			
 			const user = await this.userRepo.findById(id);
 
@@ -202,11 +202,11 @@ export class UserController {
 	*/
 	
 	async anonymizeUser(
-		request: FastifyRequest<{Params: { id: string } }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			const { id } = request.params;
+			const { id } = request.params as { id: string };
 
 			const user = await this.userRepo.findById(id);
 
@@ -237,11 +237,11 @@ export class UserController {
 	* @returns void
 	*/
 	async deleteUser(
-		request: FastifyRequest<{Params: { id: string } }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			const { id } = request.params;
+			const { id } = request.params as { id: string };
 			
 			const user = await this.userRepo.findById(id);
 			
@@ -272,11 +272,11 @@ export class UserController {
 	* @returns user de tipo UserPublic
 	*/
 	async getUserById(
-		request: FastifyRequest<{Params: { id: string }}>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			const { id } = request.params;
+			const { id } = request.params as{ id: string };
 			
 			const user = await this.userRepo.findById(id);
 			
@@ -305,12 +305,12 @@ export class UserController {
 	* @returns user de tipo UserPublic
 	*/
 	async getUserByUsername(
-		request: FastifyRequest<{Params: { username: string }}>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
 			
-			const { username } = request.params;
+			const { username } = request.params as { username: string };
 			
 			const user = await this.userRepo.findByUsername(username);
 			
@@ -339,12 +339,12 @@ export class UserController {
 	* @returns user de tipo User (este incluye el hashPassword porque se usa para Auth)
 	*/
 	async getUserByEmail(
-		request: FastifyRequest<{Params: { email: string }}>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
 			
-			const { email } = request.params;
+			const { email } = request.params as { email: string };
 			
 			const user = await this.userRepo.findByEmail(email);
 			
@@ -375,12 +375,12 @@ export class UserController {
 	* @returns { available: true | false, username: string }
 	*/
 	async checkUsername(
-		request: FastifyRequest<{Params: { username: string }}>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
 			
-			const { username } = request.params;
+			const { username } = request.params as { username: string };
 			
 			const taken = await this.userRepo.isUsernameTaken(username);
 			
@@ -402,12 +402,12 @@ export class UserController {
 	* @returns { available: true | false, email: string }
 	*/
 	async checkEmail(
-		request: FastifyRequest<{Params: { email: string }}>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
 		try {
 			
-			const { email } = request.params;
+			const { email } = request.params as { email: string };
 			
 			const taken = await this.userRepo.isEmailTaken(email);
 			
@@ -423,10 +423,10 @@ export class UserController {
 	}
 
 	async getInternalUserByEmail(
-		request: FastifyRequest<{ Params: { email: string } }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise <void> {
-		const { email } =   request.params;
+		const { email } =   request.params as { email: string };
 
 		const user = await this.userRepo.findByEmail(email);
 
@@ -441,10 +441,10 @@ export class UserController {
 	}
 
 	async getInternalUserById(
-		request: FastifyRequest<{ Params: { id: string } }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise <void> {
-		const id =   request.params.id;
+		const { id } =   request.params as { id: string };
 
 		const user = await this.userRepo.findByIdInternal(id);
 

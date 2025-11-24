@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserSchemas } from '@transcendence/shared';
-import { UserController } from '../controllers/user.controller';
+import { UserController } from '../index.js';
 
 export const publicRoutes: FastifyPluginAsync = async (app) => {
 	

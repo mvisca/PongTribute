@@ -1,4 +1,4 @@
-import { Utils } from "../index";
+import { Utils } from "../index.js";
 
 export abstract class BaseEvent {
 	public readonly id: string;

@@ -1,12 +1,11 @@
 import { FastifyPluginAsync } from 'fastify';
-import { UserSchemas } from '@transcendence/shared';
-import { UserController } from '../controllers/user.controller';
-import { validateJWT } from '../middleware/validateJWT';
+import { AuthMiddleware, UserSchemas } from '@transcendence/shared';
+import { UserController } from '../index.js';
 
 export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new UserController();
 
-	app.addHook('preHandler', validateJWT);
+	app.addHook('preHandler', AuthMiddleware.validateJWT);
 
 	// ============================================================================
 	// GET READ / CHECKS & GETS
@@ -33,11 +32,13 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
  
 	app.put('/users/:id/anonymize', {
+		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.anonymizeUserSchema,
 		handler: controller.anonymizeUser.bind(controller)
 	});
 
 	app.put('/users/:id', {
+		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.UpdateUserSchema,
 		handler: controller.updateUser.bind(controller)
 	});
@@ -47,6 +48,7 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 
 	app.delete('/users/:id', {
+		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.deleteUserSchema,
 		handler: controller.deleteUser.bind(controller)
 	});

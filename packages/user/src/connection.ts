@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
-import { UserEnv } from './config';
+import { UserEnv } from './index.js';
 
 // Declara variable Singleton
 // No inicializada

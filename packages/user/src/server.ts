@@ -1,5 +1,4 @@
-import { buildApp } from './app';
-import { UserEnv } from "./config";
+import { buildApp, UserEnv } from './index.js';
 
 // TODO considerar la opcion de usar SCHWAGER, de ser asi quitar su validacion en runtime para no duplicar con ajv defastify
 

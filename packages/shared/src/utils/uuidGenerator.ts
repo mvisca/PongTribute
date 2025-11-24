@@ -1,13 +1,13 @@
 import { randomUUID } from "crypto";
 
-export function generateUserId(): string {
+export function UserId(): string {
 	return randomUUID();
 }
 
-export function generateMatchId(): string {
+export function MatchId(): string {
 	return randomUUID();
 }
 
-export function generateEventId(): string {
+export function EventId(): string {
 	return randomUUID();
 }

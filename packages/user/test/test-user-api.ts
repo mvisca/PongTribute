@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { buildApp } from '../src/app';
-import { UserTypes, Utils } from '../../shared/src';
+import { UserTypes, Utils, TestUtils, TestConstants } from '../../shared/src';
 import { getDatabase } from '../src/connection';
-import { userRoutes } from '../src/routes/user.publicRoutes';
+import { AuthTypes } from '@transcendence/shared';
 
 // ============================================================================
 // TODO
@@ -31,15 +31,15 @@ function test(subject: string, name: string, expected: any, actual: any) {
 	let passed = undefined;
 	if (typeof expected === "string")
 		passed = expected.toLowerCase() === actual.toLowerCase();
-	else 
+	else
 		passed = expected === actual;
 	results.push({ subject, test: name, expected, actual, passed });
-	
+
 	testCounter++;
-	const status = passed ? '✓' : '✗';
+	const status = passed ? '✓' : '📍';
 	const output = passed 
-	? `${"=".repeat(40)}\n${status} ${testCounter}. ${name}`
-	: `${status} ${testCounter}. ${name} | Expected: ${expected} | Got: ${actual}`;
+	? `${"=".repeat(40)}\n${status} ${testCounter}. [${subject}] ${name}`
+	: `${status} ${testCounter}. [${subject}] ${name} | Expected: ${expected} | Got: ${actual}`;
 	console.log(output);
 }
 
@@ -48,13 +48,16 @@ function test(subject: string, name: string, expected: any, actual: any) {
 // ============================================================================
 
 async function runTests() {
+	process.env.NODE_MODE = 'test';
 	let app: FastifyInstance | null = null;
-	
+	const testUsersData = TestConstants.TEST_USERS;
+	const testUsersKeys = TestConstants.TEST_USERS_KEYS;
+
 	try {
 		// SETUP
 		app = buildApp();
 		await app.ready();
-		
+	
 		// Limpiar DB
 		const db = getDatabase();
 		db.prepare('DELETE FROM users').run();
@@ -75,12 +78,7 @@ async function runTests() {
 		// ====================================================================
 		console.log('[CREATE USER]');
 		
-		const createJuan = {
-			username: `JUAN`,
-			email: `Juan@example.com`,
-			passwordHash: bcrypt.hashSync('pass123', 10),
-			avatar: 'https://example.com/avatar.png'
-		};
+		const createJuan = testUsersData.user1;
 		
 		let juanUser = undefined;
 		
@@ -115,7 +113,7 @@ async function runTests() {
 					username: `otroUser`,
 					email: createJuan.email,
 					avatar: 'http://avatar.com/image',
-					passwordHash: bcrypt.hashSync('unPasswword')
+					password: 'unPasswword1'
 				}
 			});
 			
@@ -131,7 +129,7 @@ async function runTests() {
 					username: createJuan.username,
 					email: `otherUser@example.com`,
 					avatar: 'http://avatar.com/image',
-					passwordHash: bcrypt.hashSync("morePass")
+					password: "1morePass"
 				}
 			});
 			
@@ -142,13 +140,12 @@ async function runTests() {
 		{
 			let res14 = undefined;
 			try {
-				
 				res14 = await app.inject({
 					method: 'POST',
 					url: '/api/users',
 					payload: {
 						username: `unoSinEmail`,
-						passwordHash: bcrypt.hashSync("sinEmail")
+						password: "sinEmail1"
 						// missing email
 					}
 				});
@@ -167,7 +164,7 @@ async function runTests() {
 			payload: {
 				username: 'ab',
 				email: 'test@test.com',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: '1k4FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -180,7 +177,7 @@ async function runTests() {
 			payload: {
 				username: 'a'.repeat(21),
 				email: 'test@test.com',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: 'YYP1k4FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -193,7 +190,7 @@ async function runTests() {
 			payload: {
 				username: 'user name',
 				email: 'test@test.com',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: 'O0Z/mYYP1k4FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -206,7 +203,7 @@ async function runTests() {
 			payload: {
 				username: 'user@123',
 				email: 'test@test.com',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: '$4FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -219,7 +216,7 @@ async function runTests() {
 			payload: {
 				username: '', 
 				email: 'test@test.com',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: '$FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -234,7 +231,7 @@ async function runTests() {
 			payload: {
 				username: 'testuser',
 				email: 'notanemail',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: '$FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -247,7 +244,7 @@ async function runTests() {
 			payload: {
 				username: 'testuser',
 				email: 'test@',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: '4FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -259,7 +256,7 @@ async function runTests() {
 			payload: {
 				username: 'testuser',
 				email: 'test @example.com',
-				passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+				password: 'k4FkeNF2FPZp9w7W2'
 			}
 		});
 		
@@ -274,11 +271,11 @@ async function runTests() {
 			payload: {
 				username: 'testuser',
 				email: 'test@test.com',
-				passwordHash: 'short'
+				password: 'short'
 			}
 		});
 		
-		test('PASSWORD', 'PasswordHash corto returns 400', 400, res9.statusCode);
+		test('PASSWORD', 'Password corto returns 400', 400, res9.statusCode);
 		
 		// Test 10: Password hash formato incorrecto
 		const res10 = await app.inject({
@@ -287,11 +284,11 @@ async function runTests() {
 			payload: {
 				username: 'testuser',
 				email: 'test@test.com',
-				passwordHash: 'a'.repeat(60)  // ❌ 60 chars pero no bcrypt
+				password: 'a'.repeat(60)  // ❌ 60 chars pero no bcrypt
 			}
 		});
 		
-		test('PASSWORD', 'PasswordHash malformado returns 400', 400, res10.statusCode);
+		test('PASSWORD', 'Password malformado returns 400', 400, res10.statusCode);
 		
 		// Test 11: Password hash vacío
 		const res11 = await app.inject({
@@ -300,11 +297,11 @@ async function runTests() {
 			payload: {
 				username: 'testuser',
 				email: 'test@test.com',
-				passwordHash: ''  // ❌ Vacío
+				password: ''  // ❌ Vacío
 			}
 		});
 		
-		test('PASSWORD', 'PasswordHash vacío returns 400', 400, res11.statusCode);
+		test('PASSWORD', 'Password vacío returns 400', 400, res11.statusCode);
 		
 		
 		console.log('\n[VALIDATION - CAMPOS OBLIGATOORIOS]');
@@ -313,12 +310,12 @@ async function runTests() {
 			username: 'Dido',
 			email: 'test@test.com',
 			avatar: 'http://dido.com/avatar',
-			passwordHash: '$2b$10$N9qo8uLOickgx2ZMRZoMye.IjefO0Z/mYYP1k4FkeNF2FPZp9w7W2'
+			password: `$dfssdas1`
 		};
 		
 		const { username, ...sinUsername } = fullTestUser;
 		const { email, ...sinEmail } = fullTestUser;
-		const { passwordHash, ... sinPasswordHash } = fullTestUser;
+		const { password, ... sinPassword } = fullTestUser;
 		
 		// Test 12: Sin username
 		const res12 = await app.inject({
@@ -340,7 +337,7 @@ async function runTests() {
 		const res15 = await app.inject({
 			method: 'POST',
 			url: '/api/users',
-			payload: { ...sinPasswordHash }
+			payload: { ...sinPassword }
 		});
 		test('CAMPOS OBLIGATORIOS', 'CreateUser sin passwordHash returns 400', 400, res15.statusCode);
 		
@@ -357,11 +354,18 @@ async function runTests() {
 		// ====================================================================
 		console.log('\n[READ USER]');
 		
+		db.prepare('DELETE FROM users').run();
+		const user1: AuthTypes.LoginResponse = await TestUtils.setupUser(TestConstants.TEST_USERS_KEYS[0]);
+		userId = user1.user.id;
+
 		// 2.1 Get by ID
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/${userId}`
+				url: `/api/users/${userId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
 			
 			test('READ', 'Get by ID returns 200', 200, res.statusCode);
@@ -377,7 +381,10 @@ async function runTests() {
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/${fakeId}`
+				url: `/api/users/${fakeId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
 			
 			test('READ', 'Non-existent ID returns 404', 404, res.statusCode);
@@ -387,7 +394,10 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/username/${createJuan.username}`
+				url: `/api/users/username/${user1.user.username}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
 			
 			test('READ', 'Get by username returns 200', 200, res.statusCode);
@@ -397,9 +407,12 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/username/${createJuan.username.toUpperCase()}`
+				url: `/api/users/username/${user1.user.username.toUpperCase()}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				}
 			});
-			
+	
 			test('READ', 'Username search case-insensitive', 200, res.statusCode);
 		}
 		
@@ -486,7 +499,10 @@ async function runTests() {
 		{
 			const res = await app.inject({
 				method: 'PUT',
-				url: `/api/users/${juanUser.id}`,
+				url: `/api/users/${userId}`,
+				headers: {
+					'Authorization': `Bearer ${user1.token}`
+				},
 				payload: {
 					username: `ElNuevoJuan`
 					// NO email, NO avatar - campos opcionales
@@ -498,19 +514,14 @@ async function runTests() {
 			if (res.statusCode === 200) {
 				const body = res.json();
 				test('UPDATE', 'Username updated', `ElNuevoJuan`, body.username);
-				test('UPDATE', 'Email unchanged', juanUser.email, body.email);
+				test('UPDATE', 'Email unchanged', user1.user.email, body.email);
 			}
 			juanUser = res.json();
 		}
 		
 		// 4.2 Update to duplicate username
 		{
-			const createOtro = {
-				username: `otroUser`,
-				email: `otro@example.com`,
-				passwordHash: bcrypt.hashSync('passwordHash'),
-				avatar: 'http://avatar.com/avatar.jpg'
-			};
+			const createOtro = TestConstants.TEST_USERS.user2;
 			
 			// Crear otr user (existe JUAN)
 			const res1 = await app.inject({
@@ -524,28 +535,34 @@ async function runTests() {
 			if (res1.statusCode === 201) {
 				const otroUser = res1.json();
 				const otroId = otroUser.id;
-				
+				const otroUserToken = ((await TestUtils.setupUser('user1')).token);
+
 				// Update a nombre tomado
 				const res2 = await app.inject({
 					method: 'PUT',
 					url: `/api/users/${otroId}`,
+					headers: {
+						'Authorization': `Bearer ${user1.token}`
+					},
 					payload: {
 						username: `ElNuevoJuan` // Ya está en uso
 					}
-				});
-				
+				}); // TODO este debería fallar porque el token no pertenece al usuario. si 
 				test('UPDATE', 'Duplicate username returns 409', 409, res2.statusCode);
-				
+
 				// Cleanup
 				await app.inject({
 					method: 'DELETE',
-					url: `/api/users/${otroId}`
+					url: `/api/users/${otroId}`,
+					headers: {
+						'Authorization': `Bearer ${otroUserToken}`
+					}
 				});
 			} else {
 				test('UPDATE', 'Setup otroUser for test', 201, res1.statusCode);
 			}
 		}
-		
+
 		// 4.3 Update non-existent user
 		{
 			const fakeId = Utils.generateUserId();
@@ -570,19 +587,21 @@ async function runTests() {
 					// NO username, NO avatar
 				}
 			});
-			
+
 			test('UPDATE', 'Update email returns 200', 200, res.statusCode);
 		}
-		
+
 		// 4.5: UUID inválido en PUT
 		const res18 = await app.inject({
 			method: 'PUT',
 			url: '/api/users/not-a-uuid'
 		});
 		test('UPDATE', 'PutUser con UUID invalido returns 400', 400, res18.statusCode);
+
 		// ====================================================================
 		// subject 5: UPDATE PASSWORD
 		// ====================================================================
+
 		console.log('\n[UPDATE PASSWORD]');
 		
 		// 5.1 Update password
@@ -715,6 +734,7 @@ async function runTests() {
 	} finally {
 		if (app) await app.close();
 	}
+	process.env.NODE_MODE = 'developement';
 }
 
 // RUN

@@ -1,5 +1,5 @@
 import { Static } from '@sinclair/typebox';
-import { AuthSchemas } from "../schemas";
+import { AuthSchemas } from "../index.js";
 
 export namespace AuthTypes {
 	// Tipos TypeScript

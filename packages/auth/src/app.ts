@@ -1,7 +1,6 @@
 import Fastify, { FastifyError, FastifyInstance } from "fastify";
 import helmet from '@fastify/helmet';
-import { authRoutes } from './routes/authRoutes';
-import { AuthEnv } from "./config";
+import { authRoutes, AuthEnv } from './index.js';
 
 export function buildApp(): FastifyInstance {
 	const app = Fastify(AuthEnv.getFastifyConfig());

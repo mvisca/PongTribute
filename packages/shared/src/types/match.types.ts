@@ -1,4 +1,4 @@
-import { PlayerPosition, PlayerSlot, MatchStatus } from "../constants"; 
+import { PlayerPosition, PlayerSlot, MatchStatus } from "../index.js"; 
 
 // ============================================================================
 // ENTIDADES DE DOMINIO

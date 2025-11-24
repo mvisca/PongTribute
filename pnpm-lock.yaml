@@ -26,6 +26,9 @@ importers:
       '@sinclair/typebox':
         specifier: 0.34.41
         version: 0.34.41
+      '@transcendence/shared':
+        specifier: workspace:*
+        version: link:../shared
       bcryptjs:
         specifier: 3.0.3
         version: 3.0.3
@@ -42,9 +45,6 @@ importers:
         specifier: 3.3.2
         version: 3.3.2
     devDependencies:
-      '@transcendence/shared':
-        specifier: workspace:*
-        version: link:../shared
       '@types/bcryptjs':
         specifier: 3.0.0
         version: 3.0.0
@@ -82,10 +82,16 @@ importers:
       bcryptjs:
         specifier: 3.0.3
         version: 3.0.3
+      jsonwebtoken:
+        specifier: 9.0.2
+        version: 9.0.2
     devDependencies:
       '@types/bcryptjs':
         specifier: 3.0.0
         version: 3.0.0
+      '@types/jsonwebtoken':
+        specifier: 9.0.10
+        version: 9.0.10
       '@types/node':
         specifier: 24.7.2
         version: 24.7.2

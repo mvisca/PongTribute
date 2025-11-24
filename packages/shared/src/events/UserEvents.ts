@@ -1,5 +1,5 @@
-import { BaseEvent } from "./BaseEvent";
-import { UserTypes } from "../types";
+import { BaseEvent } from "./index.js";
+import { UserTypes } from "../index.js";
 
 export namespace UserEvent {
 	/**

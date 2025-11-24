@@ -1,2 +1,2 @@
-export { TestUtils } from './testUtils';
-export { TestConstants } from './testConstants';
+export * from './testUtils.js';
+export * from './testConstants.js';

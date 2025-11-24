@@ -1,5 +1,5 @@
 // packages/shared/src/test/testConst
-import { UserTypes } from '../types';
+import { UserTypes } from '../index.js';
 
 export namespace TestConstants {
 	

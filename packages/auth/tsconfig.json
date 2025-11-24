@@ -3,8 +3,8 @@
 		// compilacion
 		"target": "ES2022",
 		"lib": ["ES2022"],
-		"module": "CommonJS",
-		"moduleResolution": "node",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		
 		// interoperabilidad
 		"esModuleInterop": true,
@@ -29,14 +29,10 @@
 		"paths": {
 			"@transcendence/shared": ["../shared/dist/index.d.ts"],
 			"@transcendence/shared/*": ["../shared/dist/*"]
-		},
-		"typeRoots": ["./node_modules/@types", "./src/types"]
+		}
 	},
 
-	"include": [
-		"src/**/*",
-		"../shared/src/schemas/user.schema.ts"
-	],
+	"include": ["src/**/*"],
 
 	"exclude": [
 		"node_modules",

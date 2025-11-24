@@ -1,5 +1,5 @@
-import { buildApp } from './app';
-import { AuthEnv } from './config';
+import { buildApp } from './app.js';
+import { AuthEnv } from './config.js';
 
 async function start() {
 	let app;

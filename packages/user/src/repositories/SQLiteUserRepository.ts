@@ -1,8 +1,6 @@
-import { getDatabase, closeDatabase } from "src/connection";
-import { IUserRepository } from './IUserRepository';
-import { UserMapper } from '../mappers/UserMapper';
 import { Utils, UserTypes, UserConstants } from "@transcendence/shared";
-import { toNamespacedPath } from "path";
+import { getDatabase, UserMapper } from "../index.js";
+import { IUserRepository } from './IUserRepository.js';
 
 export class SQLiteUserRepository implements IUserRepository {
 	

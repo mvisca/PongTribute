@@ -1,2 +1,2 @@
-export { BaseEvent } from './BaseEvent';
-export { UserEvent } from './UserEvents';
+export { BaseEvent } from './BaseEvent.js';
+export { UserEvent } from './UserEvents.js';

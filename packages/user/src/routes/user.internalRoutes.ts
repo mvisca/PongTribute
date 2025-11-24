@@ -1,6 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { UserController } from '../controllers/user.controller';
-import { validateServiceSecret } from '../middleware/validateServiceSecret';
+import { UserController, validateServiceSecret } from '../index.js';
 import { UserSchemas } from '@transcendence/shared';
 
 export const internalRoutes: FastifyPluginAsync = async (app) => {
