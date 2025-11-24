@@ -1,16 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { buildApp } from '../src/app';
-import { UserTypes, Utils, TestUtils, TestConstants } from '../../shared/src';
+import { UserTypes, Utils, TestUtils, TestConstants } from '@transcendence/shared';
 import { getDatabase } from '../src/connection';
 import { AuthTypes } from '@transcendence/shared';
-
-// ============================================================================
-// TODO
-// ============================================================================
-/*
-Revisar test Anonymize, por que esta llegando un 201 si explicitamente se envia un 204
-*/
 
 // ============================================================================
 // TEST RUNNER
@@ -34,745 +27,772 @@ function test(subject: string, name: string, expected: any, actual: any) {
 	else
 		passed = expected === actual;
 	results.push({ subject, test: name, expected, actual, passed });
-
+	
 	testCounter++;
 	const status = passed ? '✓' : '📍';
 	const output = passed 
-	? `${"=".repeat(40)}\n${status} ${testCounter}. [${subject}] ${name}`
-	: `${status} ${testCounter}. [${subject}] ${name} | Expected: ${expected} | Got: ${actual}`;
+		? `${"=".repeat(40)}\n${status} ${testCounter}. [${subject}] ${name}`
+		: `${status} ${testCounter}. [${subject}] ${name} | Expected: ${expected} | Got: ${actual}`;
 	console.log(output);
 }
 
 // ============================================================================
-// MAIN
+// TEST USERS STORAGE
+// ============================================================================
+
+interface TestUserSession {
+	id: string;
+	token: string;
+	username: string;
+	email: string;
+}
+
+const testUsers = {
+	user1: null as TestUserSession | null,
+	user2: null as TestUserSession | null,
+	user3: null as TestUserSession | null
+};
+
+// ============================================================================
+// SETUP & TEARDOWN
+// ============================================================================
+
+async function setupTestUsers() {
+	console.log('\n' + '⚙️ '.repeat(20));
+	console.log('SETUP: Creando usuarios de prueba...');
+	
+	const db = getDatabase();
+	db.prepare('DELETE FROM users').run();
+	console.log('✓ Base de datos limpiada');
+	
+	// Crear user1
+	const user1Response = await TestUtils.setupUser(TestConstants.TEST_USERS_KEYS[0]);
+	testUsers.user1 = {
+		id: user1Response.user.id,
+		token: user1Response.token,
+		username: user1Response.user.username,
+		email: user1Response.user.email
+	};
+	console.log(`✓ User1 creado: ${testUsers.user1.username}`);
+	
+	// Crear user2
+	const user2Response = await TestUtils.setupUser(TestConstants.TEST_USERS_KEYS[1]);
+	testUsers.user2 = {
+		id: user2Response.user.id,
+		token: user2Response.token,
+		username: user2Response.user.username,
+		email: user2Response.user.email
+	};
+	console.log(`✓ User2 creado: ${testUsers.user2.username}`);
+	
+	// Crear user3
+	const user3Response = await TestUtils.setupUser(TestConstants.TEST_USERS_KEYS[2]);
+	testUsers.user3 = {
+		id: user3Response.user.id,
+		token: user3Response.token,
+		username: user3Response.user.username,
+		email: user3Response.user.email
+	};
+	console.log(`✓ User3 creado: ${testUsers.user3.username}`);
+	
+	console.log('SETUP: Usuarios listos para pruebas');
+	console.log('⚙️ '.repeat(20) + '\n');
+}
+
+async function teardownTestUsers() {
+	console.log('\n' + '🧹 '.repeat(20));
+	console.log('TEARDOWN: Limpiando base de datos...');
+	
+	const db = getDatabase();
+	db.prepare('DELETE FROM users').run();
+	
+	console.log('✓ Base de datos limpiada');
+	console.log('TEARDOWN: Completado');
+	console.log('🧹 '.repeat(20) + '\n');
+}
+
+// ============================================================================
+// MAIN TEST SUITE
 // ============================================================================
 
 async function runTests() {
 	process.env.NODE_MODE = 'test';
 	let app: FastifyInstance | null = null;
-	const testUsersData = TestConstants.TEST_USERS;
-	const testUsersKeys = TestConstants.TEST_USERS_KEYS;
-
+	
 	try {
-		// SETUP
+		// ====================================================================
+		// INITIALIZATION
+		// ====================================================================
 		app = buildApp();
 		await app.ready();
-	
-		// Limpiar DB
-		const db = getDatabase();
-		db.prepare('DELETE FROM users').run();
-		
-		// Identificar logger
-		console.log(`\n${"o".repeat(10)} Identificar Logger ${"o".repeat(10)}`)
-		console.log('🔍 Logger type:', app.log.constructor.name);
-		console.log('🔍 Logger level:', app.log.level);
-		
-		let userId: string = '';
 		
 		console.log("\n" + "o".repeat(40));
-		console.log("o            COMENZANDO TEST           o");
+		console.log("o       TEST SUITE - USER SERVICE      o");
 		console.log("o".repeat(40) + "\n");
 		
+		// Setup inicial
+		await setupTestUsers();
+		
 		// ====================================================================
-		// subject 1: CREATE
+		// SUBJECT 1: CREATE USER - VALIDATIONS
 		// ====================================================================
-		console.log('[CREATE USER]');
+		console.log('[VALIDATION - CREATE USER]');
 		
-		const createJuan = testUsersData.user1;
-		
-		let juanUser = undefined;
-		
-		// 1.1 Create JUAN
+		// Username validations
 		{
-			const res = await app.inject({
+			const tests = [
+				{ payload: { username: 'ab', email: 'test@test.com', password: 'Pass123!' }, desc: 'Username too short' },
+				{ payload: { username: 'a'.repeat(21), email: 'test@test.com', password: 'Pass123!' }, desc: 'Username too long' },
+				{ payload: { username: 'user name', email: 'test@test.com', password: 'Pass123!' }, desc: 'Username with spaces' },
+				{ payload: { username: 'user@123', email: 'test@test.com', password: 'Pass123!' }, desc: 'Username special chars' },
+				{ payload: { username: '', email: 'test@test.com', password: 'Pass123!' }, desc: 'Username empty' }
+			];
+			
+			for (const t of tests) {
+				const res = await app.inject({ method: 'POST', url: '/api/users', payload: t.payload });
+				test('VALIDATION', t.desc, 400, res.statusCode);
+			}
+		}
+		
+		// Email validations
+		{
+			const tests = [
+				{ payload: { username: 'testuser', email: 'notanemail', password: 'Pass123!' }, desc: 'Email without @' },
+				{ payload: { username: 'testuser', email: 'test@', password: 'Pass123!' }, desc: 'Email incomplete' },
+				{ payload: { username: 'testuser', email: 'test @example.com', password: 'Pass123!' }, desc: 'Email with spaces' }
+			];
+			
+			for (const t of tests) {
+				const res = await app.inject({ method: 'POST', url: '/api/users', payload: t.payload });
+				test('VALIDATION', t.desc, 400, res.statusCode);
+			}
+		}
+		
+		// Password validations
+		{
+			const tests = [
+				{ payload: { username: 'testuser', email: 'test@test.com', password: 'short' }, desc: 'Password too short' },
+				{ payload: { username: 'testuser', email: 'test@test.com', password: 'a'.repeat(60) }, desc: 'Password malformed' },
+				{ payload: { username: 'testuser', email: 'test@test.com', password: '' }, desc: 'Password empty' }
+			];
+			
+			for (const t of tests) {
+				const res = await app.inject({ method: 'POST', url: '/api/users', payload: t.payload });
+				test('VALIDATION', t.desc, 400, res.statusCode);
+			}
+		}
+		
+		// Required fields
+		{
+			const fullUser = { username: 'Full', email: 'full@test.com', password: 'Pass123!' };
+			const tests = [
+				{ payload: { email: fullUser.email, password: fullUser.password }, desc: 'Missing username' },
+				{ payload: { username: fullUser.username, password: fullUser.password }, desc: 'Missing email' },
+				{ payload: { username: fullUser.username, email: fullUser.email }, desc: 'Missing password' },
+				{ payload: {}, desc: 'Empty body' }
+			];
+			
+			for (const t of tests) {
+				const res = await app.inject({ method: 'POST', url: '/api/users', payload: t.payload });
+				test('VALIDATION', t.desc, 400, res.statusCode);
+			}
+		}
+		
+		// Duplicate validations
+		{
+			const res1 = await app.inject({
 				method: 'POST',
 				url: '/api/users',
-				payload: createJuan
+				payload: { username: 'newuserValid', email: testUsers.user1!.email, password: 'pass12345', avatar: 'http://image.com/i.jpg' }
 			});
+			test('VALIDATION', 'Duplicate email returns 409', 409, res1.statusCode);
 			
-			test('CREATE', 'Create valid user', 201, res.statusCode);
-			
-			if (res.statusCode === 201) {
-				juanUser = res.json(); 
-				userId = juanUser.id;
-				test('CREATE', 'Has ID', true, !!juanUser.id);
-				test('CREATE', 'Username matches', createJuan.username, juanUser.username);
-				test('CREATE', 'Email matches', createJuan.email, juanUser.email);
-				test('CREATE', 'No password in response', undefined, juanUser.passwordHash);
-			}
-			
-			console.log('Output res.json', res.json());
-		}
-		
-		// 1.2 Duplicate email
-		{
-			const res = await app.inject({
+			const res2 = await app.inject({
 				method: 'POST',
 				url: '/api/users',
-				payload: {
-					username: `otroUser`,
-					email: createJuan.email,
-					avatar: 'http://avatar.com/image',
-					password: 'unPasswword1'
-				}
+				payload: { username: testUsers.user1!.username, email: 'newValid@test.com', password: 'Pass12345', avatar: 'http://image.com/i.jpg' }
 			});
-			
-			test('CREATE', 'Duplicate email returns 409', 409, res.statusCode);
+			test('VALIDATION', 'Duplicate username returns 409', 409, res2.statusCode);
 		}
 		
-		// 1.3 Duplicate username
-		{
-			const res = await app.inject({
-				method: 'POST',
-				url: '/api/users',
-				payload: {
-					username: createJuan.username,
-					email: `otherUser@example.com`,
-					avatar: 'http://avatar.com/image',
-					password: "1morePass"
-				}
-			});
-			
-			test('CREATE', 'Duplicate username returns 409', 409, res.statusCode);
-		}
-		
-		// 1.4 Missing required field
-		{
-			let res14 = undefined;
-			try {
-				res14 = await app.inject({
-					method: 'POST',
-					url: '/api/users',
-					payload: {
-						username: `unoSinEmail`,
-						password: "sinEmail1"
-						// missing email
-					}
-				});
-			} catch (err) {
-				console.log (`${"!".repeat(40)}\nError catch at 1.4`);
-			}			
-			test('CREATE', 'Missing email returns 400', 400, res14?.statusCode || undefined);
-		}
-		
-		console.log('\n[VALIDATION - USERNAME]');
-		
-		// Test 1: Username muy corto
-		const res1 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'ab',
-				email: 'test@test.com',
-				password: '1k4FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('USERNAME', 'Username corto returns 400', 400, res1.statusCode);
-		
-		// Test 2: Username muy largo
-		const res2 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'a'.repeat(21),
-				email: 'test@test.com',
-				password: 'YYP1k4FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('USERNAME', 'Username largo returns 400', 400, res2.statusCode);
-		
-		// Test 3: Username con espacios
-		const res3 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'user name',
-				email: 'test@test.com',
-				password: 'O0Z/mYYP1k4FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('USERNAME', 'Username con espacio returns 400', 400, res3.statusCode);
-		
-		// Test 4: Username con caracteres especiales
-		const res4 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'user@123',
-				email: 'test@test.com',
-				password: '$4FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('USERNAME', 'Username con caracteres especiales returns 400', 400, res4.statusCode);
-		
-		// Test 5: Username vacío
-		const res5 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: '', 
-				email: 'test@test.com',
-				password: '$FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('USERNAME', 'Username vacio returns 400', 400, res5.statusCode);
-		
-		console.log('\n[VALIDATION - EMAIL]');
-		
-		// Test 6: Email sin @
-		const res6 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'testuser',
-				email: 'notanemail',
-				password: '$FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('EMAIL', 'Email sin arroba returns 400', 400, res6.statusCode);
-		
-		// Test 7: Email incompleto
-		const res7 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'testuser',
-				email: 'test@',
-				password: '4FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('EMAIL', 'Email sin dominio returns 400', 400, res7.statusCode);
-		
-		const res8 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'testuser',
-				email: 'test @example.com',
-				password: 'k4FkeNF2FPZp9w7W2'
-			}
-		});
-		
-		test('EMAIL', 'Email con espacios especiales returns 400', 400, res8.statusCode);
-		
-		console.log('\n[VALIDATION - PASSWORD]');
-		
-		// Test 9: Password hash muy corto
-		const res9 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'testuser',
-				email: 'test@test.com',
-				password: 'short'
-			}
-		});
-		
-		test('PASSWORD', 'Password corto returns 400', 400, res9.statusCode);
-		
-		// Test 10: Password hash formato incorrecto
-		const res10 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'testuser',
-				email: 'test@test.com',
-				password: 'a'.repeat(60)  // ❌ 60 chars pero no bcrypt
-			}
-		});
-		
-		test('PASSWORD', 'Password malformado returns 400', 400, res10.statusCode);
-		
-		// Test 11: Password hash vacío
-		const res11 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {
-				username: 'testuser',
-				email: 'test@test.com',
-				password: ''  // ❌ Vacío
-			}
-		});
-		
-		test('PASSWORD', 'Password vacío returns 400', 400, res11.statusCode);
-		
-		
-		console.log('\n[VALIDATION - CAMPOS OBLIGATOORIOS]');
-		
-		const fullTestUser = {
-			username: 'Dido',
-			email: 'test@test.com',
-			avatar: 'http://dido.com/avatar',
-			password: `$dfssdas1`
-		};
-		
-		const { username, ...sinUsername } = fullTestUser;
-		const { email, ...sinEmail } = fullTestUser;
-		const { password, ... sinPassword } = fullTestUser;
-		
-		// Test 12: Sin username
-		const res12 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: { ...sinUsername }
-		});
-		test('CAMPOS OBLIGATORIOS', 'CreateUser sin username returns 400', 400, res12.statusCode);
-		
-		// Test 14: Sin email
-		const res14 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: { ...sinEmail }
-		});
-		test('CAMPOS OBLIGATORIOS', 'CreateUser sin email returns 400', 400, res14.statusCode);
-		
-		// Test 15: Sin PasswordHash
-		const res15 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: { ...sinPassword }
-		});
-		test('CAMPOS OBLIGATORIOS', 'CreateUser sin passwordHash returns 400', 400, res15.statusCode);
-		
-		// Test 16: Body vacío
-		const res16 = await app.inject({
-			method: 'POST',
-			url: '/api/users',
-			payload: {}
-		});
-		test('CAMPOS OBLIGATORIOS', 'CreateUser sin body returns 400', 400, res16.statusCode);
-				
 		// ====================================================================
-		// subject 2: READ
+		// SUBJECT 2: READ USER
 		// ====================================================================
 		console.log('\n[READ USER]');
 		
-		db.prepare('DELETE FROM users').run();
-		const user1: AuthTypes.LoginResponse = await TestUtils.setupUser(TestConstants.TEST_USERS_KEYS[0]);
-		userId = user1.user.id;
-
-		// 2.1 Get by ID
+		// Get by ID
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/${userId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
 			});
-			
 			test('READ', 'Get by ID returns 200', 200, res.statusCode);
 			
 			if (res.statusCode === 200) {
 				const body = res.json();
-				test('READ', 'ID matches', userId, body.id);
+				test('READ', 'ID matches', testUsers.user1!.id, body.id);
 			}
 		}
 		
-		// 2.2 Get non-existent
+		// Get non-existent
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'GET',
 				url: `/api/users/${fakeId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
 			});
-			
 			test('READ', 'Non-existent ID returns 404', 404, res.statusCode);
 		}
 		
-		// 2.3 Get by username
+		// Get by username
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/username/${user1.user.username}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				url: `/api/users/username/${testUsers.user1!.username}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
 			});
-			
 			test('READ', 'Get by username returns 200', 200, res.statusCode);
 		}
 		
-		// 2.4 Username case-insensitive
+		// Username case-insensitive
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/username/${user1.user.username.toUpperCase()}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				url: `/api/users/username/${testUsers.user1!.username.toUpperCase()}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
 			});
-	
 			test('READ', 'Username search case-insensitive', 200, res.statusCode);
 		}
 		
-		// Test 2.5: UUID inválido en GET
-		const res17 = await app.inject({
-			method: 'GET',
-			url: '/api/users/not-a-uuid'
-		});
-		
-		test('READ', 'GetUser con UUID invalido returns 400', 400, res17.statusCode);
+		// Invalid UUID
+		{
+			const res = await app.inject({
+				method: 'GET',
+				url: '/api/users/not-a-uuid',
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
+			});
+			test('READ', 'Invalid UUID returns 400', 400, res.statusCode);
+		}
 		
 		// ====================================================================
-		// subject 3: CHECK AVAILABILITY
+		// SUBJECT 3: CHECK AVAILABILITY
 		// ====================================================================
 		console.log('\n[CHECK AVAILABILITY]');
 		
-		// 3.1 Check available username
+		// Available username
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/check-username/non-username` // 10 chars max
+				url: `/api/users/check-username/available123`
 			});
-			
 			test('CHECK', 'Available username returns 200', 200, res.statusCode);
-			
 			if (res.statusCode === 200) {
-				const body = res.json();
-				test('CHECK', 'Username is available', true, body.available);
+				test('CHECK', 'Username is available', true, res.json().available);
 			}
 		}
 		
-		// 3.2 Check taken username
+		// Taken username
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/check-username/${createJuan.username}`
+				url: `/api/users/check-username/${testUsers.user1!.username}`
 			});
-			
 			test('CHECK', 'Taken username returns 200', 200, res.statusCode);
-			
 			if (res.statusCode === 200) {
-				const body = res.json();
-				test('CHECK', 'Username not available', false, body.available);
+				test('CHECK', 'Username not available', false, res.json().available);
 			}
 		}
 		
-		// 3.3 Check available email
+		// Available email
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/check-email/free-email@example.com`
+				url: `/api/users/check-email/available@test.com`
 			});
-			
 			test('CHECK', 'Available email returns 200', 200, res.statusCode);
-			
 			if (res.statusCode === 200) {
-				const body = res.json();
-				test('CHECK', 'Email is available', true, body.available);
+				test('CHECK', 'Email is available', true, res.json().available);
 			}
 		}
 		
-		// 3.4 Check taken email
+		// Taken email
 		{
 			const res = await app.inject({
 				method: 'GET',
-				url: `/api/users/check-email/${createJuan.email}`
+				url: `/api/users/check-email/${testUsers.user1!.email}`
 			});
-			
 			test('CHECK', 'Taken email returns 200', 200, res.statusCode);
-			
 			if (res.statusCode === 200) {
-				const body = res.json();
-				test('CHECK', 'Email not available', false, body.available);
-				console.log(body);
+				test('CHECK', 'Email not available', false, res.json().available);
 			}
 		}
 		
 		// ====================================================================
-		// subject 4: UPDATE
+		// SUBJECT 4: UPDATE USER
 		// ====================================================================
 		console.log('\n[UPDATE USER]');
 		
-		// 4.1 Update username only
+		// Update username
 		{
 			const res = await app.inject({
 				method: 'PUT',
-				url: `/api/users/${userId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				},
-				payload: {
-					username: `ElNuevoJuan`
-					// NO email, NO avatar - campos opcionales
-				}
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { username: 'UpdatedUser1' }
 			});
-			
 			test('UPDATE', 'Update username returns 200', 200, res.statusCode);
 			
 			if (res.statusCode === 200) {
 				const body = res.json();
-				test('UPDATE', 'Username updated', `ElNuevoJuan`, body.username);
-				test('UPDATE', 'Email unchanged', user1.user.email, body.email);
+				test('UPDATE', 'Username updated', 'UpdatedUser1', body.username);
 			}
-			juanUser = res.json();
 		}
 		
-		// 4.2 Update to duplicate username
+		// Update email
 		{
-			const createOtro = TestConstants.TEST_USERS.user2;
-			
-			// Crear otr user (existe JUAN)
-			const res1 = await app.inject({
-				method: 'POST',
-				url: '/api/users',
-				payload: createOtro
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { email: 'updated1@test.com' }
 			});
-			
-			test('CREATE', 'Create valid user', 201, res1.statusCode);
-			
-			if (res1.statusCode === 201) {
-				const otroUser = res1.json();
-				const otroId = otroUser.id;
-				const otroUserToken = ((await TestUtils.setupUser('user2')).token);
-
-				// Test: UPDATE con ownership - debería validar duplicate username
-				const res2 = await app.inject({
-					method: 'PUT',
-					url: `/api/users/${otroId}`,
-					headers: {
-						'Authorization': `Bearer ${otroUserToken}` // Token del dueño
-					},
-					payload: {
-						username: `ElNuevoJuan` // Ya está en uso
-					}
-				});
-				test('UPDATE', 'Duplicate username returns 409', 409, res2.statusCode);
-
-				// Test: UPDATE sin ownership - debería devolver 403
-				const res3 = await app.inject({
-					method: 'PUT',
-					url: `/api/users/${otroId}`,
-					headers: {
-						'Authorization': `Bearer ${user1.token}` // Token de otro usuario
-					},
-					payload: {
-						username: `UnNombreCualquiera`
-					}
-				});
-				test('UPDATE', 'Update without ownership returns 403', 403, res3.statusCode);
-
-				// Cleanup
-				await app.inject({
-					method: 'DELETE',
-					url: `/api/users/${otroId}`,
-					headers: {
-						'Authorization': `Bearer ${otroUserToken}`
-					}
-				});
-			} else {
-				test('UPDATE', 'Setup otroUser for test', 201, res1.statusCode);
-			}
+			test('UPDATE', 'Update email returns 200', 200, res.statusCode);
 		}
-
-		// 4.3 Update non-existent user - sin ownership devuelve 403
+		
+		// Update to duplicate username
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user2!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user2!.token}` },
+				payload: { username: 'UpdatedUser1' } // Ya tomado por user1
+			});
+			test('UPDATE', 'Duplicate username returns 409', 409, res.statusCode);
+		}
+		
+		// Update non-existent user
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'PUT',
 				url: `/api/users/${fakeId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				},
-				payload: {
-					username: 'whatever'
-				}
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { username: 'whatever' }
 			});
-
-			test('UPDATE', 'Non-existent user without ownership returns 403', 403, res.statusCode);
+			test('UPDATE', 'Non-existent user returns 403', 403, res.statusCode);
 		}
 		
-		// 4.4 Update email only
+		// Invalid UUID
 		{
 			const res = await app.inject({
 				method: 'PUT',
-				url: `/api/users/${juanUser.id}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				},
-				payload: {
-					email: `otroEmailJuan@example.com`
-					// NO username, NO avatar
-				}
+				url: '/api/users/not-a-uuid',
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { username: 'test' }
 			});
-
-			test('UPDATE', 'Update email returns 200', 200, res.statusCode);
+			test('UPDATE', 'Invalid UUID returns 400', 400, res.statusCode);
 		}
-
-		// 4.5: UUID inválido en PUT
-		const res18 = await app.inject({
-			method: 'PUT',
-			url: '/api/users/not-a-uuid'
-		});
-		test('UPDATE', 'PutUser con UUID invalido returns 400', 400, res18.statusCode);
-
+		
 		// ====================================================================
-		// subject 5: UPDATE PASSWORD
+		// SUBJECT 5: UPDATE PASSWORD
 		// ====================================================================
-
 		console.log('\n[UPDATE PASSWORD]');
 		
-		// 5.1 Update password
+		// Update password successfully
 		{
 			const res = await app.inject({
 				method: 'PUT',
-				url: `/api/users/${userId}/password`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				},
-				payload: {
-					newPasswordHash: bcrypt.hashSync('newpass', 10)
-				}
+				url: `/api/users/${testUsers.user1!.id}/password`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { newPasswordHash: bcrypt.hashSync('NewPass123!', 10) }
 			});
-
 			test('PASSWORD', 'Update password returns 204', 204, res.statusCode);
-			test('PASSWORD', 'Empty body', '', res.body);
 		}
 		
-		// 5.2 Update password non-existent - sin ownership devuelve 403
+		// Update password non-existent user
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'PUT',
 				url: `/api/users/${fakeId}/password`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				},
-				payload: {
-					newPasswordHash: bcrypt.hashSync('newpass', 10)
-				}
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { newPasswordHash: bcrypt.hashSync('NewPass123!', 10) }
 			});
-
-			test('PASSWORD', 'Non-existent user without ownership returns 403', 403, res.statusCode);
+			test('PASSWORD', 'Non-existent user returns 403', 403, res.statusCode);
 		}
 		
-		// ====================================================================
-		// subject 6: ANONIMIZE
-		// ====================================================================
-		
-		console.log('\n[ANONIMIZE USER]');
+		// Invalid hash format
 		{
-			const createLulu = {
-				username: `Lulu`,
-				email: `Lulu@example.com`,
-				passwordHash: bcrypt.hashSync('pass123', 10),
-				avatar: null
-			};
-			
 			const res = await app.inject({
-				method: 'POST',
-				url: '/api/users',
-				payload: createLulu
+				method: 'PUT',
+				url: `/api/users/${testUsers.user1!.id}/password`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { newPasswordHash: 'not-a-bcrypt-hash' }
 			});
-			
-			console.log('Created Lulu: ', res.json());
-			
-			if (res.statusCode === 201) {
-				let luluUser = res.json();
-				const luluId = luluUser.id;
-				console.log('LuluUser: ', luluUser);
-				
-				const anony = await app.inject({
-					method: 'PUT',
-					url: `/api/users/${luluId}/anonymize`
-				});
-					
-				test('ANONYMIZE', 'User anonymized', 204, anony.statusCode);
-
-				const res19 = await app.inject({
-					method: 'GET',
-					url: `/api/users/${luluId}`
-				});
-
-				test('ANONYMIZE', 'Should not find user', 404, res19.statusCode); 
-			}
+			test('PASSWORD', 'Invalid hash returns 400', 400, res.statusCode);
 		}
 		
 		// ====================================================================
-		// subject 7: DELETE
+		// SUBJECT 6: ANONYMIZE USER
+		// ====================================================================
+		console.log('\n[ANONYMIZE USER]');
+		
+		// Anonymize successfully
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user3!.id}/anonymize`,
+				headers: { 'Authorization': `Bearer ${testUsers.user3!.token}` }
+			});
+			test('ANONYMIZE', 'Anonymize returns 204', 204, res.statusCode);
+			
+			// Verify anonymized
+			const checkRes = await app.inject({
+				method: 'GET',
+				url: `/api/users/${testUsers.user3!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
+			});
+			test('ANONYMIZE', 'Anonymized user not found', 404, checkRes.statusCode);
+		}
+		
+		// ====================================================================
+		// SUBJECT 7: DELETE USER
 		// ====================================================================
 		console.log('\n[DELETE USER]');
 		
-		// 7.1 Delete existing user
+		// Recrear user3 para test de delete
+		const user3Fresh = await TestUtils.setupUser(TestConstants.TEST_USERS_KEYS[2]);
+		testUsers.user3 = {
+			id: user3Fresh.user.id,
+			token: user3Fresh.token,
+			username: user3Fresh.user.username,
+			email: user3Fresh.user.email
+		};
+		
+		// Delete successfully
 		{
 			const res = await app.inject({
 				method: 'DELETE',
-				url: `/api/users/${userId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				url: `/api/users/${testUsers.user3!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user3!.token}` }
 			});
-
-			test('DELETE', 'Delete user returns 204', 204, res.statusCode);
-			test('DELETE', 'Empty body', '', res.body);
-
+			test('DELETE', 'Delete returns 204', 204, res.statusCode);
+			
 			// Verify deleted
-			const check = await app.inject({
+			const checkRes = await app.inject({
 				method: 'GET',
-				url: `/api/users/${userId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				url: `/api/users/${testUsers.user3!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
 			});
-
-			test('DELETE', 'Deleted user not found', 404, check.statusCode);
+			test('DELETE', 'Deleted user not found', 404, checkRes.statusCode);
 		}
 		
-		// 7.2 Delete non-existent - sin ownership devuelve 403
+		// Delete non-existent
 		{
 			const fakeId = Utils.generateUserId();
 			const res = await app.inject({
 				method: 'DELETE',
 				url: `/api/users/${fakeId}`,
-				headers: {
-					'Authorization': `Bearer ${user1.token}`
-				}
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
 			});
-
-			test('DELETE', 'Non-existent user without ownership returns 403', 403, res.statusCode);
+			test('DELETE', 'Non-existent user returns 403', 403, res.statusCode);
 		}
+
+		// ====================================================================
+		// SUBJECT 8: SECURITY - OWNERSHIP VIOLATIONS
+		// ====================================================================
+		console.log('\n[SECURITY - OWNERSHIP VIOLATIONS]');
+		
+		// User1 intenta modificar User2
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user2!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { username: 'hacked_by_user1' }
+			});
+			test('OWNERSHIP', 'User1 cannot modify User2 username', 403, res.statusCode);
+		}
+		
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user2!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { email: 'hacked@evil.com' }
+			});
+			test('OWNERSHIP', 'User1 cannot modify User2 email', 403, res.statusCode);
+		}
+		
+		// User1 intenta cambiar password de User2
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user2!.id}/password`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { newPasswordHash: bcrypt.hashSync('hacked', 10) }
+			});
+			test('OWNERSHIP', 'User1 cannot change User2 password', 403, res.statusCode);
+		}
+		
+		// User1 intenta eliminar User2
+		{
+			const res = await app.inject({
+				method: 'DELETE',
+				url: `/api/users/${testUsers.user2!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
+			});
+			test('OWNERSHIP', 'User1 cannot delete User2', 403, res.statusCode);
+		}
+		
+		// User2 intenta modificar User1 (bidireccional)
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user2!.token}` },
+				payload: { username: 'hacked_by_user2' }
+			});
+			test('OWNERSHIP', 'User2 cannot modify User1', 403, res.statusCode);
+		}
+		
+		// ====================================================================
+		// SUBJECT 9: SECURITY - NO AUTHENTICATION
+		// ====================================================================
+		console.log('\n[SECURITY - NO AUTHENTICATION]');
+		
+		{
+			const endpoints = [
+				{ method: 'GET', url: `/api/users/${testUsers.user1!.id}`, desc: 'GET' },
+				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}`, payload: { username: 'hack' }, desc: 'PUT w/username' },
+				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}`, payload: { email: 'newEmail1234@test.com' }, desc: 'PUT w/email' },
+				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}`, payload: { avatar: 'http://avatar.com/avatar.jpg' }, desc: 'PUT w/avatar' },
+				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}/password`, payload: { newPasswordHash: bcrypt.hashSync('hack', 10) }, desc: 'PUT password' },
+				{ method: 'DELETE', url: `/api/users/${testUsers.user1!.id}`, desc: 'DELETE' }
+			];
+
+			for (const ep of endpoints) {
+				const res = await app.inject({
+					method: ep.method as any,
+					url: ep.url,
+					payload: ep.payload
+				});
+				test('NO AUTH', `${ep.desc} without token returns 401`, 401, res.statusCode);
+			}
+		}
+		
+		// ====================================================================
+		// SUBJECT 10: SECURITY - INVALID TOKEN
+		// ====================================================================
+		console.log('\n[SECURITY - INVALID TOKEN]');
+		
+		{
+			const invalidTokens = [
+				{ token: 'Bearer not-a-jwt', desc: 'Malformed token' },
+				{ token: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImZha2UifQ.INVALID', desc: 'Invalid signature' },
+				{ token: `Bearer ${testUsers.user1!.token}EXTRA`, desc: 'Modified token' },
+				{ token: testUsers.user1!.token, desc: 'Token without Bearer' },
+				{ token: '', desc: 'Empty Authorization' },
+				{ token: 'Bearer', desc: 'Bearer without token' }
+			];
+			
+			for (const t of invalidTokens) {
+				const res = await app.inject({
+					method: 'PUT',
+					url: `/api/users/${testUsers.user1!.id}`,
+					headers: { 'Authorization': t.token },
+					payload: { username: 'hack' }
+				});
+				test('INVALID TOKEN', `${t.desc} returns 401`, 401, res.statusCode);
+			}
+		}
+		
+		// ====================================================================
+		// SUBJECT 11: EDGE CASES
+		// ====================================================================
+		console.log('\n[EDGE CASES]');
+		
+		// Empty body
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: {}
+			});
+			test('EDGE CASE', 'PUT with empty body returns 400', 400, res.statusCode);
+		}
+		
+		// Null values
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { username: null }
+			});
+			test('EDGE CASE', 'PUT username null returns 400', 400, res.statusCode);
+		}
+		
+		// Valid UUID but non-existent
+		{
+			const res = await app.inject({
+				method: 'GET',
+				url: '/api/users/00000000-0000-0000-0000-000000000000',
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` }
+			});
+			test('EDGE CASE', 'Valid UUID non-existent returns 404', 404, res.statusCode);
+		}
+		
+		// Attempt to modify ID
+		{
+			const newId = Utils.generateUserId();
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user1!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { id: newId, username: 'valid' }
+			});
+			
+			if (res.statusCode === 200) {
+				const body = res.json();
+				test('EDGE CASE', 'ID cannot be modified', testUsers.user1!.id, body.id);
+			}
+		}
+		
+		// ====================================================================
+		// SUBJECT 12: CONCURRENT OPERATIONS
+		// ====================================================================
+		console.log('\n[CONCURRENT OPERATIONS]');
+		
+		// Multiple updates to same user
+		{
+			const promises = [
+				app.inject({
+					method: 'PUT',
+					url: `/api/users/${testUsers.user1!.id}`,
+					headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+					payload: { username: 'concurrent1' }
+				}),
+				app.inject({
+					method: 'PUT',
+					url: `/api/users/${testUsers.user1!.id}`,
+					headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+					payload: { username: 'concurrent2' }
+				}),
+				app.inject({
+					method: 'PUT',
+					url: `/api/users/${testUsers.user1!.id}`,
+					headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+					payload: { username: 'concurrent3' }
+				})
+			];
+			
+			const responses = await Promise.all(promises);
+			const successCount = responses.filter(r => r.statusCode === 200).length;
+			test('CONCURRENT', 'At least one concurrent update succeeds', true, successCount >= 1);
+			test('CONCURRENT', 'All concurrent updates succeeded', true, successCount === 3);
+		}
+		
+		// Duplicate username creation
+		{
+			const promises = [
+				app.inject({
+					method: 'POST',
+					url: '/api/users',
+					payload: { username: 'duplicate_test', email: 'dup1@test.com', password: 'Pass123!', avatar: 'https://image.com/image.png' }
+				}),
+				app.inject({
+					method: 'POST',
+					url: '/api/users',
+					payload: { username: 'duplicate_test', email: 'dup2@test.com', password: 'Pass123!', avatar: 'https://image.com/image.png' }
+				})
+			];
+			
+			const responses = await Promise.all(promises);
+			const successCount = responses.filter(r => r.statusCode === 201).length;
+			const conflictCount = responses.filter(r => r.statusCode === 409).length;
+			
+			test('CONCURRENT', 'Only one duplicate succeeds', 1, successCount);
+			test('CONCURRENT', 'Other duplicate returns 409', 1, conflictCount);
+		}
+		
+		// ====================================================================
+		// SUBJECT 13: ABUSE PREVENTION
+		// ====================================================================
+		console.log('\n[ABUSE PREVENTION]');
+		
+		// Multiple ownership violations
+		{
+			let failures = 0;
+			for (let i = 0; i < 5; i++) {
+				const res = await app.inject({
+					method: 'PUT',
+					url: `/api/users/${testUsers.user2!.id}`,
+					headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+					payload: { username: `attempt_${i}` }
+				});
+				if (res.statusCode === 403) failures++;
+			}
+			test('ABUSE', 'Multiple violations consistently return 403', 5, failures);
+		}
+		
+		// No sensitive data leaks
+		{
+			const res = await app.inject({
+				method: 'PUT',
+				url: `/api/users/${testUsers.user2!.id}`,
+				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
+				payload: { username: 'hack' }
+			});
+			
+			if (res.statusCode === 403) {
+				const body = JSON.stringify(res.json()).toLowerCase();
+				const noLeaks = !body.includes('passwordhash') && !body.includes('token') && !body.includes('secret');
+				test('ABUSE', 'Error responses do not leak sensitive data', true, noLeaks);
+			}
+		}
+		
+		// ====================================================================
+		// TEARDOWN
+		// ====================================================================
+		await teardownTestUsers();
 		
 		// ====================================================================
 		// SUMMARY
 		// ====================================================================
-		
-		
-		console.log('\n' + '='.repeat(50) + '\n');
+		console.log('\n' + '='.repeat(50));
 		const passed = results.filter(r => r.passed).length;
 		const failed = results.filter(r => !r.passed).length;
-		console.log(`TOTAL: ${results.length} | PASSED: ${passed} | FAILED: ${failed}`);
+		console.log(`📊 TOTAL: ${results.length} | ✅ PASSED: ${passed} | ❌ FAILED: ${failed}`);
+		console.log('='.repeat(50));
 		
 		if (failed > 0) {
-			console.log('\nFAILED TESTS:');
-			results.filter(r => !r.passed).forEach(r => {
-				console.log(`  ${r.test}: Expected ${r.expected}, got ${r.actual}`);
+			console.log('\n❌ FAILED TESTS:');
+			results.filter(r => !r.passed).forEach((r, idx) => {
+				console.log(`  ${idx + 1}. [${r.subject}] ${r.test}`);
+				console.log(`     Expected: ${r.expected}, Got: ${r.actual}`);
 			});
 		}
 		
 		process.exitCode = failed > 0 ? 1 : 0;
 		
 	} catch (error) {
-		console.error('WARNING:', error);
+		console.error('❌ FATAL ERROR:', error);
 		process.exit(1);
 	} finally {
 		if (app) await app.close();
 	}
-	process.env.NODE_MODE = 'developement';
+	process.env.NODE_MODE = 'development';
 }
 
+// ============================================================================
 // RUN
+// ============================================================================
+
 runTests().catch(error => {
-	console.error('UNHANDLED:', error);
+	console.error('❌ UNHANDLED ERROR:', error);
 	process.exit(1);
 });
