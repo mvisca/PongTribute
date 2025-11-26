@@ -33,7 +33,7 @@ export function buildApp(): FastifyInstance {
 	
 	// Crear instancia
 	const app = Fastify(UserEnv.getFastifyConfig());
-	currentApp = app;
+//	currentApp = app;
 	
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
@@ -74,12 +74,14 @@ export function buildApp(): FastifyInstance {
 	/**
 	* Registrar todas las rutas del servicio
 	*/
-	console.log('REG INTERNAL');
+	console.log('REG USER INTERNAL');
 	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
-	console.log('REG PUBLIC');
+	console.log('REG USER PUBLIC');
 	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
-	console.log('REG PROTECTED');
+	console.log('REG USER PROTECTED');
 	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
+	console.log('REG TOKEN PROTECTED');
+	app.register(UserRoutes.internalTokenRoutes, { prefix: '/api'});
 
 	/**
 	* Manejo global de errores\

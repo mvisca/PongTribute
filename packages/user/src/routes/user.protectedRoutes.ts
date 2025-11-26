@@ -32,7 +32,7 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 
 	app.put('/users/:id/anonymize', {
-		preHandler: [AuthMiddleware.verifyOwnership],
+		preHandler: AuthMiddleware.verifyOwnership,
 		schema: UserSchemas.anonymizeUserSchema,
 		handler: controller.anonymizeUser.bind(controller)
 	});

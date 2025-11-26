@@ -1,30 +1,16 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import bcrypt from  'bcryptjs';
 import { UserTypes } from '@transcendence/shared';
-import { UserMapper } from '../index.js';
-import { SQLiteUserRepository } from '../index.js';
+import { UserMapper, UserService } from '../index.js';
 
-/**
-* Controller de User\
-* Orquesta llamadas al repository y maneja responses HTTP
-*/
+/** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
-	private userRepo: SQLiteUserRepository;
+	private userService: UserService;
 	
 	constructor() {
-		this.userRepo = new SQLiteUserRepository();
+		this.userService = new UserService();
 	}
 	
-	/**
-	* Método llamado en la ruta\
-	* Extrae dataya validada\
-	* Comprueba unicidad\
-	* Crea user\
-	* \
-	* @param request Body tipo CreateUserData\
-	* @param reply\
-	* @returns tipo UserPublic
-	*/
 	async createUser( 
 		request: FastifyRequest,
 		reply: FastifyReply
@@ -32,25 +18,25 @@ export class UserController {
 		try {
 			const data = request.body as UserTypes.CreateUserInput;
 
-			const [emailTaken, usernameTaken] = await Promise.all([
-				this.userRepo.isEmailTaken(data.email),
-				this.userRepo.isUsernameTaken(data.username)
-			]);
-			
-			// email usado
-			if (emailTaken) {
-				return reply.code(409).send({
-					error: 'Conflict',
-					message: 'Email ya existe',
-					field: 'email'
-				});
-			}
-
-			if (usernameTaken) {
-				return reply.code(409).send({
+			const isUsernameAvailable = await this.userService.checkUsernameAvailable(data.username);
+			if (!isUsernameAvailable) {
+				return reply
+				.code(409)
+				.send({
 					error: 'Conflict',
 					message: 'Username ya existe',
 					field: 'username'
+				});
+			}
+
+			const isEmailAvailable = await this.userService.checkEmailAvailable(data.email);
+			if (isEmailAvailable) {
+				return reply
+				.code(409)
+				.send({
+					error: 'Conflict',
+					message: 'Email ya existe',
+					field: 'email'
 				});
 			}
 
@@ -62,9 +48,10 @@ export class UserController {
 
 			const newUser = await this.userRepo.create(dataHash);
 
-			return reply.code(201)
-				.header('Location', `/api/users/${newUser.id}`)
-				.send(newUser);
+			return reply
+			.code(201)
+			.header('Location', `/api/users/${newUser.id}`)
+			.send(newUser);
 			
 		} catch (err) {
 			request.log.error(err);
