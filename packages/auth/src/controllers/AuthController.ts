@@ -13,7 +13,7 @@ export class AuthController {
 		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
-		const { email, password } = request.body as AuthTypes.LoginData;
+		const { email, password } = request.body as AuthTypes.LoginBody;
 
 		const result = await this.authService.login(email, password);
 

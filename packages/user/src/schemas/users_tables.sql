@@ -9,8 +9,22 @@ CREATE TABLE IF NOT EXISTS users (
   avatar TEXT NOT NULL,
   is_online INTEGER DEFAULT 0,
   is_deleted INTEGER DEFAULT 0,
+  has_2fa_enabled INTEGER DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
+);
+
+-- ============================================================================
+-- TABLA: refresh_tokens
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+	id TEXT PRIMARY KEY,
+	user_id TEXT NOT NULL,
+	token_hash TEXT UNIQUE NOT NULL,
+	expires_at INTEGER NOT NULL,
+	is_2fa_verified INTEGER DEFAULT 0,
+	created_at INTEGER NOT NULL,
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ============================================================================

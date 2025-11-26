@@ -14,6 +14,7 @@ export namespace UserTypes {
 		avatar: string;
 		is_online: number;
 		is_deleted: number;
+		has_2fa_enabled: number;
 		created_at: number;
 		updated_at: number;
 	}

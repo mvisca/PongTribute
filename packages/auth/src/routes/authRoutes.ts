@@ -1,6 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
-import { AuthMiddleware, AuthSchemas } from "@transcendence/shared";
-import { AuthController } from "../index.js";
+import { AuthSchemas } from "@transcendence/shared";
+import { AuthController, AuthMiddleware } from "../index.js";
+
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new AuthController();
@@ -10,14 +11,14 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 
 	app.post('/auth/login', {
-		schema: AuthSchemas.LoginSchema,
+		schema: AuthSchemas.LoginBodySchema,
 		handler: controller.login.bind(controller)
 	});
 	// TODO agregar schemas para validacion
 
 	app.put('/auth/:id/password', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
-		schema: AuthSchemas.UpdatePasswordSchema,
+		schema: AuthSchemas.UpdatePasswordBodySchema,
 		handler: controller.updatePassword.bind(controller)
 	}); // TODO agregar schemas para validacion de inputs
 }

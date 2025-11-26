@@ -5,7 +5,7 @@ import { UserSchemas } from '@transcendence/shared';
 export const internalRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new UserController();
 
-	app.addHook('preHandler', validateServiceSecret),
+	app.addHook('preHandler', validateServiceSecret);
 
 	app.get('/users/by-email/:email',
 		controller.getInternalUserByEmail.bind(controller)

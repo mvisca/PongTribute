@@ -1,7 +1,9 @@
 import Fastify, { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import { UserEnv, UserRoutes } from './index.js';
+import dotenv from 'dotenv';
 
+dotenv.config();
 let currentApp: FastifyInstance | null = null;
 
 process.on('SIGINT', async () => {

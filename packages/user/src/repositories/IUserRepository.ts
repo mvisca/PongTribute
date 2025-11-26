@@ -1,5 +1,3 @@
-// TODO estas interfaces deben estar en repository o en shared? por que?
-
 import { UserTypes } from '@transcendence/shared';
 
 /**
@@ -78,8 +76,9 @@ export interface IUserRepository {
 	 */
 	isEmailTaken(email: string): Promise<boolean>;
 
-	/**
-	 * Actualizar 'isOnline'
-	 */
+	/** Actualizar 'isOnline' */
     setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic | null>;
+
+	/** Actualizar 'is2FAEnabled' */
+	setIs2FAEnabled(id: string, is2FAEnabled: boolean): Promise<UserTypes.UserPublic | null>;
 }

@@ -39,9 +39,7 @@ export class UserController {
 			
 			// email usado
 			if (emailTaken) {
-				return reply
-				.code(409)
-				.send({
+				return reply.code(409).send({
 					error: 'Conflict',
 					message: 'Email ya existe',
 					field: 'email'
@@ -49,9 +47,7 @@ export class UserController {
 			}
 
 			if (usernameTaken) {
-				return reply
-				.code(409)
-				.send({
+				return reply.code(409).send({
 					error: 'Conflict',
 					message: 'Username ya existe',
 					field: 'username'
@@ -66,10 +62,9 @@ export class UserController {
 
 			const newUser = await this.userRepo.create(dataHash);
 
-			return reply
-			.code(201)
-			.header('Location', `/api/users/${newUser.id}`)
-			.send(newUser);
+			return reply.code(201)
+				.header('Location', `/api/users/${newUser.id}`)
+				.send(newUser);
 			
 		} catch (err) {
 			request.log.error(err);

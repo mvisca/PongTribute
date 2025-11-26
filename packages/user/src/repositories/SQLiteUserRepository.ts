@@ -35,6 +35,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			avatar: data.avatar ?? UserConstants.DEFAULT_AVATAR, // TODO asume front sirve /public/avatars/default.png
 			isOnline: false,
 			isDeleted: false,
+			has2FAEnabled: false,
 			createdAt: now,
 			updatedAt: now
 		};
@@ -42,8 +43,8 @@ export class SQLiteUserRepository implements IUserRepository {
 		const row = UserMapper.internalToRow(newUser);
 		
 		this.db.prepare(`
-			INSERT INTO users (id, username, email, password_hash, avatar, is_online, is_deleted, created_at, updated_at)
-			VALUES (@id, @username, LOWER(@email), @password_hash, @avatar, @is_online, @is_deleted, @created_at, @updated_at)
+			INSERT INTO users (id, username, email, password_hash, avatar, is_online, is_deleted, has_2fa_enabled, created_at, updated_at)
+			VALUES (@id, @username, LOWER(@email), @password_hash, @avatar, @is_online, @is_deleted, @has_2fa_enabled, @created_at, @updated_at)
 		`).run(row);
 			
 		const created = this.getUserById(row.id);
@@ -127,12 +128,12 @@ export class SQLiteUserRepository implements IUserRepository {
 	*/
 	async anonymize(id: string): Promise<UserTypes.UserPublic | null> {
 		const now = Date.now();
-		const username = `anon_${now}`;
+		const anonName = `anon_${now}`;
 		const restult = this.db.prepare(`
 			UPDATE users SET
-			username = ?, email = ?, avatar = ?, updated_at = ?, is_deleted = ?, is_online = ?
+			username = ?, email = ?, avatar = ?, updated_at = ?, is_deleted = ?, is_online = ?, has_2fa_enabled = ?
 			WHERE id = ?
-		`).run(username, `${username}@deleted.email`, `${UserConstants.ANON_AVATAR}`, now, 1, 0, id);
+		`).run(anonName, `${anonName}@deleted.email`, `${UserConstants.ANON_AVATAR}`, now, 1, 0, 0, id);
 
 		if (restult.changes === 0) throw new Error(`No se ha podido modificar el record: ${id}`);
 
@@ -221,6 +222,20 @@ export class SQLiteUserRepository implements IUserRepository {
 		const row = this.db.prepare(`
 			UPDATE users SET is_online = ?, updated_at = ? WHERE id = ?
 		`).run(isOnline ? 1 : 0, Date.now(), id);
+									
+		if (row.changes === 0) throw new Error(`Usuario ${id} sin cambios`);
+									
+		return this.getUserById(id) || null;
+	}
+
+	/**
+	* Cambia el estado de 2FA (`is_2fa:enabled`) del usuario.
+	* Retorna el usuario actualizado sin `password_hash`.
+	*/
+	async setIs2FAEnabled(id: string, is2FAEnabled: boolean): Promise<UserTypes.UserPublic | null> {
+		const row = this.db.prepare(`
+			UPDATE users SET is_2fa_enabled = ?, updated_at = ? WHERE id = ?
+		`).run(is2FAEnabled ? 1 : 0, Date.now(), id);
 									
 		if (row.changes === 0) throw new Error(`Usuario ${id} sin cambios`);
 									

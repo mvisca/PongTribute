@@ -112,6 +112,7 @@ export namespace UserSchemas {
 		}),
 		isOnline: Type.Boolean(),
 		isDeleted: Type.Boolean(),
+		has2FAEnabled: Type.Boolean(),
 		createdAt: Type.String({
 			format: 'date-time'
 		}),

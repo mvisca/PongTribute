@@ -1,9 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcryptjs';
 import { buildApp } from '../src/app';
-import { UserTypes, Utils, TestUtils, TestConstants } from '@transcendence/shared';
+import { Utils, TestUtils, TestConstants } from '@transcendence/shared';
 import { getDatabase } from '../src/connection';
-import { AuthTypes } from '@transcendence/shared';
 
 // ============================================================================
 // TEST RUNNER
@@ -394,46 +393,7 @@ async function runTests() {
 			});
 			test('UPDATE', 'Invalid UUID returns 400', 400, res.statusCode);
 		}
-		
-		// ====================================================================
-		// SUBJECT 5: UPDATE PASSWORD
-		// ====================================================================
-		console.log('\n[UPDATE PASSWORD]');
-		
-		// Update password successfully
-		{
-			const res = await app.inject({
-				method: 'PUT',
-				url: `/api/users/${testUsers.user1!.id}/password`,
-				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
-				payload: { newPasswordHash: bcrypt.hashSync('NewPass123!', 10) }
-			});
-			test('PASSWORD', 'Update password returns 204', 204, res.statusCode);
-		}
-		
-		// Update password non-existent user
-		{
-			const fakeId = Utils.generateUserId();
-			const res = await app.inject({
-				method: 'PUT',
-				url: `/api/users/${fakeId}/password`,
-				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
-				payload: { newPasswordHash: bcrypt.hashSync('NewPass123!', 10) }
-			});
-			test('PASSWORD', 'Non-existent user returns 403', 403, res.statusCode);
-		}
-		
-		// Invalid hash format
-		{
-			const res = await app.inject({
-				method: 'PUT',
-				url: `/api/users/${testUsers.user1!.id}/password`,
-				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
-				payload: { newPasswordHash: 'not-a-bcrypt-hash' }
-			});
-			test('PASSWORD', 'Invalid hash returns 400', 400, res.statusCode);
-		}
-		
+			
 		// ====================================================================
 		// SUBJECT 6: ANONYMIZE USER
 		// ====================================================================
@@ -526,17 +486,6 @@ async function runTests() {
 			test('OWNERSHIP', 'User1 cannot modify User2 email', 403, res.statusCode);
 		}
 		
-		// User1 intenta cambiar password de User2
-		{
-			const res = await app.inject({
-				method: 'PUT',
-				url: `/api/users/${testUsers.user2!.id}/password`,
-				headers: { 'Authorization': `Bearer ${testUsers.user1!.token}` },
-				payload: { newPasswordHash: bcrypt.hashSync('hacked', 10) }
-			});
-			test('OWNERSHIP', 'User1 cannot change User2 password', 403, res.statusCode);
-		}
-		
 		// User1 intenta eliminar User2
 		{
 			const res = await app.inject({
@@ -569,7 +518,6 @@ async function runTests() {
 				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}`, payload: { username: 'hack' }, desc: 'PUT w/username' },
 				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}`, payload: { email: 'newEmail1234@test.com' }, desc: 'PUT w/email' },
 				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}`, payload: { avatar: 'http://avatar.com/avatar.jpg' }, desc: 'PUT w/avatar' },
-				{ method: 'PUT', url: `/api/users/${testUsers.user1!.id}/password`, payload: { newPasswordHash: bcrypt.hashSync('hack', 10) }, desc: 'PUT password' },
 				{ method: 'DELETE', url: `/api/users/${testUsers.user1!.id}`, desc: 'DELETE' }
 			];
 

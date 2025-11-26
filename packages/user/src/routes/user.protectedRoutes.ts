@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
-import { AuthMiddleware, UserSchemas } from '@transcendence/shared';
-import { UserController } from '../index.js';
+import { UserSchemas } from '@transcendence/shared';
+import { UserController, AuthMiddleware } from '../index.js';
 
 export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new UserController();
@@ -15,7 +15,7 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 		schema: UserSchemas.getUserByUsernameSchema,
 		handler: controller.getUserByUsername.bind(controller)
 	});
-	
+
 	app.get('/users/email/:email', {
 		schema: UserSchemas.getUserByEmailSchema,
 		handler: controller.getUserByEmail.bind(controller)
@@ -37,11 +37,11 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.anonymizeUser.bind(controller)
 	});
 
-	app.put('/users/:id/password', {
+/*	app.put('/users/:id/password', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.updatePasswordInternalSchema,
 		handler: controller.updatePassword.bind(controller)
-	});
+	}); */ // Redundante
 
 	app.put('/users/:id', {
 		preHandler: [AuthMiddleware.verifyOwnership],

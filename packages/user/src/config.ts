@@ -1,4 +1,6 @@
 import { SharedEnv } from '@transcendence/shared';
+import dotenv from 'dotenv';
+dotenv.config();
 
 // =====================================================
 // TIPOS
@@ -62,7 +64,8 @@ export namespace UserEnv {
 	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL || 'info';
 	export const DB_PATH: string = sharedEnv.DB_PATH || '../../db-data/user.db';
 
-	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET!;
+	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 
 	// =====================================================
 	// EXPORTS PÚBLICOS - OBJETOS
