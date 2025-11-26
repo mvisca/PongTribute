@@ -1,5 +1,3 @@
-@tailwind base; /*resetea el navegador CSS*/
-@tailwind components; /*Prebuildea classes con componentes*/
-@tailwind utilities; /*todas las clases de tailwind*/
-
-/*Aquí es dodne Tailwind se activa y es el punto de entrada a los archivos css*/
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

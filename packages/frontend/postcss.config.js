@@ -1,11 +1,13 @@
-export default 
-{
-  plugins: 
-  {
-    tailwindcss: {},
-    autoprefixer: {},
-  },
-}
+import tailwindcss from "@tailwindcss/postcss";
+import autoprefixer from "autoprefixer";
+
+export default {
+  plugins: [
+    tailwindcss(),
+    autoprefixer(),
+  ],
+};
+
 //Archivo usado como herramienta que procesa CSS antes de que llegue al navegador.
 //Lo usa Vite para correr Tailwind.
 

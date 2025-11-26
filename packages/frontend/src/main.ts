@@ -1,6 +1,7 @@
+// Import the Tailwind CSS
 import "./style.css";
-import { setupUI } from ".style.css";
 
-setupUI();
-//En un futuro se crearán modulos UI (botones, pantallas...)
-//Por ahora lo mantengo simple
+// Import your app logic (login screen or other UI modules)
+import { setupApp } from "./app";
+
+setupApp();
