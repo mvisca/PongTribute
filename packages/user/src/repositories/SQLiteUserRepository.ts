@@ -9,7 +9,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	/** 
 	* Buscar un usuario por su ID
 	*/
-	private getUserById(id: string): UserTypes.UserPublic | null {
+	private NOgetUserById(id: string): UserTypes.UserPublic | null {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE id = ?
 		`).get(id) as UserTypes.UserRow | undefined;
@@ -24,11 +24,11 @@ export class SQLiteUserRepository implements IUserRepository {
 	* - Normalizar datos\
 	* - Almacenar
 	*/
-	async create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic> {
+	async create(data: UserTypes.CreateUserBody & { id: string }): Promise<UserTypes.UserPublic> {
 		const now = new Date().toISOString();
 		
 		const newUser: UserTypes.UserInternal = {
-			id: Utils.generateUserId(),
+			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
 			passwordHash: data.passwordHash,
@@ -47,9 +47,10 @@ export class SQLiteUserRepository implements IUserRepository {
 			VALUES (@id, @username, LOWER(@email), @password_hash, @avatar, @is_online, @is_deleted, @has_2fa_enabled, @created_at, @updated_at)
 		`).run(row);
 			
-		const created = this.getUserById(row.id);
+		const created = await this.findById(row.id);
 			
-		if (!created) throw new Error(`No se ha podido recuperar usuario: ${UserMapper.internalToResponse(newUser)}`);
+		if (!created)
+			throw new Error(`No se ha podido recuperar usuario: ${UserMapper.internalToResponse(newUser)}`);
 			
 		return created;
 	}
@@ -61,15 +62,20 @@ export class SQLiteUserRepository implements IUserRepository {
 		
 		// Normalizar
 		const updateData: UserTypes.UpdateUserBody = {};
-		if (data.username) updateData.username = Utils.UserNormalizer.usernameForStorage(data.username) || undefined;
-		if (data.email) updateData.email = Utils.UserNormalizer.email(data.email) || undefined;
-		if (data.avatar) updateData.avatar = Utils.UserNormalizer.avatar(data.avatar) || undefined;
+
+		if (data.username)
+			updateData.username = Utils.UserNormalizer.usernameForStorage(data.username) || undefined;
+
+		if (data.email)
+			updateData.email = Utils.UserNormalizer.email(data.email) || undefined;
+
+		if (data.avatar)
+			updateData.avatar = Utils.UserNormalizer.avatar(data.avatar) || undefined;
 		
 		// Validar que haya campos con valores válidos para actualizar
-		if (Object.values(updateData).filter(v => v !== undefined).length === 0) {
+		if (Object.values(updateData).filter(v => v !== undefined).length === 0)
 			throw new Error('No hay campos válidos para actualizar');
-		}
-			
+
 		// Mapea a row
 		const updateRow = UserMapper.updateToRow(updateData);
 			
@@ -90,11 +96,13 @@ export class SQLiteUserRepository implements IUserRepository {
 		`).run(...valuesToUpdate);
 				
 		// Verficar update
-		if (restult.changes === 0) throw new Error(`Usuario ${id} no encontrado`);
+		if (restult.changes === 0)
+			throw new Error(`Usuario ${id} no encontrado`);
 			
-		const updated = this.getUserById(id);
+		const updated = await this.findById(id);
 				
-		if (!updated) throw new Error(`No se ha podido recuperar usuario: ${id}`);
+		if (!updated)
+			throw new Error(`No se ha podido recuperar usuario: ${id}`);
 		
 		return updated;
 	}
@@ -107,9 +115,10 @@ export class SQLiteUserRepository implements IUserRepository {
 			UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
 		`).run(newPasswordHash, Date.now(), id);
 
-		const updated = this.findByEmail(id);
+		const updated = await this.findByEmail(id);
 
-		if (!updated) throw new Error(`No se ha podido recuperar usuario: ${id}`)
+		if (!updated)
+			throw new Error(`No se ha podido recuperar usuario: ${id}`)
 
 		return updated;
 	}
@@ -135,11 +144,13 @@ export class SQLiteUserRepository implements IUserRepository {
 			WHERE id = ?
 		`).run(anonName, `${anonName}@deleted.email`, `${UserConstants.ANON_AVATAR}`, now, 1, 0, 0, id);
 
-		if (restult.changes === 0) throw new Error(`No se ha podido modificar el record: ${id}`);
+		if (restult.changes === 0)
+			throw new Error(`No se ha podido modificar el record: ${id}`);
 
-		const anonymized = this.findById(id);
+		const anonymized = await this.findById(id);
 
-		if (!anonymized) throw new Error(`No se ha podido recuperar el usuario: ${id}`);
+		if (!anonymized)
+			throw new Error(`No se ha podido recuperar el usuario: ${id}`);
 	
 		return anonymized;
 	}
@@ -148,7 +159,11 @@ export class SQLiteUserRepository implements IUserRepository {
 	* Busca y retorna un usuario por ID (sin password_hash)
 	*/
 	async findById(id: string): Promise<UserTypes.UserPublic | null> {
-		return this.getUserById(id) || null;
+		const row = this.db.prepare(`
+			SELECT * FROM users WHERE id = ?
+		`).get(id) as UserTypes.UserRow | undefined;
+
+		return row ? UserMapper.rowToResponse(row) : null;
 	}
 	
 	async findByIdInternal(id: string): Promise<UserTypes.UserInternal | null> {
@@ -223,9 +238,10 @@ export class SQLiteUserRepository implements IUserRepository {
 			UPDATE users SET is_online = ?, updated_at = ? WHERE id = ?
 		`).run(isOnline ? 1 : 0, Date.now(), id);
 									
-		if (row.changes === 0) throw new Error(`Usuario ${id} sin cambios`);
+		if (row.changes === 0)
+			throw new Error(`Usuario ${id} sin cambios`);
 									
-		return this.getUserById(id) || null;
+		return await this.findById(id) || null;
 	}
 
 	/**
@@ -237,8 +253,9 @@ export class SQLiteUserRepository implements IUserRepository {
 			UPDATE users SET is_2fa_enabled = ?, updated_at = ? WHERE id = ?
 		`).run(is2FAEnabled ? 1 : 0, Date.now(), id);
 									
-		if (row.changes === 0) throw new Error(`Usuario ${id} sin cambios`);
+		if (row.changes === 0)
+			throw new Error(`Usuario ${id} sin cambios`);
 									
-		return this.getUserById(id) || null;
+		return await this.findById(id) || null;
 	}
 }
