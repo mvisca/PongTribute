@@ -37,12 +37,6 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.anonymizeUser.bind(controller)
 	});
 
-/*	app.put('/users/:id/password', {
-		preHandler: [AuthMiddleware.verifyOwnership],
-		schema: UserSchemas.updatePasswordInternalSchema,
-		handler: controller.updatePassword.bind(controller)
-	}); */ // Redundante
-
 	app.put('/users/:id', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.UpdateUserSchema,
