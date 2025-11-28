@@ -26,8 +26,8 @@
 		{ "path": "./packages/user" },
 		{ "path": "./packages/frontend" },
 		{ "path": "./packages/shared" },
-		{ "path": "./packages/auth" }
-
+		{ "path": "./packages/auth" },
+		{ "path": "./packages/game" }
 	],
 	"files": []
 }
