@@ -1,3 +1,6 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+/*base: Carga los estilos basicos de Tailwind, esto incluye CSS reset y html. HAce que la webs se vea consistente
+  components: Craga los componentes y clases de Tailwind. Sirve para definir componentes usando @layer components
+  utilities: Carga las clases utility*/

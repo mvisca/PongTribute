@@ -11,3 +11,6 @@ export function setupApp() {
   app.appendChild(login);
 }
 
+//Este archivo crea las pantallas que luego se ven en el navegador
+//Este archivo inicializa la app: Encuentra el container principal, lo vacia y crea la primera paguina
+//(en este caso login) e inserta esa paguina en la pantalla

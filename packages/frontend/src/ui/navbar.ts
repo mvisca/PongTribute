@@ -1,5 +1,5 @@
 export function createNavbar(): HTMLElement 
-git{
+{
   const nav = document.createElement("nav");
 
   nav.className = `
@@ -29,3 +29,6 @@ git{
 
   return nav;
 }
+
+//crea un componente de barra de navegación (navbar) que puedes reutilizar en diferentes 
+// partes de tu aplicación.
