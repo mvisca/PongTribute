@@ -1,6 +1,4 @@
 import { SharedEnv } from '@transcendence/shared';
-import dotenv from 'dotenv';
-dotenv.config();
 
 // =====================================================
 // TIPOS

@@ -1,6 +1,4 @@
 import { SharedEnv } from '@transcendence/shared';
-import dotenv from 'dotenv';
-dotenv.config();
 
 // =====================================================
 // TIPOS
@@ -50,22 +48,24 @@ export namespace UserEnv {
 	const serviceSecret = sharedEnv.SERVICE_SECRET;
 	const userServiceUrl = sharedEnv.USER_SERVICE_URL;
 	const authServiceUrl = sharedEnv.AUTH_SERVICE_URL;
+	const bcryptRounds = sharedEnv.BCRYPT_ROUNDS;
 	
-	if (!jwtSecret || !serviceSecret || !userServiceUrl || !authServiceUrl) {
+	if (!jwtSecret || !serviceSecret || !userServiceUrl || !authServiceUrl || !bcryptRounds) {
 		console.error('Faltan ENV VARS. Crea un .env de .env.example:');
 		console.error('@/transcendence: cp .env.example .env');
 		console.error('Edita con tus valores');
 		process.exit(1);
 	}
 
-	export const PORT: number = sharedEnv.USER_SERVICE_PORT || 3001;
-	export const HOST: string = sharedEnv.USER_SERVICE_HOST || 'localhost';
-	export const NODE_ENV: string = sharedEnv.NODE_ENV || 'development';
-	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL || 'info';
-	export const DB_PATH: string = sharedEnv.DB_PATH || '../../db-data/user.db';
-
+	export const PORT: number = sharedEnv.USER_SERVICE_PORT;
+	export const HOST: string = sharedEnv.USER_SERVICE_HOST;
+	export const NODE_ENV: string = sharedEnv.NODE_ENV;
+	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
+	export const DB_PATH: string = sharedEnv.DB_PATH;
+	
 	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
 	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
+	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS; 
 
 	// =====================================================
 	// EXPORTS PÚBLICOS - OBJETOS

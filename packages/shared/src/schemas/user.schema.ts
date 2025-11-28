@@ -33,6 +33,9 @@ export namespace UserSchemas {
 	* Valida datos de creacion de usuario
 	*/
 	export const CreateUserBody = Type.Object({
+		id: Type.String({
+			format: 'uuid'
+		}),
 		username: Type.String({
 			minLength: 3,
 			maxLength: 20,
@@ -51,7 +54,10 @@ export namespace UserSchemas {
 		}),
 		avatar: Type.String({
 			description: 'URL del avatar del usuario'
-		})
+		}),
+		isOnline: Type.Boolean(),
+		isDeleted: Type.Boolean(),
+		has2FAEnabled: Type.Boolean()
 	});
 	
 	// ============================================================================
@@ -79,6 +85,9 @@ export namespace UserSchemas {
 		}),
 		isDeleted: Type.Boolean({
 			description: 'Indica que usario ha sido anonimizado'
+		}),
+		has2FAEnabled: Type.Boolean({
+			description: 'Indica preferencia de 2FA del usuario'
 		}),
 		createdAt: Type.String({
 			format: 'date-time',

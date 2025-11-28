@@ -1,71 +1,114 @@
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 // ==================================================
-// DEFAULTS
+// CARGAR .ENV DESDE RAÍZ
+// ==================================================
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function findEnvFile(startPath: string): string | null {
+	let currentPath = startPath;
+	
+	while (currentPath !== path.parse(currentPath).root) {
+		const envPath = path.join(currentPath, '.env');
+		if (fs.existsSync(envPath)) {
+			return envPath;
+		}
+		currentPath = path.dirname(currentPath);
+	}
+	
+	return null;
+}
+
+const envPath = findEnvFile(__dirname);
+if (envPath) {
+	dotenv.config({ path: envPath });
+} else {
+	dotenv.config();
+}
+
+// ==================================================
+// DEFAULTS (Solo para development)
 // ==================================================
 
 const DEFAULTS = {
-	// Auth Service
 	AUTH_SERVICE_URL: 'http://localhost:3002',
 	AUTH_SERVICE_PORT: 3002,
 	AUTH_SERVICE_HOST: 'localhost',
-	JWT_SECRET: 'default_super_secret_key_here',
+	JWT_SECRET: 'default_super_secret_key_CHANGE_THIS',
 	TOKEN_EXPIRY: '1h',
 	REFRESH_TOKEN_EXPIRY: '365d',
+	BCRYPT_ROUNDS: 10,
 	
-	// User Servicenpx tsc --noEmit src/config/sharedEnv.ts
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
 	USER_SERVICE_HOST: 'localhost',
 	
-	// Frontend
 	FRONTEND_URL: 'http://localhost:5173',
 	FRONTEND_PORT: 5173,
 	FRONTEND_HOST: 'localhost',
 	
-	// Global
-	NODE_ENV: 'development',
+	NODE_ENV: 'test',
 	DB_PATH: '../../db-data/',
-	LOG_LEVEL: 'fatal',
-
-	// Inter-Service Communication
-	SERVICE_SECRET: 'default_shared_secret_between_services',
+	LOG_LEVEL: 'info',
 	
-	// Testing
-	TEST_MODE: "default_values",
+	SERVICE_SECRET: 'default_shared_secret_CHANGE_THIS',
+	
+	TEST_MODE: 'default_values',
 } as const;
 
-// =====================================================
-// VALIDACIÓN (PRIVADO)
-// =====================================================
+// ==================================================
+// VALIDACIÓN
+// ==================================================
 
-// TODO implementar uso de validadores
-
-function validatePort(port: number): void {
-	if (!port || port < 1024 || port > 65535) {
+function validatePort(port: number | undefined, context: string): void {
+	if (!port || isNaN(port) || port < 1024 || port > 65535) {
 		throw new Error(
-			`Puerto inválido: ${port}. Debe estar entre 1024-65535`
+			`❌ Puerto inválido o faltante: ${context}=${port}. Debe estar entre 1024-65535`
 		);
 	}
 }
 
-function validateNodeEnv(env: string): void {
+function validateNodeEnv(env: string | undefined): void {
 	const validEnvs = ['development', 'production', 'test'];
-	if (!validEnvs.includes(env)) {
+	if (!env || !validEnvs.includes(env)) {
 		throw new Error(
-			`NODE_ENV inválido: ${env}. Debe ser: ${validEnvs.join(', ')}`
+			`❌ NODE_ENV inválido o faltante: ${env}. Debe ser: ${validEnvs.join(', ')}`
 		);
 	}
 }
 
-function validateSecrets(): void {
-	const required = ['SERVICE_SECRET'];
-	const missing = required.filter(key => !process.env[key]);
+function validateRequired(value: string | undefined, name: string): void {
+	if (!value) {
+		throw new Error(`❌ Variable requerida faltante: ${name}`);
+	}
+}
 
-	if (missing.length > 0) {
-		console.error(`❌ MISSING ENV VARS: ${missing.join(', ')}`);
-		console.error('   Create .env from .env.example: cp .env.example .env');
+function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
+	const issues: string[] = [];
+	
+	Object.entries(secrets).forEach(([key, value]) => {
+		if (!value) {
+			issues.push(`${key} no está definido`);
+			return;
+		}
+		
+		if (isProduction) {
+			const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
+			if (value === defaultValue) {
+				issues.push(`${key} usa valor default (INSEGURO en producción)`);
+			}
+		}
+	});
+	
+	if (issues.length > 0) {
+		console.error('❌ ERRORES DE CONFIGURACIÓN:');
+		issues.forEach(issue => console.error(`   - ${issue}`));
+		console.error('\n💡 Solución: cp .env.example .env');
 		process.exit(1);
 	}
 }
@@ -77,54 +120,77 @@ function validateSecrets(): void {
 export namespace SharedEnv {
 	
 	export function build() {
-		return {
-			// ==================================================
-			// AUTH SERVICEn = sh
-			// ==================================================
-			AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL || DEFAULTS.AUTH_SERVICE_URL,
-			AUTH_SERVICE_PORT: Number(process.env.AUTH_SERVICE_PORT) || DEFAULTS.AUTH_SERVICE_PORT,
-			AUTH_SERVICE_HOST: process.env.AUTH_SERVICE_HOST || DEFAULTS.AUTH_SERVICE_HOST,
-			JWT_SECRET: process.env.JWT_SECRET || DEFAULTS.JWT_SECRET,
-			TOKEN_EXPIRY: process.env.TOKEN_EXPIRY || DEFAULTS.TOKEN_EXPIRY,
-			REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY || DEFAULTS.REFRESH_TOKEN_EXPIRY,
-
-			// ==================================================
+		const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+		const isProduction = process.env.NODE_ENV === 'production';
+		
+		// Helper: usar default solo en development
+		const envOr = <T>(envValue: string | undefined, defaultValue: T, parser?: (v: string) => T): T => {
+			if (envValue) {
+				return parser ? parser(envValue) : (envValue as unknown as T);
+			}
+			return isDevelopment ? defaultValue : (undefined as T);
+		};
+		
+		const config = {
+			// AUTH SERVICE
+			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL),
+			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT, Number),
+			AUTH_SERVICE_HOST: envOr(process.env.AUTH_SERVICE_HOST, DEFAULTS.AUTH_SERVICE_HOST),
+			JWT_SECRET: envOr(process.env.JWT_SECRET, DEFAULTS.JWT_SECRET),
+			TOKEN_EXPIRY: envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY),
+			REFRESH_TOKEN_EXPIRY: envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY),
+			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, Number),
+			
 			// USER SERVICE
-			// ==================================================
-			USER_SERVICE_URL: process.env.USER_SERVICE_URL || DEFAULTS.USER_SERVICE_URL,
-			USER_SERVICE_PORT: Number(process.env.USER_SERVICE_PORT) || DEFAULTS.USER_SERVICE_PORT,
-			USER_SERVICE_HOST: process.env.USER_SERVICE_HOST || DEFAULTS.USER_SERVICE_HOST,
+			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL),
+			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT, Number),
+			USER_SERVICE_HOST: envOr(process.env.USER_SERVICE_HOST, DEFAULTS.USER_SERVICE_HOST),
 			
-			// ==================================================
 			// FRONTEND
-			// ==================================================
-			FRONTEND_URL: process.env.FRONTEND_URL || DEFAULTS.FRONTEND_URL,
-			FRONTEND_PORT: Number(process.env.FRONTEND_PORT) || DEFAULTS.FRONTEND_PORT,
-			FRONTEND_HOST: process.env.FRONTEND_HOST || DEFAULTS.FRONTEND_HOST,
+			FRONTEND_URL: envOr(process.env.FRONTEND_URL, DEFAULTS.FRONTEND_URL),
+			FRONTEND_PORT: envOr(process.env.FRONTEND_PORT, DEFAULTS.FRONTEND_PORT, Number),
+			FRONTEND_HOST: envOr(process.env.FRONTEND_HOST, DEFAULTS.FRONTEND_HOST),
 			
-			// ==================================================
 			// GLOBAL
-			// ==================================================
-			NODE_ENV: process.env.NODE_ENV || DEFAULTS.NODE_ENV,
-			DB_PATH: process.env.DB_PATH || DEFAULTS.DB_PATH,
-			LOG_LEVEL: process.env.LOG_LEVEL || DEFAULTS.LOG_LEVEL,
-
-			// ==================================================
-			// INTER-SERVICE COMMUNICATION
-			// ==================================================
-			SERVICE_SECRET: process.env.SERVICE_SECRET || DEFAULTS.SERVICE_SECRET,
-
-			// ==================================================
-			// TESTING
-			// ==================================================
-			TEST_MODE: process.env.TEST_MODE || DEFAULTS.TEST_MODE
+			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV),
+			DB_PATH: envOr(process.env.DB_PATH, DEFAULTS.DB_PATH),
+			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL),
 			
-		} as const;
+			// INTER-SERVICE COMMUNICATION
+			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET),
+			
+			// TESTING
+			TEST_MODE: envOr(process.env.TEST_MODE, DEFAULTS.TEST_MODE),
+		};
+		
+		// ==================================================
+		// VALIDACIONES
+		// ==================================================
+		
+		// NODE_ENV (siempre requerido)
+		validateNodeEnv(config.NODE_ENV);
+		
+		// Puertos (siempre requeridos)
+		validatePort(config.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT');
+		validatePort(config.USER_SERVICE_PORT, 'USER_SERVICE_PORT');
+		validatePort(config.FRONTEND_PORT, 'FRONTEND_PORT');
+		
+		// DB_PATH (siempre requerido)
+		validateRequired(config.DB_PATH, 'DB_PATH');
+		
+		// Secrets (requeridos + no defaults en producción)
+		validateSecrets({
+			JWT_SECRET: config.JWT_SECRET,
+			SERVICE_SECRET: config.SERVICE_SECRET,
+		}, isProduction);
+		
+		// URLs de servicios (requeridas)
+		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
+		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
+		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
+		
+		return config;
 	}
-	
-	// ==================================================
-	// TYPES
-	// ==================================================
 	
 	export type Config = ReturnType<typeof build>;
 }

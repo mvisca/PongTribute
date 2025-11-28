@@ -24,7 +24,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	* - Normalizar datos\
 	* - Almacenar
 	*/
-	async create(data: UserTypes.CreateUserBody & { id: string }): Promise<UserTypes.UserPublic> {
+	async create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic> {
 		const now = new Date().toISOString();
 		
 		const newUser: UserTypes.UserInternal = {
@@ -115,7 +115,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
 		`).run(newPasswordHash, Date.now(), id);
 
-		const updated = await this.findByEmail(id);
+		const updated = await this.findById(id);
 
 		if (!updated)
 			throw new Error(`No se ha podido recuperar usuario: ${id}`)
