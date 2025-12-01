@@ -94,6 +94,7 @@
 // 	player_position: string;
 // 	score: number;
 // }
+//================================================
 
 import { Static } from '@sinclair/typebox';
 import { MatchSchemas } from '../schemas/match.schema.js';
@@ -110,7 +111,8 @@ export namespace MatchTypes {
 
     // 2. Tipos de Base de Datos (SQLite)
     // Usamos Snake_Case porque así es SQL.
-    // Estructura "Desnormalizada": Guardamos scores en la misma fila para evitar JOINs constantes.
+    // Estructura "Desnormalizada": Guardamos scores en 
+	// la misma fila para evitar JOINs constantes.
     export interface MatchRow {
         id: string;
         status: string;         // 'pending' | 'active' | 'finished'
