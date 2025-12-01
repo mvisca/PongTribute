@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   is_online INTEGER DEFAULT 0,
   is_deleted INTEGER DEFAULT 0,
   has_2fa_enabled INTEGER DEFAULT 0,
+  totp_secret TEXT DEFAULT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

@@ -24,6 +24,7 @@ export class UserMapper {
 			isOnline: row.is_online === 1,
 			isDeleted: row.is_deleted === 1,
 			has2FAEnabled: row.has_2fa_enabled === 1,
+			totpSecret: row.totp_secret,
 			createdAt: new Date(row.created_at).toISOString(),
 			updatedAt: new Date(row.updated_at).toISOString()
 		};
@@ -55,11 +56,12 @@ export class UserMapper {
 			id: user.id,
 			username: user.username,
 			email: user.email,
-			password_hash: user.passwordHash,
 			avatar: user.avatar,
+			password_hash: user.passwordHash,
 			is_online: user.isOnline ? 1 : 0,
 			is_deleted: user.isDeleted ? 1 : 0,
 			has_2fa_enabled: user.has2FAEnabled ? 1 : 0,
+			totp_secret: user.totpSecret,
 			created_at: new Date(user.createdAt).getTime(),
 			updated_at: new Date(user.updatedAt).getTime()
 		};

@@ -1,5 +1,4 @@
 import { Type } from '@sinclair/typebox';
-import { deserialize } from 'v8';
 
 export namespace AuthSchemas {
 	
@@ -36,6 +35,46 @@ export namespace AuthSchemas {
 	export const LoginBodySchema = {
 		body: LoginBody,
 		response: {
+			200: Type.Union([
+					Type.Object({
+						token: Type.String(),
+						user: UserPayloadSchema
+					}),
+					Type.Object({
+						twoFactorRequired: Type.Literal(true),
+						userId: Type.String(),
+						provisionalToken: Type.String({
+							minLength: 20,
+							maxLength: 500,
+							pattern: "^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$"
+						}),
+						expiresIn: Type.Number(),
+						qr: Type.Optional(Type.String()) // Solo en primer uso
+					})
+			]),
+			401: Type.Object({
+				error: Type.String(),
+				message: Type.String()
+			})
+		}	
+	};
+
+	// ========================================================================
+	// 2FA Due Body y Schema / Body y Schema 
+	// ========================================================================
+
+	/** Body con el token temporal y el código totp */
+	export const Verify2FABody = Type.Object({
+		provisionalToken: Type.String(),
+		totpCode: Type.String({
+			minLength: 6,
+			maxLength: 6
+		})
+	});
+
+	export const Verify2FABodySchema = {
+		body: Verify2FABody,
+		response: {
 			200: Type.Object({
 				token: Type.String(),
 				user: UserPayloadSchema
@@ -44,9 +83,34 @@ export namespace AuthSchemas {
 				error: Type.String(),
 				message: Type.String()
 			})
-		}	
-	};
-	
+		}
+	}
+
+	// ========================================================================
+	// LOGIN - Response Body y Schema
+	// ========================================================================
+
+	// Body para respuesta existosa de login w/2fa
+	export const AuthSuccessResponseBody = Type.Object({
+		token: Type.String(),
+		refreshToken: Type.String(),
+		user: UserPayloadSchema
+	});
+
+	/** Body para respuesta de 2FA requerido */
+	export const TwoFactorRequiredResponseBody = Type.Object({
+		twoFactorRequired: Type.Literal(true),
+		userId: Type.String(),
+		provisionalToken: Type.String(),
+		expiresIn: Type.Number()
+	});
+
+	/** Body union para login response */
+	export const LoginResponseSchema = Type.Union([
+		TwoFactorRequiredResponseBody,
+		AuthSuccessResponseBody
+	]);
+
 	// ========================================================================
 	// UPDATE PASSWORD - Body y Schema
 	// ========================================================================

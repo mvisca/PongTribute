@@ -3,8 +3,10 @@ import * as Normalizers from './normalizers.js';
 import * as Generators from './uuidGenerator.js';
 
 // Re-exportar plano para retrocompatibilidad
-export const UserNormalizer = Normalizers.UserNormalizer;
-export const generateUserId = Generators.userId;
-export const generateTokenId = Generators.tokenId;
-export const generateMatchId = Generators.matchId;
-export const generateEventId = Generators.eventId;
+export const Utils = { 	
+	UserNormalizer: Normalizers.UserNormalizer,
+	generateUserId: Generators.userId,
+	generateTokenId: Generators.tokenId,
+	generateMatchId: Generators.matchId,
+	generateEventId: Generators.eventId
+}

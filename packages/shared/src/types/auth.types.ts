@@ -17,9 +17,18 @@ export namespace AuthTypes {
 	/** Body que envía el cliente al login */
 	export type LoginBody = Static<typeof AuthSchemas.LoginBody>;
 	
-	/** Respuesta del servidor al login exitoso */
-	export type LoginResponse = Static<typeof AuthSchemas.LoginBodySchema.response[200]>;
+	/** Respuesta exitosa de login (con refreshToken) */
+	export type AuthSuccessResponse = Static<typeof AuthSchemas.AuthSuccessResponseBody>;
 	
+	/** Respuesta cuando se requiere 2FA */
+	export type TwoFactorRequiredResponse = Static<typeof AuthSchemas.TwoFactorRequiredResponseBody>;
+	
+	/** Respuesta del servidor al login (unión de los dos) */
+	export type LoginResponse = Static<typeof AuthSchemas.LoginResponseSchema>;
+	
+	/** Body que envía cliente al proceso de login 2FA */
+	export type Verify2FABody = Static<typeof AuthSchemas.Verify2FABody>;
+
 	// ========================================================================
 	// UPDATE PASSWORD
 	// ========================================================================
@@ -38,13 +47,13 @@ export namespace AuthTypes {
 	export type RefreshTokenResponse = Static<typeof AuthSchemas.RefreshTokenResponse>;
 	
 	// ========================================================================
-	// REFRESH TOKEN - INTERNOS
+	// REFRESH TOKEN - INTERNOS (Auth -> User)
 	// ========================================================================
 	
 	/** Body para crear refresh token en user service */
 	export type RefreshTokenDataBody = Static<typeof AuthSchemas.RefreshTokenDataBody>;
 	
-	/** Respons al crear o verificar token */
+	/** Response al crear o verificar token */
 	export type RefreshTokenResponseBody = Static<typeof AuthSchemas.RefreshTokenResponseBody>;
 	
 	/** Body para verificar token por hash */
@@ -68,6 +77,15 @@ export namespace AuthTypes {
 		userId: string;
 		tokenId: string;
 		is2FAVerified: boolean;
+		iat: number;
+		exp: number;
+	}
+	
+	/** Payload dentro del JWT access (con claim de 2FA) */
+	export interface AccessTokenPayload extends UserPayload {
+		is2FAVerified: boolean;
+		iat: number;
+		exp: number;
 	}
 	
 	// ========================================================================

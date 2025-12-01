@@ -64,6 +64,7 @@ export namespace AuthEnv {
 	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 	export const TOKEN_EXPIRY: string = sharedEnv.TOKEN_EXPIRY;
 	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+	export const UNIQUE_SESSION: number = sharedEnv.UNIQUE_SESSION;
 	export const USER_SERVICE_URL: string = sharedEnv.USER_SERVICE_URL;
 	export const AUTH_SERVICE_URL: string = sharedEnv.AUTH_SERVICE_URL;
 	

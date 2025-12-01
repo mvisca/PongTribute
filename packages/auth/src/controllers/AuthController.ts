@@ -9,10 +9,11 @@ export class AuthController {
 		this.authService = new AuthService();
 	}
 
-	async login(
-		request: FastifyRequest,
-		reply: FastifyReply
-	): Promise<void> {
+	// ============================================================================
+	// LOGIN PROCESS W/2FA
+	// ============================================================================
+
+	async login(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		const { email, password } = request.body as AuthTypes.LoginBody;
 
 		const result = await this.authService.login(email, password);
@@ -27,10 +28,35 @@ export class AuthController {
 		return reply.code(200).send(result);
 	}
 
-	async updatePassword(
-		request: FastifyRequest,
-		reply: FastifyReply
-	): Promise<void> {
+	async logout(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { id } = request.params as { id: string };
+			await this.authService.logout(id);
+			return reply.code(204).send();
+		} catch(err) {
+			// TODO implementar handle error con los errot classes centralizados
+		}
+	}
+
+	// ============================================================================
+	// LOGIN PROCESS W/2FA
+	// ============================================================================
+
+	async verify2FAWithToken(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { provisionalToken, totpCode } = request.body as AuthTypes.Verify2FABody;
+			const result = await this.authService.verify2FAWithToken(provisionalToken, totpCode);
+			return reply.code(200).send(result);
+		} catch(err) {
+			console.log('error handler here');
+		}
+	}
+
+	// ============================================================================
+	// UPDATE PASSWORD
+	// ============================================================================
+
+	async updatePassword(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 
 		try {
 			const userId = request.user!.id;

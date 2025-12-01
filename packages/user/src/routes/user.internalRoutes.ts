@@ -7,14 +7,35 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 
 	app.addHook('preHandler', validateServiceSecret);
 
+	// ============================================================================
+	// GETTERS
+	// ============================================================================
+
+	// Obtener usuario por email (interno)
 	app.get('/users/by-email/:email',
 		controller.getInternalUserByEmail.bind(controller)
 	);
 
+	// Obtener usuario por ID (interno)
 	app.get('/users/by-id/:id',
 		controller.getInternalUserById.bind(controller)
 	);
 
+	// ============================================================================
+	// SETTERS
+	// ============================================================================
+
+	// Actualizar el estado online del usuario (interno)
+	app.patch('/users/:id/online-status', {
+		schema: UserSchemas.setOnlineStatusSchema,
+		handler: controller.setOnlineStatus.bind(controller)
+	})
+
+	// ============================================================================
+	// UPDATE PASSWORD
+	// ============================================================================
+
+	// Actualizar contraseña de usuario (interno)
 	app.put('/users/:id/password', {
 		schema: UserSchemas.updatePasswordInternalSchema,
 		handler: controller.updatePassword.bind(controller)

@@ -2,9 +2,7 @@ import { AuthTypes } from "@transcendence/shared";
 
 export class TokenMapper {
 
-	static rowToDomain(
-		row: AuthTypes.RefreshTokenRow
-	): AuthTypes.RefreshTokenRecord {
+	static rowToDomain(row: AuthTypes.RefreshTokenRow): AuthTypes.RefreshTokenRecord {
 		return {
 			id: row.id,
 			userId: row.user_id,
@@ -15,9 +13,7 @@ export class TokenMapper {
 		};
 	}
 
-	static domainToRow(
-		token: AuthTypes.RefreshTokenRecord
-	): AuthTypes.RefreshTokenRow {
+	static domainToRow(token: AuthTypes.RefreshTokenRecord): AuthTypes.RefreshTokenRow {
 		return {
 			id: token.id,
 			user_id: token.userId,

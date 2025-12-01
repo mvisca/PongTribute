@@ -11,12 +11,7 @@ export const publicRoutes: FastifyPluginAsync = async (app) => {
 	// POST CREATE
 	// ============================================================================
 
-	/**
-	* POST /users
-	* Crear nuevo usuario
-	* Body: { username, email, passwordHash, avatar? }
-	* Response: 201 con User | 409 si duplicado
-	*/
+	// Crear nuevo usuario
 	app.post('/users', {
 		schema: UserSchemas.createUserSchema,
 		handler: controller.createUser.bind(controller)
@@ -25,12 +20,14 @@ export const publicRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 	// GET CHECKS
 	// ============================================================================
-	
+
+	// Verificar disponibilidad de nombre de usuario
 	app.get('/users/check-username/:username', {
 		schema: UserSchemas.checkUsernameSchema,
 		handler: controller.checkUsername.bind(controller)
 	});
-	
+
+	// Verificar disponibilidad de email
 	app.get('/users/check-email/:email', {
 		schema: UserSchemas.checkEmailSchema,
 		handler: controller.checkEmail.bind(controller)

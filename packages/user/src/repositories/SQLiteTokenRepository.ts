@@ -1,4 +1,4 @@
-import { AuthTypes, UserTypes, Utils } from "@transcendence/shared";
+import { AuthTypes, SharedErrors, UserTypes, Utils } from "@transcendence/shared";
 import { getDatabase, TokenMapper } from "../index.js"
 import { ITokenRepository } from "./ITokenRepository.js";
 
@@ -37,18 +37,19 @@ export class SQLiteTokenRepository implements ITokenRepository{
 		return fullData;
 	}
 
-	async findByTokenHash(tokenHash: AuthTypes.VerifyRefreshTokenBody): Promise<AuthTypes.RefreshTokenRecord | null> {
+	async findByTokenHash(tokenHash: string): Promise<AuthTypes.RefreshTokenRecord> {
 
 		const row = this.db.prepare(`
 			SELECT * FROM refresh_tokens WHERE token_hash = ?
 		`).get(tokenHash) as AuthTypes.RefreshTokenRow | undefined;
 
-		if (!row || row.expires_at < Date.now()) return null;
+		if (!row || row.expires_at < Date.now())
+			throw new SharedErrors.UnauthorizedError('Token inválido');
 
 		return TokenMapper.rowToDomain(row);
 	}
 
-	async deleteByUserId(userId: AuthTypes.DeleteRefreshTokenByUserParams): Promise<void> {
+	async deleteByUserId(userId: string): Promise<void> {
 		const deleted = this.db.prepare(`
 			DELETE FROM refresh_tokens WHERE user_id = ?
 		`).run(userId);

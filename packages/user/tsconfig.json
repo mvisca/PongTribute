@@ -33,7 +33,7 @@
 		}
 	},
 
-	"include": ["src/**/*"],
+	"include": ["src/**/*", "../shared/src/errors"],
 	
 	"exclude": [
 		"node_modules",

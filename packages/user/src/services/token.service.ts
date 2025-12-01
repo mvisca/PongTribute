@@ -1,4 +1,4 @@
-import { AuthTypes } from "@transcendence/shared";
+import { AuthTypes, SharedErrors } from "@transcendence/shared";
 import { ITokenRepository } from "src/repositories/ITokenRepository.js";
 import { SQLiteTokenRepository } from "src/repositories/SQLiteTokenRepository.js";
 
@@ -16,14 +16,18 @@ export class TokenService {
 		return await this.tokenRepo.createToken(data);
 	}
 
-	async verifyToken(tokenHash: AuthTypes.VerifyRefreshTokenBody): Promise<AuthTypes.RefreshTokenResponseBody | null> {
-		const token = await this.tokenRepo.findByTokenHash(tokenHash);
+	async verifyToken(tokenHashObj: AuthTypes.VerifyRefreshTokenBody): Promise<AuthTypes.RefreshTokenRecord> {
+		const token = await this.tokenRepo.findByTokenHash(tokenHashObj.tokenHash);
 
-		return token ? token : null;
+		if (!token) {
+			throw new SharedErrors.UnauthorizedError('No autorizado');
+		}
+
+		return token;
 	}
 
-	async deleteUserTokens(userId: AuthTypes.DeleteRefreshTokenByUserParams): Promise<void> {
-		await this.tokenRepo.deleteByUserId(userId);
+	async deleteUserTokens(userIdObj: AuthTypes.DeleteRefreshTokenByUserParams): Promise<void> {
+		await this.tokenRepo.deleteByUserId(userIdObj.id);
 	}
 
 	async cleanExpired(): Promise<void> {

@@ -31,20 +31,22 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			passwordHash: data.passwordHash,
 			avatar: data.avatar ?? UserConstants.DEFAULT_AVATAR, // TODO asume front sirve /public/avatars/default.png
+			passwordHash: data.passwordHash,
 			isOnline: false,
 			isDeleted: false,
 			has2FAEnabled: false,
+			totpSecret: undefined,
 			createdAt: now,
 			updatedAt: now
 		};
 		
 		const row = UserMapper.internalToRow(newUser);
 		
+		// omite 'has2FAEnabled' & 'totpSecret' campos para que se use el valor default de la tabla
 		this.db.prepare(`
-			INSERT INTO users (id, username, email, password_hash, avatar, is_online, is_deleted, has_2fa_enabled, created_at, updated_at)
-			VALUES (@id, @username, LOWER(@email), @password_hash, @avatar, @is_online, @is_deleted, @has_2fa_enabled, @created_at, @updated_at)
+			INSERT INTO users (id, username, email, password_hash, avatar, is_online, is_deleted, created_at, updated_at)
+			VALUES (@id, @username, LOWER(@email), @password_hash, @avatar, @is_online, @is_deleted, @created_at, @updated_at)
 		`).run(row);
 			
 		const created = await this.findById(row.id);

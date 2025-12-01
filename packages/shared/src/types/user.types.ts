@@ -10,11 +10,12 @@ export namespace UserTypes {
 		id: string;
 		username: string;
 		email: string;
-		password_hash: string;
 		avatar: string;
+		password_hash: string;
 		is_online: number;
 		is_deleted: number;
 		has_2fa_enabled: number;
+		totp_secret: string;
 		created_at: number;
 		updated_at: number;
 	}

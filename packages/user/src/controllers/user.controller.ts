@@ -1,7 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { UserTypes } from '@transcendence/shared';
+import { UserTypes, SharedErrors } from '@transcendence/shared';
 import { UserService } from '../index.js';
-import { ConflictError, NotFoundError, ValidationError } from '../index.js';
 
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
@@ -12,17 +11,17 @@ export class UserController {
 	}
 	
 	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
-		if (err instanceof NotFoundError) {
+		if (err instanceof SharedErrors.NotFoundError) {
 			reply.code(404).send({error: 'Not Found', message: err.message, resource:err.resource});
 			return;
 		}
 		
-		if (err instanceof ConflictError) {
+		if (err instanceof SharedErrors.ConflictError) {
 			reply.code(409).send({error: 'Conflict', message: err.message, field: err.field});
 			return;
 		}
 		
-		if (err instanceof ValidationError) {
+		if (err instanceof SharedErrors.ValidationError) {
 			reply.code(403).send({error: 'Forbidden', message: err.message, field: err.field});
 			return;
 		}
@@ -58,6 +57,18 @@ export class UserController {
 			const { id } = request.params as { id: string };
 			const data = request.body as UserTypes.UpdatePasswordInternalBody;
 			await this.userService.updatePassword(id, data.newPasswordHash);
+			return reply.code(204).send();
+		} catch (err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
+	async setOnlineStatus(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { id } = request.params as { id: string };
+			const { isOnline } = request.body as { isOnline: boolean };
+
+			await this.userService.updateOnlineStatus(id, isOnline);
 			return reply.code(204).send();
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
