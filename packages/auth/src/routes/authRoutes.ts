@@ -19,7 +19,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
 	// Verifica tokens de 2FA
 	app.post('/auth/verify-2fa', {
-		schema: AuthSchemas.Verify2FABody,
+		schema: AuthSchemas.Verify2FABodySchema,
 		handler: controller.verify2FAWithToken.bind(controller)
 	});
 

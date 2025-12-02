@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { AuthTypes, UserTypes } from "@transcendence/shared";
+import { AuthTypes, SharedErrors, UserTypes } from "@transcendence/shared";
 import { AuthService } from "../index.js";
 
 export class AuthController {
@@ -7,6 +7,27 @@ export class AuthController {
 
 	constructor() {
 		this.authService = new AuthService();
+	}
+
+		private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
+		if (err instanceof SharedErrors.NotFoundError) {
+			reply.code(404).send({error: 'Not Found', message: err.message, resource:err.resource});
+			return;
+		}
+		
+		if (err instanceof SharedErrors.ConflictError) {
+			reply.code(409).send({error: 'Conflict', message: err.message, field: err.field});
+			return;
+		}
+		
+		if (err instanceof SharedErrors.ValidationError) {
+			reply.code(403).send({error: 'Forbidden', message: err.message, field: err.field});
+			return;
+		}
+		
+		request.log.error(err);
+		const message = err instanceof Error ? err.message : 'Unknown Error';
+		reply.code(500).send({error: 'Internal Server Error', message});
 	}
 
 	// ============================================================================
@@ -48,7 +69,11 @@ export class AuthController {
 			const result = await this.authService.verify2FAWithToken(provisionalToken, totpCode);
 			return reply.code(200).send(result);
 		} catch(err) {
-			console.log('error handler here');
+			if (err instanceof SharedErrors.UnauthorizedError) {
+				return reply.code(401).send({
+					error: 'Unauthorized'
+				});
+			}
 		}
 	}
 

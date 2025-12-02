@@ -30,7 +30,10 @@ export class UserController {
 		const message = err instanceof Error ? err.message : 'Unknown Error';
 		reply.code(500).send({error: 'Internal Server Error', message});
 	}
-	
+
+	// ========================================================================
+	// CREATE USER
+	// ========================================================================
 	async createUser(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
 			const data = request.body as UserTypes.CreateUserInput;
@@ -40,7 +43,11 @@ export class UserController {
 			return this.errorHandler(err, request, reply);
 		}
 	}
-	
+
+	// ========================================================================
+	// DELETE USER
+	// ========================================================================
+
 	async updateUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { id } = request.params as { id: string };
@@ -51,7 +58,11 @@ export class UserController {
 			return this.errorHandler(err, request, reply);
 		}
 	}
-	
+
+	// ========================================================================
+	// UPDATE PASSWORD
+	// ========================================================================
+
 	async updatePassword(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
 			const { id } = request.params as { id: string };
@@ -62,6 +73,10 @@ export class UserController {
 			return this.errorHandler(err, request, reply);
 		}
 	}
+
+	// ========================================================================
+	// SET ONLINE STATUS
+	// ========================================================================
 
 	async setOnlineStatus(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
@@ -74,7 +89,11 @@ export class UserController {
 			return this.errorHandler(err, request, reply);
 		}
 	}
-	
+
+	// ========================================================================
+	// ANONYMIZE
+	// ========================================================================
+
 	async anonymizeUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { id } = request.params as { id: string };
@@ -84,7 +103,11 @@ export class UserController {
 			return this.errorHandler(err, request, reply);
 		}
 	}
-	
+
+	// ========================================================================
+	// DELETE USER
+	// ========================================================================
+
 	async deleteUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { id } = request.params as { id: string };
@@ -95,6 +118,10 @@ export class UserController {
 		}
 	}
 	
+	// ========================================================================
+	// GETTERS
+	// ========================================================================
+
 	async getUserById(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { id } = request.params as { id: string };
@@ -125,32 +152,10 @@ export class UserController {
 		}
 	}
 	
-	async checkUsername(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-		try {
-			const { username } = request.params as { username: string };
-			const taken = await this.userService.checkUsername(username);			
-			return reply.code(200).send({
-				available: !taken,
-				username
-			});
-		} catch (err) {
-			return this.errorHandler(err, request, reply);
-		}
-	}
-	
-	async checkEmail(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-		try {
-			const { email } = request.params as { email: string };
-			const taken = await this.userService.checkEmail(email);
-			return reply.code(200).send({
-				available: !taken,
-				email
-			});
-		} catch (err) {
-			return this.errorHandler(err, request, reply);
-		}
-	}
-	
+	// ========================================================================
+	// GETTERS INTERNALS
+	// ========================================================================
+
 	async getInternalUserByEmail(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
 			const { email } = request.params as { email: string };
@@ -166,6 +171,36 @@ export class UserController {
 			const { id } = request.params as { id: string };
 			const user = await this.userService.getInternalUserById(id);
 			return reply.code(200).send(user);
+		} catch (err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
+	// ========================================================================
+	// VALIDADORES
+	// ========================================================================
+
+	async checkUsername(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { username } = request.params as { username: string };
+			const taken = await this.userService.checkUsername(username);			
+			return reply.code(200).send({
+				available: !taken,
+				username
+			});
+		} catch (err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
+	async checkEmail(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { email } = request.params as { email: string };
+			const taken = await this.userService.checkEmail(email);
+			return reply.code(200).send({
+				available: !taken,
+				email
+			});
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}
