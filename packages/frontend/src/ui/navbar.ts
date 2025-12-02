@@ -1,7 +1,7 @@
-export function createNavbar(): HTMLElement 
+export function createNavbar(): HTMLElement //funcion que construye un menú de navegación(no dibuja nada en la pantalla solo construye el elemento)
 {
-  const nav = document.createElement("nav");
-
+  const nav = document.createElement("nav");//crea elemento <nav> en la memoria
+//asigna clases de Tailwind CSS al <nav> para darle estilo
   nav.className = `
     w-full 
     bg-gray-800 
@@ -13,7 +13,7 @@ export function createNavbar(): HTMLElement
     shadow-md 
     border-b border-gray-700
   `;
-
+//agregamos contenido dentro del <nav> usando innerHTML
   nav.innerHTML = `
     <h1 class="text-xl font-bold">Transcendence</h1>
     <button class="
@@ -30,5 +30,6 @@ export function createNavbar(): HTMLElement
   return nav;
 }
 
-//crea un componente de barra de navegación (navbar) que puedes reutilizar en diferentes 
-// partes de tu aplicación.
+//Es un componente visual: HTML + estilos con Tailwind.
+//Devuelve un elemento HTML (HTMLElement) que luego puedes agregar a la página.
+//No hace lógica complicada: solo estructura y estilo.

@@ -1,6 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/* Opcional: puedes añadir configuración así */
+@config {
+  content: ["./index.html", "./src/**/*.{ts,js}"];
+
+  theme: {
+    extend: {},
+  }
+}
+
 /*base: Carga los estilos basicos de Tailwind, esto incluye CSS reset y html. HAce que la webs se vea consistente
   components: Craga los componentes y clases de Tailwind. Sirve para definir componentes usando @layer components
   utilities: Carga las clases utility*/
