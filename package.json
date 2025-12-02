@@ -18,9 +18,9 @@
 		"test": "pnpm -r --no-bail test",
 		"test:user": "pnpm --filter '@transcendence/user' test:user",
 		"test:user-api": "pnpm --filter '@transcendence/user' test:user-api",
-		"test:user-other" : "pnpm --filter '@transcendence/user' test:other",
-		"test:friendship" : "pnpm --filter '@transcendence/friendship' test:friendship",
-		"test:auth" : "pnpm --filter '@transcendence/auth' test:login",
+		"test:user-other": "pnpm --filter '@transcendence/user' test:other",
+		"test:friendship": "pnpm --filter '@transcendence/friendship' test:friendship",
+		"test:auth": "pnpm --filter '@transcendence/auth' test:login",
 		"test:auth-api": "pnpm --filter '@transcendence/auth' test:login-api",
 		"test:auth-e2e": "pnpm --filter '@transcendence/auth' test:jwt-api"
 	},
@@ -29,6 +29,7 @@
 	"license": "ISC",
 	"devDependencies": {
 		"@types/node": "24.7.2",
+		"concurrently": "9.2.1",
 		"typescript": "5.9.3"
 	}
 }
