@@ -10,9 +10,12 @@
 	},
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		"start:dev": "pnpm --parallel --filter '@transcendence/*' start:dev",
-		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
-		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev",
+		"redis": "docker compose up -d",
+		"redis:stop": "docker compose down",
+		"redis:clean": "docker compose down -v",
+		"redis:logs": "docker compose logs -f redis",
+		"redis:cli": "docker exec -it transcendence-redis-1 redis-cli",
+		"redis:flush": "docker exec transcendence-redis-1 redis-cli FLUSHALL",
 		"build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
 		"clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
 		"test": "pnpm -r --no-bail test",
@@ -22,14 +25,21 @@
 		"test:friendship": "pnpm --filter '@transcendence/friendship' test:friendship",
 		"test:auth": "pnpm --filter '@transcendence/auth' test:login",
 		"test:auth-api": "pnpm --filter '@transcendence/auth' test:login-api",
-		"test:auth-e2e": "pnpm --filter '@transcendence/auth' test:jwt-api"
+		"test:auth-e2e": "pnpm --filter '@transcendence/auth' test:jwt-api",
+		"dev": "pnpm redis && sleep 2 & pnpm start:dev",
+		"start:dev": "pnpm --parallel --filter '@transcendence/*' start:dev",
+		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
+		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
+		"@types/ioredis": "5.0.0",
 		"@types/node": "24.7.2",
-		"concurrently": "9.2.1",
 		"typescript": "5.9.3"
+	},
+	"dependencies": {
+		"ioredis": "5.8.2"
 	}
 }
