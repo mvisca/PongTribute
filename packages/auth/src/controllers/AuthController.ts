@@ -51,7 +51,7 @@ export class AuthController {
 
 	async logout(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { id } = request.params as { id: string };
+			const { id } = request.user as AuthTypes.UserPayload;
 			await this.authService.logout(id);
 			return reply.code(204).send();
 		} catch(err) {

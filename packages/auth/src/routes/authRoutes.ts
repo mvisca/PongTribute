@@ -25,7 +25,7 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 
 	// Desautenticar usuario y borrar tokens
 	app.post('/auth/logout', {
-		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
+		preHandler: [AuthMiddleware.validateJWT],
 		handler: controller.logout.bind(controller)
 	});
 
