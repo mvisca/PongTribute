@@ -52,7 +52,7 @@ async function testUserRepository() {
 		};
 
 		// Limpiar si existe
-		const aliceExists = await userRepo.findByUsername(testUser.username);
+		const aliceExists = await userRepo.findUserByUsername(testUser.username);
 		if (aliceExists) {
 			await userRepo.delete(aliceExists.id);
 		}
@@ -62,7 +62,7 @@ async function testUserRepository() {
 	} catch (err) {
 		console.error("❌ Error creando Alice:", err);
 	} finally {
-		if (!alice) alice = await userRepo.findByUsername(TestConstants.TEST_USERS.user1.username);
+		if (!alice) alice = await userRepo.findUserByUsername(TestConstants.TEST_USERS.user1.username);
 		console.log("Recuperada Alice de la base de datos");
 	}
 
@@ -80,11 +80,11 @@ async function testUserRepository() {
 	console.log("#".repeat(40) + "\n");
 
 	console.log("2.1: User existe - Alice");
-	const aliceByEmail = await userRepo.findByEmail(TestConstants.TEST_USERS.user1.email);
+	const aliceByEmail = await userRepo.findUserByEmail(TestConstants.TEST_USERS.user1.email);
 	userExists(aliceByEmail);
 
 	console.log("\n2.2: User NO existe");
-	const notExistByEmail = await userRepo.findByEmail("no-existe@test.com");
+	const notExistByEmail = await userRepo.findUserByEmail("no-existe@test.com");
 	userExists(notExistByEmail);
 
 	// ============================================================================
@@ -95,11 +95,11 @@ async function testUserRepository() {
 	console.log("#".repeat(40) + "\n");
 
 	console.log("3.1: User existe - Alice");
-	const aliceById = await userRepo.findById(alice.id);
+	const aliceById = await userRepo.findUserById(alice.id);
 	userExists(aliceById);
 
 	console.log("\n3.2: User NO existe");
-	const notExistById = await userRepo.findById(Utils.generateUserId());  // ✅ UUID válido
+	const notExistById = await userRepo.findUserById(Utils.generateUserId());  // ✅ UUID válido
 	userExists(notExistById);
 
 	// ============================================================================
@@ -110,11 +110,11 @@ async function testUserRepository() {
 	console.log("#".repeat(40) + "\n");
 
 	console.log("4.1: User existe - Alice");
-	const aliceByUsername = await userRepo.findByUsername(alice.username);
+	const aliceByUsername = await userRepo.findUserByUsername(alice.username);
 	userExists(aliceByUsername);
 
 	console.log("\n4.2: User NO existe");
-	const notExistByUsername = await userRepo.findByUsername("NoExiste");
+	const notExistByUsername = await userRepo.findUserByUsername("NoExiste");
 	userExists(notExistByUsername);
 
 	// ============================================================================
@@ -139,7 +139,7 @@ async function testUserRepository() {
 	await userRepo.setOnlineStatus(aliceByEmail.id, !aliceByEmail.isOnline);
 	console.log("✅ Status online cambiado");
 
-	const updatedAlice = await userRepo.findByEmail(TestConstants.TEST_USERS.user1.email);
+	const updatedAlice = await userRepo.findUserByEmail(TestConstants.TEST_USERS.user1.email);
 	console.log("Password nuevo:", updatedAlice?.passwordHash);
 	console.log("Online nuevo:", updatedAlice?.isOnline);
 
@@ -191,7 +191,7 @@ async function testUserRepository() {
 	
 	pepe = await userRepo.create(createUserData2);
 	await userRepo.setOnlineStatus(pepe?.id as string, true);
-	pepe = await userRepo.findById(pepe?.id as string);
+	pepe = await userRepo.findUserById(pepe?.id as string);
 	console.log("\n✅ User2 creado correctamente:", pepe);
 
 	pepeUsernameTaken = await userRepo.isUsernameTaken(testUser2.username);

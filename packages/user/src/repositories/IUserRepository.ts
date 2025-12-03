@@ -49,22 +49,27 @@ export interface IUserRepository {
 	/**
 	 * Buscar usuario por 'id'
 	 */
-	findById(id: string): Promise<UserTypes.UserPublic | null>;
+	findUserById(id: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
-	 * Buscar usuario por 'id'
+	 * Buscar usuario por 'id' (retorna UserInternal)
 	 */
-	findByIdInternal(id: string): Promise<UserTypes.UserInternal | null>;
+	findUserByIdInternal(id: string): Promise<UserTypes.UserInternal | null>;
 
 	/**
 	 * Buscar usuario por 'username'
 	 */
-	findByUsername(username: string): Promise<UserTypes.UserPublic | null>;
+	findUserByUsername(username: string): Promise<UserTypes.UserPublic | null>;
 
 	/**
-	 * Buscar usuario por 'email' ( CON 'passwordHash' solo para Auth )
+	 * Buscar usuario por 'email' (retorna UserInternal con `passwordHash`)
 	 */
-	findByEmail(email: string): Promise<UserTypes.UserInternal | null>;
+	findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal | null>;
+
+	/**
+	 * Buscar usuario por 'email' (retorna UserInternal con `passwordHash`)
+	 */
+	findUserByEmail(email: string): Promise<UserTypes.UserInternal | null>;
 	
 	/**
 	 * Verficar 'username' disponible

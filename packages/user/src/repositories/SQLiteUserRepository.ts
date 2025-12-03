@@ -49,7 +49,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			VALUES (@id, @username, LOWER(@email), @password_hash, @avatar, @is_online, @is_deleted, @created_at, @updated_at)
 		`).run(row);
 			
-		const created = await this.findById(row.id);
+		const created = await this.findUserById(row.id);
 			
 		if (!created)
 			throw new Error(`No se ha podido recuperar usuario: ${UserMapper.internalToResponse(newUser)}`);
@@ -101,7 +101,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		if (restult.changes === 0)
 			throw new Error(`Usuario ${id} no encontrado`);
 			
-		const updated = await this.findById(id);
+		const updated = await this.findUserById(id);
 				
 		if (!updated)
 			throw new Error(`No se ha podido recuperar usuario: ${id}`);
@@ -117,7 +117,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
 		`).run(newPasswordHash, Date.now(), id);
 
-		const updated = await this.findById(id);
+		const updated = await this.findUserById(id);
 
 		if (!updated)
 			throw new Error(`No se ha podido recuperar usuario: ${id}`)
@@ -149,7 +149,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		if (restult.changes === 0)
 			throw new Error(`No se ha podido modificar el record: ${id}`);
 
-		const anonymized = await this.findById(id);
+		const anonymized = await this.findUserById(id);
 
 		if (!anonymized)
 			throw new Error(`No se ha podido recuperar el usuario: ${id}`);
@@ -160,15 +160,17 @@ export class SQLiteUserRepository implements IUserRepository {
 	/** 
 	* Busca y retorna un usuario por ID (sin password_hash)
 	*/
-	async findById(id: string): Promise<UserTypes.UserPublic | null> {
+	async findUserById(id: string): Promise<UserTypes.UserPublic | null> {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE id = ?
 		`).get(id) as UserTypes.UserRow | undefined;
 
 		return row ? UserMapper.rowToResponse(row) : null;
 	}
+
+	// (old name `findById` removed — use `findUserById`)
 	
-	async findByIdInternal(id: string): Promise<UserTypes.UserInternal | null> {
+	async findUserByIdInternal(id: string): Promise<UserTypes.UserInternal | null> {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE id = ?
 		`).get(id) as UserTypes.UserRow | undefined;
@@ -176,12 +178,13 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
 
+	// (old name `findByIdInternal` removed — use `findUserByIdInternal`)
 
 	/** 
 	* Busca usuario por email (insensible a mayúsculas)\
 	* Retorna el objeto completo con passwordHash
 	*/
-	async findByEmail(email: string): Promise<UserTypes.UserInternal | null> {
+	async findUserByEmail(email: string): Promise<UserTypes.UserInternal | null> {
 		const normalizedEmail = Utils.UserNormalizer.email(email);
 		
 		const row = this.db.prepare(`
@@ -190,12 +193,22 @@ export class SQLiteUserRepository implements IUserRepository {
 							
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
+
+	// (old names `findByEmail` removed — use `findUserByEmail` / `findUserByEmailInternal` is same)
+
+	async findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal | null> {
+		const normalizedEmail = Utils.UserNormalizer.email(email);
+		const row = this.db.prepare(`
+			SELECT * FROM users WHERE LOWER(email) = ?
+		`).get(normalizedEmail) as UserTypes.UserRow | undefined;
+		return row ? UserMapper.rowToInternal(row) : null;
+	}
 	
 	/**
 	* Busca usuario por nombre de usuario (insensible a mayúsculas)\
 	* Retorna el objeto sin password_hash
 	*/
-	async findByUsername(username: string): Promise<UserTypes.UserPublic | null> {
+	async findUserByUsername(username: string): Promise<UserTypes.UserPublic | null> {
 		const normalizedUsername = Utils.UserNormalizer.usernameForSearch(username);
 		
 		const row = this.db.prepare(`
@@ -204,6 +217,8 @@ export class SQLiteUserRepository implements IUserRepository {
 				
 		return row ? UserMapper.rowToResponse(row) : null;
 	}
+
+	// (old name `findByUsername` removed — use `findUserByUsername`)
 							
 	/** 
 	* Verifica si un nombre de usuario ya está en uso
@@ -243,7 +258,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		if (row.changes === 0)
 			throw new Error(`Usuario ${id} sin cambios`);
 									
-		return await this.findById(id) || null;
+		return await this.findUserById(id) || null;
 	}
 
 	/**
@@ -258,6 +273,6 @@ export class SQLiteUserRepository implements IUserRepository {
 		if (row.changes === 0)
 			throw new Error(`Usuario ${id} sin cambios`);
 									
-		return await this.findById(id) || null;
+		return await this.findUserById(id) || null;
 	}
 }

@@ -13,12 +13,12 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 
 	// Obtener usuario por email (interno)
 	app.get('/users/by-email/:email',
-		controller.getInternalUserByEmail.bind(controller)
+		controller.findUserByEmailInternal.bind(controller)
 	);
 
 	// Obtener usuario por ID (interno)
 	app.get('/users/by-id/:id',
-		controller.getInternalUserById.bind(controller)
+		controller.findUserByIdInternal.bind(controller)
 	);
 
 	// ============================================================================

@@ -62,6 +62,7 @@ export class UserMapper {
 			is_deleted: user.isDeleted ? 1 : 0,
 			has_2fa_enabled: user.has2FAEnabled ? 1 : 0,
 			totp_secret: user.totpSecret,
+			backup_code_hash: user.backup_code_hash,
 			created_at: new Date(user.createdAt).getTime(),
 			updated_at: new Date(user.updatedAt).getTime()
 		};

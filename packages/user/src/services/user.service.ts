@@ -1,10 +1,10 @@
-import bcrypt from  'bcryptjs';
+import bcrypt from 'bcryptjs';
 import { UserTypes, Utils, SharedErrors } from '@transcendence/shared';
 import { IUserRepository, SQLiteUserRepository, UserEnv, UserMapper } from '../index.js';
 
 export class UserService {
 	private userRepo: IUserRepository;
-	
+
 	constructor() {
 		this.userRepo = new SQLiteUserRepository();
 	}
@@ -34,7 +34,7 @@ export class UserService {
 			has2FAEnabled: false,
 			...rest
 		};
-		
+
 		const user = await this.userRepo.create(fullData);
 		if (!user) {
 			throw new Error('Error al crear usuario en la base de datos');
@@ -45,11 +45,11 @@ export class UserService {
 
 	async updateUser(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 
-		const user = await this.userRepo.findById(id);
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted) {
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
 		}
-		
+
 		if (data.email && data.email !== user.email) {
 			const isEmailTaken = await this.userRepo.isEmailTaken(data.email);
 			if (isEmailTaken)
@@ -70,17 +70,17 @@ export class UserService {
 
 		return updated;
 	}
-	
+
 	async updatePassword(id: string, newPasswordHash: string): Promise<void> {
-		const user = await this.userRepo.findById(id);
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
-		
+
 		await this.userRepo.updatePassword(id, newPasswordHash);
 	}
 
 	async updateOnlineStatus(id: string, isOnline: boolean): Promise<void> {
-		const user = await this.userRepo.findById(id);
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted) {
 			throw new SharedErrors.NotFoundError('Usuario no existe', 'user');
 		}
@@ -88,35 +88,38 @@ export class UserService {
 	}
 
 	async anonymizeUser(id: string): Promise<void> {
-		const user = await this.userRepo.findById(id);
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
 		await this.userRepo.anonymize(id);
 	}
 
 	async deleteUser(id: string): Promise<void> {
-		const user = await this.userRepo.findById(id);
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
 		await this.userRepo.delete(id);
 	}
 
-	async getUserById(id: string): Promise<UserTypes.UserPublic> {
-		const user = await this.userRepo.findById(id);
+	async findUserById(id: string): Promise<UserTypes.UserPublic> {
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('User not found', 'user');
-		return user;
+		return UserMapper.internalToResponse(user);
 	}
-	
-	async getUserByUsername(username: string): Promise<UserTypes.UserPublic> {
-		const user = await this.userRepo.findByUsername(username);
-		if (!user || user.isDeleted)
+
+	async findUserByUsername(username: string): Promise<UserTypes.UserPublic> {
+		const user = await this.userRepo.findUserByUsername(username);
+		if (!user)
+			throw new SharedErrors.NotFoundError('User not found', 'user');
+		const userComplete = await this.userRepo.findUserByIdInternal(user.id);
+		if (!userComplete || userComplete.isDeleted)
 			throw new SharedErrors.NotFoundError('User not found', 'user');
 		return user;
 	}
 
-	async getUserByEmail(email: string): Promise<UserTypes.UserPublic> {
-		const user = await this.userRepo.findByEmail(email);
+	async findUserByEmail(email: string): Promise<UserTypes.UserPublic> {
+		const user = await this.userRepo.findUserByEmailInternal(email);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('User not found', 'user');
 
@@ -132,15 +135,15 @@ export class UserService {
 		return await this.userRepo.isEmailTaken(email);
 	}
 
-	async getInternalUserByEmail(email: string): Promise<UserTypes.UserInternal> {
-		const user = await this.userRepo.findByEmail(email);
+	async findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal> {
+		const user = await this.userRepo.findUserByEmailInternal(email);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('User not found', 'user');
 		return user;
 	}
 
-	async getInternalUserById(id: string): Promise<UserTypes.UserInternal> {
-		const user = await this.userRepo.findByIdInternal(id);
+	async findUserByIdInternal(id: string): Promise<UserTypes.UserInternal> {
+		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('User not found', 'user');
 		return user;

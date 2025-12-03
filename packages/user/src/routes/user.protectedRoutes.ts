@@ -14,19 +14,19 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// Obtener usuario por nombre de usuario
 	app.get('/users/username/:username', {
 		schema: UserSchemas.getUserByUsernameSchema,
-		handler: controller.getUserByUsername.bind(controller)
+		handler: controller.findUserByUsername.bind(controller)
 	});
 
 	// Obtener usuario por email
 	app.get('/users/email/:email', {
 		schema: UserSchemas.getUserByEmailSchema,
-		handler: controller.getUserByEmail.bind(controller)
+		handler: controller.findUserByEmail.bind(controller)
 	});
 
 	// Obtener usuario por ID
 	app.get('/users/:id', {
 			schema: UserSchemas.getUserByIdSchema,
-			handler: controller.getUserById.bind(controller)
+			handler: controller.findUserById.bind(controller)
 		}
 	);
 

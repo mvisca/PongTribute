@@ -122,30 +122,30 @@ export class UserController {
 	// GETTERS
 	// ========================================================================
 
-	async getUserById(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+	async findUserById(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { id } = request.params as { id: string };
-			const user = await this.userService.getUserById(id);
+			const user = await this.userService.findUserById(id);
 			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}
 	}
 	
-	async getUserByUsername(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+	async findUserByUsername(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { username } = request.params as { username: string };
-			const user = await this.userService.getUserByUsername(username);
+			const user = await this.userService.findUserByUsername(username);
 			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}
 	}
 	
-	async getUserByEmail(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+	async findUserByEmail(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { email } = request.params as { email: string };
-			const user = await this.userService.getUserByEmail(email);
+			const user = await this.userService.findUserByEmail(email);
 			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
@@ -156,20 +156,20 @@ export class UserController {
 	// GETTERS INTERNALS
 	// ========================================================================
 
-	async getInternalUserByEmail(request: FastifyRequest, reply: FastifyReply): Promise <void> {
+	async findUserByEmailInternal(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
 			const { email } = request.params as { email: string };
-			const user = await this.userService.getInternalUserByEmail(email);
+			const user = await this.userService.findUserByEmailInternal(email);
 			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}
 	}
 	
-	async getInternalUserById(request: FastifyRequest, reply: FastifyReply): Promise <void> {
+	async findUserByIdInternal(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
 			const { id } = request.params as { id: string };
-			const user = await this.userService.getInternalUserById(id);
+			const user = await this.userService.findUserByIdInternal(id);
 			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
