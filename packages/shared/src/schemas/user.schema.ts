@@ -124,7 +124,7 @@ export namespace UserSchemas {
 		isDeleted: BooleanField,
 		has2FAEnabled: BooleanField,
 		totpSecret: Type.Optional(Type.String()),
-		backup_code_hash: Type.Optional(Type.String()),
+		backupCodeHash: Type.Optional(Type.String()),
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});

@@ -15,8 +15,8 @@ export namespace UserTypes {
 		is_online: number;
 		is_deleted: number;
 		has_2fa_enabled: number;
-		totp_secret: string;
-		backup_code_hash: string;
+		totp_secret: string | null;
+		backup_code_hash: string | null;
 		created_at: number;
 		updated_at: number;
 	}
