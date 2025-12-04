@@ -27,7 +27,7 @@ export const REDIS_DEFAULTS: Partial<RedisConfig> = {
 };
 
 /** Reconexión con backoff */
-export function defautlRetryStrategy(times: number): number | null {
+export function defautlRetryStrategy(times: number): number | void | null {
 	if (times > 10)
 		throw new Error('Máximo número de reintentos alcanzado');
 	const calcDelay = Math.min(times * 100, 3000);

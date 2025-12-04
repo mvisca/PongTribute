@@ -2,35 +2,26 @@ import Fastify, { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import { UserEnv, UserRoutes } from './index.js';
 import dotenv from 'dotenv';
+import { Utils } from '@transcendence/shared';
+import type { Redis } from 'ioredis';
 
 dotenv.config();
-let currentApp: FastifyInstance | null = null;
+export let redisClient: Redis | null = null;
 
-process.on('SIGINT', async () => {
-	console.log('Fastify Signal Handler: SIGINT received, closing HTTP server...');
-	if (currentApp) {
-		await currentApp.close();
-		currentApp = null;
-		console.log('HTTP Server closed')
-	}
-});
-
-process.on('SIGTERM', async () => {
-	console.log('Fastify Signal Handler: SIGTERM received, closing HTTP server...');
-	if (currentApp) {
-		await currentApp.close();
-		currentApp = null;
-		console.log('HTTP Server closed')
-	}
-});
-
-/**
-* Crea y configuara la instancia de Fastfy\
-* 
-* @returns instnacia de Fastify configurada, sin listen())
-*/
+/** Crea y configuara la instancia de Fastfy */
 export function buildApp(): FastifyInstance { 
-	
+
+	// Inicializar Redis cliente antes de levantar app (seguir patrón de `auth`)
+	try {
+		const redisConfig = UserEnv.getRedisConfig();
+		// Usar la factory expuesta como Utils.RedisFactory para mantener backward-compat
+		redisClient = Utils.RedisFactory.createRedisClient(redisConfig);
+		console.log('✅ Redis cliente creado en User service');
+	} catch (err) {
+		console.error('❌ Error conectando Redis:', err);
+		process.exit(1);
+	}
+
 	// Crear instancia
 	const app = Fastify(UserEnv.getFastifyConfig());
 //	currentApp = app;

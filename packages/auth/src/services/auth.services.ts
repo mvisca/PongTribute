@@ -67,7 +67,8 @@ export class AuthService {
 			};
 		}
 		
-		if (AuthEnv.UNIQUE_SESSION === 1)
+		// Flujo de login sin 2A
+		if (AuthEnv.UNIQUE_SESSION === true)
 			await this.deleteUserTokens(user.id);
 		await this.setUserOnline(user.id, true);
 		
@@ -239,7 +240,7 @@ export class AuthService {
 		}
 		
 		// actualizar tokens de refresh, estado online y generar access token
-		if (AuthEnv.UNIQUE_SESSION === 1) {
+		if (AuthEnv.UNIQUE_SESSION === true) {
 			await this.deleteUserTokens(user.id);
 		}
 		

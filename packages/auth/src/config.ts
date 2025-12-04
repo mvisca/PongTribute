@@ -1,11 +1,29 @@
-import { SharedEnv, RedisConfig } from '@transcendence/shared';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+// Recrear __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import {
+	SharedEnv,
+	findEnvFile,
+	RedisConfig,
+	validateRedisConfig } from '@transcendence/shared';
+
+// Cargar .env explícitamente antes de build()
+const envPath = findEnvFile(__dirname);
+if (envPath) {
+	dotenv.config({ path: envPath });
+} else {
+	dotenv.config();
+}
 // =====================================================
 // TIPOS
 // =====================================================
 
 export namespace AuthEnv {
-	
 	export interface ServiceConfig {
 		port: number;
 		host: string;
@@ -66,7 +84,7 @@ export namespace AuthEnv {
 		export const NODE_ENV: string = sharedEnv.NODE_ENV;
 		export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
 		
-		export const UNIQUE_SESSION: number = sharedEnv.UNIQUE_SESSION;
+		export const UNIQUE_SESSION: boolean = sharedEnv.UNIQUE_SESSION;
 		
 		export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 		export const TOKEN_EXPIRY: string = sharedEnv.TOKEN_EXPIRY;
@@ -92,7 +110,7 @@ export namespace AuthEnv {
 		};
 		
 		// =====================================================
-		// EXPORTS PÚBLICOS - FUNCIONES
+		// EXPORTS PÚBLICOS - FUNCIONES DE OBJETOS CONFIG
 		// =====================================================
 		
 		export function getFastifyConfig(): FastifyConfig {
@@ -121,29 +139,20 @@ export namespace AuthEnv {
 		}
 		
 		export function getRedisConfig(): RedisConfig {
-			return {
+			const config = {
 				host: REDIS_HOST,
 				port: REDIS_PORT,
 				password: REDIS_PASSWORD,
 				db: REDIS_DB,
 				maxRetriesPerRequest: 3,
-				
-			}
+				connectTimeout: 10000,
+				lazyConnect: false,
+				enableRetryCheck: true
+			};
+
+			if (!validateRedisConfig(config))
+				throw new Error('Configuración de Redis inválida');
+			
+			return config;
 		}
-		
-		/* 
-		
-		export interface RedisConfig {
-		host: string;
-		port: number;
-		password: string;
-		db: number;
-		maxRetriesPerRequest: number | null; // null => infinito
-		connectTimeout: number;
-		lazyConnect: boolean;
-		enableRetryCheck: boolean;
-		retryStrategy?: (times: number) => number | void | null;	
-		}
-		
-		*/
 	}

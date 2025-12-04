@@ -1,8 +1,21 @@
 import Fastify, { FastifyError, FastifyInstance } from "fastify";
 import helmet from '@fastify/helmet';
+import type { Redis } from 'ioredis';
+import { Utils } from "@transcendence/shared/";
 import { authRoutes, AuthEnv } from './index.js';
 
+export let redisClient: Redis | null = null; // Cliente Redis de toda la app
+
 export function buildApp(): FastifyInstance {
+	try {
+		const redisConfig = AuthEnv.getRedisConfig();
+		redisClient = Utils.RedisFactory.createRedisClient(redisConfig); // Instancia de Redis antes de iniciar servidor
+		console.log('Redis Client creado!');
+	} catch(err){
+		console.error('Fallo creando Redis: ', err);
+		process.exit(1);
+	}
+
 	const app = Fastify(AuthEnv.getFastifyConfig());
 
 	app.register(helmet, {
@@ -22,15 +35,12 @@ export function buildApp(): FastifyInstance {
 			GET: 'AUTH 📖:',
 			PUT: 'AUTH ✏️:',
 			DELETE: 'AUTH 🗑️:',
-			PATCH: 'AUTH 🔧:',
-			HEAD: 'HEAD (>:'
+			PATCH: 'AUTH 🔧:'
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
 
-	/**
-	* endpoint de health check
-	*/
+	/** endpoint de health check */
 	app.get('/health', async(request, reply) => {
 		return {
 			status: 'LA APP FUCNIONA OK!',

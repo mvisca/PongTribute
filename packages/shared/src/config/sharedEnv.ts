@@ -1,18 +1,18 @@
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+
 // TODO arreglar manejo centralizado de variables de entorno
 // ==================================================
 // CARGAR .ENV DESDE RAÍZ
 // ==================================================
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-function findEnvFile(startPath: string): string | null {
-	let currentPath = startPath;
-	
+export function findEnvFile(startPath: string): string | null {
+	// startPath should be provided by the caller (e.g. service's __dirname)
+	// We still provide a fallback to the current module dirname if needed
+	const __filename = fileURLToPath(import.meta.url);
+	const moduleDirname = path.dirname(__filename);
+	let currentPath = startPath || moduleDirname;
 	while (currentPath !== path.parse(currentPath).root) {
 		const envPath = path.join(currentPath, '.env');
 		if (fs.existsSync(envPath)) {
@@ -20,22 +20,45 @@ function findEnvFile(startPath: string): string | null {
 		}
 		currentPath = path.dirname(currentPath);
 	}
-	
 	return null;
-}
-
-const envPath = findEnvFile(__dirname);
-if (envPath) {
-	dotenv.config({ path: envPath });
-} else {
-	dotenv.config();
 }
 
 // ==================================================
 // DEFAULTS (Solo para development)
 // ==================================================
 
-const DEFAULTS = {
+interface EnvVars {
+	AUTH_SERVICE_URL: string;
+	AUTH_SERVICE_PORT: number;
+	AUTH_SERVICE_HOST: string;
+	JWT_SECRET: string;
+	TOKEN_EXPIRY: string;
+	REFRESH_TOKEN_EXPIRY: string;
+	BCRYPT_ROUNDS: number;
+	UNIQUE_SESSION: boolean;
+	
+	USER_SERVICE_URL: string;
+	USER_SERVICE_PORT: number;
+	USER_SERVICE_HOST: string;
+	
+	FRONTEND_URL: string;
+	FRONTEND_PORT: number;
+	FRONTEND_HOST: string;
+	
+	NODE_ENV: string;
+	DB_PATH: string;
+	LOG_LEVEL: string;
+	
+	SERVICE_SECRET: string;
+	REDIS_HOST: string;
+	REDIS_PORT: number;
+	REDIS_PASSWORD: string;
+	REDIS_DB: number;
+
+	TEST_MODE: string;
+};
+
+const DEFAULTS: EnvVars = {
 	AUTH_SERVICE_URL: 'http://localhost:3002',
 	AUTH_SERVICE_PORT: 3002,
 	AUTH_SERVICE_HOST: 'localhost',
@@ -43,7 +66,7 @@ const DEFAULTS = {
 	TOKEN_EXPIRY: '1h',
 	REFRESH_TOKEN_EXPIRY: '365d',
 	BCRYPT_ROUNDS: 10,
-	UNIQUE_SESSION: 1,
+	UNIQUE_SESSION: true,
 	
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
@@ -59,12 +82,14 @@ const DEFAULTS = {
 	
 	SERVICE_SECRET: 'default_shared_secret_CHANGE_THIS',
 	REDIS_HOST: 'localhost',
-	REDIS_PORT: 6743,
+	REDIS_PORT: 6379,
 	REDIS_PASSWORD: 'create_a_supersafe_redis_password',
-	REDIS_BD: 0,
+	REDIS_DB: 0,
 
 	TEST_MODE: 'default_values',
 } as const;
+
+export type EnviromentVars = typeof DEFAULTS;
 
 // ==================================================
 // VALIDACIÓN
@@ -87,7 +112,7 @@ function validateNodeEnv(env: string | undefined): void {
 	}
 }
 
-function validateRequired(value: string | undefined, name: string): void {
+function validateRequired<T>(value: T | undefined, name: string): void {
 	if (!value) {
 		throw new Error(`❌ Variable requerida faltante: ${name}`);
 	}
@@ -123,7 +148,8 @@ function validateSecrets(secrets: Record<string, string | undefined>, isProducti
 // ==================================================
 
 export namespace SharedEnv {
-	
+
+	// Build configuration object from process.env (no side-effects)
 	export function build() {
 		const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 		const isProduction = process.env.NODE_ENV === 'production';
@@ -143,7 +169,7 @@ export namespace SharedEnv {
 			throw new Error('Variable de entorno requerida para produccion no encontrada');
 		};
 		
-		const config = {
+		const config: EnvVars = {
 			// AUTH SERVICE
 			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL),
 			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT),
@@ -171,10 +197,10 @@ export namespace SharedEnv {
 			
 			// INTER-SERVICE COMMUNICATION
 			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET),
-			REDIS_HOST: envOr(process.env.REDIST_HOST, DEFAULTS.REDIS_HOST),
+			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST),
 			REDIS_PORT: envOr(process.env.REDIS_PORT, DEFAULTS.REDIS_PORT),
 			REDIS_PASSWORD: envOr(process.env.REDIS_PASSWORD, DEFAULTS.REDIS_PASSWORD),
-			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_BD),
+			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_DB),
 
 			// TESTING
 			TEST_MODE: envOr(process.env.TEST_MODE, DEFAULTS.TEST_MODE),
@@ -203,7 +229,7 @@ export namespace SharedEnv {
 		// DB_PATH (siempre requerido)
 		validateRequired(config.DB_PATH, 'DB_PATH');
 		validateRequired(config.REDIS_HOST, 'REDIS_HOST');
-		validateRequired(config.REDIS_HOST, 'REDIS_DB');
+		validateRequired(config.REDIS_DB, 'REDIS_DB');
 
 		// URLs de servicios (requeridas)
 		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');

@@ -1,52 +1,83 @@
 import { Token } from 'node_modules/@sinclair/typebox/build/esm/parser/runtime/index.mjs';
-import { buildApp, UserEnv } from './index.js';
+import { buildApp, UserEnv, redisClient, closeDatabase } from './index.js';
 import { TokenService } from './index.js';
 // TODO considerar la opcion de usar SCHWAGER, de ser asi quitar su validacion en runtime para no duplicar con ajv defastify
 
+let app: ReturnType<typeof buildApp> | null = null;
+
 async function start() {
-	const app = buildApp(); // LLAMADA
-	
+	try {
+		app = buildApp();
+	} catch (err) {
+		console.log('Error al lanzar:', err);
+		process.exit(1);
+	}
+
 	try {
 		await app.listen({
 			port: UserEnv.PORT,
 			host: UserEnv.HOST
 		});
-		
+        
 		console.log(`App log level: ${app.log.level}`);
-		
-		app.log.info(`Servicio database 'lisetning' en ${UserEnv.HOST}:${UserEnv.PORT}`);
+        
+		app.log.info(`Servicio user listening en ${UserEnv.HOST}:${UserEnv.PORT}`);
 		app.log.info(`Environment: ${UserEnv.NODE_ENV}`);
 		app.log.info(`Database: ${UserEnv.DB_PATH}`);
-		
+        
 		// Limpieza de tabla 'refresh_tokens' para development y production
 		if (UserEnv.NODE_ENV !== 'test') {
 			const tokenService = new TokenService();
 			setInterval(async () => {
 				try {
 					await tokenService.cleanExpired();
-					app.log.info(`[${Date.now()}] Expired refresh tokens cleaned`);
-					
+					console.info(`[${Date.now()}] Expired refresh tokens cleaned`);
+                    
 				} catch(err) {
-					app.log.error(err, 'Error durante la limpieza de refresh tokens expirados');
+					console.error(err, 'Error durante la limpieza de refresh tokens expirados');
 				}
 			}, 1000 * 60 * 60);
 		}
 	} catch (err) {
-		app.log.error(err);
+		console.error(err);
+		await gracefulShutdown('STARTUP_ERROR');
 		process.exit(1);
 	}
 }
 
-process.on('SIGINT', async() => {
-	await new Promise(resolve => setTimeout(resolve, 1000));
-	console.log(`\nSTOP (SIGINT) recivido, cerrando el servidor`);
-	process.exit(0);
-});
+async function gracefulShutdown(signal: string) {
+	console.log(`\n${signal} recibido. Iniciando Graceful Shutdown`);
 
-process.on('SIGTERM', async() => {
-	await new Promise(resolve => setTimeout(resolve, 1000));
-	console.log(`\nSTOP (SIGTERM) recivido, cerrando el servidor`);
+	if (redisClient) {
+		try {
+			// @ts-ignore
+			await redisClient.quit();
+			console.log('USER: Redis desconectado');
+		} catch (err) {
+			console.error('Error cerrando Redis', err);
+		}
+	}
+
+	if (app) {
+		try {
+			await app.close();
+			console.log('USER: Fastify HTTP server cerrado');
+		} catch (err) {
+			console.error('Error cerrando Fastify', err);
+		}
+	}
+
+	try {
+		closeDatabase();
+		console.log('USER: Base de Datos cerrada');
+	} catch (err) {
+		console.error('Error cerrando DB', err);
+	}
+
 	process.exit(0);
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 start();
