@@ -42,8 +42,7 @@ export namespace MatchSchemas {
 
     // POST /matches - Crear una partida
     export const CreateMatchBody = Type.Object({
-        opponentId: Type.Optional(Type.String({ format: 'uuid' })), // Si null -> Matchmaking público
-        isPrivate: Type.Optional(Type.Boolean({ default: false }))   // Si true -> Requiere invitación (implementaremos luego)
+        opponentId: Type.Optional(Type.String({ format: 'uuid' })) // Si null -> Matchmaking público
     });
 
     // Schema para la ruta POST
@@ -69,5 +68,11 @@ export namespace MatchSchemas {
             200: Match,
             404: Type.Object({ error: Type.String(), message: Type.String() })
         }
-    };
+	};
+	
+
+
+	// Aquí irían más rutas:
+    // app.get('/matches/:id', ...);
+
 }

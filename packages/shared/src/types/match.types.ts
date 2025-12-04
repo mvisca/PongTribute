@@ -115,7 +115,7 @@ export namespace MatchTypes {
 	// la misma fila para evitar JOINs constantes.
     export interface MatchRow {
         id: string;
-        status: string;         // 'pending' | 'active' | 'finished'
+        status: MatchStatus;         // 'pending' | 'active' | 'finished'
         
         // Player 1
         player1_id: string;
@@ -129,6 +129,5 @@ export namespace MatchTypes {
         
         created_at: number;     // Timestamp numérico
         finished_at: number | null;
-        is_private: number;     // 1 = true, 0 = false
     }
 }

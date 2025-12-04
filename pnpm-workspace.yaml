@@ -3,6 +3,7 @@ packages:
   - packages/shared
   - packages/user
   - packages/auth
+  - packages/game
 
 ignoredBuiltDependencies:
   - babylonjs

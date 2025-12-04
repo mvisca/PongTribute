@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS matches (
     created_at INTEGER NOT NULL,
     finished_at INTEGER,
     
-    -- Configuración
-    is_private INTEGER DEFAULT 0, -- 0: Público, 1: Privado
+    -- -- Configuración
+    -- is_private INTEGER DEFAULT 0, -- 0: Público, 1: Privado
 
     -- Relación con Torneos (Del enfoque nuevo)
     tournament_id TEXT,

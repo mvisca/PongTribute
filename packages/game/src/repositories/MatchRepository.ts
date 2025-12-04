@@ -18,10 +18,10 @@ export class MatchRepository {
         const stmt = this.db.prepare(`
             INSERT INTO matches (
                 id, status, player1_id, player1_score, player2_id, player2_score, 
-                winner_id, created_at, finished_at, is_private
+                winner_id, created_at, finished_at
             ) VALUES (
                 @id, @status, @player1_id, @player1_score, @player2_id, @player2_score,
-                @winner_id, @created_at, @finished_at, @is_private
+                @winner_id, @created_at, @finished_at
             )
         `);
 		//@id le dice a SQLite: "Aquí irá un valor que buscaré con 
@@ -63,8 +63,7 @@ export class MatchRepository {
     findPendingPublicMatch(): MatchTypes.MatchRow | null {
         const row = this.db.prepare(`
             SELECT * FROM matches 
-            WHERE status = 'pending' 
-            AND is_private = 0 
+            WHERE status = 'pending'  
             AND player2_id IS NULL
             ORDER BY created_at ASC
             LIMIT 1

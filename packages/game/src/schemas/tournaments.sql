@@ -1,7 +1,6 @@
 -- packages/game/src/schemas/tournaments.sql
 
--- La tabla antigua de tournaments  era muy básica. El subject pide 
--- explícitamente gestionar Aliases (nombres temporales) para el torneo.
+-- El subject pide explícitamente gestionar Aliases (nombres temporales) para el torneo.
 -- Por eso necesitamos una tabla extra.
 -- ============================================================================
 -- TABLA: tournaments
