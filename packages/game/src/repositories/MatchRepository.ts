@@ -60,14 +60,19 @@ export class MatchRepository {
      * Busca la partida pública más antigua que esté en estado 'pending'
      * y que aún no tenga jugador 2.
      */
-    findPendingPublicMatch(): MatchTypes.MatchRow | null {
+	findPendingPublicMatch(): MatchTypes.MatchRow | null {
+		// 1. CONSULTA FIFO
+        // SELECT * ... WHERE status = 'pending' AND player2_id IS NULL
+        // ORDER BY created_at ASC (Dame la más vieja primero -> FIFO)
+        // LIMIT 1 (Solo quiero una)
         const row = this.db.prepare(`
             SELECT * FROM matches 
             WHERE status = 'pending'  
             AND player2_id IS NULL
             ORDER BY created_at ASC
             LIMIT 1
-        `).get();
+        `).get(); // .get() devuelve UN objeto o undefined
+		// 2. RETORNO SEGURO
         return row ? (row as MatchTypes.MatchRow) : null;
     }
 

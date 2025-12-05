@@ -15,15 +15,16 @@ function signToken(id: string, username: string) {
 async function testMatchmaking() {
     console.log('\n🥊 INICIANDO TEST DE MATCHMAKING (FIFO)\n');
     
-    // 1. Levantamos la app (sin escuchar puerto real, solo en memoria)
-    const app = buildApp();
-    await app.ready();
+	// 1. Levantamos la app (sin escuchar puerto real, solo en memoria)
+	// Usamos app porque aun no tenemos el navegador listo para probarlo.
+    const app = buildApp(); // Levanta la instancia de Fastify en memoria
+    await app.ready(); // espera a que odos los plugins esten cargados
 
     // 2. Preparamos 2 Jugadores
     const player1 = { id: 'user-1111', name: 'Goku', token: signToken('user-1111', 'Goku') };
     const player2 = { id: 'user-2222', name: 'Vegeta', token: signToken('user-2222', 'Vegeta') };
 
-    console.log(`🔹 Jugador 1: ${player1.name} (${player1.id})`);
+    console.log(`\n🔹 Jugador 1: ${player1.name} (${player1.id})`);
     console.log(`🔹 Jugador 2: ${player2.name} (${player2.id})\n`);
 
     // ========================================================================
@@ -34,7 +35,7 @@ async function testMatchmaking() {
         method: 'POST',
         url: '/api/matches',
         headers: { Authorization: `Bearer ${player1.token}` },
-        payload: {} // Matchmaking público
+        payload: {} // Matchmaking público (vacio = busca cualquier partida)
     });
 
     console.log(`   Status: ${res1.statusCode} (Esperado: 201)`);

@@ -10,21 +10,21 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // RUTAS DE PARTIDAS (MATCHES)
     // ========================================================================
 
-    app.post('/matches', {
-        // 1. Seguridad: Ejecutamos el middleware antes que nada
+    app.post('/matches', { // si viene una request POST para ruta /matches
+        // 1. GUARDIAN Seguridad: Ejecutamos el middleware antes que nada
 		// Esto valida el Token JWT y rellena request.user
 		// Es el guardián. Si el usuario no envía un Header Authorization:
 		//  Bearer <token> válido, la petición se muere aquí y devuelve 401.
 		//  El Controller ni se entera. Esto mantiene tu código seguro y limpio.
         preHandler: [AuthMiddleware.validateJWT],
 
-        // 2. Contrato: Usamos el Schema "Endpoint-Centric" que creamos
+        // 2. VALIDADOR Contrato: Usamos el Schema "Endpoint-Centric" que creamos
 		// Fastify validará automáticamente el body y la respuesta.
 		//Si el usuario envía basura en el JSON, Fastify devuelve 
 		// 400 Bad Request automáticamente.
         schema: MatchSchemas.CreateMatchEndpoint,
 
-        // 3. Manejador: Llamamos al método del controlador
+        // 3. EJECUTOR Manejador: Llamamos al método del controlller
         // Usamos .bind() para no perder el contexto 'this' dentro del controller
         handler: controller.createMatch.bind(controller)
     });

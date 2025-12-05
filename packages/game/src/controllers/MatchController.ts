@@ -16,9 +16,10 @@ export class MatchController {
         reply: FastifyReply
     ): Promise<void> {
         
-        // 1. Seguridad: Obtener quién es el usuario desde el Token
-        // El middleware 'validateJWT' (que pondremos en la ruta) rellena request.user
-        const user = request.user;
+        // 1. IDENTIDAD Seguridad: Obtener quién es el usuario desde el Token
+        // El middleware 'validateJWT' descifro el token y relleno request.user
+        // request.user = { id: "user-1111", username: "Goku", ... }
+		const user = request.user;
 
         if (!user) {
             // Esto no debería pasar si el middleware está puesto, pero por seguridad de tipos:
@@ -29,8 +30,10 @@ export class MatchController {
         }
 
         try {
-            // 2. Orquestación: Llamar al servicio con el ID seguro
-            // Nota: Por ahora ignoramos request.body.opponentId (Matchmaking simple)
+            // 2. DELEGACIÓN (Llamada al Servicio)
+            // Aquí está la clave: El controller NO sabe de matchmaking FIFO.
+            // Solo le dice al servicio: "El usuario X quiere jugar. Arréglalo".
+            // NOTA: Ignora el body (JSON) por ahora, solo pasamos el ID.
             const match = await this.matchService.joinOrCreate(user.id);
 
             // 3. Respuesta: 201 Created + Objeto Match limpio
