@@ -4,25 +4,31 @@ import type { Redis } from 'ioredis';
 import { Utils } from "@transcendence/shared/";
 import { authRoutes, AuthEnv } from './index.js';
 
-export let redisClient: Redis | null = null; // Cliente Redis de toda la app
+// Cliente Redis de toda la app Auth
+export let redisClient: Redis | null = null; 
 
+/** Crea y configuara la instancia de Fastfy */
 export function buildApp(): FastifyInstance {
+	
 	try {
 		const redisConfig = AuthEnv.getRedisConfig();
-		redisClient = Utils.RedisFactory.createRedisClient(redisConfig); // Instancia de Redis antes de iniciar servidor
-		console.log('Redis Client creado!');
-	} catch(err){
-		console.error('Fallo creando Redis: ', err);
+		redisClient = Utils.createRedisClient(redisConfig);
+		console.log('Redis cliente creado en Auth service');
+	} catch (err) {
+		console.error('Error conectando Redis en Auth: ', err);
 		process.exit(1);
 	}
-
+	
+	/** 1. Crear instancia de app fastify */
 	const app = Fastify(AuthEnv.getFastifyConfig());
-
+	
+	/** 2. Plugin de seguridad */
 	app.register(helmet, {
 		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});
-
+	
+	/** 3. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
 		
@@ -39,7 +45,7 @@ export function buildApp(): FastifyInstance {
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
-
+	
 	/** endpoint de health check */
 	app.get('/health', async(request, reply) => {
 		return {
@@ -49,22 +55,50 @@ export function buildApp(): FastifyInstance {
 			uptime: process.uptime()
 		};
 	});
- 
-	app.register(authRoutes, { prefix: '/api' });
 
+	/** Registrar todas las rutas del servicio */	
+	console.log('REG AUTH PUBLIC ROUTES');
+	app.register(authRoutes, { prefix: '/api' });
+	
+	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setErrorHandler((error, request, reply) => {
-		request.log.error(error);
+		request.log.error({
+			err: error,
+			url: request.url,
+			method: request.method
+		});
+		
+		if ((error as FastifyError).validation) {
+			return reply.status(400).send({
+				error: 'Ostras! Error de validación',
+				message: (error as FastifyError).message,
+				details: (error as FastifyError).validation
+			})
+		}
+		
+		const statusCode = (error as FastifyError).statusCode; // TODO arreglar este apanyo causado por type asertion para resolver conflicto de tipo Fastify Error
+		if (statusCode) {
+			return reply.status(statusCode).send({
+				error: (error as FastifyError).name,
+				message: (error as FastifyError).message
+			})
+		}
+		
 		return reply.status(500).send({
-			error: 'Internal Server Error',
-			message: (error as FastifyError).message // TODO evaluar soluciones
-			// OPCIONES:
-			// a Configurar pnpm para deduplicar 
-			// b Type Asertion (implementado) 
-			// c Mover FastifyInstance a peer dependencies (entenderlo mejor)
-			// d Reexportar tipos desde shared
-			// FIN: Solucion definitiva, migrar testUtils a package seapando test a su modulo
+			error: 'Internal server error',
+			message: AuthEnv.NODE_ENV === 'production'
+			? 'Algo salió mal'
+			: (error as FastifyError).message
 		});
 	});
-
+	
+	app.setNotFoundHandler((request, reply) => {
+		return reply.status(404).send({
+			error: 'Not found',
+			message: `Route ${request.method} ${request.url} no encontrada`,
+		});
+	});
+	
+	console.log('Returning App: AUTH');
 	return app; 
 }

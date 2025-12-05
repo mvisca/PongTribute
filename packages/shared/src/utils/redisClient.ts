@@ -4,7 +4,7 @@ import {
 	RedisConfig, 
 	validateRedisConfig,
 	REDIS_DEFAULTS,
-	defautlRetryStrategy } from './../config/index.js';
+	defaultRetryStrategy } from './../config/index.js';
 
 /** Crear instancia de clietne Redis con configuracion validada */
 export function createRedisClient(config: RedisConfig): Redis {
@@ -15,7 +15,7 @@ export function createRedisClient(config: RedisConfig): Redis {
 	const finalConfig: RedisOptions = {
 		...REDIS_DEFAULTS,
 		...config,
-		retryStrategy: config.retryStrategy || defautlRetryStrategy,
+		retryStrategy: config.retryStrategy || defaultRetryStrategy,
 	};
 	
 	const client = new Redis(finalConfig);

@@ -12,5 +12,5 @@ export const Utils = {
 	generateMatchId: Generators.matchId,
 	generateEventId: Generators.eventId,
 	RedisCache: RedisCache,
-	RedisFactory: RedisFactory
+	createRedisClient: RedisFactory.createRedisClient
 }

@@ -130,7 +130,7 @@ export namespace UserSchemas {
 	});
 	
 	// ============================================================================
-	// SCHEMAS COMPLETOS PARA FATIFY RUTA 'POST /api/user'
+	// SCHEMAS COMPLETOS PARA FASTIFY RUTA 'POST /api/user'
 	// ============================================================================
 	
 	/**

@@ -9,7 +9,7 @@ export interface RedisConfig {
 	maxRetriesPerRequest: number | null; // null => infinito
 	connectTimeout: number;
 	lazyConnect: boolean;
-	enableRetryCheck: boolean;
+	enableReadyCheck: boolean;
 	retryStrategy?: (times: number) => number | void | null;	
 }
 
@@ -23,11 +23,11 @@ export const REDIS_DEFAULTS: Partial<RedisConfig> = {
 	maxRetriesPerRequest: 3,
 	connectTimeout: 10000,
 	lazyConnect: false,
-	enableRetryCheck: true
+	enableReadyCheck: true
 };
 
 /** Reconexión con backoff */
-export function defautlRetryStrategy(times: number): number | void | null {
+export function defaultRetryStrategy(times: number): number | void | null {
 	if (times > 10)
 		throw new Error('Máximo número de reintentos alcanzado');
 	const calcDelay = Math.min(times * 100, 3000);

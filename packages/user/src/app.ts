@@ -1,31 +1,34 @@
 import Fastify, { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
-import { UserEnv, UserRoutes } from './index.js';
-import dotenv from 'dotenv';
-import { Utils } from '@transcendence/shared';
 import type { Redis } from 'ioredis';
+import { UserEnv, UserRoutes } from './index.js';
+import { Utils } from '@transcendence/shared';
 
-dotenv.config();
+// Cliente Redis de toda la app User
 export let redisClient: Redis | null = null;
 
 /** Crea y configuara la instancia de Fastfy */
 export function buildApp(): FastifyInstance { 
 
-	// Inicializar Redis cliente antes de levantar app (seguir patrón de `auth`)
 	try {
 		const redisConfig = UserEnv.getRedisConfig();
-		// Usar la factory expuesta como Utils.RedisFactory para mantener backward-compat
-		redisClient = Utils.RedisFactory.createRedisClient(redisConfig);
-		console.log('✅ Redis cliente creado en User service');
+		redisClient = Utils.createRedisClient(redisConfig);
+		console.log('Redis cliente creado en User service');
 	} catch (err) {
-		console.error('❌ Error conectando Redis:', err);
+		console.error('Error conectando Redis en User: ', err);
 		process.exit(1);
 	}
 
-	// Crear instancia
+	/** 1. Crear instancia app */
 	const app = Fastify(UserEnv.getFastifyConfig());
-//	currentApp = app;
 	
+	/** 2. Plugin de seguridad */
+	app.register(helmet, {
+		contentSecurityPolicy: false,
+		crossOriginEmbedderPolicy: false
+	});
+
+	/** 3. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
 		
@@ -38,21 +41,13 @@ export function buildApp(): FastifyInstance {
 			GET: 'USER 📖:',
 			PUT: 'USER ✏️:',
 			DELETE: 'USER 🗑️:',
-			PATCH: 'USER 🔧:',
-			HEAD: 'HEAD (--):'
+			PATCH: 'USER 🔧:'
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
 	
-	// registrar plugins, security headers
-	app.register(helmet, {
-		contentSecurityPolicy: false,
-		crossOriginEmbedderPolicy: false
-	});
 	
-	/**
-	* endpoint de health check
-	*/
+	/** endpoint de health check */
 	app.get('/health', async(request, reply) => {
 		return {
 			status: 'LA APP FUCNIONA OK!',
@@ -62,22 +57,17 @@ export function buildApp(): FastifyInstance {
 		};
 	});
 
-	/**
-	* Registrar todas las rutas del servicio
-	*/
-	console.log('REG USER INTERNAL');
+	/** Registrar todas las rutas del servicio */
+	console.log('REG USER INTERNAL ROUTES');
 	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
-	console.log('REG USER PUBLIC');
+	console.log('REG USER PUBLIC ROUTES');
 	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
-	console.log('REG USER PROTECTED');
+	console.log('REG USER PROTECTED ROUTES');
 	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
-	console.log('REG TOKEN PROTECTED');
+	console.log('REG TOKEN PROTECTED ROUTES');
 	app.register(UserRoutes.internalTokenRoutes, { prefix: '/api'});
 
-	/**
-	* Manejo global de errores\
-	* Captura cualquier error no manejado
-	*/
+	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error({
 			err: error,
@@ -101,7 +91,6 @@ export function buildApp(): FastifyInstance {
 			})
 		}
 		
-		// NOTA, esto tiene sentido? por que la condicion como valor del key message?
 		return reply.status(500).send({
 			error: 'Internal server error',
 			message: UserEnv.NODE_ENV === 'production'
@@ -117,6 +106,6 @@ export function buildApp(): FastifyInstance {
 		});
 	});
 	
-	console.log('Returning App');
+	console.log('Returning App: USER');
 	return app;
 }

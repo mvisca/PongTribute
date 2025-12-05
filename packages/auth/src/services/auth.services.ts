@@ -80,7 +80,7 @@ export class AuthService {
 		
 		const accessToken = this.generateToken(userPayload, true); // quizas deba ser false, porque no se mira que sea true si si2FAEnables es false
 		const refreshToken = await this.createAndStoreRefreshToken(user.id, true);
-
+		
 		return {
 			token: accessToken,
 			refreshToken: refreshToken,
@@ -141,7 +141,7 @@ export class AuthService {
 		
 		// generar refresh token random
 		const refreshToken = crypto.randomBytes(32).toString('hex');
-
+		
 		// hashear con sha-256 (64 caracteres)
 		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 		
@@ -169,7 +169,7 @@ export class AuthService {
 		if (!response.ok) {
 			throw new Error(`Fallo al almacenar refresh token: ${response.status}`);
 		}
-
+		
 		// devuelve refresh token sin hashear
 		return refreshToken;
 	}
@@ -259,7 +259,7 @@ export class AuthService {
 		
 		// generar y almacenar refresh token con is2FAVerified true
 		const refreshToken = await this.createAndStoreRefreshToken(user.id, true);
-
+		
 		return {
 			token: accessToken,
 			refreshToken: refreshToken,
@@ -312,5 +312,41 @@ export class AuthService {
 		}
 		
 		return true;
+	}
+	
+	// AGREGAR MÉTODOS:
+	
+	async enable2FA(userId: string): Promise<Enable2FAResponse> {
+		// 1. Fetch user, validar no tenga 2FA activo
+		// 2. speakeasy.generateSecret({ length: 32, name: ... })
+		// 3. qrcode.toDataURL(secret.otpauth_url)
+		// 4. crypto.randomBytes(8) → formatear como XXXX-XXXX
+		// 5. bcrypt.hash(backupCode)
+		// 6. setupToken = crypto.randomBytes(32).toString('hex')
+		// 7. RedisCache.set(setupToken, { userId, totpSecret, backupCodeHash }, 600)
+		// 8. Return { qr, setupToken, backupCode }
+	}
+	
+	async verify2FASetup(setupToken: string, totpCode: string): Promise<void> {
+		// 1. RedisCache.get(setupToken) → setupData
+		// 2. If !setupData: throw error (expired)
+		// 3. speakeasy.totp.verify(setupData.totpSecret, totpCode)
+		// 4. If valid: PATCH /internal/users/:id/2fa-status
+		// 5. RedisCache.delete(setupToken)
+	}
+	
+	async disable2FA(userId: string, password: string): Promise<void> {
+		// 1. Fetch user
+		// 2. Verify password
+		// 3. PATCH /internal/users/:id/2fa-status (nulls)
+		// 4. DELETE /internal/tokens/user/:id (invalidar tokens)
+	}
+	
+	async verifyBackupCode(provisionalToken: string, backupCode: string): Promise<LoginResponse> {
+		// 1. Verify provisionalToken JWT
+		// 2. Fetch user con backupCodeHash
+		// 3. bcrypt.compare(backupCode, user.backupCodeHash)
+		// 4. If match: disable2FA automático
+		// 5. Completar login (generar tokens)
 	}
 }

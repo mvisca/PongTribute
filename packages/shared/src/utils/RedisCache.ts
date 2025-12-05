@@ -48,7 +48,7 @@ export class RedisCache<T> {
 	/** Elimina key del cache */
 	async delete(key: string): Promise<boolean> {
 		const fullKey = this.buildKey(key);
-		const deletedKeys = await this.client.del(key);
+		const deletedKeys = await this.client.del(fullKey);
 		return deletedKeys > 0;
 	}
 

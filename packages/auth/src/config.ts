@@ -11,90 +11,69 @@ import {
 	findEnvFile,
 	RedisConfig,
 	validateRedisConfig } from '@transcendence/shared';
-
-// Cargar .env explícitamente antes de build()
-const envPath = findEnvFile(__dirname);
-if (envPath) {
-	dotenv.config({ path: envPath });
-} else {
-	dotenv.config();
-}
-// =====================================================
-// TIPOS
-// =====================================================
-
-export namespace AuthEnv {
-	export interface ServiceConfig {
-		port: number;
-		host: string;
-		nodeEnv: 'development' | 'production' | 'test';
-		logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+	
+	// Cargar .env explícitamente antes de build()
+	const envPath = findEnvFile(__dirname);
+	if (envPath) {
+		dotenv.config({ path: envPath });
+	} else {
+		dotenv.config();
 	}
-	
-	export interface FastifyConfig {
-		logger: {
-			level: string;
-			transport?: {
-				target: string;
-				options: {
-					colorize: boolean;
-					translateTime: string;
-					ignore: string;
-				};
-			};
-		} | boolean;
-		ajv?: {
-			customOptions?: {
-				removeAdditional?: boolean | 'all' | 'failing';
-				coerceTypes?: boolean;
-				useDefaults?: boolean;
-			};
-		};
-	}
-	
 	// =====================================================
-	// INICIALIZAR
+	// TIPOS
 	// =====================================================
 	
-	const sharedEnv = SharedEnv.build();
-	
-	// =====================================================
-	// EXPORTS PÚBLICOS - VALORES
-	// =====================================================
-	
-	const jwtSecret = sharedEnv.JWT_SECRET;
-	const serviceSecret = sharedEnv.SERVICE_SECRET;
-	const redisHost = sharedEnv.REDIS_HOST;
-	const redisPort = sharedEnv.REDIS_PORT;
-	const redisPassword = sharedEnv.REDIS_PASSWORD;
-	const userServiceUrl = sharedEnv.USER_SERVICE_URL;
-	const authServiceUrl = sharedEnv.AUTH_SERVICE_URL;
-	
-	if (!jwtSecret || !serviceSecret || !userServiceUrl || !authServiceUrl || 
-		!redisHost || !redisPort || !redisPassword) {
-			console.error('Faltan ENV VARS. Crea un .env de .env.example:');
-			console.error('@/transcendence: cp .env.example .env');
-			console.error('Edita con tus valores');
-			process.exit(1);
+	export namespace AuthEnv {
+		export interface ServiceConfig {
+			port: number;
+			host: string;
+			nodeEnv: 'development' | 'production' | 'test';
+			logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 		}
 		
+		export interface FastifyConfig {
+			logger: {
+				level: string;
+				transport?: {
+					target: string;
+					options: {
+						colorize: boolean;
+						translateTime: string;
+						ignore: string;
+					};
+				};
+			} | boolean;
+			ajv?: {
+				customOptions?: {
+					removeAdditional?: boolean | 'all' | 'failing';
+					coerceTypes?: boolean;
+					useDefaults?: boolean;
+				};
+			};
+		}
+		
+		// =====================================================
+		// INICIALIZAR
+		// =====================================================
+		
+		const sharedEnv = SharedEnv.build();
+		
+		// =====================================================
+		// EXPORTS PÚBLICOS - VALORES
+		// =====================================================
+
 		export const PORT: number = sharedEnv.AUTH_SERVICE_PORT;
 		export const HOST: string = sharedEnv.AUTH_SERVICE_HOST;
-		
 		export const NODE_ENV: string = sharedEnv.NODE_ENV;
 		export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
-		
 		export const UNIQUE_SESSION: boolean = sharedEnv.UNIQUE_SESSION;
-		
 		export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 		export const TOKEN_EXPIRY: string = sharedEnv.TOKEN_EXPIRY;
 		export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
-		
-		export const REDIS_HOST: string = sharedEnv.REDIS_HOST!;
+		export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
 		export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
-		export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD!;
+		export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
 		export const REDIS_DB: number = sharedEnv.REDIS_DB;
-		
 		export const USER_SERVICE_URL: string = sharedEnv.USER_SERVICE_URL;
 		export const AUTH_SERVICE_URL: string = sharedEnv.AUTH_SERVICE_URL;
 		
@@ -147,9 +126,9 @@ export namespace AuthEnv {
 				maxRetriesPerRequest: 3,
 				connectTimeout: 10000,
 				lazyConnect: false,
-				enableRetryCheck: true
+				enableReadyCheck: true
 			};
-
+			
 			if (!validateRedisConfig(config))
 				throw new Error('Configuración de Redis inválida');
 			
