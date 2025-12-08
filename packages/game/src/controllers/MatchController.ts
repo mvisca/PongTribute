@@ -29,21 +29,45 @@ export class MatchController {
             });
         }
 
+		// Extraemos 'opponentId' directamente del cuerpo.
+		//Busca una propiedad llamada opponentId dentro de 
+		// request.body y crea una variable con ese mismo nombre".
+		//  Si la propiedad no existe, la variable se crea con valor undefined.
+        // Si el body es {}, opponentId será undefined.
+        // Si el body es { opponentId: "..." }, tendrá el valor.
+		const { opponentId }  = request.body;
+
         try {
             // 2. DELEGACIÓN (Llamada al Servicio)
             // Aquí está la clave: El controller NO sabe de matchmaking FIFO.
             // Solo le dice al servicio: "El usuario X quiere jugar. Arréglalo".
-            // NOTA: Ignora el body (JSON) por ahora, solo pasamos el ID.
-            const match = await this.matchService.joinOrCreate(user.id);
+            const match = await this.matchService.joinOrCreate(user.id, opponentId);
 
             // 3. Respuesta: 201 Created + Objeto Match limpio
             return reply.status(201).send(match);
 
-        } catch (error) {
-            // Logueamos el error real en servidor
+    //     } catch (error: any) { // Tipamos error como any para acceder a message
+    //         // Logueamos el error real en servidor
+    //         request.log.error(error);
+    //         // Si el servicio lanza un error de validación (ej: auto-desafío),
+    //         // podríamos devolver 400. Por simplicidad devolvemos 500 o mensaje del error.
+    //         return reply.status(500).send({
+    //             error: 'Internal Server Error',
+    //             message: error.message || 'Error al procesar el matchmaking'
+    //         });
+			//     }
+			} catch (error: any) {
             request.log.error(error);
             
-            // Devolvemos error genérico al cliente
+            // MEJORA: Si el error es de lógica de negocio conocida, devolvemos 400
+            if (error.message === "No puedes desafiarte a ti mismo") {
+                return reply.status(400).send({
+                    error: 'Bad Request',
+                    message: error.message
+                });
+            }
+
+            // Para todo lo demás (DB caída, bugs), devolvemos 500
             return reply.status(500).send({ 
                 error: 'Internal Server Error', 
                 message: 'Error al procesar el matchmaking' 

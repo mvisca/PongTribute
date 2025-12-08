@@ -9,8 +9,9 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // ========================================================================
     // RUTAS DE PARTIDAS (MATCHES)
     // ========================================================================
-
-    app.post('/matches', { // si viene una request POST para ruta /matches
+	
+	// si viene una request de tipo POST para la ruta /matches:
+	app.post('/matches', {
         // 1. GUARDIAN Seguridad: Ejecutamos el middleware antes que nada
 		// Esto valida el Token JWT y rellena request.user
 		// Es el guardián. Si el usuario no envía un Header Authorization:

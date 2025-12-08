@@ -1,3 +1,6 @@
+//TESTEA QUE SE CREA UNA PARTIDA O SE UNE A UNA CREADA (FIFO)
+//Para correr el test desde la raiz: npx tsx packages/game/test/test-matchmaking.ts
+
 import { buildApp } from '../src/app';
 import jwt from 'jsonwebtoken';
 import { GameEnv } from '../src/config';
