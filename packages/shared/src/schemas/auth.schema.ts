@@ -137,18 +137,26 @@ export namespace AuthSchemas {
 	// 2FA Setup Body y Schema
 	// ========================================================================
 	
-	/** Body con el token temporal y el código totp */
+	/** Body para dar de alta 2FA
+	 * Backup code para recuperar cuenta
+	 * QR para alta de 2FA
+	 * Setup token para autenticar al confirmar enable 2FA
+	*/
 	export const Enable2FAResponse = Type.Object({
 		setupToken: SetupTokenField,
 		backupCode: BackupCodeField,
 		qr: Type.String()
 	});
 
+	/** Body para confirmar 2FA 
+	* Se devuelve totpCode y se autentica con setupCode
+	*/
 	export const Verify2FABody = Type.Object({
 		setupToken: SetupTokenField,
 		totpCode: TotpCodeField
 	});
 
+	/** Schema para verificar enable2FA */
 	export const Verify2FABodySchema = {
 		body: Verify2FABody,
 		response: {
@@ -159,6 +167,7 @@ export namespace AuthSchemas {
 		}
 	}
 
+	/**  */
 	export const Verify2FABackupCodeBody = Type.Object({
 		setupToken: SetupTokenField,
 		backupCode: BackupCodeField
