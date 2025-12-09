@@ -1,10 +1,7 @@
-import { Not, Optional, Type } from '@sinclair/typebox';
-import { errorMonitor } from 'events';
-import { errorCodes } from 'fastify';
-import { urlToHttpOptions } from 'url';
+import { Type } from '@sinclair/typebox';
 
 // ============================================================================
-// REUSABLE FIELD DEFINITIONS
+// DEFINICION DE FIELDS REUSABLES
 // ============================================================================
 
 const UsernameField = Type.String({
@@ -29,19 +26,24 @@ const UuidField = Type.String({
 
 const BooleanField = Type.Boolean();
 
-const DateTimeField = Type.String({
-	format: 'date-time'
+const SetupTokenField = Type.String({
+	minLength: 64,
+	maxLength: 64,
+	pattern: '^[a-f0-9]{64}$'
 });
 
-const SetupTokenField = Type.String({
-	minLength: 20,
-	maxLength: 500,
-	pattern: "^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$"
-}); 
+const ProvisionalTokenField = Type.String({
+	pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'
+});
+
+const AccessTokenField = Type.String({
+	pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'
+});
 
 const TotpCodeField = Type.String({
 	minLength: 6,
-	maxLength: 6
+	maxLength: 6,
+	pattern: '^[0-9]{6}$'
 });
 
 const RefreshTokenField = Type.String({
@@ -50,17 +52,12 @@ const RefreshTokenField = Type.String({
 });
 
 const BackupCodeField = Type.String({
-	minLength: 8,
-	maxLength: 8
+	minLength: 9,
+	maxLength: 9,
+	pattern: '^[A-F0-9]{4}-[A-F0-9]{4}$'
 });
 
-const BackupCodeHashField = Type.String({
-	minLength: 60,
-	maxLength: 64,
-	pattern: '^[A-HJ-NP-Z2-9]{8}$'
-});
-
-const LocalUserPayloadSchema = Type.Object({
+const LocalUserPayloadObject = Type.Object({
 	id: UuidField,
 	username: UsernameField,
 	email: EmailField,
@@ -68,18 +65,13 @@ const LocalUserPayloadSchema = Type.Object({
 });
 
 // ============================================================================
-// COMMON ERROR RESPONSES
+// RESPUESTAS DE ERROR
 // ============================================================================
 
 const ErrorResponse = Type.Object({
 	error: Type.String(),
 	message: Type.String(),
-	details: Type.Optional(
-		Type.Object({
-			setupToken: Type.String(),
-			totpCode: Type.String()
-		})
-	)
+	details: Type.Optional(Type.Any())
 });
 
 const ConflictErrorResponse = Type.Object({
@@ -93,31 +85,9 @@ const NotFoundResponse = Type.Object({
 	message: Type.String()
 });
 
-const UnprocessableEntityError = Type.Object({
-	error: Type.String(),
-	message: Type.String(),
-	retryAfter: Type.Number()
-});
-
 // ============================================================================
-// SETUP & LOGIN SUCCESS / TwoFAVerify RESPONSES
+// EXPORTACION DE SCHEMAS EN NAMESPACE AuthSchemas
 // ============================================================================
-
-const Enable2FASuccessResponse = Type.Null();
-
-const LoginSuccessResponse = Type.Object({
-	token: Type.String(),
-	refreshToken: Type.String(),
-	user: LocalUserPayloadSchema
-});
-
-const Login2FAVerifyResponse = Type.Object({
-	twoFactorRequired: Type.Literal(true),
-	userId: UuidField,
-	setupToken: SetupTokenField,
-	expiresIn: Type.Number(),
-	qr: Type.Optional(Type.String()) // Solo en primer uso
-})
 
 export namespace AuthSchemas {
 	
@@ -126,7 +96,7 @@ export namespace AuthSchemas {
 	// ========================================================================
 	
 	/** Datos del usuario en respuestas de auth */
-	export const UserPayloadSchema = LocalUserPayloadSchema;
+	export const UserPayloadSchema = LocalUserPayloadObject;
 	
 	/** Params para rutas con :id */
 	export const UserIdParams = Type.Object({
@@ -134,241 +104,194 @@ export namespace AuthSchemas {
 	});
 
 	// ========================================================================
-	// 2FA Setup Body y Schema
+	// LOGIN - Body y Schemas
 	// ========================================================================
 	
-	/** Body para dar de alta 2FA
-	 * Backup code para recuperar cuenta
-	 * QR para alta de 2FA
-	 * Setup token para autenticar al confirmar enable 2FA
-	*/
-	export const Enable2FAResponse = Type.Object({
-		setupToken: SetupTokenField,
-		backupCode: BackupCodeField,
-		qr: Type.String()
-	});
-
-	/** Body para confirmar 2FA 
-	* Se devuelve totpCode y se autentica con setupCode
-	*/
-	export const Verify2FABody = Type.Object({
-		setupToken: SetupTokenField,
-		totpCode: TotpCodeField
-	});
-
-	/** Schema para verificar enable2FA */
-	export const Verify2FABodySchema = {
-		body: Verify2FABody,
-		response: {
-			200: ErrorResponse,
-			401: ErrorResponse,
-			409: ConflictErrorResponse,
-			422: UnprocessableEntityError
-		}
-	}
-
-	/**  */
-	export const Verify2FABackupCodeBody = Type.Object({
-		setupToken: SetupTokenField,
-		backupCode: BackupCodeField
-	});
-
-	export const Verify2FABackupCodeBodySchema = {
-		body: Verify2FABackupCodeBody,
-		response: {
-			200: Type.Union([
-				LoginSuccessResponse,
-				Login2FAVerifyResponse
-			]),
-			401: ErrorResponse
-		}
-	}
-
-	export const Update2FAStatusBody = Type.Object({
-		has2FAEnabled: BooleanField,
-		totpSecret: Type.Optional(TotpCodeField),
-		backupCodeHash: Type.Optional(BackupCodeHashField)
-	});
-
-	export const Update2FAStatusBodySchema = {
-		body: Update2FAStatusBody,
-		response: {
-			204: Update2FAStatusBody,
-			404: NotFoundResponse
-		}
-	}
-
-	export const Disable2FABody = Type.Object({
-		password: PasswordField
-	});
-
-	// ========================================================================
-	// LOGIN Request - Body y Schema
-	// ========================================================================
-	
-	/** Body: email + password */
+	/** Body para login (email + password) */
 	export const LoginBody = Type.Object({
 		email: EmailField,
 		password: PasswordField
 	});
 	
-	/** Schema completo del endpoint */
+	/** Response: Login exitoso con tokens */
+	export const LoginSuccessResponse = Type.Object({
+		token: AccessTokenField,
+		refreshToken: RefreshTokenField,
+		user: LocalUserPayloadObject
+	});
+	
+	/** Response: Login pendiente, requiere verificación 2FA */
+	export const Login2FARequiredResponse = Type.Object({
+		twoFactorRequired: Type.Literal(true),
+		userId: UuidField,
+		provisionalToken: ProvisionalTokenField,
+		expiresIn: Type.Number()
+	});
+	
+	/** Schema completo de POST /auth/login */
 	export const LoginBodySchema = {
 		body: LoginBody,
 		response: {
 			200: Type.Union([
 				LoginSuccessResponse,
-				Login2FAVerifyResponse
+				Login2FARequiredResponse
 			]),
 			401: ErrorResponse
-		}	
+		}
+	};
+
+	// ========================================================================
+	// 2FA SETUP - Activar y Verificar 2FA
+	// ========================================================================
+	
+	/** Response de POST /auth/:id/enable-2fa
+	 * Contiene QR code, setup token temporal y backup code
+	 * Usuario DEBE guardar backupCode (última vez que lo ve en plaintext)
+	 */
+	export const Enable2FAResponse = Type.Object({
+		setupToken: SetupTokenField,
+		backupCode: BackupCodeField,
+		qr: Type.String()
+	});
+	
+	/** Schema completo de POST /auth/:id/enable-2fa */
+	export const Enable2FABodySchema = {
+		params: UserIdParams,
+		response: {
+			200: Enable2FAResponse,
+			401: ErrorResponse,
+			404: NotFoundResponse,
+			409: ConflictErrorResponse
+		}
 	};
 	
-	// ========================================================================
-	// LOGIN - Response Body y Schema
-	// ========================================================================
-	
-	/** Body para respuesta existosa de login w/2fa */
-	export const AuthSuccessResponseBody = Type.Object({
-		token: Type.String(),
-		refreshToken: Type.String(),
-		user: UserPayloadSchema
+	/** Body de POST /auth/:id/verify-2fa-setup
+	 * Cliente envía setupToken + código TOTP de Google Authenticator
+	 */
+	export const Verify2FASetupBody = Type.Object({
+		setupToken: SetupTokenField,
+		totpCode: TotpCodeField
 	});
 	
-	/** Body para respuesta de 2FA requerido */
-	export const TwoFARequiredResponseBody = Type.Object({
-		twoFactorRequired: Type.Literal(true),
-		userId: Type.String(),
-		setupToken: Type.String(),
-		expiresIn: Type.Number()
+	/** Schema completo de POST /auth/:id/verify-2fa-setup */
+	export const Verify2FASetupBodySchema = {
+		params: UserIdParams,
+		body: Verify2FASetupBody,
+		response: {
+			204: Type.Null(),
+			401: ErrorResponse,
+			404: NotFoundResponse
+		}
+	};
+
+	// ========================================================================
+	// 2FA LOGIN - Verificar código TOTP en login
+	// ========================================================================
+	
+	/** Body de POST /auth/verify-2fa
+	 * Completar login cuando usuario tiene 2FA activo
+	 */
+	export const LoginVerify2FABody = Type.Object({
+		provisionalToken: ProvisionalTokenField,
+		totpCode: TotpCodeField
 	});
 	
-	/** Body union para login response */
-	export const LoginResponseSchema = Type.Union([
-		TwoFARequiredResponseBody,
-		AuthSuccessResponseBody
-	]);
-	
+	/** Schema completo de POST /auth/verify-2fa */
+	export const LoginVerify2FABodySchema = {
+		body: LoginVerify2FABody,
+		response: {
+			200: LoginSuccessResponse,
+			401: ErrorResponse
+		}
+	};
+
 	// ========================================================================
-	// UPDATE PASSWORD - Body y Schema
+	// 2FA RECOVERY - Backup Code (último recurso)
 	// ========================================================================
 	
-	/** Body: oldPassword + newPassword */
+	/** Body de POST /auth/verify-backup-code
+	 * Alternativa a verify-2fa cuando usuario pierde acceso a TOTP
+	 * IMPORTANTE: Al usarse, 2FA se desactiva automáticamente
+	 */
+	export const VerifyBackupCodeBody = Type.Object({
+		provisionalToken: ProvisionalTokenField,
+		backupCode: BackupCodeField
+	});
+	
+	/** Schema completo de POST /auth/verify-backup-code */
+	export const VerifyBackupCodeBodySchema = {
+		body: VerifyBackupCodeBody,
+		response: {
+			200: LoginSuccessResponse,
+			401: ErrorResponse
+		}
+	};
+
+	// ========================================================================
+	// 2FA DISABLE - Desactivar 2FA
+	// ========================================================================
+	
+	/** Body de POST /auth/:id/disable-2fa
+	 * Requiere password actual para seguridad
+	 */
+	export const Disable2FABody = Type.Object({
+		password: PasswordField
+	});
+	
+	/** Schema completo de POST /auth/:id/disable-2fa */
+	export const Disable2FABodySchema = {
+		params: UserIdParams,
+		body: Disable2FABody,
+		response: {
+			204: Type.Null(),
+			401: ErrorResponse,
+			404: NotFoundResponse
+		}
+	};
+
+	// ========================================================================
+	// UPDATE PASSWORD
+	// ========================================================================
+	
+	/** Body de POST /auth/:id/update-password */
 	export const UpdatePasswordBody = Type.Object({
 		oldPassword: PasswordField,
 		newPassword: PasswordField
 	});
 	
-	/** Schema completo del endpoint */
+	/** Schema completo de POST /auth/:id/update-password */
 	export const UpdatePasswordBodySchema = {
-		tags: ['User'],
 		params: UserIdParams,
 		body: UpdatePasswordBody,
 		response: {
 			204: Type.Null(),
+			401: ErrorResponse,
 			404: NotFoundResponse
 		}
 	};
 	
 	// ========================================================================
-	// REFRESH TOKEN - Body y Schema
+	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================
 
-	/** Body: refreshToken */
+	/** Body de POST /auth/refresh */
 	export const RefreshTokenBody = Type.Object({
 		refreshToken: RefreshTokenField
 	});
 	
-	/** Response: nuevo par de tokens + user */
+	/** Response de POST /auth/refresh (nuevo par de tokens) */
 	export const RefreshTokenResponse = Type.Object({
-		token: Type.String(),
+		token: AccessTokenField,
 		refreshToken: RefreshTokenField,
-		user: UserPayloadSchema
+		user: LocalUserPayloadObject
 	});
 	
-	/** Schema completo del endpoint */
+	/** Schema completo de POST /auth/refresh */
 	export const RefreshTokenBodySchema = {
-		tags: ['Auth'],
 		body: RefreshTokenBody,
 		response: {
 			200: RefreshTokenResponse,
 			401: ErrorResponse
 		}
 	};
-	
-	const TokenHashField = Type.String({
-			description: 'Refresh Token hasheado',
-			minLength: 64,
-			maxLength: 64
-	});
-
-	/** Body para crear nuevo refresh token */
-	export const RefreshTokenData = Type.Object({
-		userId: UuidField,
-		tokenHash: TokenHashField,
-		expiresAt: DateTimeField,
-		is2FAVerified: BooleanField
-	})
-	
-	//** Body para respuesta de creacion de Refresh Token */
-	export const RefreshTokenResponseBody = Type.Object({
-		id: UuidField,
-		userId: UuidField,
-		tokenHash: TokenHashField,
-		expiresAt: DateTimeField,
-		is2FAVerified: BooleanField,
-		createdAt: DateTimeField
-	});
-	
-	/** Schema para creación de token */
-	export const RefreshTokenDataSchema = {
-		tags: ['Auth'],
-		body: RefreshTokenData,
-		response: {
-			201: RefreshTokenResponseBody,
-			400: ErrorResponse,
-			500: ErrorResponse
-		}
-	};
-	
-	/** Body para verificar refresh token a partir de sí mismo */
-	export const VerifyRefreshTokenBody = Type.Object({
-		tokenHash: TokenHashField
-	});
-	
-	/** Schema para verificar refresh token a partir de sí mismo */
-	export const VerifyRefreshTokenSchema = {
-		tags: ['Auth'],
-		body: VerifyRefreshTokenBody,
-		response: {
-			200: RefreshTokenResponseBody,
-			400: ErrorResponse,
-			404: NotFoundResponse,
-			500: ErrorResponse
-		}
-	};
-	
-	/** Params users/:id para borrar refresh token */
-	export const DeleteRefreshTokenByUserParams = Type.Object({
-		id: UuidField
-	});
-	
-	export const DeleteRefreshTokenByUserSchema = {
-		tags: ['Auth'],
-		params: DeleteRefreshTokenByUserParams,
-		response: {
-			204: Type.Void(),
-			400: ErrorResponse,
-			500: ErrorResponse
-		}
-	};
-	
-	/** Schema para validar */
-	export const DeleteExpiredTokensSchema = {
-		tags: ['Auth'],
-		response: {
-			204: Type.Void(),
-			500: ErrorResponse
-		}
-	}
 }

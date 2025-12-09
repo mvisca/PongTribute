@@ -40,6 +40,24 @@ const DateTimeField = Type.String({
 	format: 'date-time'
 });
 
+const TotpSecretField = Type.String({
+	minLength: 16,
+	maxLength: 64,
+	pattern: '^[A-Z2-7]+$'
+});
+
+const BackupCodeHashField = Type.String({
+	minLength: 60,
+	maxLength: 60,
+	pattern: '^\\$2[ayb]\\$[0-9]{2}\\$[A-Za-z0-9./]{53}$'
+});
+
+const TokenHashField = Type.String({
+	description: 'Refresh Token hasheado (SHA-256)',
+	minLength: 64,
+	maxLength: 64
+});
+
 // ============================================================================
 // COMMON ERROR RESPONSES
 // ============================================================================
@@ -66,6 +84,10 @@ const NotFoundResponse = Type.Object({
 
 export namespace UserSchemas {
 	
+	// ========================================================================
+	// USER CREATION
+	// ========================================================================
+	
 	export const CreateUserInput = Type.Object({
 		username: UsernameField,
 		email: EmailField,
@@ -74,9 +96,9 @@ export namespace UserSchemas {
 	});
 	
 	/**
-	* Body para POST /api/users
-	* Valida datos de creacion de usuario
-	*/
+	 * Body para POST /api/users
+	 * Valida datos de creacion de usuario
+	 */
 	export const CreateUserBody = Type.Object({
 		id: UuidField,
 		username: UsernameField,
@@ -90,53 +112,53 @@ export namespace UserSchemas {
 		backupCodeHash: Type.Optional(Type.String())
 	});
 	
-	// ============================================================================
+	// ========================================================================
 	// SCHEMAS DE RESPONSE
-	// ============================================================================
+	// ========================================================================
 	
 	/**
-	* Response para endpoints que retornan User
-	* Usuarion SIN passwordHass (por seguridad)
-	*/
+	 * Response para endpoints que retornan User
+	 * Usuario SIN passwordHash (por seguridad)
+	 */
 	export const UserPublic = Type.Object({
-		id: Type.String({ ...UuidField }),
-		username: Type.String({ ...UsernameField }),
-		email: Type.String({ ...EmailField }),
-		avatar: Type.String({ ...AvatarField }),
+		id: UuidField,
+		username: UsernameField,
+		email: EmailField,
+		avatar: AvatarField,
 		isOnline: Type.Boolean(),
 		has2FAEnabled: Type.Boolean(),
-		createdAt: Type.String({ ...DateTimeField }),
-		updatedAt: Type.String({ ...DateTimeField })
+		createdAt: DateTimeField,
+		updatedAt: DateTimeField
 	});
 	
 	/**
-	* Response para endpoints que retornan User
-	* Con 'passwordHash' solo para uso interno (Repository, Auth)
-	* NUNCA enviar a HTTP
-	*/
+	 * Response para endpoints que retornan User
+	 * Con 'passwordHash' solo para uso interno (Repository, Auth)
+	 * NUNCA enviar a HTTP
+	 */
 	export const UserInternal = Type.Object({
 		id: UuidField,
-		username: Type.String(),
+		username: UsernameField,
 		email: EmailField,
 		avatar: AvatarField,
 		passwordHash: PasswordHashField,
 		isOnline: BooleanField,
 		isDeleted: BooleanField,
 		has2FAEnabled: BooleanField,
-		totpSecret: Type.Optional(Type.String()),
-		backupCodeHash: Type.Optional(Type.String()),
+		totpSecret: Type.Optional(TotpSecretField),
+		backupCodeHash: Type.Optional(BackupCodeHashField),
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});
 	
-	// ============================================================================
+	// ========================================================================
 	// SCHEMAS COMPLETOS PARA FASTIFY RUTA 'POST /api/user'
-	// ============================================================================
+	// ========================================================================
 	
 	/**
-	* Schema competo para POST /api/users
-	* Define el body de entrada y responses posibles
-	*/
+	 * Schema completo para POST /api/users
+	 * Define el body de entrada y responses posibles
+	 */
 	export const createUserSchema = {
 		tags: ['User'],
 		body: CreateUserInput,
@@ -146,41 +168,38 @@ export namespace UserSchemas {
 		}
 	};
 	
-	// ============================================================================
+	// ========================================================================
 	// SCHEMAS DE PARAMS
-	// ============================================================================
+	// ========================================================================
 	
 	/**
-	* Params comunes para rutas con :id
-	* Note: Also defined in auth.schema.ts - intentionally duplicated for namespace organization
-	*/
+	 * Params comunes para rutas con :id
+	 */
 	export const UserIdParams = Type.Object({
-		id: Type.String({ ...UuidField })
+		id: UuidField
 	});
 	
 	/**
-	* Params para ruta /users/username/:username
-	*/
+	 * Params para ruta /users/username/:username
+	 */
 	export const UsernameParams = Type.Object({
-		username: Type.String({ ...UsernameField })
+		username: UsernameField
 	});
 	
 	/**
-	* Params para ruta /users/email/:email
-	*/
+	 * Params para ruta /users/email/:email
+	 */
 	export const EmailParams = Type.Object({
-		email: Type.String({
-			...EmailField,
-		})
+		email: EmailField
 	});
 	
-	// ============================================================================
+	// ========================================================================
 	// GET SCHEMAS
-	// ============================================================================
+	// ========================================================================
 	
 	/**
-	* Schema para GET /api/users/:id
-	*/
+	 * Schema para GET /api/users/:id
+	 */
 	export const getUserByIdSchema = {
 		tags: ['User'],
 		params: UserIdParams,
@@ -191,8 +210,8 @@ export namespace UserSchemas {
 	};
 	
 	/**
-	* Schema para GET /api/users/username/:username
-	*/
+	 * Schema para GET /api/users/username/:username
+	 */
 	export const getUserByUsernameSchema = {
 		tags: ['User'],
 		params: UsernameParams,
@@ -203,8 +222,8 @@ export namespace UserSchemas {
 	};
 	
 	/**
-	* Schema para GET /api/users/email/:email
-	*/
+	 * Schema para GET /api/users/email/:email
+	 */
 	export const getUserByEmailSchema = {
 		tags: ['User'],
 		params: EmailParams,
@@ -214,14 +233,14 @@ export namespace UserSchemas {
 		}
 	};
 	
-	// ============================================================================
+	// ========================================================================
 	// CHECK SCHEMAS
-	// ============================================================================
+	// ========================================================================
 	
 	/**
-	* Response para endpoints de verificación
-	* Retorna disponibilidad del recurso
-	*/
+	 * Response para endpoints de verificación
+	 * Retorna disponibilidad del recurso
+	 */
 	export const AvailabilityResponse = Type.Object({
 		available: Type.Boolean(),
 		username: Type.Optional(Type.String()),
@@ -229,8 +248,8 @@ export namespace UserSchemas {
 	});
 	
 	/**
-	* Schema para GET /api/users/check-username/:username
-	*/
+	 * Schema para GET /api/users/check-username/:username
+	 */
 	export const checkUsernameSchema = {
 		tags: ['User'],
 		params: UsernameParams,
@@ -240,8 +259,8 @@ export namespace UserSchemas {
 	};
 	
 	/**
-	* Schema para GET /api/users/check-email/:email
-	*/
+	 * Schema para GET /api/users/check-email/:email
+	 */
 	export const checkEmailSchema = {
 		tags: ['User'],
 		params: EmailParams,
@@ -250,110 +269,236 @@ export namespace UserSchemas {
 		}
 	};
 	
-	// ============================================================================
+	// ========================================================================
 	// UPDATE USER SCHEMAS
-	// ============================================================================
+	// ========================================================================
 	
 	/**
-	* Body para PUT /api/users/:id
-	* Todos los campos son opcionales (actualización parcial)
-	*/
+	 * Body para PUT /api/users/:id
+	 * Todos los campos son opcionales (actualización parcial)
+	 */
 	export const UpdateUserBody = Type.Object({
 		username: Type.Optional(UsernameField),
 		email: Type.Optional(EmailField),
 		avatar: Type.Optional(AvatarField)
 	}, {
-		minProperties: 1,
-	}
-);
+		minProperties: 1
+	});
 
-/**
-* Schema para PUT /api/users/:id
-*/
-export const UpdateUserSchema = {
-	tags: ['User'],
-	params: UserIdParams,
-	body: UpdateUserBody,
-	response: {
-		200: UserPublic,
-		404: NotFoundResponse,
-		409: ConflictErrorResponse
-	}
-};
+	/**
+	 * Schema para PUT /api/users/:id
+	 */
+	export const UpdateUserSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		body: UpdateUserBody,
+		response: {
+			200: UserPublic,
+			404: NotFoundResponse,
+			409: ConflictErrorResponse
+		}
+	};
 
-// ============================================================================
-// UPDATE PASSWORD SCHEMAS
-// ============================================================================
+	// ========================================================================
+	// UPDATE PASSWORD SCHEMAS
+	// ========================================================================
 
-/**
-* Body para PUT /api/users/:id/password
-*/
-export const UpdatePasswordInternalBody = Type.Object({
-	newPasswordHash: Type.String({
-		...PasswordHashField,
-		description: 'Nuevo hash bcrypt'
-	})
-});
+	/**
+	 * Body para PUT /api/users/:id/password
+	 */
+	export const UpdatePasswordInternalBody = Type.Object({
+		newPasswordHash: PasswordHashField
+	});
 
-/**
-* Schema para PUT /api/users/:id/password
-*/
-export const updatePasswordInternalSchema = {
-	tags: ['User'],
-	params: UserIdParams,
-	body: UpdatePasswordInternalBody,
-	response: {
-		204: Type.Null(),  // Sin contenido en respuesta exitosa
-		404: NotFoundResponse
-	}
-};
+	/**
+	 * Schema para PUT /api/users/:id/password
+	 */
+	export const updatePasswordInternalSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		body: UpdatePasswordInternalBody,
+		response: {
+			204: Type.Null(),
+			404: NotFoundResponse
+		}
+	};
 
-// ============================================================================
-// SET ONLINE STATUS SCHEMA
-// ============================================================================
+	// ========================================================================
+	// SET ONLINE STATUS SCHEMA
+	// ========================================================================
 
-export const setOnlineStatusSchema = {
-	tags: ['user'],
-	params: Type.Object({
-		id: UuidField
-	}),
-	body: Type.Object({
+	/**
+	 * Body para PATCH /internal/users/:id/online-status
+	 */
+	export const SetOnlineStatusBody = Type.Object({
 		isOnline: BooleanField
-	}),
-	response: Type.Object({
-		204: Type.Null()
-	})
-};
+	});
 
-// ============================================================================
-// ANONYMIZE SCHEMAS
-// ============================================================================
+	/**
+	 * Schema para PATCH /internal/users/:id/online-status
+	 */
+	export const setOnlineStatusSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		body: SetOnlineStatusBody,
+		response: {
+			204: Type.Null(),
+			404: NotFoundResponse
+		}
+	};
 
-/**
-* Schema para DELETE /api/users/:id
-*/
-export const anonymizeUserSchema = {
-	tags: ['User'],
-	params: UserIdParams,
-	response: {
-		204: Type.Null(),
-		404: NotFoundResponse
-	}
-};
+	// ========================================================================
+	// 2FA INTERNAL - Endpoint interno desde Auth
+	// ========================================================================
+	
+	/**
+	 * Body de PATCH /internal/users/:id/2fa-status
+	 * Llamado por Auth service para actualizar estado 2FA en DB
+	 */
+	export const Update2FAStatusBody = Type.Object({
+		has2FAEnabled: BooleanField,
+		totpSecret: Type.Optional(
+			Type.Union([
+				TotpSecretField,
+				Type.Null()
+			])
+		),
+		backupCodeHash: Type.Optional(
+			Type.Union([
+				BackupCodeHashField,
+				Type.Null()
+			])
+		)
+	});
+	
+	/**
+	 * Schema completo de PATCH /internal/users/:id/2fa-status
+	 */
+	export const Update2FAStatusBodySchema = {
+		params: UserIdParams,
+		body: Update2FAStatusBody,
+		response: {
+			200: UserPublic,
+			404: NotFoundResponse
+		}
+	};
 
-// ============================================================================
-// DELETE SCHEMAS
-// ============================================================================
+	// ========================================================================
+	// REFRESH TOKEN - Internos (llamados desde Auth)
+	// ========================================================================
 
-/**
-* Schema para DELETE /api/users/:id
-*/
-export const deleteUserSchema = {
-	tags: ['User'],
-	params: UserIdParams,
-	response: {
-		204: Type.Null(),
-		404: NotFoundResponse
-	}
-};
+	/**
+	 * Body de POST /internal/tokens (crear refresh token)
+	 */
+	export const RefreshTokenData = Type.Object({
+		userId: UuidField,
+		tokenHash: TokenHashField,
+		expiresAt: DateTimeField,
+		is2FAVerified: BooleanField
+	});
+	
+	/**
+	 * Response al crear o verificar refresh token
+	 */
+	export const RefreshTokenResponseBody = Type.Object({
+		id: UuidField,
+		userId: UuidField,
+		tokenHash: TokenHashField,
+		expiresAt: DateTimeField,
+		is2FAVerified: BooleanField,
+		createdAt: DateTimeField
+	});
+	
+	/**
+	 * Schema completo de POST /internal/tokens
+	 */
+	export const RefreshTokenDataSchema = {
+		body: RefreshTokenData,
+		response: {
+			201: RefreshTokenResponseBody,
+			400: ErrorResponse,
+			500: ErrorResponse
+		}
+	};
+	
+	/**
+	 * Body de POST /internal/tokens/verify
+	 */
+	export const VerifyRefreshTokenBody = Type.Object({
+		tokenHash: TokenHashField
+	});
+	
+	/**
+	 * Schema completo de POST /internal/tokens/verify
+	 */
+	export const VerifyRefreshTokenSchema = {
+		body: VerifyRefreshTokenBody,
+		response: {
+			200: RefreshTokenResponseBody,
+			400: ErrorResponse,
+			404: NotFoundResponse,
+			500: ErrorResponse
+		}
+	};
+	
+	/**
+	 * Params de DELETE /internal/tokens/user/:id
+	 */
+	export const DeleteRefreshTokenByUserParams = Type.Object({
+		id: UuidField
+	});
+	
+	/**
+	 * Schema completo de DELETE /internal/tokens/user/:id
+	 */
+	export const DeleteRefreshTokenByUserSchema = {
+		params: DeleteRefreshTokenByUserParams,
+		response: {
+			204: Type.Void(),
+			400: ErrorResponse,
+			500: ErrorResponse
+		}
+	};
+	
+	/**
+	 * Schema completo de POST /internal/tokens/cleanup
+	 */
+	export const DeleteExpiredTokensSchema = {
+		response: {
+			204: Type.Void(),
+			500: ErrorResponse
+		}
+	};
+
+	// ========================================================================
+	// ANONYMIZE SCHEMAS
+	// ========================================================================
+
+	/**
+	 * Schema para DELETE /api/users/:id (soft delete)
+	 */
+	export const anonymizeUserSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			204: Type.Null(),
+			404: NotFoundResponse
+		}
+	};
+
+	// ========================================================================
+	// DELETE SCHEMAS
+	// ========================================================================
+
+	/**
+	 * Schema para DELETE /api/users/:id (hard delete)
+	 */
+	export const deleteUserSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			204: Type.Null(),
+			404: NotFoundResponse
+		}
+	};
 }

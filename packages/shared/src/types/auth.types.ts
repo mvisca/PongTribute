@@ -1,5 +1,6 @@
 import { Static } from '@sinclair/typebox';
-import { AuthSchemas } from '../schemas/auth.schema.js';
+import { AuthSchemas } from '../index.js';
+import { UserSchemas } from '../index.js';
 
 export namespace AuthTypes {
 	
@@ -7,72 +8,154 @@ export namespace AuthTypes {
 	// COMUNES
 	// ========================================================================
 	
-	/** Datos del usuario en respuestas */
+	/** Datos del usuario en respuestas de auth */
 	export type UserPayload = Static<typeof AuthSchemas.UserPayloadSchema>;
+	
+	/** Params de rutas con :id */
+	export type UserIdParams = Static<typeof AuthSchemas.UserIdParams>;
 	
 	// ========================================================================
 	// LOGIN
 	// ========================================================================
 	
-	/** Body que envía el cliente al login */
+	/** Body de POST /auth/login */
 	export type LoginBody = Static<typeof AuthSchemas.LoginBody>;
 	
-	/** Respuesta exitosa de login (con refreshToken) */
-	export type AuthSuccessResponse = Static<typeof AuthSchemas.AuthSuccessResponseBody>;
+	/** Response cuando login exitoso (con tokens) */
+	export type LoginSuccessResponse = Static<typeof AuthSchemas.LoginSuccessResponse>;
 	
-	/** Respuesta cuando se requiere 2FA */
-	export type TwoFactorRequiredResponse = Static<typeof AuthSchemas.TwoFactorRequiredResponseBody>;
+	/** Response cuando login requiere 2FA */
+	export type Login2FARequiredResponse = Static<typeof AuthSchemas.Login2FARequiredResponse>;
 	
-	/** Respuesta del servidor al login (unión de los dos) */
-	export type LoginResponse = Static<typeof AuthSchemas.LoginResponseSchema>;
+	/** Union type para response de login */
+	export type LoginResponse = LoginSuccessResponse | Login2FARequiredResponse;
 	
-	/** Body que envía cliente al proceso de login 2FA */
-	export type Verify2FABody = Static<typeof AuthSchemas.Verify2FABody>;
-
+	// ========================================================================
+	// 2FA SETUP - Activar y Verificar
+	// ========================================================================
+	
+	/** Response de POST /auth/:id/enable-2fa */
+	export type Enable2FAResponse = Static<typeof AuthSchemas.Enable2FAResponse>;
+	
+	/** Body de POST /auth/:id/verify-2fa-setup */
+	export type Verify2FASetupBody = Static<typeof AuthSchemas.Verify2FASetupBody>;
+	
+	// ========================================================================
+	// 2FA LOGIN - Verificar código en login
+	// ========================================================================
+	
+	/** Body de POST /auth/verify-2fa */
+	export type LoginVerify2FABody = Static<typeof AuthSchemas.LoginVerify2FABody>;
+	
+	// ========================================================================
+	// 2FA RECOVERY - Backup Code
+	// ========================================================================
+	
+	/** Body de POST /auth/verify-backup-code */
+	export type VerifyBackupCodeBody = Static<typeof AuthSchemas.VerifyBackupCodeBody>;
+	
+	// ========================================================================
+	// 2FA DISABLE
+	// ========================================================================
+	
+	/** Body de POST /auth/:id/disable-2fa */
+	export type Disable2FABody = Static<typeof AuthSchemas.Disable2FABody>;
+	
+	// ========================================================================
+	// 2FA INTERNAL - Auth CONSUME desde User service
+	// ========================================================================
+	
+	/** Body para llamar PATCH /internal/users/:id/2fa-status */
+	export type Update2FAStatusBody = Static<typeof UserSchemas.Update2FAStatusBody>;
+	
+	// ========================================================================
+	// 2FA CACHE - Datos temporales en Redis
+	// ========================================================================
+	
+	/**
+	 * Datos almacenados en RedisCache durante setup 2FA
+	 * Key: setupToken (hex 64 chars)
+	 * TTL: 10 minutos
+	 */
+	export interface SetupTokenData {
+		userId: string;
+		totpSecret: string;        // Base32 TOTP secret
+		backupCodeHash: string;    // Bcrypt hash del backup code
+	}
+	
 	// ========================================================================
 	// UPDATE PASSWORD
 	// ========================================================================
 	
-	/** Body que envía el cliente para cambiar password */
+	/** Body de POST /auth/:id/update-password */
 	export type UpdatePasswordBody = Static<typeof AuthSchemas.UpdatePasswordBody>;
 	
 	// ========================================================================
-	// REFRESH TOKEN - SERVICIO CLIENTE HTTP
+	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================
 	
-	/** Body que envía el cliente al refresh */
+	/** Body de POST /auth/refresh */
 	export type RefreshTokenBody = Static<typeof AuthSchemas.RefreshTokenBody>;
 	
-	/** Respuesta del servidor al refresh exitoso con dos tokens*/
+	/** Response de POST /auth/refresh */
 	export type RefreshTokenResponse = Static<typeof AuthSchemas.RefreshTokenResponse>;
 	
 	// ========================================================================
-	// REFRESH TOKEN - INTERNOS (Auth -> User)
+	// REFRESH TOKEN - Auth CONSUME desde User service
 	// ========================================================================
 	
-	/** Body para crear refresh token en user service */
-	export type RefreshTokenDataBody = Static<typeof AuthSchemas.RefreshTokenDataBody>;
+	/** Body para llamar POST /internal/tokens */
+	export type RefreshTokenData = Static<typeof UserSchemas.RefreshTokenData>;
 	
-	/** Response al crear o verificar token */
-	export type RefreshTokenResponseBody = Static<typeof AuthSchemas.RefreshTokenResponseBody>;
+	/** Response de POST /internal/tokens y POST /internal/tokens/verify */
+	export type RefreshTokenResponseBody = Static<typeof UserSchemas.RefreshTokenResponseBody>;
 	
-	/** Body para verificar token por hash */
-	export type VerifyRefreshTokenBody = Static<typeof AuthSchemas.VerifyRefreshTokenBody>;
+	/** Body para llamar POST /internal/tokens/verify */
+	export type VerifyRefreshTokenBody = Static<typeof UserSchemas.VerifyRefreshTokenBody>;
 	
-	/** Params para borrar tokens por userId */
-	export type DeleteRefreshTokenByUserParams = Static<typeof AuthSchemas.DeleteRefreshTokenByUserParams>;
+	/** Params para llamar DELETE /internal/tokens/user/:id */
+	export type DeleteRefreshTokenByUserParams = Static<typeof UserSchemas.DeleteRefreshTokenByUserParams>;
 	
 	// ========================================================================
-	// REFRESH TOKEN - DOMINIO (lógica interna, no HTTP)
+	// REFRESH TOKEN - Dominio (lógica interna)
 	// ========================================================================
 	
-	/** Token en dominio (camelCase) */
-	export type RefreshTokenRecord = RefreshTokenDataBody & { 
-		id: string,
-		createdAt: string
-	};
+	/**
+	 * Token en formato de dominio (camelCase)
+	 * Usado internamente en services
+	 */
+	export type RefreshTokenRecord = RefreshTokenResponseBody;
 	
-	/** Payload dentro del JWT refresh */
+	// ========================================================================
+	// JWT PAYLOADS
+	// ========================================================================
+	
+	/**
+	 * Payload dentro del JWT de acceso (access token)
+	 * Incluye claim is2FAVerified para validar 2FA
+	 */
+	export interface AccessTokenPayload extends UserPayload {
+		is2FAVerified: boolean;
+		iat: number;
+		exp: number;
+	}
+	
+	/**
+	 * Payload dentro del JWT provisional (login con 2FA)
+	 * TTL: 1 minuto
+	 */
+	export interface ProvisionalTokenPayload {
+		userId: string;
+		email: string;
+		purpose: '2fa_verification';
+		iat: number;
+		exp: number;
+	}
+	
+	/**
+	 * Payload dentro del refresh token JWT
+	 * Vinculado a registro en DB por tokenId
+	 */
 	export interface RefreshTokenPayload {
 		userId: string;
 		tokenId: string;
@@ -81,24 +164,20 @@ export namespace AuthTypes {
 		exp: number;
 	}
 	
-	/** Payload dentro del JWT access (con claim de 2FA) */
-	export interface AccessTokenPayload extends UserPayload {
-		is2FAVerified: boolean;
-		iat: number;
-		exp: number;
-	}
-	
 	// ========================================================================
-	// REFRESH TOKEN - BASE DE DATOS (snake_case)
+	// DATABASE ROWS (snake_case)
 	// ========================================================================
 	
-	/** Token en DB (snake_case) */
+	/**
+	 * Refresh token en DB (snake_case)
+	 * Tabla: refresh_tokens
+	 */
 	export interface RefreshTokenRow {
 		id: string;
 		user_id: string;
 		token_hash: string;
-		expires_at: number;
-		is_2fa_verified: number;
-		created_at: number;
+		expires_at: string;        // ISO 8601 string
+		is_2fa_verified: number;   // SQLite boolean (0 | 1)
+		created_at: number;        // Unix timestamp ms
 	}
 }
