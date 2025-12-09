@@ -1,3 +1,11 @@
+## Team Roles:
+    Product Owner: dkurcbar
+    Project Manager: spereyra
+    Architect: mvisca-g
+    Developers: mehernan y jocuni-p
+
+
+
 # Transcendence – Configuración del entorno
 
 ## Índice
