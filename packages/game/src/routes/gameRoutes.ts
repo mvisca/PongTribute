@@ -1,13 +1,15 @@
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
+import { GameGateway } from '../gateways/GameGateway.js';
 import { AuthMiddleware, MatchSchemas } from '@transcendence/shared';
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
     // Instanciamos el controlador una sola vez
-    const controller = new MatchController();
+	const controller = new MatchController();
+	const gateway = new GameGateway();
 
     // ========================================================================
-    // RUTAS DE PARTIDAS (MATCHES)
+    // HTTP: RUTAS DE CREAR PARTIDA (REST)
     // ========================================================================
 	
 	// si viene una request de tipo POST para la ruta /matches:
@@ -30,6 +32,23 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
         handler: controller.createMatch.bind(controller)
     });
 
-    // Aquí irían más rutas:
-    // app.get('/matches/:id', ...);
+	// ========================================================================
+    // WEBSOCKET: CONEXIÓN REAL-TIME
+	// ========================================================================
+	// 	app.get: Los WebSockets siempre empiezan como una petición GET normal
+	//  antes de "transformarse".
+	// { websocket: true }: Esta es la opción mágica de fastify-websocket.
+	// Le dice al router: "Espera un Handshake, no una petición normal".
+	// (connection, req): Al activar el modo websocket, los argumentos cambian.
+	// Ya no recibes (request, reply).
+	// Recibes (connection, request). El objeto connection contiene el socket real.
+	// gateway.handleConnection: Pasamos la pelota al Gateway que creaste antes.
+	//  Él validará el token de la URL y aceptará o cerrará el socket.
+	
+    // Ruta final: /api/game/ws  (El prefijo /api viene de app.ts)
+	app.get('/game/ws', { websocket: true }, (connection, req) => {
+        // Delegamos todo el trabajo sucio al Gateway
+        gateway.handleConnection(connection, req);
+    });
+    
 };

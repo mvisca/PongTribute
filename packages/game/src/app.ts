@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance, FastifyError } from 'fastify';
 import helmet from '@fastify/helmet';
+import fastifyWebsocket from '@fastify/websocket';
 import { GameEnv, gameRoutes } from './index.js';
 
 export function buildApp(): FastifyInstance {
@@ -11,6 +12,10 @@ export function buildApp(): FastifyInstance {
         contentSecurityPolicy: false, // Ajustar según necesidad del juego
         crossOriginEmbedderPolicy: false 
     });
+
+	// 2.1. REGISTRO DE WEBSOCKETS
+    // Esto habilita ws:// en tu servidor
+    app.register(fastifyWebsocket);
 
     // 3. Hooks Globales (Logging de peticiones)
     app.addHook('onRoute', (route) => {
