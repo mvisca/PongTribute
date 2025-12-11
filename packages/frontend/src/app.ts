@@ -1,12 +1,26 @@
-// src/app.ts
-import { showLoginScreen } from "./ui/screen-manager";
+import { createLoginScreen } from "./ui/login-screen";
+import { createHomeScreen } from "./ui/home-screen";
 
 export function setupApp() {
+  navigateTo("login");
+}
+
+// Navegación global entre pantallas
+export function navigateTo(screen: "login" | "home") {
   const app = document.getElementById("app");
   if (!app) return;
 
-  // Inicializa directamente la pantalla de login
-  showLoginScreen();
+  app.innerHTML = "";
+
+  let screenElement: HTMLElement;
+
+  if (screen === "login") {
+    screenElement = createLoginScreen();
+  } else {
+    screenElement = createHomeScreen();
+  }
+
+  app.appendChild(screenElement);
 }
 
 //Este archivo crea las pantallas que luego se ven en el navegador
