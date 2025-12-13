@@ -138,9 +138,9 @@ import {
 			// hashear con sha-256 (64 caracteres)
 			const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 			
-			//TODO la expiracion calcularla con el AuthEnv.Expiry o similar
+			//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
 			// calcula expiración
-			const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+			const expiresAt = new Date(AuthEnv.TOKEN_EXPIRY);
 			
 			// almacenar record refresh token
 			const response = await fetch(
@@ -372,11 +372,11 @@ import {
 			
 			if (!updateResponse.ok) {
 				throw new Error(`Fallo al actualizar password: ${updateResponse.status}`);
-				// TODO Crear un tipo de SharedError usuario nuevo
+				// TODO Es necesario un SharedError nuevo para manejar este error?
 			}
 			
 			return true;
-		}
+		} // TODO es necesario devolver true aquí? para qué?
 		
 		// ========================================================================
 		// PUBLIC API - 2FA MANAGEMENT

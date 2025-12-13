@@ -17,7 +17,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		schema: AuthSchemas.LoginBodySchema,
 		handler: controller.login.bind(controller)
 	});
-	// TODO agregar schemas para validacion
 
 	/** Verifica tokens de 2FA para login */
 	app.post('/auth/verify-2fa', {

@@ -1,7 +1,6 @@
 import { Token } from 'node_modules/@sinclair/typebox/build/esm/parser/runtime/index.mjs';
 import { buildApp, UserEnv, redisClient, closeDatabase } from './index.js';
 import { TokenService } from './index.js';
-// TODO considerar la opcion de usar SCHWAGER, de ser asi quitar su validacion en runtime para no duplicar con ajv defastify
 
 let app: ReturnType<typeof buildApp> | null = null;
 

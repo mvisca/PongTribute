@@ -58,8 +58,6 @@ export namespace MatchConstants {
 		 * Límite de tiempo para una partida\
 		*/
 		MAX_DURATION_SECONDS: 150, 
-		// TODO, como manejar un empate en DB?
-		// O se acelera la pelota para que sea imposible que no haya un ganador?
 		
 		/**
 		 * Puntaje mínimo para una victoria\

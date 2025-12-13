@@ -47,4 +47,3 @@ export function validateRedisConfig(config: RedisConfig): boolean {
 
 	return true;
 }
-// TODO buscar cualquier uso de type Boolean y reemplazar por boolean

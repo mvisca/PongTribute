@@ -31,7 +31,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			avatar: data.avatar ?? UserConstants.DEFAULT_AVATAR, // TODO asume front sirve /public/avatars/default.png
+			avatar: data.avatar ?? UserConstants.DEFAULT_AVATAR, // TODO pendiente de implementar feature de avatares en USER , asume front sirve /public/avatars/default.png
 			passwordHash: data.passwordHash,
 			isOnline: false,
 			isDeleted: false,

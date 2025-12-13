@@ -5,6 +5,7 @@ import { AuthEnv } from "../config.js";
 
 // TODO unificar tipo de funcion con validateServiceSecret
 // TODO verificar que este middleware y el otro en este directorio son necesarios ambos, deben centralizarse si son iguales al de auth?
+// TODO considerar riesgos de secondary effects al ponerlo en shared, por que se implementó en cada servicio? no documentado
 export namespace AuthMiddleware {
 	export const validateJWT = async (
 		request: FastifyRequest,
