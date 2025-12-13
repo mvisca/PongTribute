@@ -24,43 +24,38 @@ process.on('SIGTERM', () => {
 	console.log('SIGTERM: Closing Database');
 	closeDatabase();
 	db = null;
-});
+}); // TODO revisar implementacion de señales, consitente en pattern y servicios, esta implementacion está ok o repetida, ver capas
 
 export function getDatabase(): Database.Database {
 	// LAZY INIT: solo se inicializa si se necesita (1st call)
 	// Para siguientes llamadas a getDatabse(), db ya está creada
 	if (!db) {
-		const dbPath = UserEnv.DB_PATH + '/user.db' ||
-			path.join('../../db-data/user.db');
-		// TODO recordar auditar como se resuelve la path de este archivo de base de datos para hacerlo más seguro en el caso de que que  en caso que en env se ponga un path terminado en '/' u otros casos
-
-		db = new Database(dbPath); /*, {
-			verbose: (sql) => {
-				if (process.env.NODE_ENV === 'development') {
-					console.log('[SQL]', sql);
-				}
-			}
-		});*/
+		try {
+			db = new Database(UserEnv.USER_SERVICE_DB_FULL_PATH);
+			// Write ahead loggin
+			db.pragma('journal_mode = WAL');
+			// Foreing keys está off por defecto
+			// Con esto se activa ON DELETE CASCADE
+			db.pragma('foreign_keys = ON');
+			// Lee archivos SQL con tablas e indexes en formato utf-8
+			// Se separan tablas de codigo, más mantenible
+			// Idempotencia = CREATE TABLE IF NOT EXISTS
+			// Es seguro ejecturar múltipes veces
+	
+			const tablesSQL = fs.readFileSync(
+				path.join(__dirname, 'schemas/users_tables.sql'),
+				'utf-8'
+			);
+	
+			db.exec(tablesSQL);
+		} catch(err) {
+			console.error('Error incializando DB: ', err);
+			process.exit(1);
+		}
 		
-		// Write ahead loggin
-		db.pragma('journal_mode = WAL');
-		// Foreing keys está off por defecto
-		// Con esto se activa ON DELETE CASCADE
-		db.pragma('foreign_keys = ON');
 		
-		// Lee archivos SQL con tablas e indexes en formato utf-8
-		// Se separan tablas de codigo, más mantenible
-		// Idempotencia = CREATE TABLE IF NOT EXISTS
-		// Es seguro ejecturar múltipes veces
 
-		const tablesSQL = fs.readFileSync(
-			path.join(__dirname, 'schemas/users_tables.sql'),
-			'utf-8'
-		);
-
-		db.exec(tablesSQL);
-
-		console.log('DB inicializada: ', dbPath, '\n[ ', __filename, ' ]');
+		console.log('DB inicializada: ', UserEnv.USER_SERVICE_DB_FULL_PATH, '\n[ ', __filename, ' ]');
 	}
 	// Si ya existe el Singleton lo retorna directamente
 	return db;

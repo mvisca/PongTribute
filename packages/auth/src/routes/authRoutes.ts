@@ -72,5 +72,4 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		schema: AuthSchemas.UpdatePasswordBodySchema,
 		handler: controller.updatePassword.bind(controller)
 	});
-
-}
+} // TODO separar rutas publicas y privadas en ficheros

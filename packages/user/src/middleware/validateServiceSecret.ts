@@ -12,8 +12,6 @@ export async function validateServiceSecret(
 ) {
 	const providedSecret = request.headers['x-service-secret'];
 	
-	// TODO ,  proteger si no hay header 
-	
 	if (!providedSecret || providedSecret !== UserEnv.SERVICE_SECRET) {
 		return reply.status(403).send({
 			error: 'Forbidden',

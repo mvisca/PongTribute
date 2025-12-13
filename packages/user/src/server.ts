@@ -23,7 +23,7 @@ async function start() {
         
 		app.log.info(`Servicio user listening en ${UserEnv.HOST}:${UserEnv.PORT}`);
 		app.log.info(`Environment: ${UserEnv.NODE_ENV}`);
-		app.log.info(`Database: ${UserEnv.DB_PATH}`);
+		app.log.info(`Database: ${UserEnv.USER_SERVICE_DB_FULL_PATH}`);
         
 		// Limpieza de tabla 'refresh_tokens' para development y production
 		if (UserEnv.NODE_ENV !== 'test') {
@@ -81,3 +81,5 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 start();
+
+//TODO centralizar manejo de señales, esta dentro de GetDatabase y en start()

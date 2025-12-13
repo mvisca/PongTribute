@@ -62,12 +62,16 @@ export namespace UserEnv {
 
 	export const PORT: number = sharedEnv.USER_SERVICE_PORT;
 	export const HOST: string = sharedEnv.USER_SERVICE_HOST;
+
 	export const NODE_ENV: string = sharedEnv.NODE_ENV;
 	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
-	export const DB_PATH: string = sharedEnv.DB_PATH;
+
 	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+	export const USER_SERVICE_DB_FULL_PATH = sharedEnv.USER_SERVICE_DB_FULL_PATH;
+
 	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
-	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS; 
+	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS;
+
 	export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
 	export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
 	export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
@@ -82,7 +86,7 @@ export namespace UserEnv {
 		host: HOST,
 		nodeEnv: NODE_ENV as ServiceConfig['nodeEnv'],
 		logLevel: LOG_LEVEL as ServiceConfig['logLevel'],
-		dbPath: DB_PATH
+		dbPath: USER_SERVICE_DB_FULL_PATH
 	};
 
 	// =====================================================

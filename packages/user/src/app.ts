@@ -4,6 +4,7 @@ import type { Redis } from 'ioredis';
 import { UserEnv, UserRoutes } from './index.js';
 import { Utils } from '@transcendence/shared';
 
+// TODO revisar la línea con statusCode y as FastifyError, tipar mejor con instanceof para no usar as 
 // Cliente Redis de toda la app User
 export let redisClient: Redis | null = null;
 

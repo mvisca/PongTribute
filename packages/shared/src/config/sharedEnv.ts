@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 // TODO arreglar manejo centralizado de variables de entorno
+// TODO implementar correctamente en Auth service y en Game service la build() de env si aun no lo esta, y donde haya base de datos su construccion
 // ==================================================
 // CARGAR .ENV DESDE RAÍZ
 // ==================================================
@@ -37,16 +38,25 @@ interface EnvVars {
 	BCRYPT_ROUNDS: number;
 	UNIQUE_SESSION: boolean;
 	
+	GAME_SERVICE_URL: string;
+	GAME_SERVICE_PORT: number;
+	GAME_SERVICE_HOST: string;
+	GAME_SERVICE_DB_PATH: string;
+	GAME_SERVICE_DB_FILENAME: string;
+	GAME_SERVICE_DB_FULL_PATH: string;
+	
 	USER_SERVICE_URL: string;
 	USER_SERVICE_PORT: number;
 	USER_SERVICE_HOST: string;
+	USER_SERVICE_DB_PATH: string;
+	USER_SERVICE_DB_FILENAME: string;
+	USER_SERVICE_DB_FULL_PATH: string;
 	
 	FRONTEND_URL: string;
 	FRONTEND_PORT: number;
 	FRONTEND_HOST: string;
 	
 	NODE_ENV: string;
-	DB_PATH: string;
 	LOG_LEVEL: string;
 	
 	SERVICE_SECRET: string;
@@ -54,7 +64,7 @@ interface EnvVars {
 	REDIS_PORT: number;
 	REDIS_PASSWORD: string;
 	REDIS_DB: number;
-
+	
 	TEST_MODE: string;
 };
 
@@ -68,16 +78,25 @@ const DEFAULTS: EnvVars = {
 	BCRYPT_ROUNDS: 10,
 	UNIQUE_SESSION: true,
 	
+	GAME_SERVICE_URL: 'http://localhost:3003',
+	GAME_SERVICE_PORT: 3003,
+	GAME_SERVICE_HOST: 'localhost',
+	GAME_SERVICE_DB_FILENAME: 'game.db',
+	GAME_SERVICE_DB_PATH: './db-data',
+	GAME_SERVICE_DB_FULL_PATH: './db-data/game.db',
+	
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
 	USER_SERVICE_HOST: 'localhost',
+	USER_SERVICE_DB_FILENAME: 'user.db',
+	USER_SERVICE_DB_PATH: './db-data',
+	USER_SERVICE_DB_FULL_PATH: './db-data/user.db',
 	
 	FRONTEND_URL: 'http://localhost:5173',
 	FRONTEND_PORT: 5173,
 	FRONTEND_HOST: 'localhost',
 	
 	NODE_ENV: 'test',
-	DB_PATH: '../../db-data/',
 	LOG_LEVEL: 'info',
 	
 	SERVICE_SECRET: 'default_shared_secret_CHANGE_THIS',
@@ -85,89 +104,131 @@ const DEFAULTS: EnvVars = {
 	REDIS_PORT: 6379,
 	REDIS_PASSWORD: 'create_a_supersafe_redis_password',
 	REDIS_DB: 0,
-
+	
 	TEST_MODE: 'default_values',
 } as const;
 
 export type EnviromentVars = typeof DEFAULTS;
 
 // ==================================================
-// VALIDACIÓN
-// ==================================================
-
-function validatePort(port: number | undefined, context: string): void {
-	if (!port || isNaN(port) || port < 1024 || port > 65535) {
-		throw new Error(
-			`❌ Puerto inválido o faltante: ${context}=${port}. Debe estar entre 1024-65535`
-		);
-	}
-}
-
-function validateNodeEnv(env: string | undefined): void {
-	const validEnvs = ['development', 'production', 'test'];
-	if (!env || !validEnvs.includes(env)) {
-		throw new Error(
-			`❌ NODE_ENV inválido o faltante: ${env}. Debe ser: ${validEnvs.join(', ')}`
-		);
-	}
-}
-
-function validateRequired<T>(value: T | undefined, name: string): void {
-	if (!value) {
-		throw new Error(`❌ Variable requerida faltante: ${name}`);
-	}
-}
-
-function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
-	const missing: string[] = [];
-	
-	Object.entries(secrets).forEach(([key, value]) => {
-		if (!value) {
-			missing.push(`${key} no está definido`);
-			return;
-		}
-		
-		if (isProduction) {
-			const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
-			if (value === defaultValue) {
-				missing.push(`${key} usa valor default (INSEGURO en producción)`);
-			}
-		}
-	});
-	
-	if (missing.length > 0) {
-		console.error('❌ ERRORES DE CONFIGURACIÓN:');
-		missing.forEach(issue => console.error(`   - ${issue}`));
-		console.error('\n💡 Solución: cp .env.example .env');
-		process.exit(1);
-	}
-}
-
-// ==================================================
 // BUILDER
 // ==================================================
 
 export namespace SharedEnv {
-
+	
+	// TODO donde se llama build de sharedEnv pone try catch para hacer gracefullShutdown si hay error
 	// Build configuration object from process.env (no side-effects)
 	export function build() {
 		const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+		const isTest = process.env.NODE_ENV === 'test';
 		const isProduction = process.env.NODE_ENV === 'production';
 		
 		// Helper: usar default solo en development
 		function envOr<T>(envValue: string | undefined, defaultValue: T): T {
 			if (envValue !== undefined) {
 				// Parseo segun tipo de 'defaultValue'
-				if (typeof defaultValue === 'number')
-					return Number(envValue) as T;
-				if (typeof defaultValue === 'boolean')
-					return (envValue === 'true') as T;
+				if (typeof defaultValue === 'number') {
+					const n = Number(envValue);
+					if (isNaN(n))
+						throw new Error(`Variable no es un número válido: ${envValue}`);
+					return n as T;
+				}
+				if (typeof defaultValue === 'boolean') {
+					if (envValue === 'true') 
+						return true as T;
+					if (envValue === 'false')
+						return false as T;
+					throw new Error(`Variable boolean inválida: ${envValue}\nUse 'true' o 'false'`);
+				}
 				return envValue as T; // String
 			}
 			if (isDevelopment)
 				return defaultValue;
 			throw new Error('Variable de entorno requerida para produccion no encontrada');
 		};
+		
+		function validatePort(port: number | undefined, context: string): void {
+			if (!port || isNaN(port) || port < 1024 || port > 65535) {
+				throw new Error(
+					`Puerto inválido o faltante: ${context}=${port}. Debe estar entre 1024-65535`
+				);
+			}
+		}
+		
+		function validateNodeEnv(env: string | undefined): void {
+			const validEnvs = ['development', 'production', 'test'];
+			if (!env || !validEnvs.includes(env)) {
+				throw new Error(
+					`NODE_ENV inválido o faltante: ${env}. Debe ser: ${validEnvs.join(', ')}`
+				);
+			}
+		}
+		
+		function validateRequired<T>(value: T | undefined, name: string): void {
+			if (!value) {
+				throw new Error(`Variable requerida faltante: ${name}`);
+			}
+		}
+		
+		function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
+			const missing: string[] = [];
+			
+			Object.entries(secrets).forEach(([key, value]) => {
+				if (!value) {
+					missing.push(`${key} no está definido`);
+					return;
+				}
+				
+				if (isProduction) {
+					const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
+					if (value === defaultValue) {
+						missing.push(`${key} usa valor default (INSEGURO en producción)`);
+					}
+				}
+			});
+			
+			if (missing.length > 0) {
+				console.error('ERRORES DE CONFIGURACIÓN:');
+				missing.forEach(issue => console.error(`   - ${issue}`));
+				console.error('\nSolución: cp .env.example .env');
+				process.exit(1);
+			}
+		}
+		
+		function getBaseDir(): string {
+			if (isDevelopment || isTest) {
+				console.log('DEVELOPMENT envirnoment: cargando...');
+				const __filename = fileURLToPath(import.meta.url);
+				const __dirname = path.dirname(__filename);
+				
+				return path.resolve(__dirname, '../../db-data');
+			}
+			console.log('PRODUCTION environment: cargando...');
+			return '/var/lib/app/db'; // path fijo para contenedor
+		};
+		
+		function safeDbDir(envPath: string, baseDir: string) {
+			const resolved = path.resolve(baseDir, envPath);
+			const normalized = path.normalize(resolved);
+			if (!normalized.startsWith(baseDir)) {
+				throw new Error(`DB path fuera de BASE_DIR: ${envPath}`);
+			}
+			return normalized;
+		}
+		
+		function safeDbFilename(name: string) {
+			const base = path.basename(name);
+			if (base !== name || base.startsWith('.') || base.includes('..')) {
+				throw new Error(`DB filename inválido: ${name}`);
+			}
+			return base;
+		}
+		
+		function safeFullPath(filename: string, dir: string, baseDir: string) {
+			const safeDir = safeDbDir(dir, baseDir);
+			const safeFile = safeDbFilename(filename);
+			return path.join(safeDir, safeFile);
+		}
 		
 		const config: EnvVars = {
 			// AUTH SERVICE
@@ -180,10 +241,29 @@ export namespace SharedEnv {
 			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS),
 			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION),
 			
+			// GAME SERVICE
+			GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL),
+			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT),
+			GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST),
+			GAME_SERVICE_DB_FILENAME: "",
+			GAME_SERVICE_DB_PATH: "",
+			GAME_SERVICE_DB_FULL_PATH: safeFullPath(
+				envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME),
+				envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH),
+				getBaseDir()
+			),
+			
 			// USER SERVICE
 			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL),
 			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT),
 			USER_SERVICE_HOST: envOr(process.env.USER_SERVICE_HOST, DEFAULTS.USER_SERVICE_HOST),
+			USER_SERVICE_DB_FILENAME: "",
+			USER_SERVICE_DB_PATH: "",
+			USER_SERVICE_DB_FULL_PATH: safeFullPath(
+				envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME),
+				envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH),
+				getBaseDir()
+			),
 			
 			// FRONTEND
 			FRONTEND_URL: envOr(process.env.FRONTEND_URL, DEFAULTS.FRONTEND_URL),
@@ -192,16 +272,17 @@ export namespace SharedEnv {
 			
 			// GLOBAL
 			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV),
-			DB_PATH: envOr(process.env.DB_PATH, DEFAULTS.DB_PATH),
 			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL),
 			
 			// INTER-SERVICE COMMUNICATION
 			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET),
+			
+			// REDIS 
 			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST),
 			REDIS_PORT: envOr(process.env.REDIS_PORT, DEFAULTS.REDIS_PORT),
 			REDIS_PASSWORD: envOr(process.env.REDIS_PASSWORD, DEFAULTS.REDIS_PASSWORD),
 			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_DB),
-
+			
 			// TESTING
 			TEST_MODE: envOr(process.env.TEST_MODE, DEFAULTS.TEST_MODE),
 		};
@@ -226,86 +307,18 @@ export namespace SharedEnv {
 			REDIS_PASSWORD: config.REDIS_PASSWORD
 		}, isProduction);
 		
-		// DB_PATH (siempre requerido)
-		validateRequired(config.DB_PATH, 'DB_PATH');
+		// Siempre requeridos
+		validateRequired(config.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME');
+		
+		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
+		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
+		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
+		
 		validateRequired(config.REDIS_HOST, 'REDIS_HOST');
 		validateRequired(config.REDIS_DB, 'REDIS_DB');
-
-		// URLs de servicios (requeridas)
-		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
-		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
-		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
 		
 		return config;
 	}
 	
 	export type Config = ReturnType<typeof build>;
 }
-
-/*
-// packages/shared/src/config/schema.ts
-import { Type, Static } from '@sinclair/typebox';
-
-export const ConfigSchema = Type.Object({
-  // Global
-  NODE_ENV: Type.Enum({ development: 'development', production: 'production', test: 'test' }),
-  LOG_LEVEL: Type.String({ default: 'info' }),
-  
-  // Auth
-  AUTH_SERVICE_PORT: Type.Number({ minimum: 1024, maximum: 65535, default: 3002 }),
-  AUTH_SERVICE_HOST: Type.String({ default: 'localhost' }),
-  JWT_SECRET: Type.String({ minLength: 10 }),
-  TOKEN_EXPIRY: Type.String({ default: '15m' }),
-  REFRESH_TOKEN_EXPIRY: Type.String({ default: '30d' }),
-  
-  // User
-  USER_SERVICE_PORT: Type.Number({ minimum: 1024, maximum: 65535, default: 3001 }),
-  USER_SERVICE_HOST: Type.String({ default: 'localhost' }),
-  DB_PATH: Type.String({ default: './db-data' }),
-  
-  // Redis
-  REDIS_HOST: Type.String({ default: 'localhost' }),
-  REDIS_PORT: Type.Number({ minimum: 1, maximum: 65535, default: 6379 }),
-  REDIS_PASSWORD: Type.Optional(Type.String()),
-  
-  // Email
-  SMTP_HOST: Type.Optional(Type.String()),
-  SMTP_PORT: Type.Optional(Type.Number({ minimum: 1, maximum: 65535 })),
-  SMTP_USER: Type.Optional(Type.String()),
-  SMTP_PASSWORD: Type.Optional(Type.String()),
-  FROM_EMAIL: Type.Optional(Type.String({ format: 'email' })),
-  
-  // Inter-service
-  SERVICE_SECRET: Type.String({ minLength: 10 }),
-});
-
-// Exportar tipo inferido
-export type Config = Static<typeof ConfigSchema>;
-
-// Función de parseo
-import Ajv from 'ajv';
-
-const ajv = new Ajv();
-const validate = ajv.compile(ConfigSchema);
-
-export function parseConfig(): Config {
-  // Preparar env (castear a número, etc)
-  const rawEnv = {
-    NODE_ENV: process.env.NODE_ENV,
-    LOG_LEVEL: process.env.LOG_LEVEL,
-    AUTH_SERVICE_PORT: process.env.AUTH_SERVICE_PORT ? parseInt(process.env.AUTH_SERVICE_PORT) : 3002,
-    JWT_SECRET: process.env.JWT_SECRET,
-    // ... resto de variables
-  };
-  
-  // Validar contra schema
-  const valid = validate(rawEnv);
-  if (!valid) {
-    const errors = validate.errors?.map(e => `${e.instancePath} ${e.message}`).join(', ');
-    throw new Error(`Config validation error: ${errors}`);
-  }
-  
-  return rawEnv as Config;
-}
-  TODO estrategia para manejar .en validado y centralizado
-  */
