@@ -32,7 +32,7 @@ interface EnvVars {
 	AUTH_SERVICE_PORT: number;
 	AUTH_SERVICE_HOST: string;
 	JWT_SECRET: string;
-	TOKEN_EXPIRY: string;
+	TOKEN_EXPIRY: number;
 	REFRESH_TOKEN_EXPIRY: string;
 	BCRYPT_ROUNDS: number;
 	UNIQUE_SESSION: boolean;
@@ -63,7 +63,7 @@ const DEFAULTS: EnvVars = {
 	AUTH_SERVICE_PORT: 3002,
 	AUTH_SERVICE_HOST: 'localhost',
 	JWT_SECRET: 'default_super_secret_key_CHANGE_THIS',
-	TOKEN_EXPIRY: '1h',
+	TOKEN_EXPIRY: 3600,
 	REFRESH_TOKEN_EXPIRY: '365d',
 	BCRYPT_ROUNDS: 10,
 	UNIQUE_SESSION: true,

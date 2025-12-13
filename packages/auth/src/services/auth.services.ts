@@ -1,352 +1,484 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import speakeasy from 'speakeasy';
-import QRcode from 'qrcode';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import { UserTypes, AuthTypes, SharedErrors } from '@transcendence/shared';
-import { AuthEnv } from '../config.js';
-import { create } from 'domain';
-import { isInt32Array } from 'util/types';
-
-export class AuthService {
+import QRcode from 'qrcode';
+import speakeasy from 'speakeasy';
+import {
+	AuthTypes,
+	AuthConstants, 
+	UserTypes,
+	Utils,
+	RedisCache,
+	SharedErrors } from '@transcendence/shared';
+	import { AuthEnv } from '../config.js';
+	import { redisClient } from '../app.js';
 	
-	// ========================================================================
-	// GETTER
-	// ========================================================================
-	
-	private async fetchUserByEmail(email: string): Promise<UserTypes.UserInternal> {
-		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-email/${email}`,
-			{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET } }
-		)
+	export class AuthService {
 		
-		if (!response.ok) {
-			throw new SharedErrors.NotFoundError('Usuario no encontrado', 'auth');
-		}
+		// ========================================================================
+		// PROPIEDADES
+		// ========================================================================
+		private setupCache: RedisCache<AuthTypes.SetupTokenData>;
 		
-		return await response.json() as UserTypes.UserInternal;
-	}
-	
-	// ========================================================================
-	// LOGIN / LOGOUT
-	// ========================================================================
-	
-	/** Login */
-	async login(email: string, password: string): Promise<AuthTypes.LoginResponse> {
-		const user = await this.fetchUserByEmail(email);
-		if (!user) {
-			throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
-		}
-		
-		const valid = await this.verifyPassword(password, user.passwordHash);
-		if (!valid) {
-			throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
-		}
-		
-		// Intercepción si tiene 2fa enabled
-		if (user.has2FAEnabled === true) {
+		// ========================================================================
+		// CONSTRUCTOR
+		// ========================================================================
+		constructor() {
+			if (!redisClient)
+				throw new Error('Cliente Redis no está inicializado en Auth Service');
 			
-			const minutes = 1;
-			const expiresIn = minutes * 60; 
-			const provisionalToken = jwt.sign(
-				{
-					userId: user.id,
-					email: user.email,
-					purpose: '2fa_verification',
-					iat: Math.floor(Date.now() / 1000)
-				},
-				AuthEnv.JWT_SECRET,
-				{ expiresIn: expiresIn }
+			this.setupCache = new RedisCache<AuthTypes.SetupTokenData>(
+				redisClient,
+				'2fa:setup:' // Prefix para todas las keys ( '2fa:setup:{setupToken}' )
+			);
+		}
+		
+		// ========================================================================
+		// HELPER PRIVATE FUNCTIONS
+		// ========================================================================
+		
+		// FETCHERS
+		
+		/** Fetch user con email desde user service */
+		private async fetchUserByEmail(email: string): Promise<UserTypes.UserInternal> {
+			const response = await fetch(
+				`${AuthEnv.USER_SERVICE_URL}/internal/users/by-email/${email}`,
+				{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET } }
+			)
+			
+			if (!response.ok) {
+				throw new SharedErrors.NotFoundError('Usuario no encontrado', 'auth');
+			}
+			
+			return await response.json() as UserTypes.UserInternal;
+		}
+		
+		/** Fetch user con id desde user service */
+		private async fetchUserById(userId: string): Promise<UserTypes.UserInternal> {
+			const response = await fetch(
+				`${AuthEnv.USER_SERVICE_URL}/internal/users/by-id/${userId}`,
+				{ headers: {'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`} }
 			);
 			
+			if (!response.ok) {
+				throw new SharedErrors.NotFoundError('Usuario no encontrado', 'auth');
+			}
+			
+			return await response.json() as UserTypes.UserInternal;
+		}
+		
+		// LOGIN PROCESS 
+		
+		/** Completa el proceso de login generando tokens y seteando el usuario online */
+		private async completeLogin(
+			user: UserTypes.UserInternal,
+			has2FAEnabled: boolean = user.has2FAEnabled
+		): Promise<AuthTypes.LoginSuccessResponse> {
+			// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
+			if (AuthEnv.UNIQUE_SESSION === true) {
+				await this.deleteRefreshTokensById(user.id);
+			}
+			
+			// establecer usuario online
+			await this.setUserIsOnline(user.id, true);
+			
+			// Crear payload usuario
+			const userPayload: AuthTypes.UserPayload = {
+				id: user.id,
+				username: user.username,
+				email: user.email,
+				has2FAEnabled
+			};
+			
+			// Generar tokens
+			const accessToken = this.generateJWT(userPayload, true, AuthEnv.TOKEN_EXPIRY);
+			const refreshToken = await this.createAndStoreRefreshToken(user.id, true);
+			
 			return {
-				twoFactorRequired: true,
-				userId: user.id,
-				provisionalToken,
-				expiresIn
+				token: accessToken,
+				refreshToken,
+				user: userPayload
 			};
 		}
 		
-		// Flujo de login sin 2A
-		if (AuthEnv.UNIQUE_SESSION === true)
-			await this.deleteUserTokens(user.id);
-		await this.setUserOnline(user.id, true);
+		// JWT MANGEMENT
 		
-		const userPayload = {
-			id: user.id,
-			username: user.username,
-			email: user.email
-		};
-		
-		const accessToken = this.generateToken(userPayload, true); // quizas deba ser false, porque no se mira que sea true si si2FAEnables es false
-		const refreshToken = await this.createAndStoreRefreshToken(user.id, true);
-		
-		return {
-			token: accessToken,
-			refreshToken: refreshToken,
-			user: userPayload
-		};
-	}
-	
-	/** Logout */
-	async logout(userId: string): Promise<void> {
-		await this.deleteUserTokens(userId);
-		await this.setUserOnline(userId, false);
-	}
-	
-	// VERIFY PASSWORD
-	/** Login Helper Verify Password */
-	private async verifyPassword(password: string, passwordHash: string): Promise<boolean> {
-		return await bcrypt.compare(password, passwordHash);
-	}
-	
-	// GENERATE ACCESS TOKEN
-	/** Login Helper Generate Token */
-	private generateToken(
-		user: AuthTypes.UserPayload,
-		is2FAVerified: boolean
-	): string {	
-		return jwt.sign(
-			{
-				...user,
-				is2FAVerified
-			},
-			AuthEnv.JWT_SECRET,
-			{ expiresIn: AuthEnv.TOKEN_EXPIRY } as SignOptions
-		);
-	}
-	
-	// DELETE REFRESH TOKEN
-	/** Logout Helper Delete User Tokens */
-	private async deleteUserTokens(userId: string): Promise<void> {
-		try {
-			await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/tokens/user/${userId}`, {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET
-				}
-			});
-		} catch {
-			console.log('Fallo cerrando sesión de usaurio');
+		/** Verify password against hash */
+		private async verifyPassword(password: string, passwordHash: string): Promise<boolean> {
+			return await bcrypt.compare(password, passwordHash);
 		}
-	}
-	
-	// CREATE AND STORE REFRESH TOKEN
-	/** Login w/2FA Process Helper to create and store refresh tokens */
-	private async createAndStoreRefreshToken(
-		userId: string,
-		is2FAVerified: boolean
-	): Promise<string> {
 		
-		// generar refresh token random
-		const refreshToken = crypto.randomBytes(32).toString('hex');
-		
-		// hashear con sha-256 (64 caracteres)
-		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-		
-		//TODO la expiracion calcularla con el AuthEnv.Expiry o similar
-		const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-		
-		// almacenar record refresh token
-		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/tokens`,
-			{
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
-				},
-				body: JSON.stringify({
-					userId,
-					tokenHash,
-					expiresAt,
+		/** Generate JWT access token */
+		private generateJWT(
+			userPayload: AuthTypes.UserPayload,
+			is2FAVerified: boolean,
+			expiry: number
+		): string {	
+			return jwt.sign(
+				{
+					...userPayload,
 					is2FAVerified
-				})
-			}
-		);
-		
-		if (!response.ok) {
-			throw new Error(`Fallo al almacenar refresh token: ${response.status}`);
+				},
+				AuthEnv.JWT_SECRET,
+				{ expiresIn: expiry } as SignOptions
+			);
 		}
 		
-		// devuelve refresh token sin hashear
-		return refreshToken;
-	}
-	
-	// SETTER
-	/** SET USER ONLINE */
-	private async setUserOnline(userId: string, isOnline: boolean): Promise<void> {
-		try {
-			await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/online-status`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET
-				},
-				body: JSON.stringify({ isOnline })
+		// REFRESH TOKENS
+		
+		/** Create and store refresh token */
+		private async createAndStoreRefreshToken(
+			userId: string,
+			is2FAVerified: boolean
+		): Promise<string> {
+			
+			// generar refresh token random
+			const refreshToken = crypto.randomBytes(32).toString('hex');
+			
+			// hashear con sha-256 (64 caracteres)
+			const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+			
+			//TODO la expiracion calcularla con el AuthEnv.Expiry o similar
+			// calcula expiración
+			const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+			
+			// almacenar record refresh token
+			const response = await fetch(
+				`${AuthEnv.USER_SERVICE_URL}/internal/tokens`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
+					},
+					body: JSON.stringify({
+						userId,
+						tokenHash,
+						expiresAt,
+						is2FAVerified
+					})
+				}
+			);
+			
+			if (!response.ok) {
+				throw new Error(`Fallo al almacenar refresh token: ${response.status}`);
+			}
+			
+			// devuelve refresh token sin hashear
+			return refreshToken;
+		}
+		
+		/** Delete all refresh tokens for a user */
+		private async deleteRefreshTokensById(userId: string): Promise<void> {
+			try {
+				await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/tokens/user/${userId}`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': AuthEnv.SERVICE_SECRET
+					}
+				});			
+			} catch {
+				console.log('Fallo cerrando sesión de usaurio');
+			}
+		}
+		
+		// 2FA BACKUP CODE GENERATION AND TOTP CODE VERIFICATION
+		
+		/** Genera backup code en formato XXXX-XXXX */
+		private generate2FABackupCode(): string {
+			const bytes = crypto.randomBytes(4); // 4 bytes = 8 hex chars
+			const hex = bytes.toString('hex').toUpperCase();
+			return `${hex.slice(0,4)}-${hex.slice(4)}`
+		}
+		
+		/** Verfica totp code recibido en login con 2FA */
+		private verify2FATotpCode(secret: string, token: string): boolean {
+			return speakeasy.totp.verify({
+				secret,
+				encoding: 'base32',
+				token,
+				window: 1 // +/- 1 intervalo de tiempo
 			});
-		} catch (err) {
-			console.log('Fallo al actualizar online status: ', err);
-			console.log('Login no ha sido bloqueado');
-		}
-	}
-	
-	// ========================================================================
-	// LOGIN 2FA VERIFY
-	// ========================================================================
-	
-	/** Completa el proceso de login con 2FA */
-	async verify2FAWithToken(provisionalToken: string, totpCode: string): Promise<AuthTypes.LoginResponse> {
-		// Verificar token provisional con user payload
-		const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET);
-		
-		if (typeof payload === 'string' || payload.purpose !== '2fa_verification') {
-			throw new SharedErrors.UnauthorizedError('Token inválido');
 		}
 		
-		const userId = payload.id;
+		// PROVSIONAL TOKEN VERIFICATION
+
+		/** Verificay parsea provisional token */
+		private verifyProvisionalToken(token: string) {
+			const payload = jwt.verify(token, AuthEnv.JWT_SECRET);
+
+			if (typeof payload === 'string' || payload.purpose !== '2fa_verification')
+				throw new SharedErrors.UnauthorizedError('Token provisional inválido');
+			
+			return payload as AuthTypes.ProvisionalTokenPayload;
+		}
 		
-		// OBtener el usuario internal con totpSecret
-		const userResponse = await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/users/by-id/${userId}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Service-Secret': AuthEnv.SERVICE_SECRET
+		// USER STATUS
+		
+		/** Actualiza el 2FA status del usuario */
+		private async update2FAStatus(
+			userId: string,
+			enabled: boolean,
+			totpSecret: string | null = null,
+			backupCodeHash: string | null = null
+		): Promise<void> {
+			const response = await fetch(
+				`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/2fa-status`,
+				{
+					method: 'PATCH',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': AuthEnv.SERVICE_SECRET
+					},
+					body: JSON.stringify({
+						has2FAEnabled: enabled,
+						totpSecret,
+						backupCodeHash
+					})
+				}
+			);
+			
+			if (!response.ok)
+				throw new Error(`Fallo actualizando 2FA: ${response.status}`);
+		}
+		
+		/** Set user online/offline status */
+		private async setUserIsOnline(userId: string, isOnline: boolean): Promise<void> {
+			try {
+				await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/online-status`, {
+					method: 'PATCH',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': AuthEnv.SERVICE_SECRET
+					},
+					body: JSON.stringify({ isOnline })
+				});
+			} catch (err) {
+				console.log('Fallo al actualizar online status: ', err);
+				console.log('Login no ha sido bloqueado');
 			}
-		});
-		
-		if (!userResponse.ok) {
-			throw new SharedErrors.UnauthorizedError('No se puede acceder al usuario');
 		}
 		
-		const user = await userResponse.json() as UserTypes.UserInternal;
+		// ========================================================================
+		// PUBLIC API - LOGIN / LOGOUT
+		// ========================================================================
 		
-		// Verificar que 2FA esté habilitado
-		if (!user.has2FAEnabled || !user.totpSecret) {
-			throw new SharedErrors.UnauthorizedError('2FA no está habilitado para este usuario');
-		}
-		
-		// Veerificar código totp
-		const verified = speakeasy.totp.verify({
-			secret: user.totpSecret,
-			encoding: 'base32',
-			token: totpCode,
-			window: 1 // +/- 1 intervalo de tiempo
-		});
-		
-		if (!verified) {
-			throw new SharedErrors.UnauthorizedError('Codigo 2FA inválido');
-		}
-		
-		// actualizar tokens de refresh, estado online y generar access token
-		if (AuthEnv.UNIQUE_SESSION === true) {
-			await this.deleteUserTokens(user.id);
-		}
-		
-		// establecer usuario online
-		await this.setUserOnline(userId, true);
-		
-		// crear payload del usuario
-		const userPayload = {
-			id: user.id,
-			username: user.username,
-			email: user.email
-		};
-		
-		// generar acceso token con is2FAVerified true
-		const accessToken = this.generateToken(userPayload, true);
-		
-		// generar y almacenar refresh token con is2FAVerified true
-		const refreshToken = await this.createAndStoreRefreshToken(user.id, true);
-		
-		return {
-			token: accessToken,
-			refreshToken: refreshToken,
-			user: userPayload
-		};
-	}
-	
-	//=========================================================================
-	// CHANGE PASSWORD
-	//=========================================================================
-	
-	async changePassword(userId: string, oldPassword: string, newPassword: string):Promise<boolean> {
-		const userResponse = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-id/${userId}`,
-			{ headers: {'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`} }
-		);
-		
-		if (!userResponse.ok) {
-			if (userResponse.status === 404) {
-				throw new SharedErrors.NotFoundError('Usuario no encontrado', 'auth');
+		/** Login */
+		async login(email: string, password: string): Promise<AuthTypes.LoginResponse> {
+			const user = await this.fetchUserByEmail(email);
+			if (!user) {
+				throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
 			}
-			throw new Error(`User service error: ${userResponse.status}`);
-		}
-		
-		const user = await userResponse.json() as UserTypes.UserInternal;
-		
-		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
-		
-		if (!isPasswordValid) {
-			throw new Error(`Password actual incorrecta`);
-		}
-		
-		const newPasswordHash = await bcrypt.hash(newPassword, 10);
-		
-		const updateResponse = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/${user.id}/password`,
-			{
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
-				},
-				body: JSON.stringify({newPasswordHash})
+			
+			const valid = await this.verifyPassword(password, user.passwordHash);
+			if (!valid) {
+				throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
 			}
-		);
+			
+			// Intercepción si tiene 2fa enabled
+			if (user.has2FAEnabled === true) {
+				
+				const provisionalToken = jwt.sign(
+					{
+						userId: user.id,
+						email: user.email,
+						purpose: '2fa_verification', // TODO: AGREGAR A CONSTANTES DE AUTH
+						iat: Math.floor(Date.now() / 1000)
+					},
+					AuthEnv.JWT_SECRET,
+					{ expiresIn: AuthConstants.PROVISIONAL_TOKEN_LIFETIME }
+				);
+				
+				return {
+					twoFactorRequired: true,
+					userId: user.id,
+					provisionalToken,
+					expiresIn: AuthConstants.PROVISIONAL_TOKEN_LIFETIME
+				};
+			}
+			
+			// Flujo de login sin 2A
+			return await this.completeLogin(user, false);
+		}
+
+		/** Logout */
+		async logout(userId: string): Promise<void> {
+			await this.deleteRefreshTokensById(userId);
+			await this.setUserIsOnline(userId, false);
+		}
+
+		// ========================================================================
+		// PUBLIC API - LOGIN 2FA VERIFY
+		// ========================================================================
 		
-		if (!updateResponse.ok) {
-			throw new Error(`Fallo al actualizar password: ${updateResponse.status}`);
-			// TODO Crear un tipo de SharedError usuario nuevo
+		/** Completa el proceso de login con 2FA */
+		async verify2FAWithToken(provisionalToken: string, totpCode: string): Promise<AuthTypes.LoginResponse> {
+			// Verificar token provisional con user payload
+			const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET);
+			
+			if (typeof payload === 'string' || payload.purpose !== '2fa_verification') { // TODO Aplicar la constante de AUTH al implementarla
+				throw new SharedErrors.UnauthorizedError('Token inválido');
+			}
+			
+			const provisionalPayload = payload as AuthTypes.ProvisionalTokenPayload;
+			const userId = provisionalPayload.userId;
+			
+			// OBtener el usuario internal con totpSecret
+			const user = await this.fetchUserById(userId);
+			
+			// Verificar que 2FA esté habilitado
+			if (!user.has2FAEnabled || !user.totpSecret) {
+				throw new SharedErrors.UnauthorizedError('2FA no está habilitado para este usuario');
+			}
+			
+			// Veerificar código totp
+			const verified = this.verify2FATotpCode(user.totpSecret, totpCode);
+			
+			if (!verified) {
+				throw new SharedErrors.UnauthorizedError('Codigo 2FA inválido');
+			}
+			
+			// actualizar tokens de refresh, estado online y generar access token
+			return await this.completeLogin(user);
 		}
 		
-		return true;
+		//=========================================================================
+		// PUBLIC API - CHANGE PASSWORD
+		//=========================================================================
+		
+		async changePassword(userId: string, oldPassword: string, newPassword: string):Promise<boolean> {
+			const user = await this.fetchUserById(userId);
+			
+			const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
+			
+			if (!isPasswordValid) {
+				throw new Error(`Password actual incorrecta`);
+			}
+			
+			const newPasswordHash = await bcrypt.hash(newPassword, 10);
+			
+			const updateResponse = await fetch(
+				`${AuthEnv.USER_SERVICE_URL}/internal/users/${user.id}/password`,
+				{
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
+					},
+					body: JSON.stringify({newPasswordHash})
+				}
+			);
+			
+			if (!updateResponse.ok) {
+				throw new Error(`Fallo al actualizar password: ${updateResponse.status}`);
+				// TODO Crear un tipo de SharedError usuario nuevo
+			}
+			
+			return true;
+		}
+		
+		// ========================================================================
+		// PUBLIC API - 2FA MANAGEMENT
+		// ========================================================================
+		
+		async enable2FA(userId: string): Promise<AuthTypes.Enable2FAResponse> {
+			
+			const user = await this.fetchUserById(userId);
+			
+			if (user.has2FAEnabled) {
+				throw new SharedErrors.ConflictError('2FA ya está activado', 'has2FAEnabled');
+			}
+			
+			// PASO 1 generar totp secret con speakeasy
+			const secret = speakeasy.generateSecret({
+				length: 32,									// largo 32
+				name: `ft_transcendence (${user.email})`,	// nombre en google authenticator
+				issuer: 'ft_transcendence'					// emisor (aparece en la app)
+			});
+			// output
+			// secret.base32 -> Secret en formato Base32 (para almacenar y verificar)
+			// secret.otpauth_url -> URL para generar QR
+			
+			// PASO 2 genearar QRCode
+			const qr = await QRcode.toDataURL(secret.otpauth_url as string)
+			// q es un Data URL base64: "dataimage/png;base64,...(hash like)"
+			
+			// PASO 3 generar backupCode
+			const backupCode = this.generate2FABackupCode();
+			// hashearlo para db
+			const backupCodeHash = await bcrypt.hash(backupCode, 10);
+			
+			// PASO 4 generar setupToken
+			const setupToken = crypto.randomBytes(32).toString('hex');
+			
+			// almacenar en setupCache(prefix: '2fa:setup:'), TTL Time To Live (AuthEnv)
+			const setupData: AuthTypes.SetupTokenData = {
+				userId: user.id,
+				totpSecret: secret.base32,					// Base32 secret para verificar
+				backupCodeHash								// Para verificar en solicitud de recuperación
+			};
+			
+			await this.setupCache.set(setupToken, setupData, 600); // 10 minutos TODO poner en .env y en SharedEnv
+			
+			return {
+				setupToken,									// cliente lo devolverá en verify-2fa-setup
+				backupCode,									// se mostrará en front para que usuario lo almacene
+				qr											// se mostraré en front para activar authenticator
+			};
+		}
+		
+		async verify2FASetup(setupToken: string, totpCode: string): Promise<void> {
+			// Recuperar setupData de setupCache
+			const setupData = await this.setupCache.get(setupToken) as AuthTypes.SetupTokenData
+			if (!setupData)
+				throw new SharedErrors.UnauthorizedError('SetupToken es inválido o expirado');
+			
+			// Verificar código totp XXXX-XXXX
+			const verified = this.verify2FATotpCode(setupData.totpSecret, totpCode);
+			if (!verified)
+				throw new SharedErrors.UnauthorizedError('Código 2FA inválido');
+			
+			// Activar 2FA en user service
+			await this.update2FAStatus(setupData.userId, true, setupData.totpSecret, setupData.backupCodeHash);
+			
+			// Limpiar setupCache
+			await this.setupCache.delete(setupToken);
+		}
+		
+		async disable2FA(userId: string, password: string): Promise<void> {
+			
+			// Recuperar user
+			const user = await this.fetchUserById(userId);
+			
+			// Verificar password vs passwordHash
+			const valid = await this.verifyPassword(password, user.passwordHash);
+
+			if (!valid) {
+				throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
+			}
+			
+			await this.update2FAStatus(userId, false);
+		}
+		
+		async verifyBackupCode(provisionalToken: string, backupCode: string): Promise<AuthTypes.LoginResponse> {
+			
+			const provisionalPayload = this.verifyProvisionalToken(provisionalToken);
+			const userId = provisionalPayload.userId;
+			const user = await this.fetchUserById(userId);
+			
+			if (!user.has2FAEnabled || !user.backupCodeHash)
+				throw new SharedErrors.UnauthorizedError('2FA no está habilitado');
+			
+			const isValid = await bcrypt.compare(backupCode, user.backupCodeHash);
+			
+			if (!isValid)
+				throw new SharedErrors.UnauthorizedError('Código de recuperación inválido');
+			
+			// Desactivar 2FA
+			await this.update2FAStatus(userId, false);
+			
+			// Completar login
+			return await this.completeLogin(user, false);
+		}
 	}
-	
-	// AGREGAR MÉTODOS:
-	
-	async enable2FA(userId: string): Promise<Enable2FAResponse> {
-		// 1. Fetch user, validar no tenga 2FA activo
-		// 2. speakeasy.generateSecret({ length: 32, name: ... })
-		// 3. qrcode.toDataURL(secret.otpauth_url)
-		// 4. crypto.randomBytes(8) → formatear como XXXX-XXXX
-		// 5. bcrypt.hash(backupCode)
-		// 6. setupToken = crypto.randomBytes(32).toString('hex')
-		// 7. RedisCache.set(setupToken, { userId, totpSecret, backupCodeHash }, 600)
-		// 8. Return { qr, setupToken, backupCode }
-	}
-	
-	async verify2FASetup(setupToken: string, totpCode: string): Promise<void> {
-		// 1. RedisCache.get(setupToken) → setupData
-		// 2. If !setupData: throw error (expired)
-		// 3. speakeasy.totp.verify(setupData.totpSecret, totpCode)
-		// 4. If valid: PATCH /internal/users/:id/2fa-status
-		// 5. RedisCache.delete(setupToken)
-	}
-	
-	async disable2FA(userId: string, password: string): Promise<void> {
-		// 1. Fetch user
-		// 2. Verify password
-		// 3. PATCH /internal/users/:id/2fa-status (nulls)
-		// 4. DELETE /internal/tokens/user/:id (invalidar tokens)
-	}
-	
-	async verifyBackupCode(provisionalToken: string, backupCode: string): Promise<LoginResponse> {
-		// 1. Verify provisionalToken JWT
-		// 2. Fetch user con backupCodeHash
-		// 3. bcrypt.compare(backupCode, user.backupCodeHash)
-		// 4. If match: disable2FA automático
-		// 5. Completar login (generar tokens)
-	}
-}

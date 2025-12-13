@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { TokenController, validateServiceSecret } from '../index.js';
-import { AuthSchemas } from '@transcendence/shared';
+import { UserSchemas } from '@transcendence/shared';
 
 export const internalTokenRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new TokenController();
@@ -9,26 +9,26 @@ export const internalTokenRoutes: FastifyPluginAsync = async (app) => {
 
 	// Verificar validez de un refresh token
 	app.post('/internal/tokens/verify', {
-		schema: AuthSchemas.VerifyRefreshTokenSchema,
+		schema: UserSchemas.VerifyRefreshTokenSchema,
 		handler: controller.verifyToken.bind(controller)
 	});
 
 	// Crear nuevo refresh token
 	app.post('/internal/tokens', {
-		schema: AuthSchemas.RefreshTokenDataSchema,
+		schema: UserSchemas.RefreshTokenDataSchema,
 		handler: controller.createToken.bind(controller)
 	});
 
 	// Eliminar todos los tokens de un usuario
 	app.delete('/internal/tokens/user/:id', {
-		schema: AuthSchemas.DeleteRefreshTokenByUserSchema,
+		schema: UserSchemas.DeleteRefreshTokenByUserSchema,
 		handler: controller.deleteByUserId.bind(controller)
 	}
 	);
 
 	// Limpiar tokens expirados
 	app.delete('/internal/tokens/expired', {
-		schema: AuthSchemas.DeleteExpiredTokensSchema,
+		schema: UserSchemas.DeleteExpiredTokensSchema,
 		handler: controller.cleanExpired.bind(controller)
 	});
 }

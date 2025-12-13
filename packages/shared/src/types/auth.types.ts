@@ -176,8 +176,8 @@ export namespace AuthTypes {
 		id: string;
 		user_id: string;
 		token_hash: string;
-		expires_at: string;        // ISO 8601 string
-		is_2fa_verified: number;   // SQLite boolean (0 | 1)
-		created_at: number;        // Unix timestamp ms
+		expires_at: number;			// Unix timestamp ms
+		is_2fa_verified: number;	// SQLite boolean (0 | 1)
+		created_at: number;			// Unix timestamp ms
 	}
 }

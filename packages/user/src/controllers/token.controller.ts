@@ -32,9 +32,10 @@ export class TokenController {
 		}
 	}
 
-	async createToken(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+	async createToken(
+		request: FastifyRequest<{Body: AuthTypes.RefreshTokenData}>, reply: FastifyReply): Promise<void> {
 		try {
-			const data = request.body as AuthTypes.RefreshTokenDataBody;
+			const data = request.body;
 			const token = await this.tokenService.createToken(data);
 			return reply.code(201)
 				.send(token);

@@ -1,4 +1,4 @@
-import { AuthTypes, SharedErrors, UserTypes, Utils } from "@transcendence/shared";
+import { AuthTypes, SharedErrors, Utils } from "@transcendence/shared";
 import { getDatabase, TokenMapper } from "../index.js"
 import { ITokenRepository } from "./ITokenRepository.js";
 
@@ -6,12 +6,12 @@ export class SQLiteTokenRepository implements ITokenRepository{
 
 	private db = getDatabase();
 
-	async createToken(data: AuthTypes.RefreshTokenDataBody): Promise<AuthTypes.RefreshTokenRecord> {
+	async createToken(data: AuthTypes.RefreshTokenData): Promise<AuthTypes.RefreshTokenRecord> {
 
 		const now = new Date().toISOString();
 		const fullData: AuthTypes.RefreshTokenRecord = {
-			id: Utils.generateTokenId(),
 			...data,
+			id: Utils.generateTokenId(),
 			createdAt: now
 		};
 

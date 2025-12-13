@@ -9,7 +9,7 @@ export class TokenService {
 		this.tokenRepo = new SQLiteTokenRepository();
 	}
 
-	async createToken(data: AuthTypes.RefreshTokenDataBody): Promise<AuthTypes.RefreshTokenRecord> {
+	async createToken(data: AuthTypes.RefreshTokenData): Promise<AuthTypes.RefreshTokenRecord> {
 		if (new Date(data.expiresAt).getTime() < Date.now())
 			throw new Error(`Fecha de expiración inválida`);
 

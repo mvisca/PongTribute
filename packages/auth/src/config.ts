@@ -68,7 +68,7 @@ import {
 		export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
 		export const UNIQUE_SESSION: boolean = sharedEnv.UNIQUE_SESSION;
 		export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
-		export const TOKEN_EXPIRY: string = sharedEnv.TOKEN_EXPIRY;
+		export const TOKEN_EXPIRY: number = sharedEnv.TOKEN_EXPIRY;
 		export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
 		export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
 		export const REDIS_PORT: number = sharedEnv.REDIS_PORT;

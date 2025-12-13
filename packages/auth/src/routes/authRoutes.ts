@@ -1,43 +1,76 @@
 import { FastifyPluginAsync } from "fastify";
 import { AuthSchemas } from "@transcendence/shared";
-import { AuthController, AuthMiddleware } from "../index.js";
+import { AuthController, AuthMiddleware, AuthService } from "../index.js";
 
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
+
+	// instancia única de controller para todas las rutas
 	const controller = new AuthController();
 
 	// ============================================================================
-	// LOGIN / LOGOUT
+	// PUBLIC ROUTES // LOGIN & VERIFY 2FA & VERIFY BACKUP CODE
 	// ============================================================================
 
-	// Autenticar usuario y retornar tokens
+	/** Autenticar usuario y retornar tokens */
 	app.post('/auth/login', {
 		schema: AuthSchemas.LoginBodySchema,
 		handler: controller.login.bind(controller)
 	});
 	// TODO agregar schemas para validacion
 
-	// Verifica tokens de 2FA
+	/** Verifica tokens de 2FA para login */
 	app.post('/auth/verify-2fa', {
-		schema: AuthSchemas.Verify2FABodySchema,
+		schema: AuthSchemas.LoginVerify2FABodySchema,
 		handler: controller.verify2FAWithToken.bind(controller)
 	});
 
-	// Desautenticar usuario y borrar tokens
+	/** Login con backupCode */
+	app.post('/auth/verify--------backup-code', {
+		schema: AuthSchemas.VerifyBackupCodeBodySchema,
+		handler: controller.verifyBackupCode.bind(controller)
+	});
+
+	// ============================================================================
+	// PROTECTED ROUTES // CON JWT
+	// ============================================================================
+
+	/** Desautenticar usuario y borrar tokens */
 	app.post('/auth/logout', {
 		preHandler: [AuthMiddleware.validateJWT],
 		handler: controller.logout.bind(controller)
 	});
 
 	// ============================================================================
-	// UPDATE PASSWORD
+	// PROTECTED ROUTES // CON JWT + OWNERSHIP
 	// ============================================================================
 
-	// Actualizar contraseña (requiere verificación de propiedad)
+	/** Activar 2FA */
+	app.post('/auth/enable-2fa', {
+		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
+		schema: AuthSchemas.Enable2FABodySchema,
+		handler: controller.enable2FA.bind(controller)
+	});
+
+	/** Completar configuración de 2FA */
+	app.post('/auth/verify-2fa-setup', {
+		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
+		schema: AuthSchemas.Verify2FASetupBodySchema,
+		handler: controller.verify2FASetup.bind(controller)
+	});
+
+	/** Desactivar 2FA */
+	app.post('/auth/diable-2fa', {
+		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
+		schema: AuthSchemas.Disable2FABodySchema,
+		handler: controller.disable2FA.bind(controller)
+	});
+
+	/** Actualizar contraseña (requiere verificación de propiedad) */
 	app.put('/auth/:id/password', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.UpdatePasswordBodySchema,
 		handler: controller.updatePassword.bind(controller)
-	}); // TODO agregar schemas para validacion de inputs
+	});
 
 }
