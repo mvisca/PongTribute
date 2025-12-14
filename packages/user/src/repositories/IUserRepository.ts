@@ -3,87 +3,65 @@ import { UserTypes } from '@transcendence/shared';
 /**
  * Interfaz que define el contrato para el repositorio de Usuarios.
  * Especifica QUÉ operaciones deben implementarse, sin definir CÓMO.
- * 
- * Operaciones CRUD básicas:
- * - create(user)     → Crear usuario
- * - update(id, data) → Actualizar usuario  
- * - delete(id)       → Eliminar usuario
- * 
- * Consultas específicas:
- * - findById(id)           → Buscar por ID
- * - findByUsername(username) → Buscar por nombre de usuario
- * - findByEmail(email)     → Buscar por email
- * - findAll()              → Obtener todos los usuarios
- * - isUsernameTaken(username) → Verificar si username existe
- * - isEmailTaken(email)    → Verificar si email existe
- * 
  * Permite implementar SQLite sin poner lógica de DB en lógica de negocio.
  */
 export interface IUserRepository {
-	
-	/**
-	 * Crear nuevo usuario
-	*/
-	create(data: UserTypes.CreateUserBody): Promise <UserTypes.UserPublic>;
+    // ========================================================================
+    // MUTATIONS - Lanzan excepción si fallan
+    // ========================================================================
+    
+    /** Crear nuevo usuario */
+    create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic>;
+    
+    /** Actualizar usuario - Lanza NotFoundError si no existe */
+    update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic>;
+    
+    /** Actualizar passwordHash - Lanza NotFoundError si no existe */
+    updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic>;
+    
+    /** Eliminar usuario - Lanza NotFoundError si no existe */
+    delete(id: string): Promise<void>;
+    
+    /** Anonimizar usuario - Lanza NotFoundError si no existe */
+    anonymize(id: string): Promise<UserTypes.UserPublic>;
+    
+    /** Actualizar isOnline - Lanza NotFoundError si no existe */
+    setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic>;
+    
+    /** Actualizar estado 2FA - Lanza NotFoundError si no existe */
+    update2FAStatus(
+        userId: string,
+        totpSecret: string | null,
+        backupCodeHash: string | null,
+        has2FAEnabled: boolean
+    ): Promise<UserTypes.UserPublic>;
+    
+    // ========================================================================
+    // QUERIES - Retornan null si no encuentran
+    // ========================================================================
+    
+    /** Buscar usuario por id (sin passwordHash) */
+    findUserById(id: string): Promise<UserTypes.UserPublic | null>;
+    
+    /** Buscar usuario por id (con passwordHash) */
+    findUserByIdInternal(id: string): Promise<UserTypes.UserInternal | null>;
+    
+    /** Buscar usuario por username (sin passwordHash) */
+    findUserByUsername(username: string): Promise<UserTypes.UserPublic | null>;
+    
+    /** Buscar usuario por email (con passwordHash) */
+    findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal | null>;
+    
+    /** Buscar usuario por email (con passwordHash) - alias */
+    findUserByEmail(email: string): Promise<UserTypes.UserInternal | null>;
 
-	/**
-	 * Actualizar usuario
-	 */
-	update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic | null>;
+	// ========================================================================
+    // CHECKERS - Retornan siempre un valor
+    // ========================================================================
 
-	/**
-	 * Actualizar el 'passwordHash' de usuario
-	 */
-	updatePassword(id: string, newPasswordHass: string): Promise<UserTypes.UserPublic | null>;
-
-	/**
-	 * Eliminar usuario
-	 */
-	delete(id: string): Promise<void>;
-
-	/**
-	 * Anonimiza usuario
-	 */
-	anonymize(id: string): Promise<UserTypes.UserPublic | null>;
-
-	/**
-	 * Buscar usuario por 'id'
-	 */
-	findUserById(id: string): Promise<UserTypes.UserPublic | null>;
-
-	/**
-	 * Buscar usuario por 'id' (retorna UserInternal)
-	 */
-	findUserByIdInternal(id: string): Promise<UserTypes.UserInternal | null>;
-
-	/**
-	 * Buscar usuario por 'username'
-	 */
-	findUserByUsername(username: string): Promise<UserTypes.UserPublic | null>;
-
-	/**
-	 * Buscar usuario por 'email' (retorna UserInternal con `passwordHash`)
-	 */
-	findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal | null>;
-
-	/**
-	 * Buscar usuario por 'email' (retorna UserInternal con `passwordHash`)
-	 */
-	findUserByEmail(email: string): Promise<UserTypes.UserInternal | null>;
-	
-	/**
-	 * Verficar 'username' disponible
-	 */
-	isUsernameTaken(username: string): Promise<boolean>;
-
-	/**
-	 * Verificar 'email disponible
-	 */
-	isEmailTaken(email: string): Promise<boolean>;
-
-	/** Actualizar 'isOnline' */
-    setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic | null>;
-
-	/** Actualizar 'is2FAEnabled' */
-	setIs2FAEnabled(id: string, is2FAEnabled: boolean): Promise<UserTypes.UserPublic | null>;
+    /** Verificar si username está en uso */
+    isUsernameTaken(username: string): Promise<boolean>;
+    
+    /** Verificar si email está en uso */
+    isEmailTaken(email: string): Promise<boolean>;
 }

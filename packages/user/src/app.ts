@@ -1,6 +1,8 @@
 import Fastify, { FastifyError, FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import type { Redis } from 'ioredis';
+import swagger from '@fastify/swagger';
+import swaggerUI from '@fastify/swagger-ui';
 import { UserEnv, UserRoutes } from './index.js';
 import { Utils } from '@transcendence/shared';
 
@@ -10,7 +12,7 @@ export let redisClient: Redis | null = null;
 
 /** Crea y configuara la instancia de Fastfy */
 export function buildApp(): FastifyInstance { 
-
+	
 	try {
 		const redisConfig = UserEnv.getRedisConfig();
 		redisClient = Utils.createRedisClient(redisConfig);
@@ -19,16 +21,50 @@ export function buildApp(): FastifyInstance {
 		console.error('Error conectando Redis en User: ', err);
 		process.exit(1);
 	}
-
+	
 	/** 1. Crear instancia app */
 	const app = Fastify(UserEnv.getFastifyConfig());
 	
-	/** 2. Plugin de seguridad */
+	/** 2. Plugins de seguridad */
 	app.register(helmet, {
 		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});
-
+	
+	/** 2. Plugins de documentación */
+	app.register(swagger, {
+		openapi: {
+			info: {
+				title: 'Transcndence User API',
+				version: '1.0.0'
+			},
+			servers: [
+				{ url: `http://localhost:${UserEnv.PORT}`}
+				// TODO hacer que la url sea dinamica en sharedEnv para tener valores acordes a NODE_ENV
+			],
+			tags: [
+				{ name: 'User', description: 'Gestión de usuarios' },
+				{ name: 'Token', description: 'Gestión de refresh tokens' }
+			]
+		},
+		transform: ({ schema, url }) => {
+			return {
+				schema,
+				url
+			};
+		}
+	});
+	
+	/** 2. Plugins de documentacion con UI interactiva */
+	app.register(swaggerUI, {
+		routePrefix: '/docs',
+		staticCSP: true,
+		uiConfig: {
+			docExpansion: 'list',
+			deepLinking: false
+		}
+	});
+	
 	/** 3. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
@@ -57,7 +93,7 @@ export function buildApp(): FastifyInstance {
 			uptime: process.uptime()
 		};
 	});
-
+	
 	/** Registrar todas las rutas del servicio */
 	console.log('REG USER INTERNAL ROUTES');
 	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
@@ -67,7 +103,7 @@ export function buildApp(): FastifyInstance {
 	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
 	console.log('REG TOKEN PROTECTED ROUTES');
 	app.register(UserRoutes.internalTokenRoutes, { prefix: '/api'});
-
+	
 	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error({
@@ -76,19 +112,20 @@ export function buildApp(): FastifyInstance {
 			method: request.method
 		});
 		
-		if ((error as FastifyError).validation) {
+		const typedError = error as FastifyError;
+
+		if ('validation' in typedError && typedError.validation) {
 			return reply.status(400).send({
 				error: 'Ostras! Error de validación',
-				message: (error as FastifyError).message,
-				details: (error as FastifyError).validation
+				message: typedError.message,
+				details: typedError.validation
 			})
 		}
 		
-		const statusCode = (error as FastifyError).statusCode; // TODO arreglar este apanyo causado por type asertion para resolver conflicto de tipo Fastify Error
-		if (statusCode) {
-			return reply.status(statusCode).send({
-				error: (error as FastifyError).name,
-				message: (error as FastifyError).message
+		if (typedError.statusCode) {
+			return reply.status(typedError.statusCode).send({
+				error: typedError.name,
+				message: typedError.message
 			})
 		}
 		

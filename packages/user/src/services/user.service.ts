@@ -35,20 +35,14 @@ export class UserService {
 			...rest
 		};
 
-		const user = await this.userRepo.create(fullData);
-		if (!user) {
-			throw new Error('Error al crear usuario en la base de datos');
-		}
-
-		return user;
+		return await this.userRepo.create(fullData);
 	}
 
 	async updateUser(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 
 		const user = await this.userRepo.findUserByIdInternal(id);
-		if (!user || user.isDeleted) {
+		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
-		}
 
 		if (data.email && data.email !== user.email) {
 			const isEmailTaken = await this.userRepo.isEmailTaken(data.email);
@@ -62,42 +56,31 @@ export class UserService {
 				throw new SharedErrors.ConflictError('El username ya está en uso', 'username');
 		}
 
-		const updated = await this.userRepo.update(id, data);
-
-		if (!updated) {
-			throw new SharedErrors.ValidationError('No hay campos válidos para actualizar');
-		}
-
-		return updated;
+		return await this.userRepo.update(id, data);
 	}
 
-	async updatePassword(id: string, newPasswordHash: string): Promise<void> {
-		const user = await this.userRepo.findUserByIdInternal(id);
-		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
-
-		await this.userRepo.updatePassword(id, newPasswordHash);
+	async update2FAStatus(
+		userId: string,
+		totpSecret: string | null,
+		backupCodeHash: string | null,
+		has2FAEnabled: boolean
+	): Promise<UserTypes.UserPublic> {
+		return await this.userRepo.update2FAStatus(userId, totpSecret, backupCodeHash, has2FAEnabled);
 	}
 
-	async updateOnlineStatus(id: string, isOnline: boolean): Promise<void> {
-		const user = await this.userRepo.findUserByIdInternal(id);
-		if (!user || user.isDeleted) {
-			throw new SharedErrors.NotFoundError('Usuario no existe', 'user');
-		}
-		await this.userRepo.setOnlineStatus(id, isOnline);
+	async updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic> {
+		return await this.userRepo.updatePassword(id, newPasswordHash);
+	}
+
+	async updateOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic> {
+		return await this.userRepo.setOnlineStatus(id, isOnline);
 	}
 
 	async anonymizeUser(id: string): Promise<void> {
-		const user = await this.userRepo.findUserByIdInternal(id);
-		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
 		await this.userRepo.anonymize(id);
 	}
 
 	async deleteUser(id: string): Promise<void> {
-		const user = await this.userRepo.findUserByIdInternal(id);
-		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
 		await this.userRepo.delete(id);
 	}
 

@@ -32,6 +32,16 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	})
 
 	// ============================================================================
+	// UPDATE 2FA
+	// ============================================================================
+	
+	// Actualizar status del 2FA, totpSecret y backupCode
+	app.patch('/users/:id/2fa-status', {
+		schema: UserSchemas.Update2FAStatusBodySchema,
+		handler: controller.update2FAStatus.bind(controller)
+	});
+
+	// ============================================================================
 	// UPDATE PASSWORD
 	// ============================================================================
 

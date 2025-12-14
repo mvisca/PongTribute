@@ -45,7 +45,28 @@ export class UserController {
 	}
 
 	// ========================================================================
-	// DELETE USER
+	// UPDATE USER
+	// ========================================================================
+	async update2FAStatus(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { id } = request.params as UserTypes.UserIdParams;
+			const data = request.body as UserTypes.Update2FAStatusBody;
+
+			const user = await this.userService.update2FAStatus(
+				id,
+				data.totpSecret ?? null,
+				data.backupCodeHash ?? null,
+				data.has2FAEnabled);
+
+			return reply.code(200).send(user);
+			
+		}catch(err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
+	// ========================================================================
+	// UPDATE USER
 	// ========================================================================
 
 	async updateUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {

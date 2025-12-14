@@ -64,8 +64,6 @@ interface EnvVars {
 	REDIS_PORT: number;
 	REDIS_PASSWORD: string;
 	REDIS_DB: number;
-	
-	TEST_MODE: string;
 };
 
 const DEFAULTS: EnvVars = {
@@ -103,9 +101,7 @@ const DEFAULTS: EnvVars = {
 	REDIS_HOST: 'localhost',
 	REDIS_PORT: 6379,
 	REDIS_PASSWORD: 'create_a_supersafe_redis_password',
-	REDIS_DB: 0,
-	
-	TEST_MODE: 'default_values',
+	REDIS_DB: 0,	
 } as const;
 
 export type EnviromentVars = typeof DEFAULTS;
@@ -124,13 +120,24 @@ export namespace SharedEnv {
 		const isProduction = process.env.NODE_ENV === 'production';
 		
 		// Helper: usar default solo en development
-		function envOr<T>(envValue: string | undefined, defaultValue: T): T {
+		function envOr<T>(
+			envValue: string | undefined,
+			defaultValue: T,
+			varName: string = "No hay varName"
+		): T {
 			if (envValue !== undefined) {
 				// Parseo segun tipo de 'defaultValue'
 				if (typeof defaultValue === 'number') {
 					const n = Number(envValue);
-					if (isNaN(n))
-						throw new Error(`Variable no es un número válido: ${envValue}`);
+					if (isNaN(n)) {
+						console.error('\nERROR DE CONFIGURACIÓN\n');
+						console.error(`Variable: ${varName || 'desconocida'}`);
+						console.error(`Valor recibido: "${envValue}"`);
+						console.error(`Tipo esperado: number`);
+						console.error(`\nCTRL+C para terminar\n`);
+						
+						process.exit(1);
+					}
 					return n as T;
 				}
 				if (typeof defaultValue === 'boolean') {
@@ -138,13 +145,22 @@ export namespace SharedEnv {
 						return true as T;
 					if (envValue === 'false')
 						return false as T;
-					throw new Error(`Variable boolean inválida: ${envValue}\nUse 'true' o 'false'`);
+					
+					console.error('\nERROR DE CONFIGURACIÓN\n');
+					console.error(`Variable: ${varName || 'desconocida'}`);
+					console.error(`Valor recibido: "${envValue}"`);
+					console.error(`Tipo esperado: boolean`);
+					console.error(`\nValores válidos: true, false\n`);
+					console.error(`\nCTRL+C para terminar\n`);
+					
+					process.exit(1);
 				}
 				return envValue as T; // String
 			}
 			if (isDevelopment)
 				return defaultValue;
-			throw new Error('Variable de entorno requerida para produccion no encontrada');
+			console.error(`${varName}: Variable de entorno requerida no encontrada`);
+			process.exit(1);
 		};
 		
 		function validatePort(port: number | undefined, context: string): void {
@@ -165,11 +181,13 @@ export namespace SharedEnv {
 		}
 		
 		function validateRequired<T>(value: T | undefined, name: string): void {
-			if (!value) {
+			if (value === undefined || value === null)
 				throw new Error(`Variable requerida faltante: ${name}`);
-			}
+
+			if (typeof value === 'string' && value.trim() === '')
+				throw new Error(`Variable ${name} no puede estar vacía`);
 		}
-		
+
 		function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
 			const missing: string[] = [];
 			
@@ -232,59 +250,56 @@ export namespace SharedEnv {
 		
 		const config: EnvVars = {
 			// AUTH SERVICE
-			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL),
-			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT),
-			AUTH_SERVICE_HOST: envOr(process.env.AUTH_SERVICE_HOST, DEFAULTS.AUTH_SERVICE_HOST),
-			JWT_SECRET: envOr(process.env.JWT_SECRET, DEFAULTS.JWT_SECRET),
-			TOKEN_EXPIRY: envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY),
-			REFRESH_TOKEN_EXPIRY: envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY),
-			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS),
-			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION),
+			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL'),
+			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT'),
+			AUTH_SERVICE_HOST: envOr(process.env.AUTH_SERVICE_HOST, DEFAULTS.AUTH_SERVICE_HOST, 'AUTH_SERVICE_HOST'),
+			JWT_SECRET: envOr(process.env.JWT_SECRET, DEFAULTS.JWT_SECRET, 'JWT_SECRET'),
+			TOKEN_EXPIRY: envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
+			REFRESH_TOKEN_EXPIRY: envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
+			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, 'BCRYPT_ROUNDS'),
+			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION, 'UNIQUE_SESSION'),
 			
 			// GAME SERVICE
-			GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL),
-			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT),
-			GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST),
-			GAME_SERVICE_DB_FILENAME: "",
-			GAME_SERVICE_DB_PATH: "",
+			GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL, 'GAME_SERVICE_URL'),
+			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_URL'),
+			GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST, 'GAME_SERVICE_HOST'),
+			GAME_SERVICE_DB_FILENAME: envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME'),
+			GAME_SERVICE_DB_PATH: envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
 			GAME_SERVICE_DB_FULL_PATH: safeFullPath(
-				envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME),
-				envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH),
+				envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME'),
+				envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
 				getBaseDir()
 			),
 			
 			// USER SERVICE
-			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL),
-			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT),
-			USER_SERVICE_HOST: envOr(process.env.USER_SERVICE_HOST, DEFAULTS.USER_SERVICE_HOST),
-			USER_SERVICE_DB_FILENAME: "",
-			USER_SERVICE_DB_PATH: "",
+			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL, 'USER_SERVICE_URL'),
+			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT, 'USER_SERVICE_PORT'),
+			USER_SERVICE_HOST: envOr(process.env.USER_SERVICE_HOST, DEFAULTS.USER_SERVICE_HOST, 'USER_SERVICE_HOST'),
+			USER_SERVICE_DB_FILENAME: envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME'),
+			USER_SERVICE_DB_PATH: envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_FILENAME'),
 			USER_SERVICE_DB_FULL_PATH: safeFullPath(
-				envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME),
-				envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH),
+				envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME'),
+				envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH'),
 				getBaseDir()
 			),
 			
 			// FRONTEND
-			FRONTEND_URL: envOr(process.env.FRONTEND_URL, DEFAULTS.FRONTEND_URL),
-			FRONTEND_PORT: envOr(process.env.FRONTEND_PORT, DEFAULTS.FRONTEND_PORT),
-			FRONTEND_HOST: envOr(process.env.FRONTEND_HOST, DEFAULTS.FRONTEND_HOST),
+			FRONTEND_URL: envOr(process.env.FRONTEND_URL, DEFAULTS.FRONTEND_URL, 'FRONTEND_URL'),
+			FRONTEND_PORT: envOr(process.env.FRONTEND_PORT, DEFAULTS.FRONTEND_PORT, 'FRONTEND_PORT'),
+			FRONTEND_HOST: envOr(process.env.FRONTEND_HOST, DEFAULTS.FRONTEND_HOST, 'FRONTEND_HOST'),
 			
 			// GLOBAL
-			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV),
-			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL),
+			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV, 'NODE_EV'),
+			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL, 'LOG_LEVEL'),
 			
 			// INTER-SERVICE COMMUNICATION
-			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET),
+			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET, 'SERVICE_SECRET'),
 			
 			// REDIS 
-			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST),
-			REDIS_PORT: envOr(process.env.REDIS_PORT, DEFAULTS.REDIS_PORT),
-			REDIS_PASSWORD: envOr(process.env.REDIS_PASSWORD, DEFAULTS.REDIS_PASSWORD),
-			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_DB),
-			
-			// TESTING
-			TEST_MODE: envOr(process.env.TEST_MODE, DEFAULTS.TEST_MODE),
+			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST, 'REDIS_HOST'),
+			REDIS_PORT: envOr(process.env.REDIS_PORT, DEFAULTS.REDIS_PORT, 'REDIS_PORT'),
+			REDIS_PASSWORD: envOr(process.env.REDIS_PASSWORD, DEFAULTS.REDIS_PASSWORD, 'REDIS_PASSWORD'),
+			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_DB, 'REDIS_DB'),
 		};
 		
 		// ==================================================
