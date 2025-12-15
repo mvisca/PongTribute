@@ -45,7 +45,7 @@ export function buildApp(): FastifyInstance {
 				{ name: 'Game', description: 'Gestión de partidas' }
 			]
 		},
-		transform: ({ schema, url }) => {
+		transform: ({ schema, url }: { schema: any, url: string }) => {
 			return {
 				schema,
 				url

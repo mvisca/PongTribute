@@ -1,34 +1,34 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from "../config.js";
+import { GameEnv } from "../config.js";
 
 export namespace AuthMiddleware {
-    export const validateJWT = async (
-        request: FastifyRequest,
-        reply: FastifyReply
-    ): Promise<void> => {
-        const authHeader = request.headers.authorization;
-        
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return await reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Token no proporcionado'
-            });
-        }
-        
-        const token = authHeader.substring(7);
-        
-        try {
-            const payload = jwt.verify(token, JWT_SECRET);
-            // Asignamos el payload al request para usarlo en controladores
-            request.user = payload as any; 
-        } catch (err) {
-            return await reply.status(401).send({
-                error: 'Unauthorized',
-                message: 'Token inválido'
-            });
-        }
-    }
+	export const validateJWT = async (
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> => {
+		const authHeader = request.headers.authorization;
+
+		if (!authHeader || !authHeader.startsWith('Bearer ')) {
+			return await reply.status(401).send({
+				error: 'Unauthorized',
+				message: 'Token no proporcionado'
+			});
+		}
+
+		const token = authHeader.substring(7);
+
+		try {
+			const payload = jwt.verify(token, GameEnv.JWT_SECRET);
+			// Asignamos el payload al request para usarlo en controladores
+			request.user = payload as any;
+		} catch (err) {
+			return await reply.status(401).send({
+				error: 'Unauthorized',
+				message: 'Token inválido'
+			});
+		}
+	}
 }
 
 /* EXPLICACIÓN:
