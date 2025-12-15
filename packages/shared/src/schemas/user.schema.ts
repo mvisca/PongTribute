@@ -454,7 +454,7 @@ export namespace UserSchemas {
 	export const DeleteRefreshTokenByUserSchema = {
 		params: DeleteRefreshTokenByUserParams,
 		response: {
-			204: Type.Void(),
+			204: Type.Null(),
 			400: ErrorResponse,
 			500: ErrorResponse
 		}
@@ -465,7 +465,7 @@ export namespace UserSchemas {
 	 */
 	export const DeleteExpiredTokensSchema = {
 		response: {
-			204: Type.Void(),
+			204: Type.Null(),
 			500: ErrorResponse
 		}
 	};
