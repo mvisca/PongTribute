@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
-import { AuthMiddleware } from '../middleware/auth.middleware.js';
+import { AuthMiddleware } from '../middleware/game.middleware.js';
 import { GameGateway } from '../gateways/GameGateway.js';
 import { MatchSchemas } from '@transcendence/shared';
 

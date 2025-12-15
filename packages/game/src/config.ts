@@ -1,19 +1,138 @@
+import dotenv from 'dotenv';
 import path from 'path';
-import { SharedEnv } from '@transcendence/shared';
+import { fileURLToPath } from 'url';
 
-const env = SharedEnv.build();
+// Recrear __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-export const SERVER_PORT = parseInt(process.env.PORT || '3003');
-export const JWT_SECRET = env.JWT_SECRET;
+import { SharedEnv, findEnvFile, RedisConfig, validateRedisConfig } from '@transcendence/shared';
 
-// Patrón de rutas: Base -> Filename -> Full Path
-export const DB_BASE_PATH = env.GAME_SERVICE_DB_PATH || '../../db-data';
-export const DB_FILENAME = 'game.sqlite';
-export const DB_FULL_PATH = path.join(DB_BASE_PATH, DB_FILENAME);
+// Cargar .env explícitamente antes de build()
+const envPath = findEnvFile(__dirname);
+if (envPath) {
+	dotenv.config({ path: envPath });
+} else {
+	dotenv.config();
+}
 
-/* EXPLICACIÓN:
-1. SharedEnv.build(): Trae las variables de entorno compartidas (como secretos y rutas base).
-2. DB_BASE_PATH: Define dónde se guardan los archivos (usa la variable de entorno o un fallback relativo).
-3. DB_FILENAME: Nombre específico para la DB de este microservicio.
-4. DB_FULL_PATH: Une ambas partes usando 'path.join' para asegurar compatibilidad entre SO (Windows/Linux).
-*/
+// =====================================================
+// TIPOS
+// =====================================================
+
+export namespace GameEnv {
+	export interface ServiceConfig {
+		port: number;
+		host: string;
+		nodeEnv: 'development' | 'production' | 'test';
+		logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+		dbPath: string;
+	}
+
+	export interface FastifyConfig {
+		logger: {
+			level: string;
+			transport?: {
+				target: string;
+				options: {
+					colorize: boolean;
+					translateTime: string;
+					ignore: string;
+				};
+			};
+		} | boolean;
+		ajv?: {
+			customOptions?: {
+				removeAdditional?: boolean | 'all' | 'failing';
+				coerceTypes?: boolean;
+				useDefaults?: boolean;
+			};
+		};
+	}
+
+	// =====================================================
+	// INICIALIZAR
+	// =====================================================
+
+	const sharedEnv = SharedEnv.build();
+
+	// =====================================================
+	// EXPORTS PÚBLICOS - VALORES
+	// =====================================================
+
+	export const PORT: number = sharedEnv.GAME_SERVICE_PORT;
+	export const HOST: string = sharedEnv.GAME_SERVICE_HOST;
+
+	export const NODE_ENV: string = sharedEnv.NODE_ENV;
+	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
+
+	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+	export const GAME_SERVICE_DB_FULL_PATH = sharedEnv.GAME_SERVICE_DB_FULL_PATH;
+
+	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
+	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS;
+
+	export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
+	export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
+	export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
+	export const REDIS_DB: number = sharedEnv.REDIS_DB;
+
+	// =====================================================
+	// EXPORTS PÚBLICOS - OBJETOS
+	// =====================================================
+
+	export const serverConfig: ServiceConfig = {
+		port: PORT,
+		host: HOST,
+		nodeEnv: NODE_ENV as ServiceConfig['nodeEnv'],
+		logLevel: LOG_LEVEL as ServiceConfig['logLevel'],
+		dbPath: GAME_SERVICE_DB_FULL_PATH
+	};
+
+	// =====================================================
+	// EXPORTS PÚBLICOS - FUNCIONES
+	// =====================================================
+
+	export function getFastifyConfig(): FastifyConfig {
+		return {
+			logger: {
+				level: serverConfig.logLevel,
+				...(serverConfig.nodeEnv === 'development' && {
+					transport: {
+						target: 'pino-pretty',
+						options: {
+							colorize: true,
+							translateTime: 'HH:MM:ss Z',
+							ignore: 'pid,hostname'
+						}
+					}
+				})
+			},
+			ajv: {
+				customOptions: {
+					removeAdditional: false,
+					coerceTypes: true,
+					useDefaults: true
+				}
+			}
+		};
+	}
+
+	export function getRedisConfig(): RedisConfig {
+		const config: RedisConfig = {
+			host: REDIS_HOST,
+			port: REDIS_PORT,
+			password: REDIS_PASSWORD,
+			db: REDIS_DB,
+			maxRetriesPerRequest: 3,
+			connectTimeout: 10000,
+			lazyConnect: false,
+			enableReadyCheck: true
+		};
+
+		if (!validateRedisConfig(config))
+			throw new Error('Configuración de Redis inválida');
+
+		return config;
+	}
+}

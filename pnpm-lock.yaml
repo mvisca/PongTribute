@@ -113,6 +113,12 @@ importers:
       '@fastify/helmet':
         specifier: 13.0.2
         version: 13.0.2
+      '@fastify/swagger':
+        specifier: 9.6.1
+        version: 9.6.1
+      '@fastify/swagger-ui':
+        specifier: 5.2.3
+        version: 5.2.3
       '@fastify/websocket':
         specifier: ^11.0.1
         version: 11.2.0
