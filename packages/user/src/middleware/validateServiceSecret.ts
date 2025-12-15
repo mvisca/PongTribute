@@ -12,11 +12,6 @@ export async function validateServiceSecret(
 ) {
 	const providedSecret = request.headers['x-service-secret'];
 	
-	// TODO quitar log de middleware
-	console.log('📨 Header recibido:', providedSecret);
-	console.log('🔐 Secret esperado:', UserEnv.SERVICE_SECRET);
-	console.log('✅ Match:', providedSecret === UserEnv.SERVICE_SECRET);
-	
 	if (!providedSecret || providedSecret !== UserEnv.SERVICE_SECRET) {
 		return reply.status(403).send({
 			error: 'Forbidden',

@@ -1,8 +1,10 @@
-import { buildApp } from './app.js';
+import { FastifyInstance } from 'fastify';
+import { buildApp, redisClient } from './app.js';
 import { AuthEnv } from './config.js';
 
+let app: FastifyInstance |null = null;
+
 async function start() {
-	let app;
 	try {
 		app = buildApp();
 	} catch (err) {
@@ -19,14 +21,31 @@ async function start() {
 	}
 }
 
-process.on('SIGINT', () => {
-	console.log('\nSIGINT recibido');
-	process.exit(0);
-});
+async function gracefulShutdown(signal: string) {
+	console.log(`\n${signal} recibido. Iniciando Graceful Shutdown`);
 
-process.on('SIGTERM', () => {
-	console.log('\nSIGTERM recibido');
+	if (redisClient) {
+		try {
+			await redisClient.quit();
+			console.log('AUTH: Redis desconectado');
+		} catch (err) {
+			console.error('AUTH: Error cerrando Redis', err);
+		}
+	}
+
+	if (app) {
+		try {
+			await app.close();
+			console.log('AUTH: Fastify HTTP server cerrado')
+		} catch (err) {
+			console.error('AUTH: Error cerrando Fastify', err);
+		}
+	}
+
 	process.exit(0);
-});
+}
+
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 start();

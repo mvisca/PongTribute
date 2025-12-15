@@ -1,17 +1,16 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
-import { SharedEnv, UserTypes } from "../index.js";
+import { UserTypes } from "@transcendence/shared";
+import { UserEnv } from "../config.js";
 
 // TODO unificar tipo de funcion con validateServiceSecret
 // TODO verificar que este middleware y el otro en este directorio son necesarios ambos, deben centralizarse si son iguales al de auth?
 export namespace AuthMiddleware {
-
 	export const validateJWT = async (
 		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> => {
 		const authHeader = request.headers.authorization;
-		const sharedEnv = SharedEnv.build();
 		
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
 			return await reply.status(401).send({
@@ -24,7 +23,7 @@ export namespace AuthMiddleware {
 		//	console.log(`Token extraido: ${token}`);
 		
 		try {
-			const payload = jwt.verify(token, sharedEnv.JWT_SECRET);
+			const payload = jwt.verify(token, UserEnv.JWT_SECRET);
 			
 			if (typeof payload === 'string') {
 				throw new Error('Tipo de token inválido');
@@ -46,7 +45,7 @@ export namespace AuthMiddleware {
 	}
 
 	export const verifyOwnership = async (
-		request: FastifyRequest,
+		request: FastifyRequest, // usar tipo de schema params id
 		reply: FastifyReply
 	): Promise<void> => {
 
@@ -57,9 +56,9 @@ export namespace AuthMiddleware {
 			});
 		}
 
-		const params = request.params as { id: string };
+		const paramId = (request.params as UserTypes.UserIdParams).id;
 
-		if (params.id !== request.user.id) {
+		if (paramId !== request.user.id) {
 			return await reply.status(403).send({
 				error: 'Forbiden',
 				message: 'No tienes permiso para acceder a este recurso'

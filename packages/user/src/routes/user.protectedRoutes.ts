@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
-import { AuthMiddleware, UserSchemas } from '@transcendence/shared';
-import { UserController } from '../index.js';
+import { UserSchemas } from '@transcendence/shared';
+import { UserController, AuthMiddleware } from '../index.js';
 
 export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new UserController();
@@ -11,19 +11,22 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// GET READ / CHECKS & GETS
 	// ============================================================================
 
+	// Obtener usuario por nombre de usuario
 	app.get('/users/username/:username', {
 		schema: UserSchemas.getUserByUsernameSchema,
-		handler: controller.getUserByUsername.bind(controller)
-	});
-	
-	app.get('/users/email/:email', {
-		schema: UserSchemas.getUserByEmailSchema,
-		handler: controller.getUserByEmail.bind(controller)
+		handler: controller.findUserByUsername.bind(controller)
 	});
 
+	// Obtener usuario por email
+	app.get('/users/email/:email', {
+		schema: UserSchemas.getUserByEmailSchema,
+		handler: controller.findUserByEmail.bind(controller)
+	});
+
+	// Obtener usuario por ID
 	app.get('/users/:id', {
 			schema: UserSchemas.getUserByIdSchema,
-			handler: controller.getUserById.bind(controller)
+			handler: controller.findUserById.bind(controller)
 		}
 	);
 
@@ -31,18 +34,14 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// PUT UPDATE
 	// ============================================================================
 
+	// Anonimizar datos de usuario (requiere verificación de ownership)
 	app.put('/users/:id/anonymize', {
-		preHandler: [AuthMiddleware.verifyOwnership],
+		preHandler: AuthMiddleware.verifyOwnership,
 		schema: UserSchemas.anonymizeUserSchema,
 		handler: controller.anonymizeUser.bind(controller)
 	});
 
-	app.put('/users/:id/password', {
-		preHandler: [AuthMiddleware.verifyOwnership],
-		schema: UserSchemas.updatePasswordInternalSchema,
-		handler: controller.updatePassword.bind(controller)
-	});
-
+	// Actualizar usuario (requiere verificación de ownership)
 	app.put('/users/:id', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.UpdateUserSchema,
@@ -53,6 +52,7 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// DELETE
 	// ============================================================================
 
+	// Eliminar usuario (requiere verificación de ownership)
 	app.delete('/users/:id', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.deleteUserSchema,

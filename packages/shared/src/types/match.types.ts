@@ -1,4 +1,4 @@
-import { PlayerPosition, PlayerSlot, MatchStatus } from "../index.js"; 
+import { MatchConstants } from '../index.js';
 
 // ============================================================================
 // ENTIDADES DE DOMINIO
@@ -18,8 +18,8 @@ import { PlayerPosition, PlayerSlot, MatchStatus } from "../index.js";
 export interface MatchPlayer {
 	matchId: string;
 	userId: string;
-	playerSlot: PlayerSlot;
-	playerPosition: PlayerPosition;
+	playerSlot: MatchConstants.PlayerSlot;
+	playerPosition: MatchConstants.PlayerPosition;
 	score: number;
 };
 
@@ -39,7 +39,7 @@ export type MatchPlayers = [MatchPlayer, MatchPlayer];
 */
 export interface Match {
 	id: string;
-	status: MatchStatus;
+	status: MatchConstants.MatchStatus;
 	players: MatchPlayers;
 	winnerId: string | null;
 	createdAt: Date;
@@ -55,8 +55,8 @@ export interface Match {
 */
 export interface CreatePlayerData {
 	userId: string;
-	playerSlot: PlayerSlot;
-	playerPosition: PlayerPosition;
+	playerSlot: MatchConstants.PlayerSlot;
+	playerPosition: MatchConstants.PlayerPosition;
 }
 
 /**

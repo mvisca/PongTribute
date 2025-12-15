@@ -1,9 +1,18 @@
 // utils/index.ts
 import * as Normalizers from './normalizers.js';
 import * as Generators from './uuidGenerator.js';
+import { RedisCache } from './RedisCache.js';
+import * as RedisFactory from './redisClient.js'; 
+
+export { RedisCache };
 
 // Re-exportar plano para retrocompatibilidad
-export const UserNormalizer = Normalizers.UserNormalizer;
-export const generateUserId = Generators.UserId;
-export const generateMatchId = Generators.MatchId;
-export const generateEventId = Generators.EventId;
+export const Utils = { 	
+	UserNormalizer: Normalizers.UserNormalizer,
+	generateUserId: Generators.userId,
+	generateTokenId: Generators.tokenId,
+	generateMatchId: Generators.matchId,
+	generateEventId: Generators.eventId,
+	createRedisClient: RedisFactory.createRedisClient,
+	RedisCache
+}

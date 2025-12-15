@@ -81,8 +81,6 @@ async function loginTests(): Promise<void> {
 	const userSnapshot = usersLoged.get(TestConstants.TEST_USERS_KEYS[0]);
 	const userOldPassword = TestConstants.TEST_USERS.user1.password;
 	const userNewPassword = 'nuevaPass1';
-	
-  	console.log('\n', userSnapshot);
 
 	const updatePassRes = await TestUtils.fetchWithAuth<void>(
 		`${AuthEnv.AUTH_SERVICE_URL}/api/auth/${userSnapshot?.user.id}/password`,
@@ -96,16 +94,16 @@ async function loginTests(): Promise<void> {
 		}
 	);
 
-	console.log('\n', updatePassRes.status);
-	console.log('\n', updatePassRes.data);
+	results.push(
+		test(
+			TestConstants.TEST_USERS_KEYS[0],
+			'PUT update password (first change)',
+			204,
+			updatePassRes.status
+		)
+	);
 
-	if (updatePassRes.status === 200 || updatePassRes.status === 204) {
-		console.log('Cambio de password exitoso');
-	} else {
-		console.log('Cambio de password falló');
-	}
-
-		const backPassRes = await TestUtils.fetchWithAuth<void>(
+	const backPassRes = await TestUtils.fetchWithAuth<void>(
 		`${AuthEnv.AUTH_SERVICE_URL}/api/auth/${userSnapshot?.user.id}/password`,
 		userSnapshot?.token!,
 		{ 
@@ -117,14 +115,14 @@ async function loginTests(): Promise<void> {
 		}
 	);
 
-	console.log('\n', backPassRes.status);
-	console.log('\n', backPassRes.data);
-	if (backPassRes.status === 200 || backPassRes.status === 204) {
-		console.log('Restablcer password exitoso');
-	} else {
-		console.log('Restablecer password falló');
-	}
-
+	results.push(
+		test(
+			TestConstants.TEST_USERS_KEYS[0],
+			'PUT restore password (second change)',
+			204,
+			backPassRes.status
+		)
+	)
 	// Test PUT Anonymize
 	console.log('\nPUT /api/users/:id/anonymize');
 	for (const [key, userLoged] of usersLoged) {

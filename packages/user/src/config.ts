@@ -1,4 +1,20 @@
-import { SharedEnv } from '@transcendence/shared';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Recrear __dirname en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import { SharedEnv, findEnvFile, RedisConfig, validateRedisConfig } from '@transcendence/shared';
+
+// Cargar .env explícitamente antes de build()
+const envPath = findEnvFile(__dirname);
+if (envPath) {
+	dotenv.config({ path: envPath });
+} else {
+	dotenv.config();
+}
 
 // =====================================================
 // TIPOS
@@ -44,25 +60,22 @@ export namespace UserEnv {
 	// EXPORTS PÚBLICOS - VALORES
 	// =====================================================
 
-	const jwtSecret = sharedEnv.JWT_SECRET;
-	const serviceSecret = sharedEnv.SERVICE_SECRET;
-	const userServiceUrl = sharedEnv.USER_SERVICE_URL;
-	const authServiceUrl = sharedEnv.AUTH_SERVICE_URL;
-	
-	if (!jwtSecret || !serviceSecret || !userServiceUrl || !authServiceUrl) {
-		console.error('Faltan ENV VARS. Crea un .env de .env.example:');
-		console.error('@/transcendence: cp .env.example .env');
-		console.error('Edita con tus valores');
-		process.exit(1);
-	}
+	export const PORT: number = sharedEnv.USER_SERVICE_PORT;
+	export const HOST: string = sharedEnv.USER_SERVICE_HOST;
 
-	export const PORT: number = sharedEnv.USER_SERVICE_PORT || 3001;
-	export const HOST: string = sharedEnv.USER_SERVICE_HOST || 'localhost';
-	export const NODE_ENV: string = sharedEnv.NODE_ENV || 'development';
-	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL || 'info';
-	export const DB_PATH: string = sharedEnv.DB_PATH || '../../db-data/user.db';
+	export const NODE_ENV: string = sharedEnv.NODE_ENV;
+	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
 
-	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET!;
+	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+	export const USER_SERVICE_DB_FULL_PATH = sharedEnv.USER_SERVICE_DB_FULL_PATH;
+
+	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
+	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS;
+
+	export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
+	export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
+	export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
+	export const REDIS_DB: number = sharedEnv.REDIS_DB;
 
 	// =====================================================
 	// EXPORTS PÚBLICOS - OBJETOS
@@ -73,7 +86,7 @@ export namespace UserEnv {
 		host: HOST,
 		nodeEnv: NODE_ENV as ServiceConfig['nodeEnv'],
 		logLevel: LOG_LEVEL as ServiceConfig['logLevel'],
-		dbPath: DB_PATH
+		dbPath: USER_SERVICE_DB_FULL_PATH
 	};
 
 	// =====================================================
@@ -103,5 +116,23 @@ export namespace UserEnv {
 				}
 			}
 		};
+	}
+
+	export function getRedisConfig(): RedisConfig {
+		const config: RedisConfig = {
+			host: REDIS_HOST,
+			port: REDIS_PORT,
+			password: REDIS_PASSWORD,
+			db: REDIS_DB,
+			maxRetriesPerRequest: 3,
+			connectTimeout: 10000,
+			lazyConnect: false,
+			enableReadyCheck: true
+		};
+
+		if (!validateRedisConfig(config))
+			throw new Error('Configuración de Redis inválida');
+
+		return config;
 	}
 }

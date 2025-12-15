@@ -63,6 +63,7 @@ if command -v tree &> /dev/null; then
             ! -path '*/.next/*' \
             ! -path '*/.cache/*' \
             ! -path '*/.turbo/*' \
+            ! -path '*/.claude/*' \
             | head -100 >> "$OUTPUT_FILE"
     }
 else
@@ -97,6 +98,7 @@ echo "" >> "$OUTPUT_FILE"
 # Buscar TODOS los archivos recursivamente, excluir lo necesario
 find . -type f \
     ! -path '*/node_modules/*' \
+    ! -path '*/.claude/*' \
     ! -path '*/docs/*' \
     ! -path '*/.git/*' \
     ! -path '*/dist/*' \
@@ -171,6 +173,7 @@ FILE_SIZE=$(du -h "$OUTPUT_FILE" | cut -f1)
 LINE_COUNT=$(wc -l < "$OUTPUT_FILE")
 FILE_COUNT=$(find . -type f \
     ! -path '*/node_modules/*' \
+    ! -path '*/.claude/*' \
     ! -path '*/.git/*' \
     ! -path '*/dist/*' \
     ! -path '*/build/*' \

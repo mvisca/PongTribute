@@ -1,144 +1,256 @@
-# Transcendence – Configuración del entorno
+ENDPOINTS POR GRUPOS
 
-## Índice
-- [Corepack](#corepack)
-- [.npmrc](#npmrc)
-- [pnpm](#pnpm)
-- [Workspace (pnpm-workspace.yaml & package.json)](#workspace)
-- [Instalación de pnpm](#instalación-de-pnpm)
-- [TypeScript & tsconfig.json](#typescript--tsconfigjson)
-- [Arquitectura del monorepo](#arquitectura-del-monorepo)
+================================================================================
+                    MAPA DE ENDPOINTS ft_transcendence
+================================================================================
 
----
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                 FRONTEND (3000)                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │      API GATEWAY         │
+                         │  /api/* unificado        │
+                         └───────────┬──────────────┘
+                                     │
+                   ┌─────────────────┼───────────────────────────────────────────┐
+                   │                 │                                           │
+                   ▼                 ▼                                           ▼
 
-## Corepack
-Para garantizar la máxima consistencia entre diferentes máquinas, ejecuta:
+┌───────────────────────────────┐ ┌───────────────────────────────┐ ┌───────────────────────────────┐
+│   AUTH SERVICE (3002)         │ │   USER SERVICE (3001)         │ │   GAME SERVICE (3003)         │
+│   clientRedis                 │ │   clientRedis                 │ │   clientRedis                 │
+│   /api/auth/*                 │ │   /api/users/*                │ │   /api/game/*                 │
+└───────────────────────────────┘ └───────────────────────────────┘ └───────────────────────────────┘
+            │                         │                                          │
+            │ X-Service-Secret        │ X-Service-Secret                         │ X-Service-Secret
+            └─────────────┬───────────┴─────────────┬────────────────────────────┘
+                          │                         │
+                          ▼                         ▼
+             /internal/auth/*           /internal/users/*          /internal/game/*
 
-bash
-corepack enable
 
-Esto hace que el gestor de paquetes integrado de Node.js utilice el manejador indicado en package.json (en nuestro caso pnpm@10.18.2) y simplifica los pasos posteriores de configuración.
+                       ┌──────────────────────────────────────┐
+                       │               REDIS                   │
+                       │  cache + event broker (pub/sub)       │
+                       └──────────────────────────────────────┘
 
-    Documentación oficial: https://nodejs.org/api/corepack.html
 
-.npmrc
 
-El archivo .npmrc fuerza la bandera --frozen-lockfile en true.
-Con ello, cada vez que se ejecute pnpm install se usará automáticamente --frozen-lockfile, evitando que el lockfile pnpm-lock.yaml se modifique y garantizando versiones idénticas en todos los entornos.
+================================================================================
+GRUPO 1: RUTAS PÚBLICAS (Sin autenticación)
+================================================================================
+Consumer: Frontend anónimo, Formularios de registro/login
 
-# .npmrc
-frozen-lockfile=true
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVICE: USER (puerto 3001)                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-    Nota: En máquinas sin soporte nativo (por ejemplo, la máquina de 42) podríamos usar una VM o un Codespace de GitHub. En equipos con sudo no debería haber problemas para aplicar la configuración.
+  POST   /api/users
+         └─ Crear nuevo usuario (registro)
+         └─ Body: { username, email, password }
+         └─ Response 201: UserPublic (sin passwordHash)
 
-pnpm
+  GET    /api/users/check-username/:username
+         └─ Verificar disponibilidad de username
+         └─ Response 200: { available: boolean }
 
-Versión requerida (según package.json):
+  GET    /api/users/check-email/:email
+         └─ Verificar disponibilidad de email
+         └─ Response 200: { available: boolean }
 
-{
-  "packageManager": "pnpm@10.18.2"
-}
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVICE: AUTH (puerto 3002)                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-Para asegurar compatibilidad trabajaremos en una máquina virtual o en un Codespace de GitHub.
+  POST   /api/auth/login
+         └─ Autenticar usuario y obtener JWT
+         └─ Body: { email, password }
+         └─ Response 200:
+            • Sin 2FA: { token, refreshToken, user }
+            • Con 2FA: { twoFactorRequired, provisionalToken, qr? }
 
-    Nota: Si se ejecuta pnpm install con pnpm 8.x se producirá un error o se regenerará pnpm-lock.yaml. Utiliza siempre la versión 10.18.2.
+  POST   /api/auth/verify-2fa
+         └─ Completar login con código TOTP
+         └─ Body: { provisionalToken, totpCode }
+         └─ Response 200: { token, refreshToken, user }
 
-    Documentación oficial: https://pnpm.io/
 
-Workspace (pnpm-workspace.yaml & package.json)
+================================================================================
+GRUPO 2: RUTAS PROTEGIDAS (Requieren JWT Bearer token)
+================================================================================
+Consumer: Frontend autenticado (usuario logueado)
+Middleware: AuthMiddleware.validateJWT
 
-Un workspace en pnpm agrupa varios proyectos bajo un mismo directorio raíz.
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVICE: USER (puerto 3001)                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-    Ejemplo mínimo de pnpm-workspace.yaml:
+  GET    /api/users/:id
+         └─ Obtener datos de usuario por ID
+         └─ Middleware adicional: verifyOwnership (solo propio perfil)
+         └─ Response 200: UserPublic
 
-# pnpm-workspace.yaml
-packages:
-  - "packages/*"
+  GET    /api/users/username/:username
+         └─ Obtener usuario por username
+         └─ Middleware adicional: verifyOwnership
+         └─ Response 200: UserPublic
 
-    El package.json en la raíz contiene dependencias transversales. Cada paquete/servicio tiene su propio package.json con sus dependencias específicas.
+  PUT    /api/users/:id
+         └─ Actualizar datos de usuario
+         └─ Middleware adicional: verifyOwnership
+         └─ Body: { username?, email?, avatar? }
+         └─ Response 200: UserPublic
 
-{
-  "name": "transcendence",
-  "private": true,
-  "packageManager": "pnpm@10.18.2",
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "build": "pnpm -r run build"
-  }
-}
+  PUT    /api/users/:id/anonymize
+         └─ Anonimizar usuario (RGPD compliance)
+         └─ Middleware adicional: verifyOwnership
+         └─ Response 204: No Content
 
-    Ventaja: Un solo lockfile (pnpm-lock.yaml) garantiza versiones idénticas para todos los paquetes del monorepo.
+  DELETE /api/users/:id
+         └─ Eliminar usuario (soft delete: is_deleted=1)
+         └─ Middleware adicional: verifyOwnership
+         └─ Response 204: No Content
 
-Instalación de pnpm
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVICE: AUTH (puerto 3002)                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-Después de clonar el repositorio, en Debian/Ubuntu ejecuta:
+  POST   /api/auth/logout
+         └─ Cerrar sesión y eliminar refresh tokens
+         └─ Middleware adicional: verifyOwnership
+         └─ Response 204: No Content
 
-pnpm --version   # verifica si está instalado
+  PUT    /api/auth/:id/password
+         └─ Cambiar contraseña (requiere oldPassword)
+         └─ Middleware adicional: verifyOwnership
+         └─ Body: { oldPassword, newPassword }
+         └─ Response 204: No Content
 
-Si pnpm no está disponible:
 
-sudo apt update
-sudo apt install pnpm
-pnpm --version   # confirma la instalación
+================================================================================
+GRUPO 3: RUTAS INTERNAS (Solo servicios backend)
+================================================================================
+Consumer: Comunicación inter-servicios
+Autenticación: Header X-Service-Secret (NO JWT)
+Middleware: validateServiceSecret
 
-    Otros sistemas:
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVICE: USER (puerto 3001)                                                 │
+│ Prefix: /internal/*                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-        macOS: brew install pnpm
-        Windows (PowerShell): npm i -g pnpm
+  GET    /internal/users/by-email/:email
+         └─ Obtener UserInternal por email (CON passwordHash)
+         └─ Consumer: Auth service (login flow)
+         └─ Response 200: UserInternal
 
-TypeScript & tsconfig.json
+  GET    /internal/users/by-id/:id
+         └─ Obtener UserInternal por ID (CON passwordHash)
+         └─ Consumer: Auth service (2FA flow, change password)
+         └─ Response 200: UserInternal
 
-El archivo tsconfig.json define cómo el compilador de TypeScript se comporta en cada proyecto:
-Paquete	Objetivo de compilación	Entorno objetivo	Salida principal
-/shared	declaration → *.d.ts	Ninguno (solo tipos)	dist/types
-/api‑gateway	module → *.js	Node.js	dist
-/frontend	Vite se encarga del bundle	Navegador (DOM)	dist (generado por Vite)
-📊 Comparación de configuraciones de TypeScript
-Característica	/shared (solo tipos)	/api‑gateway (Node)	/frontend (Vite)
-Objetivo de compilación	declaration → *.d.ts	module → *.js	Vite (bundle)
-Entorno objetivo	Ninguno (solo tipos)	Node.js	Navegador (DOM)
-target	ES2022	ES2022	ES2022 (heredado)
-module	ESNext (ESM)	CommonJS o ESNext	ESNext (Vite)
-moduleResolution	bundler (Vite)	node	bundler
-lib	ES2022	ES2022	ES2022, DOM
-noEmit	true (solo d.ts)	false	false (Vite)
-declaration	true	false	false
-sourceMap	true (para d.ts)	true	true (Vite)
-isolatedModules	true	true	true
-skipLibCheck	true	true	true
-strict	true	true	true
-paths / baseUrl	./src (shared)	./src (gateway)	./src (frontend)
-exclude	node_modules, dist	node_modules, dist	node_modules, dist
-Salida (outDir)	dist/types	dist	dist (Vite)
+  PATCH  /internal/users/:id/online-status
+         └─ Actualizar estado isOnline
+         └─ Consumer: Auth service (login/logout)
+         └─ Body: { isOnline: boolean }
+         └─ Response 204: No Content
 
-    Documentación oficial: https://www.typescriptlang.org/tsconfig
+  PUT    /internal/users/:id/password
+         └─ Actualizar passwordHash directamente
+         └─ Consumer: Auth service (change password)
+         └─ Body: { newPasswordHash: string }
+         └─ Response 204: No Content
 
-Arquitectura del monorepo
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ SERVICE: USER (puerto 3001) - Token Management                             │
+│ Prefix: /api/internal/tokens/*                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
 
-    Resumen
-    El proyecto está organizado como un monorepo: todos los servicios viven en el mismo repositorio pero están aislados mediante interfaces y workspaces. Esto brinda:
+  POST   /api/internal/tokens/verify
+         └─ Verificar validez de refresh token
+         └─ Consumer: Auth service (refresh flow)
+         └─ Body: { tokenHash: string }
+         └─ Response 200: RefreshTokenRecord
 
-    Flexibilidad de microservicios: cada servicio puede ser extraído o añadido sin romper el resto.
-    Facilidad de pruebas: se pueden ejecutar pruebas unitarias por servicio o pruebas de integración a nivel global.
-    Gestión centralizada: dependencias comunes y versiones controladas desde la raíz.
+  POST   /api/internal/tokens
+         └─ Crear nuevo refresh token
+         └─ Consumer: Auth service (login flow)
+         └─ Body: { userId, tokenHash, expiresAt, is2FAVerified }
+         └─ Response 201: RefreshTokenRecord
 
-    Nota: La descripción completa de la arquitectura está disponible en Notion (no incluida aquí por solicitud).
+  DELETE /api/internal/tokens/user/:id
+         └─ Eliminar todos los tokens de un usuario
+         └─ Consumer: Auth service (logout, UNIQUE_SESSION)
+         └─ Response 204: No Content
 
-Gráfico de arquitectura
+  DELETE /api/internal/tokens/expired
+         └─ Limpiar tokens expirados (cron job)
+         └─ Consumer: Scheduled task / Admin
+         └─ Response 204: No Content
 
-    [GRÁFICO COMPARATIVO DE TYPESCRIPT]
-    (La tabla de comparación anterior actúa como representación visual de cómo cada paquete configura TypeScript.)
 
-Fin del README.
-Cambios aplicados
+================================================================================
+GRUPO 4: ENDPOINTS DE SISTEMA
+================================================================================
 
-    Ejemplos de contenido añadidos para .npmrc, pnpm-workspace.yaml y package.json.
-    Correcciones ortográficas (servicio, package.json, etc.).
-    Enlaces a documentación oficial de Corepack, pnpm, TypeScript y Vite.
-    Notas de compatibilidad para macOS y Windows en la sección de instalación.
-    Claridad en la tabla comparativa y en la descripción de cada proyecto.
-    Uniformidad de estilo (uso de backticks, negritas y bloques de código).
+  GET    /health (User service)
+         └─ Health check del servicio
+         └─ Consumer: Load balancer, Monitoring
+         └─ Response 200: { status, service, timestamp, uptime }
 
-Con estas mejoras el README queda más legible, completo y listo para que cualquier colaborador lo siga sin dudas.
+  GET    /health (Auth service)
+         └─ Health check del servicio
+         └─ Consumer: Load balancer, Monitoring
+         └─ Response 200: { status, service, timestamp, uptime }
+
+================================================================================
+FLUJO DE AUTENTICACIÓN COMPLETO
+================================================================================
+
+1  POST /api/auth/login (email, password)
+    ↓
+2 Auth → GET /internal/users/by-email/:email (X-Service-Secret)
+    ↓
+3  bcrypt.compare(password, user.passwordHash)
+    ↓
+4  ¿Tiene 2FA habilitado?
+    │
+    ├─ NO → 
+    │   ├─ Auth → POST /api/internal/tokens (crear refresh token)
+    │   ├─ Auth → PATCH /internal/users/:id/online-status (isOnline=true)
+    │   └─ Response: { token, refreshToken, user }
+    │
+    └─ SÍ →
+        ├─ Generar provisionalToken (JWT temporal, purpose: '2fa_verification')
+        └─ Response: { twoFactorRequired, provisionalToken, qr? }
+            ↓
+        5  POST /api/auth/verify-2fa (provisionalToken, totpCode)
+            ↓
+        6  Auth → GET /internal/users/by-id/:id (obtener totpSecret)
+            ↓
+        7  speakeasy.totp.verify(totpCode, totpSecret)
+            ↓
+        8  Auth → POST /api/internal/tokens + PATCH online-status
+            └─ Response: { token, refreshToken, user }
+
+
+================================================================================
+ENDPOINTS QUE EXPONEN DATOS SENSIBLES
+================================================================================
+
+- /internal/users/by-email/:email → Retorna UserInternal (CON passwordHash)
+  Auth service necesita passwordHash para bcrypt.compare
+  Protección: X-Service-Secret + solo accesible desde backend
+
+- /internal/users/by-id/:id → Retorna UserInternal (CON passwordHash, totpSecret)
+  Auth service necesita totpSecret para verificar 2FA
+  Protección: X-Service-Secret + solo accesible desde backend
+
+- /api/internal/tokens/verify → Retorna RefreshTokenRecord (CON tokenHash)
+  Auth service necesita verificar refresh tokens
+  Protección: X-Service-Secret + tokenHash ya es hash SHA-256
+
+
+================================================================================
