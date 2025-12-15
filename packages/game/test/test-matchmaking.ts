@@ -31,7 +31,7 @@ async function testMatchmaking() {
     console.log(`🔹 Jugador 2: ${player2.name} (${player2.id})\n`);
 
     // ========================================================================
-    // CASO A: JUGADOR 1 BUSCA PARTIDA (Crea nueva)
+    // CASO A: JUGADOR 1 BUSCA PARTIDA PUBLICA(Crea nueva)
     // ========================================================================
     console.log('👉 Paso 1: Goku busca partida...');
     const res1 = await app.inject({
