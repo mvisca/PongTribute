@@ -8,18 +8,30 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	app.addHook('preHandler', validateServiceSecret);
 
 	// ============================================================================
+	// POST CREATE
+	// ============================================================================
+
+	// Crear nuevo usuario
+	app.post('/users', {
+		schema: UserSchemas.createUserSchema,
+		handler: controller.createUser.bind(controller)
+	});
+
+	// ============================================================================
 	// GETTERS
 	// ============================================================================
 
 	// Obtener usuario por email (interno)
-	app.get('/users/by-email/:email',
-		controller.findUserByEmailInternal.bind(controller)
-	);
+	app.get('/users/by-email/:email', {
+		schema: { tags: ['User'] },
+		handler: controller.findUserByEmailInternal.bind(controller),
+	});
 
 	// Obtener usuario por ID (interno)
-	app.get('/users/by-id/:id',
-		controller.findUserByIdInternal.bind(controller)
-	);
+	app.get('/users/by-id/:id', {
+		schema: { tags: ['User'] },
+		handler: controller.findUserByIdInternal.bind(controller)
+	});
 
 	// ============================================================================
 	// SETTERS
@@ -29,7 +41,7 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	app.patch('/users/:id/online-status', {
 		schema: UserSchemas.setOnlineStatusSchema,
 		handler: controller.setOnlineStatus.bind(controller)
-	})
+	});
 
 	// ============================================================================
 	// UPDATE 2FA
@@ -37,7 +49,7 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	
 	// Actualizar status del 2FA, totpSecret y backupCode
 	app.patch('/users/:id/2fa-status', {
-		schema: UserSchemas.Update2FAStatusBodySchema,
+		schema: UserSchemas.Update2FAStatusBodySchema, // TODO resolver agrupacion de tags en swagger
 		handler: controller.update2FAStatus.bind(controller)
 	});
 

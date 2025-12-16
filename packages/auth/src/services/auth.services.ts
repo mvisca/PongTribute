@@ -5,13 +5,16 @@ import QRcode from 'qrcode';
 import speakeasy from 'speakeasy';
 import {
 	AuthTypes,
-	AuthConstants, 
+	AuthConstants,
 	UserTypes,
 	Utils,
 	RedisCache,
-	SharedErrors } from '@transcendence/shared';
+	SharedErrors,
+	ConflictErrorResponse } from '@transcendence/shared';
 	import { AuthEnv } from '../config.js';
 	import { redisClient } from '../app.js';
+import { availableMemory } from 'process';
+import { FastifyError } from 'fastify';
 	
 	export class AuthService {
 		
@@ -260,6 +263,50 @@ import {
 			}
 		}
 		
+		// ========================================================================
+		// CREATE USER
+		// ========================================================================
+
+		async register(
+			username: string,
+			email: string,
+			avatar: string,
+			password: string
+		): Promise<AuthTypes.LoginResponse> {
+			const createUserRes = await fetch(
+				`${AuthEnv.USER_SERVICE_URL}/internal/users`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': AuthEnv.SERVICE_SECRET
+					},
+					body: JSON.stringify({
+						username,
+						email,
+						avatar,
+						password
+					})
+				}
+			);
+
+			if (!createUserRes.ok) {
+				const errorData = await createUserRes.json();
+
+				if (createUserRes.status === 409) {
+					const conflictError = errorData as ConflictErrorResponse;
+					throw new SharedErrors.ConflictError(
+						conflictError.message,
+						conflictError.field
+					);
+				}
+
+				throw new Error(`User creation failed: ${createUserRes.status}`)
+			}
+
+			return await this.login(email, password);
+		}
+
 		// ========================================================================
 		// PUBLIC API - LOGIN / LOGOUT
 		// ========================================================================

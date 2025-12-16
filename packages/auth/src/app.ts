@@ -1,6 +1,8 @@
 import Fastify, { FastifyError, FastifyInstance } from "fastify";
 import helmet from '@fastify/helmet';
 import type { Redis } from 'ioredis';
+import swagger from '@fastify/swagger';
+import swaggerUI from '@fastify/swagger-ui';
 import { Utils } from "@transcendence/shared/";
 import { authRoutes, AuthEnv } from './index.js';
 
@@ -27,7 +29,40 @@ export function buildApp(): FastifyInstance {
 		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});
-	
+
+	/** 2. Plugins de documentación */
+	app.register(swagger, {
+		openapi: {
+			info: {
+				title: 'Transcendence Auth API',
+				version: '1.0.0'
+			},
+			servers: [
+				{ url: `http://localhost:${AuthEnv.PORT}`}
+			],
+			tags: [
+				{ name: 'Auth', description: 'Authentication and authorization' },
+				{ name: '2FA', description: '2-Factor Authentication management' }
+			]
+		},
+		transform: ({ schema, url }) => {
+			return {
+				schema,
+				url
+			};
+		}
+	});
+
+	/** 2. Plugins de documentacion con UI interactiva */
+	app.register(swaggerUI, {
+		routePrefix: '/docs',
+		staticCSP: true,
+		uiConfig: {
+			docExpansion: 'list',
+			deepLinking: false
+		}
+	});
+
 	/** 3. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();

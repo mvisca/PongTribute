@@ -375,6 +375,8 @@ export namespace UserSchemas {
 	 * Schema completo de PATCH /internal/users/:id/2fa-status
 	 */
 	export const Update2FAStatusBodySchema = {
+		description: "Actualiza activación/desactivación de 2FA",
+		tags:['User'],
 		params: UserIdParams,
 		body: Update2FAStatusBody,
 		response: {
@@ -413,6 +415,7 @@ export namespace UserSchemas {
 	 * Schema completo de POST /internal/tokens
 	 */
 	export const RefreshTokenDataSchema = {
+		tags: ['Token'],
 		body: RefreshTokenData,
 		response: {
 			201: RefreshTokenResponseBody,
@@ -432,6 +435,7 @@ export namespace UserSchemas {
 	 * Schema completo de POST /internal/tokens/verify
 	 */
 	export const VerifyRefreshTokenSchema = {
+		tags: ['Token'],
 		body: VerifyRefreshTokenBody,
 		response: {
 			200: RefreshTokenResponseBody,
@@ -452,6 +456,7 @@ export namespace UserSchemas {
 	 * Schema completo de DELETE /internal/tokens/user/:id
 	 */
 	export const DeleteRefreshTokenByUserSchema = {
+		tags: ['Token'],
 		params: DeleteRefreshTokenByUserParams,
 		response: {
 			204: Type.Null(),
@@ -464,6 +469,7 @@ export namespace UserSchemas {
 	 * Schema completo de POST /internal/tokens/cleanup
 	 */
 	export const DeleteExpiredTokensSchema = {
+		tags: ['Token'],
 		response: {
 			204: Type.Null(),
 			500: ErrorResponse

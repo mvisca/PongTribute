@@ -44,7 +44,7 @@ export function buildApp(): FastifyInstance {
 			],
 			tags: [
 				{ name: 'User', description: 'Gestión de usuarios' },
-				{ name: 'Token', description: 'Gestión de refresh tokens' }
+				{ name: 'Token', description: 'Gestión de refresh tokens' },
 			]
 		},
 		transform: ({ schema, url }) => {
@@ -95,14 +95,18 @@ export function buildApp(): FastifyInstance {
 	});
 	
 	/** Registrar todas las rutas del servicio */
-	console.log('REG USER INTERNAL ROUTES');
-	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
-	console.log('REG USER PUBLIC ROUTES');
-	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
-	console.log('REG USER PROTECTED ROUTES');
-	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
+	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal'});
 	console.log('REG TOKEN PROTECTED ROUTES');
-	app.register(UserRoutes.internalTokenRoutes, { prefix: '/api'});
+
+	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
+	console.log('REG USER INTERNAL ROUTES');
+
+	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
+	console.log('REG USER PUBLIC ROUTES');
+
+	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
+	console.log('REG USER PROTECTED ROUTES');
+
 	
 	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setErrorHandler((error, request, reply) => {

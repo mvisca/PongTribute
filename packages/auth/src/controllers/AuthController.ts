@@ -165,6 +165,32 @@ export class AuthController {
 	}
 
 	// ============================================================================
+	// CREATE USER
+	// ============================================================================
+
+	/** Crea usuario y hace login */
+	async register(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+
+			const { 
+				username,
+				email,
+				avatar,
+				password } = request.body as AuthTypes.RegisterBody;
+				
+			const result = await this.authService.register(username, email, avatar, password);
+			
+			return reply.code(201).send(result);
+
+		} catch(err) {
+			this.errorHandler(err, request, reply);
+		}
+	}
+
+	// ============================================================================
 	// PASSWORD MANAGEMENT
 	// ============================================================================
 
