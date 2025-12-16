@@ -9,8 +9,7 @@ import {
 	UserTypes,
 	Utils,
 	RedisCache,
-	SharedErrors,
-	ConflictErrorResponse } from '@transcendence/shared';
+	SharedErrors } from '@transcendence/shared';
 	import { AuthEnv } from '../config.js';
 	import { redisClient } from '../app.js';
 import { availableMemory } from 'process';
@@ -293,11 +292,10 @@ import { FastifyError } from 'fastify';
 			if (!createUserRes.ok) {
 				const errorData = await createUserRes.json();
 
-				if (createUserRes.status === 409) {
-					const conflictError = errorData as ConflictErrorResponse;
+				if (createUserRes.status === 409 && SharedErrors.isConflictError(errorData)) {
 					throw new SharedErrors.ConflictError(
-						conflictError.message,
-						conflictError.field
+						errorData.message,
+						errorData.field
 					);
 				}
 
