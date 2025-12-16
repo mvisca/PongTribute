@@ -6,16 +6,6 @@ export const publicRoutes: FastifyPluginAsync = async (app) => {
 	
 	// instancia unica de controller para todas las rutas
 	const controller = new UserController();
-	
-	// ============================================================================
-	// POST CREATE
-	// ============================================================================
-
-	// Crear nuevo usuario
-	app.post('/users', {
-		schema: UserSchemas.createUserSchema,
-		handler: controller.createUser.bind(controller)
-	});
 
 	// ============================================================================
 	// GET CHECKS

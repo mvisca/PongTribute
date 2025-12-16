@@ -84,6 +84,13 @@ export namespace AuthTypes {
 	}
 	
 	// ========================================================================
+	// CREATE USER
+	// ========================================================================
+
+	export type RegisterBody = Static<typeof AuthSchemas.RegisterBody>;
+// TODO hace falta tipo para errores, debe estar en types/errors? Sirve para registrar el tipo de respuesta de error de register endpoint de AUTH
+
+	// ========================================================================
 	// UPDATE PASSWORD
 	// ========================================================================
 	
@@ -181,3 +188,21 @@ export namespace AuthTypes {
 		created_at: number;			// Unix timestamp ms
 	}
 }
+
+// ============================================================================
+// HTTP ERROR TYPES - Re-export para facilitar importación
+// ============================================================================
+
+export type {
+	ConflictErrorResponse,
+	NotFoundErrorResponse,
+	ValidationErrorResponse,
+	UnauthorizedErrorResponse
+} from './error.types.js';
+
+export {
+	isConflictError,
+	isNotFoundError,
+	isValidationError,
+	isUnauthorizedError
+} from './error.types.js';

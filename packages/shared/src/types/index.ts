@@ -1,4 +1,5 @@
 export * from './auth.types.js';
+export * from './error.types.js';
 export * from './friendship.types.js';
 export * from './match.types.js';
 export * from './middleware.types.js';

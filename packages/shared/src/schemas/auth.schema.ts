@@ -14,6 +14,10 @@ const EmailField = Type.String({
 	format: 'email',
 });
 
+const AvatarField = Type.String({
+	format: 'uri',
+});
+
 const PasswordField = Type.String({
 	minLength: 8,
 	maxLength: 32,
@@ -130,6 +134,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/login */
 	export const LoginBodySchema = {
+		tags: ['Auth'],
 		body: LoginBody,
 		response: {
 			200: Type.Union([
@@ -139,15 +144,15 @@ export namespace AuthSchemas {
 			401: ErrorResponse
 		}
 	};
-
+	
 	// ========================================================================
 	// 2FA SETUP - Activar y Verificar 2FA
 	// ========================================================================
 	
 	/** Response de POST /auth/:id/enable-2fa
-	 * Contiene QR code, setup token temporal y backup code
-	 * Usuario DEBE guardar backupCode (última vez que lo ve en plaintext)
-	 */
+	* Contiene QR code, setup token temporal y backup code
+	* Usuario DEBE guardar backupCode (última vez que lo ve en plaintext)
+	*/
 	export const Enable2FAResponse = Type.Object({
 		setupToken: SetupTokenField,
 		backupCode: BackupCodeField,
@@ -156,6 +161,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/:id/enable-2fa */
 	export const Enable2FABodySchema = {
+		tags: ['2FA'],
 		params: UserIdParams,
 		response: {
 			200: Enable2FAResponse,
@@ -166,8 +172,8 @@ export namespace AuthSchemas {
 	};
 	
 	/** Body de POST /auth/:id/verify-2fa-setup
-	 * Cliente envía setupToken + código TOTP de Google Authenticator
-	 */
+	* Cliente envía setupToken + código TOTP de Google Authenticator
+	*/
 	export const Verify2FASetupBody = Type.Object({
 		setupToken: SetupTokenField,
 		totpCode: TotpCodeField
@@ -175,6 +181,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/:id/verify-2fa-setup */
 	export const Verify2FASetupBodySchema = {
+		tags: ['2FA'],
 		params: UserIdParams,
 		body: Verify2FASetupBody,
 		response: {
@@ -183,14 +190,14 @@ export namespace AuthSchemas {
 			404: NotFoundResponse
 		}
 	};
-
+	
 	// ========================================================================
 	// 2FA LOGIN - Verificar código TOTP en login
 	// ========================================================================
 	
 	/** Body de POST /auth/verify-2fa
-	 * Completar login cuando usuario tiene 2FA activo
-	 */
+	* Completar login cuando usuario tiene 2FA activo
+	*/
 	export const LoginVerify2FABody = Type.Object({
 		provisionalToken: ProvisionalTokenField,
 		totpCode: TotpCodeField
@@ -198,21 +205,22 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/verify-2fa */
 	export const LoginVerify2FABodySchema = {
+		tags: ['Auth', '2FA'],
 		body: LoginVerify2FABody,
 		response: {
 			200: LoginSuccessResponse,
 			401: ErrorResponse
 		}
 	};
-
+	
 	// ========================================================================
 	// 2FA RECOVERY - Backup Code (último recurso)
 	// ========================================================================
 	
 	/** Body de POST /auth/verify-backup-code
-	 * Alternativa a verify-2fa cuando usuario pierde acceso a TOTP
-	 * IMPORTANTE: Al usarse, 2FA se desactiva automáticamente
-	 */
+	* Alternativa a verify-2fa cuando usuario pierde acceso a TOTP
+	* IMPORTANTE: Al usarse, 2FA se desactiva automáticamente
+	*/
 	export const VerifyBackupCodeBody = Type.Object({
 		provisionalToken: ProvisionalTokenField,
 		backupCode: BackupCodeField
@@ -220,32 +228,56 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/verify-backup-code */
 	export const VerifyBackupCodeBodySchema = {
+		tags: ['Auth', '2FA'],
 		body: VerifyBackupCodeBody,
 		response: {
 			200: LoginSuccessResponse,
 			401: ErrorResponse
 		}
 	};
-
+	
 	// ========================================================================
 	// 2FA DISABLE - Desactivar 2FA
 	// ========================================================================
 	
 	/** Body de POST /auth/:id/disable-2fa
-	 * Requiere password actual para seguridad
-	 */
+	* Requiere password actual para seguridad
+	*/
 	export const Disable2FABody = Type.Object({
 		password: PasswordField
 	});
 	
 	/** Schema completo de POST /auth/:id/disable-2fa */
 	export const Disable2FABodySchema = {
+		tags: ['2FA'],
 		params: UserIdParams,
 		body: Disable2FABody,
 		response: {
 			204: Type.Null(),
 			401: ErrorResponse,
 			404: NotFoundResponse
+		}
+	};
+	
+	// ========================================================================
+	// CREATE USER - Body y Schemas
+	// ========================================================================
+	
+	/** Body de POST /api/auth/register */
+	export const RegisterBody = Type.Object({
+		username: UsernameField,
+		email: EmailField,
+		password: PasswordField,
+		avatar: AvatarField
+	});
+	
+	/** Schema completo de POST /api/auth/register */
+	export const RegisterBodySchema = {
+		tags: ['Auth'],
+		body: RegisterBody,
+		response: {
+			201: LoginSuccessResponse,
+			409: ConflictErrorResponse
 		}
 	};
 
@@ -261,6 +293,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/:id/update-password */
 	export const UpdatePasswordBodySchema = {
+		tags: ['Auth'],
 		params: UserIdParams,
 		body: UpdatePasswordBody,
 		response: {
@@ -273,7 +306,7 @@ export namespace AuthSchemas {
 	// ========================================================================
 	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================
-
+	
 	/** Body de POST /auth/refresh */
 	export const RefreshTokenBody = Type.Object({
 		refreshToken: RefreshTokenField
@@ -288,6 +321,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/refresh */
 	export const RefreshTokenBodySchema = {
+		tags: ['Auth'],
 		body: RefreshTokenBody,
 		response: {
 			200: RefreshTokenResponse,

@@ -8,26 +8,26 @@ export const internalTokenRoutes: FastifyPluginAsync = async (app) => {
 	app.addHook('preHandler', validateServiceSecret);
 
 	// Verificar validez de un refresh token
-	app.post('/internal/tokens/verify', {
+	app.post('/tokens/verify', {
 		schema: UserSchemas.VerifyRefreshTokenSchema,
 		handler: controller.verifyToken.bind(controller)
 	});
 
 	// Crear nuevo refresh token
-	app.post('/internal/tokens', {
+	app.post('/tokens', {
 		schema: UserSchemas.RefreshTokenDataSchema,
 		handler: controller.createToken.bind(controller)
 	});
 
 	// Eliminar todos los tokens de un usuario
-	app.delete('/internal/tokens/user/:id', {
+	app.delete('/tokens/user/:id', {
 		schema: UserSchemas.DeleteRefreshTokenByUserSchema,
 		handler: controller.deleteByUserId.bind(controller)
 	}
 	);
 
 	// Limpiar tokens expirados
-	app.delete('/internal/tokens/expired', {
+	app.delete('/tokens/expired', {
 		schema: UserSchemas.DeleteExpiredTokensSchema,
 		handler: controller.cleanExpired.bind(controller)
 	});
