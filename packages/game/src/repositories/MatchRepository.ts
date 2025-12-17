@@ -2,6 +2,7 @@
 
 import { MatchTypes } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
+import { randomUUID } from 'node:crypto'; // Usamos librería nativa de Node
 
 export class MatchRepository {
 	// 1. Obtenemos la conexión lista para usar y la guardamos para usarla
@@ -10,6 +11,10 @@ export class MatchRepository {
     private db = getDatabase();
 
     /**
+     * Inserta (Low-level). Mantenemos tu método original pero lo hacemos privado
+     * o lo dejamos público si lo usas en tests.
+     */
+	/**
      * Inserta una nueva partida en la base de datos.
      * Recibe el objeto 'MatchRow' que ya preparó el Servicio con todos los datos.
      */
@@ -35,6 +40,56 @@ export class MatchRepository {
         stmt.run(match);
     }
 
+
+	// --- MÉTODOS DE ALTO NIVEL PARA EL SERVICIO ---
+
+    /**
+     * Crea una partida pública lista para jugar (ACTIVE).
+     * El Repo se encarga de generar ID, Fechas y Scores iniciales.
+     */
+    async createPublicMatch(player1Id: string, player2Id: string): Promise<MatchTypes.MatchRow> {
+        const newMatch: MatchTypes.MatchRow = {
+            id: randomUUID(),
+            status: 'active',
+            player1_id: player1Id,
+            player1_score: 0,
+            player2_id: player2Id,
+            player2_score: 0,
+            winner_id: null,
+            created_at: Date.now(),
+            finished_at: null,
+            // match_type: 'public' // TODO: Agregar columna a tu DB SQL si aún no existe
+        };
+
+        // Reusamos tu lógica de inserción
+        this.create(newMatch);
+
+        // Devolvemos el objeto completo (envuelto en Promise para compatibilidad)
+        return newMatch; 
+    }
+
+    /**
+     * Crea una partida privada en espera (PENDING).
+     */
+    async createPrivateMatch(hostId: string, guestId: string): Promise<MatchTypes.MatchRow> {
+        const newMatch: MatchTypes.MatchRow = {
+            id: randomUUID(),
+            status: 'pending',
+            player1_id: hostId,
+            player1_score: 0,
+            player2_id: guestId, // Ya asignamos el rival, aunque esté pending
+            player2_score: 0,
+            winner_id: null,
+            created_at: Date.now(),
+            finished_at: null,
+            // match_type: 'private' // TODO: Agregar columna a tu DB
+        };
+
+        this.create(newMatch);
+        return newMatch;
+    }
+
+
     /**
      * Busca una partida por su ID único.
      * Devuelve el objeto puro de la base de datos o null si no existe.
@@ -53,8 +108,22 @@ export class MatchRepository {
 
         // 6. Retornamos con el tipado correcto
         return row ? (row as MatchTypes.MatchRow) : null;
-    }
+	}
+	
 
+	/**
+	 * Actualiza el resultado final de la partida.
+	 */
+	finishMatch(id: string, winnerId: string, p1Score: number, p2Score: number, finishedAt: number): void {
+		this.db.prepare(`
+			UPDATE matches
+			SET status = 'finished', winner_id = ?, player1_score = ?, player2_score = ?, finished_at = ?
+			WHERE id = ?
+		`).run(winnerId, p1Score, p2Score, finishedAt, id);
+	}
+
+	
+	//=====ESTE METODO CON REDIS YA NO LO VAMOS A USAR=====
 	/**
      * MATCHMAKING SIMPLE (FIFO):
      * Busca la partida pública más antigua que esté en estado 'pending'
@@ -76,6 +145,8 @@ export class MatchRepository {
         return row ? (row as MatchTypes.MatchRow) : null;
     }
 
+
+	//=====ESTE METODO CON REDIS YA NO LO VAMOS A USAR=====
     /**
      * Une al Jugador 2 a una partida existente.
      * Cambia el estado a 'active'.
@@ -93,14 +164,4 @@ export class MatchRepository {
         }
     }
 
-    /**
-     * Actualiza el resultado final de la partida.
-     */
-    finishMatch(id: string, winnerId: string, p1Score: number, p2Score: number, finishedAt: number): void {
-        this.db.prepare(`
-            UPDATE matches
-            SET status = 'finished', winner_id = ?, player1_score = ?, player2_score = ?, finished_at = ?
-            WHERE id = ?
-        `).run(winnerId, p1Score, p2Score, finishedAt, id);
-    }
 }

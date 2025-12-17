@@ -1,3 +1,4 @@
+
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
 import { AuthMiddleware } from '../middleware/game.middleware.js';
@@ -14,13 +15,14 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // ========================================================================
 	
 	// si viene una request de tipo POST para la ruta /matches:
-	app.post('/matches', {
+	// Esto conecta el tipado de la ruta con lo que espera el controlador.
+    app.post<{ Body: MatchSchemas.CreateMatchBodyType }>('/matches', {
         // 1. GUARDIAN Seguridad: Ejecutamos el middleware antes que nada
 		// Esto valida el Token JWT y rellena request.user
 		// Es el guardián. Si el usuario no envía un Header Authorization:
 		//  Bearer <token> válido, la petición se muere aquí y devuelve 401.
 		//  El Controller ni se entera. Esto mantiene tu código seguro y limpio.
-        preHandler: [AuthMiddleware.validateJWT],
+        //preHandler: [AuthMiddleware.validateJWT],====================================
 
         // 2. VALIDADOR Contrato: Usamos el Schema "Endpoint-Centric" que creamos
 		// Fastify validará automáticamente el body y la respuesta.
@@ -54,20 +56,3 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     
 };
 
-// import { FastifyInstance } from 'fastify';
-// import { MatchController } from '../controllers/MatchController.js';
-// import { AuthMiddleware } from '../middleware/auth.middleware.js'; // IMPORT LOCAL
-// import { MatchSchemas } from '@transcendence/shared';
-
-// export async function gameRoutes(fastify: FastifyInstance) {
-//     fastify.post('/matches', {
-//         preHandler: [AuthMiddleware.validateJWT], // Usamos el local
-//         schema: MatchSchemas.CreateMatchSchema,   // CORREGIDO: Usar .CreateMatchSchema, no .CreateMatchEndpoint
-//         handler: MatchController.createMatch
-//     });
-// }
-
-// /* EXPLICACIÓN:
-// 1. Import AuthMiddleware local: Ya no busca en @transcendence/shared, eliminando el error TS2305.
-// 2. MatchSchemas.CreateMatchSchema: Corregimos el nombre de la propiedad para coincidir con lo definido en shared.
-// */

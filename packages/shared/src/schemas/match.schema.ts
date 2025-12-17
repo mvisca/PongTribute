@@ -1,4 +1,6 @@
-import { Type } from '@sinclair/typebox';
+import { Type, Static } from '@sinclair/typebox';
+
+
 
 export namespace MatchSchemas {
 
@@ -11,6 +13,13 @@ export namespace MatchSchemas {
         Type.Literal("active"),
         Type.Literal("finished")
     ]);
+
+	
+	export const MatchType = Type.Union([
+		Type.Literal('public'),
+		Type.Literal('private')
+	]);
+
 
     // ========================================================================
     // OBJETOS DE DOMINIO (Entidades)
@@ -41,17 +50,27 @@ export namespace MatchSchemas {
     // ========================================================================
 
     // POST /matches - Crear una partida
-    export const CreateMatchBody = Type.Object({
+	export const CreateMatchBody = Type.Object({
+		matchType: MatchType,
         opponentId: Type.Optional(Type.String({ format: 'uuid' })) // Si null -> Matchmaking público
     });
 
-    // Schema para la ruta POST
+	// ESTA LÍNEA ES MÁGICA: Convierte el Schema de JS a un Tipo de TS
+	export type CreateMatchBodyType = Static<typeof CreateMatchBody>;
+
+	// NUEVO: Definimos la respuesta para "En cola"
+    export const JoinQueueResponse = Type.Object({
+        outcome: Type.Literal('added_to_queue')
+	});
+	
+    // ACTUALIZADO: Schema para la ruta POST
     export const CreateMatchSchema = {
         description: 'Crea una partida nueva o entra al matchmaking',
         tags: ['Game'],
         body: CreateMatchBody,
         response: {
-            201: Match
+            201: Match,             // Si hay match -> Devuelve objeto Match
+            200: JoinQueueResponse  // Si a la cola -> Devuelve outcome simple
         }
     };
 

@@ -1,79 +1,83 @@
-//Hace la funcion de recepcionista
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MatchService } from '../services/MatchService.js';
-// Importamos tipos, aunque Fastify infiere mucho, es bueno ser explícito
-import { MatchTypes } from '@transcendence/shared';
+// Importamos el Schema (Valor) Y el Tipo (que acabamos de crear)
+import { MatchSchemas } from '@transcendence/shared';
+
 
 export class MatchController {
-    // Instanciamos el servicio (Singleton implícito por cómo JS maneja imports/clases)
+	// Instanciamos el servicio (Singleton implícito por cómo JS maneja imports/clases)
+	// Inyección de dependencias simple
     private matchService = new MatchService();
 
-    /**
-     * Handler para POST /matches
-     */
-    async createMatch(
-        request: FastifyRequest, 
-        reply: FastifyReply
-    ): Promise<void> {
-        
-        // 1. IDENTIDAD Seguridad: Obtener quién es el usuario desde el Token
-        // El middleware 'validateJWT' descifro el token y relleno request.user
-        // request.user = { id: "user-1111", username: "Goku", ... }
-		const user = request.user;
+	/*===== HANDLER(discrimina entre partida 'private' o 'public') ====*/
+	// Aquí decimos: "Este request TIENE que traer un body que cumpla CreateMatchBodyType"
+	async createMatch(
+		request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
+		reply: FastifyReply
+	) {
 
-        if (!user) {
-            // Esto no debería pasar si el middleware está puesto, pero por seguridad de tipos:
-            return reply.status(401).send({ 
-                error: 'Unauthorized', 
-                message: 'No se ha podido identificar al usuario' 
+		console.log("👉 1. Entrando en createMatch");  //DEBUG
+
+		// MOCK TEMPORAL PARA TEST
+		const userId = request.headers['x-mock-user-id'] as string || "user_default";
+		// 1. Obtener User ID (del token decodificado por el middleware)
+		// Extraemos solo el ID. Fastify (vía middleware) suele poner el user en request.user
+        // Asumimos que request.user tiene la forma { id: string, ... }
+		// OPCIÓN B: REAL (Comentada hasta que integremos Auth)
+		//const user = request.user as { id: string }; // Comenta esto
+		//const userId = user.id; // Comenta esto
+        
+		console.log("👉 2. User ID:", userId); //DEBUG
+
+		// 2. Extraer datos (Ahora TS sabe que existen gracias al Type del match.schema.ts)
+        const { matchType, opponentId } = request.body;
+
+		// 3. VALIDACIÓN DE NEGOCIO (Opción A)
+		// Si es privada y NO hay oponente -> Error 400
+		if (matchType === 'private' && !opponentId) {
+			// Usamos reply nativo para evitar errores si falta la clase CustomError
+            return reply.status(400).send({ 
+                error: 'Bad Request', 
+                message: 'Private match requires an opponentId' 
             });
         }
-
-		// Extraemos 'opponentId' directamente del cuerpo.
-		//Busca una propiedad llamada opponentId dentro de 
-		// request.body y crea una variable con ese mismo nombre".
-		//  Si la propiedad no existe, la variable se crea con valor undefined.
-        // Si el body es {}, opponentId será undefined.
-        // Si el body es { opponentId: "..." }, tendrá el valor.
-		const { opponentId }  = request.body as MatchTypes.CreateMatchBody;
-
-        try {
-            // 2. DELEGACIÓN (Llamada al Servicio)
-            // Aquí está la clave: El controller NO sabe de matchmaking FIFO.
-            // Solo le dice al servicio: "El usuario X quiere jugar. Arréglalo".
-            const match = await this.matchService.joinOrCreate(user.id, opponentId);
-
-            // 3. Respuesta: 201 Created + Objeto Match limpio
-            return reply.status(201).send(match);
-
-    //     } catch (error: any) { // Tipamos error como any para acceder a message
-    //         // Logueamos el error real en servidor
-    //         request.log.error(error);
-    //         // Si el servicio lanza un error de validación (ej: auto-desafío),
-    //         // podríamos devolver 400. Por simplicidad devolvemos 500 o mensaje del error.
-    //         return reply.status(500).send({
-    //             error: 'Internal Server Error',
-    //             message: error.message || 'Error al procesar el matchmaking'
-    //         });
-			//     }
-			} catch (error: any) {
-            request.log.error(error);
+	
+		
+		// 4. Delegamos al Servicio
+		let result;
+		if (matchType === 'public') {
+			// Lógica de cola
+			result = await this.matchService.joinPublicQueue(userId);
+		} else {
+			// El ! es seguro aquí por el if anterior
+			// Lógica de creación directa (el ! asegura a TS que existe, ya validamos antes)
+			result = await this.matchService.createPrivateMatch(userId, opponentId!);
+		}
+		
+		// 5. RESPUESTA (CON TYPE GUARD)
+        
+        // Verificamos primero si la propiedad 'outcome' EXISTE dentro de result
+        if ('outcome' in result) {
+            // --- RAMA PÚBLICA (Viene de joinPublicQueue) ---
             
-            // MEJORA: Si el error es de lógica de negocio conocida, devolvemos 400
-            if (error.message === "No puedes desafiarte a ti mismo") {
-                return reply.status(400).send({
-                    error: 'Bad Request',
-                    message: error.message
-                });
+            // TypeScript ahora sabe que aquí dentro 'result' TIENE outcome
+            if (result.outcome === 'added_to_queue') {
+                return reply.status(200).send(result);
             }
 
-            // Para todo lo demás (DB caída, bugs), devolvemos 500
-            return reply.status(500).send({ 
-                error: 'Internal Server Error', 
-                message: 'Error al procesar el matchmaking' 
-            });
+            if (result.outcome === 'match_found') {
+                // Desempaquetamos el match interno
+                return reply.status(201).send(result.match);
+            }
+        } else {
+            // --- RAMA PRIVADA (Viene de createPrivateMatch) ---
+            // Si NO tiene 'outcome', TypeScript deduce que 'result' es un Match puro
+            return reply.status(201).send(result);
         }
-    }
+        
+        // Fallback de seguridad (para satisfacer al compilador si quedaran casos sueltos)
+        return reply.status(500).send({ error: 'Unexpected state' });
+	}
+	
     
-    // Aquí añadiremos getMatchById en el futuro...
 }
