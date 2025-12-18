@@ -90,8 +90,4 @@ export namespace MatchSchemas {
 	};
 	
 
-
-	// Aquí irían más rutas:
-    // app.get('/matches/:id', ...);
-
 }

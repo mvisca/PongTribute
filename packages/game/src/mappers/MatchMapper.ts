@@ -26,7 +26,7 @@ export class MatchMapper {
             
             player1: {
                 userId: row.player1_id,
-                username: "Unknown", // Placeholder hasta integrar usuarios
+                username: "Unknown", // TODO: Placeholder hasta integrar usuarios
                 score: row.player1_score,
                 isWinner: row.winner_id === row.player1_id
             },

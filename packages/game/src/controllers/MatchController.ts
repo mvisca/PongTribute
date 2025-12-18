@@ -16,7 +16,8 @@ export class MatchController {
 		reply: FastifyReply
 	) {
 
-		console.log("👉 1. Entrando en createMatch");  //DEBUG
+		console.log("\n--- NEW REQUEST ---");
+        console.log("👉 🎮 [Controller] 1. Entrando en createMatch");
 
 		// MOCK TEMPORAL PARA TEST
 		const userId = request.headers['x-mock-user-id'] as string || "user_default";
@@ -27,7 +28,8 @@ export class MatchController {
 		//const user = request.user as { id: string }; // Comenta esto
 		//const userId = user.id; // Comenta esto
         
-		console.log("👉 2. User ID:", userId); //DEBUG
+		console.log(`👉 🎮 [Controller] 2. User ID identificado: ${userId}`);
+        console.log("👉 🎮 [Controller] 3. Body recibido:", request.body);
 
 		// 2. Extraer datos (Ahora TS sabe que existen gracias al Type del match.schema.ts)
         const { matchType, opponentId } = request.body;
@@ -35,6 +37,7 @@ export class MatchController {
 		// 3. VALIDACIÓN DE NEGOCIO (Opción A)
 		// Si es privada y NO hay oponente -> Error 400
 		if (matchType === 'private' && !opponentId) {
+			console.log("❌ 🎮 [Controller] Error: Private match sin opponentId");
 			// Usamos reply nativo para evitar errores si falta la clase CustomError
             return reply.status(400).send({ 
                 error: 'Bad Request', 
@@ -43,19 +46,21 @@ export class MatchController {
         }
 	
 		
-		// 4. Delegamos al Servicio
+		// 4. DELEGACION al Servicio
 		let result;
 		if (matchType === 'public') {
+			console.log("👉 🎮 [Controller] 4. Llamando a Service.joinPublicQueue...");
 			// Lógica de cola
 			result = await this.matchService.joinPublicQueue(userId);
 		} else {
+			console.log("👉 🎮 [Controller] 4. Llamando a Service.createPrivateMatch...");
 			// El ! es seguro aquí por el if anterior
 			// Lógica de creación directa (el ! asegura a TS que existe, ya validamos antes)
 			result = await this.matchService.createPrivateMatch(userId, opponentId!);
 		}
 		
 		// 5. RESPUESTA (CON TYPE GUARD)
-        
+        console.log("👉 🎮 [Controller] 5. Respuesta recibida del servicio:", JSON.stringify(result).substring(0, 50) + "...");
         // Verificamos primero si la propiedad 'outcome' EXISTE dentro de result
         if ('outcome' in result) {
             // --- RAMA PÚBLICA (Viene de joinPublicQueue) ---

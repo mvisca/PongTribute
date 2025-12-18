@@ -18,12 +18,15 @@ export class MatchService {
         // Validación de seguridad por si el servidor arrancó mal
         if (!redisClient) throw new Error('Redis client not initialized');
 
-        const QUEUE_KEY = 'match:queue:public';
+		const QUEUE_KEY = 'match:queue:public';
+		
+		console.log(`👉 ⚙️ [Service] Revisando cola Redis (${QUEUE_KEY})...`);
 
         // 1. Lógica FIFO en Redis
         const opponentId = await redisClient.lpop(QUEUE_KEY);
 
-        if (opponentId && opponentId !== userId) {
+		if (opponentId && opponentId !== userId) {
+			console.log(`👉 ⚙️ [Service] ¡Oponente encontrado! (${opponentId}) vs Yo (${userId})`);
             // --- MATCH ENCONTRADO ---
 
             // a. Persistir en DB (Devuelve Row cruda)
@@ -31,6 +34,24 @@ export class MatchService {
 
             // b. Mapear a Objeto de Dominio (Aquí usamos tu Mapper)
             const matchDomain = MatchMapper.toDomain(matchRow);
+
+			//OJO, MAS ADELANTE:llamada HTTP a user para obtener los username
+			// del objeto matchDomain antes de enviar el evento a Redis
+			//De momento, con este metodo devuelvo un objeto MOCK basado en el ID
+			// en lugar de "unknown", para provar que funciona.
+
+			// 1. MOCK: Llamamos al mock para AMBOS jugadores (usando await)
+			//Uso el objeto de dominio como fuente de la verdad
+			console.log("👉 ⚙️ [Service] Hidratando nombres...");
+			const player1Data = await this.fetchUserProfile(matchDomain.player1.userId);
+			matchDomain.player1.username = player1Data.username;
+	
+			if (matchDomain.player2) {
+    			const player2Data = await this.fetchUserProfile(matchDomain.player2.userId);
+    			matchDomain.player2.username = player2Data.username;
+			}
+
+			// ahora sí, publicas en Redis y retornas matchDomain	
 
             // c. Notificar eventos (Enviamos el objeto limpio, no el de DB)
             await redisClient.publish('game_events', JSON.stringify({
@@ -47,10 +68,12 @@ export class MatchService {
 
         } else {
             // --- A LA COLA ---
-            
+			console.log("👉 ⚙️ [Service] Cola vacía o soy yo mismo. Añadiéndome a la cola...");
+			
             // Si por error me saqué a mí mismo, me ignoro.
             if (opponentId && opponentId === userId) {
-                 // log de warning opcional
+				// log de warning opcional
+				console.warn("⚠️ ⚙️ [Service] Warning: Me saqué a mí mismo de la cola. Reinsertando.");
             }
 
             await redisClient.rpush(QUEUE_KEY, userId);
@@ -61,6 +84,8 @@ export class MatchService {
     async createPrivateMatch(userId: string, opponentId: string): Promise<MatchTypes.Match> {
         if (!redisClient) throw new Error('Redis client not initialized');
 
+		console.log(`👉 ⚙️ [Service] Creando partida privada: ${userId} vs ${opponentId}`);
+
         if (userId === opponentId) {
             throw new Error("No puedes desafiarte a ti mismo");
         }
@@ -69,7 +94,24 @@ export class MatchService {
         const matchRow = await this.matchRepo.createPrivateMatch(userId, opponentId);
 
         // 2. Mapear
-        const matchDomain = MatchMapper.toDomain(matchRow);
+		const matchDomain = MatchMapper.toDomain(matchRow);
+		
+		//OJO, MAS ADELANTE: aqui pondre una llamada HTTP a user para obtener 
+		// los username del objeto matchDomain antes de enviar el evento a Redis.
+		//De momento, con este metodo devuelvo un objeto MOCK basado en el ID
+		// en lugar de "unknown", para provar que funciona.
+		// 1. Llamamos al mock para AMBOS jugadores (usando await)
+		//Uso el objeto de dominio como fuente de la verdad
+		console.log("👉 ⚙️ [Service] Hidratando nombres...");
+		const player1Data = await this.fetchUserProfile(matchDomain.player1.userId);
+		matchDomain.player1.username = player1Data.username;
+	
+		if (matchDomain.player2) {
+    		const player2Data = await this.fetchUserProfile(matchDomain.player2.userId);
+    		matchDomain.player2.username = player2Data.username;
+		}
+		// ahora sí, publica en Redis y retorna matchDomain
+			
 
         // 3. Notificar invitación
         await redisClient.publish('game_events', JSON.stringify({
@@ -79,115 +121,48 @@ export class MatchService {
         }));
 
         return matchDomain;
+	}
+	
+	// // Método helper para simular fetch al User Service
+	// private async fetchUserProfile(userId: string): Promise<{ username: string }> {
+	// 	// TODO: Reemplazar por llamada HTTP real: axios.get(`http://user-service...`)
+	// 	// Por ahora, devolvemos un mock para verificar que el flujo de datos funciona.
+	// 	const mockName = `Player_${userId.substring(0, 4)}`;
+	// 	console.log(`   🔍 [Hydration] Fetching UserID: ${userId} -> Mock: ${mockName}`);
+	// 	return { username: `Player_${userId.substring(0, 4)}` };
+	// }
+
+	// Método helper: Comunicación Inter-Servicio real 
+	// (pide al modulo user por HTTP el username del userId)
+    private async fetchUserProfile(userId: string): Promise<{ username: string }> {
+        // 1. Obtener URL (Fallback a localhost si no carga el env por alguna razón)
+        const baseUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
+        const targetUrl = `${baseUrl}/api/users/${userId}`;
+
+        try {
+            // console.log(`   📡 [Network] GET ${targetUrl}`); // Descomenta para debug
+
+            // 2. Fetch Nativo (Node 18+)
+            const response = await fetch(targetUrl);
+
+            // 3. Manejo de errores HTTP (404 Not Found, 500 Server Error)
+            if (!response.ok) {
+                console.warn(`   ⚠️ [Hydration] Falló petición a User Service (${response.status}): Usuario ${userId} no encontrado o servicio caído.`);
+                return { username: 'Unknown' };
+            }
+
+            // 4. Parsear respuesta
+            // Asumimos que User Service devuelve: { id: string, username: string, ... }
+            const userData = await response.json() as { username: string };
+            
+            return { username: userData.username };
+
+        } catch (error) {
+            // 5. Manejo de errores de Red (Connection Refused, Timeout)
+            // Esto evita que el juego se detenga si el servicio de usuarios muere.
+            console.error(`   🔥 [Hydration] Error Crítico de Red conectando a ${baseUrl}:`, error);
+            return { username: 'Unknown' };
+        }
     }
+
 }
-
-
-//===================CODIGO DESFASADO===================//
-
-// export class MatchService {
-//     // Instanciamos el repo para poder hablar con la DB
-//     private matchRepo = new MatchRepository();
-
-//     /**
-//      * Lógica principal de Matchmaking (FIFO):
-//      * 1. Busca si hay alguien esperando.
-//      * 2. Si hay, te une a su partida.
-//      * 3. Si no, crea una nueva y te pone a esperar.
-//      */
-//     async joinOrCreate(userId: string, opponentId: string | undefined): Promise<MatchTypes.Match> {
-        
-// 		// SI ES UN MATCHMAKING PRIVADO CON UN OPONENTE FRIEND
-// 		if (opponentId) {
-
-// 			//Proteccion
-// 			if (userId === opponentId) {
-// 				throw new Error("No puedes desafiarte a ti mismo");
-// 			}
-
-// 			// PASO 1:Crear nueva partida
-// 			const newMatchId = Utils.generateMatchId(); //genera un UUID
-// 			const now = Date.now();
-
-// 			//Creo un Literal Object newRow con los datos crudos para SQL
-// 			//Es la forma standard en TypeScript de preparar un objeto (DTO) para la BD
-// 			const newRow: MatchTypes.MatchRow = {
-// 				id: newMatchId,
-// 				status: 'pending',  //aun pending hasta que oponente acepte el reto
-// 				player1_id: userId,
-// 				player1_score: 0,
-// 				player2_id: opponentId, //seteamos el rival
-// 				player2_score: 0,	
-// 				winner_id: null,
-// 				created_at: now,
-// 				finished_at: null
-// 			};
-
-// 			// Guardamos en DB
-// 			//'create' pasa los datos del Literal Object a formato SQL y los injecta en la DB
-// 			this.matchRepo.create(newRow);
-
-// 			// Devolvemos un objeto limpio al cliente (que con el mapper hemos traducido desde una sentencia SQL)
-// 			return MatchMapper.toDomain(newRow);
-// 		}
-
-// 		// SI ES UN MATCHMAKING PUBLICO FIFO)
-// 		else {
-		
-// 			// PASO 1: Buscar partida pendiente
-// 			// Pregunta al Repo: "¿Hay alguna partida 'pending' a la que le falte el player2?"
-// 			// (Veremos el Repo en el siguiente paso, pero imagina que devuelve una fila de SQL o null)
-// 			const pendingRow = this.matchRepo.findPendingPublicMatch();
-
-// 			// PASO 2: Unirse a existente
-// 			// Condición: Que exista Y que yo no sea el Player 1 (no jugar contra mí mismo)
-// 			if (pendingRow && pendingRow.player1_id !== userId) {
-				
-// 				// --- RAMA 1: UNIRSE A PARTIDA EXISTENTE ---
-
-// 				// a) Actualizamos la DB (poner mi ID en player2_id y cambiar status a 'active')
-// 				this.matchRepo.joinMatch(pendingRow.id, userId);
-				
-// 				// b) Recuperamos la fila actualizada para devolver el estado real final
-// 				const updatedRow = this.matchRepo.findById(pendingRow.id);
-				
-// 				if (!updatedRow) {
-// 					throw new Error("Error crítico: La partida ha desaparecido tras unirse.");
-// 				}
-
-// 				// c) TRADUCCIÓN (mapper): Convertimos la fila de SQL a un objeto de API
-// 				//El Mapper (MatchMapper): Es el traductor. La DB habla snake_case 
-// 				// (player1_id), pero nuestro frontend espera camelCase (player1: { userId: ... }). El Mapper hace ese puente al final de cada rama.
-// 				return MatchMapper.toDomain(updatedRow);
-// 			}
-
-// 			// --- RAMA 2: CREAR PARTIDA EXISTENTE ---
-
-// 			// PASO 3: Crear nueva partida (si no había nadie esperando)
-// 			const newMatchId = Utils.generateMatchId(); //genera un UUID
-// 			const now = Date.now();
-
-// 			// Preparamos los datos crudos para SQL (MatchRow)
-// 			//creo un Literal Object newRow con los datos
-// 			//Es la forma standard en TypeScript de preparar un objeto (DTO) para la BD
-// 			const newRow: MatchTypes.MatchRow = {
-// 				id: newMatchId,
-// 				status: 'pending',  //Importante: nace esperando un rival
-// 				player1_id: userId,
-// 				player1_score: 0,
-// 				player2_id: null,    // Nadie aun
-// 				player2_score: null,
-// 				winner_id: null,
-// 				created_at: now,
-// 				finished_at: null
-// 			};
-		
-// 			// Guardamos en DB
-// 			//'create' pasa los datos del Literal Object a formato SQL y los injecta en la DB
-// 			this.matchRepo.create(newRow);
-
-// 			// Devolvemos un objeto limpio al cliente (que con el mapper hemos traducido desde una sentencia SQL)
-// 			return MatchMapper.toDomain(newRow);
-// 		}
-//     }
-// }
