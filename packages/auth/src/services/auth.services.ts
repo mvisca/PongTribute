@@ -140,9 +140,9 @@ import { FastifyError } from 'fastify';
 			// hashear con sha-256 (64 caracteres)
 			const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 			
-			//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
-			// calcula expiración
-			const expiresAt = new Date(AuthEnv.TOKEN_EXPIRY);
+		//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
+		// calcula expiración (TOKEN_EXPIRY está en segundos, convertir a milisegundos)
+		const expiresAt = new Date(Date.now() + AuthEnv.TOKEN_EXPIRY * 1000);
 			
 			// almacenar record refresh token
 			const response = await fetch(
