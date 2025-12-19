@@ -1,0 +1,32 @@
+html, body {
+  background: #0f172a;
+}
+
+.swagger-ui {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.swagger-ui img,
+.swagger-ui svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.swagger-ui {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.swagger-ui img,
+.swagger-ui svg {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.swagger-ui .opblock {
+  background: #0f172a;
+}
+
+.swagger-ui input,
+.swagger-ui textarea,
+.swagger-ui select {
+  background: #020617;
+  color: #e5e7eb;
+}

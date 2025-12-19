@@ -61,7 +61,7 @@ export function buildApp(): FastifyInstance {
 
 	/** 2. Plugins de documentacion con UI interactiva */
 	const swaggerThemeCSS = readFileSync(
-		join(__dirname, 'styles', 'swagger-dark-theme.css'),
+		join(__dirname, '../../shared/src/styles/', 'swagger-custom.css'),
 		'utf-8'
 	);
 	
@@ -76,7 +76,7 @@ export function buildApp(): FastifyInstance {
 			title: 'Transcendence Auth API',
 			css: [
 				{
-					filename: 'theme.css',
+					filename: 'placeholder',
 					content: swaggerThemeCSS
 				}
 			]
