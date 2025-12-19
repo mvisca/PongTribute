@@ -170,6 +170,20 @@ export namespace AuthTypes {
 		iat: number;
 		exp: number;
 	}
+
+	// ========================================================================
+	// JWT PAYLOADS (TypeBox Inferred)
+	// ========================================================================
+	
+	/**
+	 * Tipo inferido automáticamente del Schema.
+	 * Usar este tipo en Middlewares y decodificadores de JWT.
+	 */
+	export type JWTPayload = Static<typeof AuthSchemas.JWTPayloadSchema>;
+
+	// NOTA: Si quieres migrar AccessTokenPayload también:
+	// export type AccessTokenPayload = Static<typeof AuthSchemas.AccessTokenPayloadSchema>; 
+	// (Requeriría definir AccessTokenPayloadSchema en el archivo de schemas)
 	
 	// ========================================================================
 	// DATABASE ROWS (snake_case)

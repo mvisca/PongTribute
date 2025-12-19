@@ -328,4 +328,22 @@ export namespace AuthSchemas {
 			401: ErrorResponse
 		}
 	};
+
+    // ========================================================================
+    // JWT PAYLOAD SCHEMAS
+    // ========================================================================
+
+    /**
+     * Schema base para el payload de un JWT estándar en el sistema
+     * Contiene los campos mínimos necesarios para identificar al usuario
+     */
+    export const JWTPayloadSchema = Type.Object({
+        id: UuidField, // Reutilizamos tu definición de UUID existente
+        username: Type.Optional(UsernameField),
+        email: Type.Optional(EmailField),
+        // Claims estándar de JWT
+        iat: Type.Optional(Type.Integer()),
+        exp: Type.Optional(Type.Integer())
+    });
+
 }
