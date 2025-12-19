@@ -123,49 +123,6 @@ export class MatchService {
         return matchDomain;
 	}
 	
-	// // Método helper para simular fetch al User Service
-	// private async fetchUserProfile(userId: string): Promise<{ username: string }> {
-	// 	// TODO: Reemplazar por llamada HTTP real: axios.get(`http://user-service...`)
-	// 	// Por ahora, devolvemos un mock para verificar que el flujo de datos funciona.
-	// 	const mockName = `Player_${userId.substring(0, 4)}`;
-	// 	console.log(`   🔍 [Hydration] Fetching UserID: ${userId} -> Mock: ${mockName}`);
-	// 	return { username: `Player_${userId.substring(0, 4)}` };
-	// }
-
-// 	// Método helper: Comunicación Inter-Servicio real 
-// 	// (pide al modulo user por HTTP el username del userId)
-//     private async fetchUserProfile(userId: string): Promise<{ username: string }> {
-//         // 1. Obtener URL (Fallback a localhost si no carga el env por alguna razón)
-//         const baseUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
-//         const targetUrl = `${baseUrl}/api/users/${userId}`;
-
-//         try {
-//             // console.log(`   📡 [Network] GET ${targetUrl}`); // Debug
-
-//             // 2. Fetch Nativo (Node 18+)
-//             const response = await fetch(targetUrl);
-
-//             // 3. Manejo de errores HTTP (404 Not Found, 500 Server Error)
-//             if (!response.ok) {
-//                 console.warn(`   ⚠️ [Hydration] Falló petición a User Service (${response.status}): Usuario ${userId} no encontrado o servicio caído.`);
-//                 return { username: 'Unknown' };
-//             }
-
-//             // 4. Parsear respuesta
-//             // Asumimos que User Service devuelve: { id: string, username: string, ... }
-//             const userData = await response.json() as { username: string };
-            
-//             return { username: userData.username };
-
-//         } catch (error) {
-//             // 5. Manejo de errores de Red (Connection Refused, Timeout)
-//             // Esto evita que el juego se detenga si el servicio de usuarios muere.
-//             console.error(`   🔥 [Hydration] Error Crítico de Red conectando a ${baseUrl}:`, error);
-//             return { username: 'Unknown' };
-//         }
-//     }
-
-
 	// Método helper: Comunicación Inter-Servicio real 
 	// (pide al modulo user por HTTP el username del userId)
 	private async fetchUserProfile(userId: string): Promise<{ username: string }> {
