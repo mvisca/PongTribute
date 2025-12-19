@@ -15,7 +15,6 @@ export class MatchController {
 		request: FastifyRequest,
 		reply: FastifyReply
 	) {
-
 		console.log("\n--- NEW REQUEST (SECURE) ---");
         console.log("👉 🎮 [Controller] 1. Entrando en createMatch");
 
