@@ -3,8 +3,14 @@ import helmet from '@fastify/helmet';
 import type { Redis } from 'ioredis';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { Utils } from "@transcendence/shared/";
 import { authRoutes, AuthEnv } from './index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Cliente Redis de toda la app Auth
 export let redisClient: Redis | null = null; 
@@ -54,12 +60,26 @@ export function buildApp(): FastifyInstance {
 	});
 
 	/** 2. Plugins de documentacion con UI interactiva */
+	const swaggerThemeCSS = readFileSync(
+		join(__dirname, 'styles', 'swagger-dark-theme.css'),
+		'utf-8'
+	);
+	
 	app.register(swaggerUI, {
 		routePrefix: '/docs',
 		staticCSP: true,
 		uiConfig: {
 			docExpansion: 'list',
 			deepLinking: false
+		},
+		theme: {
+			title: 'Transcendence Auth API',
+			css: [
+				{
+					filename: 'theme.css',
+					content: swaggerThemeCSS
+				}
+			]
 		}
 	});
 

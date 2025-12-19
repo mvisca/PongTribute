@@ -1,0 +1,218 @@
+/* Swagger UI Dark Theme */
+
+/* Background principal */
+.swagger-ui {
+	background-color: rgb(235, 19, 19);
+}
+
+/* Barra superior */
+.swagger-ui .topbar {
+	background-color: #141313;
+}
+
+/* Información general */
+.swagger-ui .info {
+	color: #ffffff;
+}
+
+.swagger-ui .info .title {
+	color: #61dafb;
+}
+
+.swagger-ui .info .description {
+	color: #d4d4d4;
+}
+
+/* Esquemas y contenedores */
+.swagger-ui .scheme-container {
+	background-color: #2d2d2d;
+}
+
+/* Bloques de operaciones */
+.swagger-ui .opblock .opblock-summary {
+	background-color: #2d2d2d;
+	border-color: #444444;
+}
+
+.swagger-ui .opblock .opblock-summary-description {
+	color: #d4d4d4;
+}
+
+.swagger-ui .opblock .opblock-summary-path {
+	color: #ffffff;
+}
+
+.swagger-ui .opblock .opblock-summary-method {
+	color: #000000;
+}
+
+/* Métodos HTTP - GET */
+.swagger-ui .opblock.opblock-get {
+	border-color: #61affe;
+	background-color: rgba(97, 175, 254, 0.1);
+}
+
+.swagger-ui .opblock.opblock-get .opblock-summary {
+	border-color: #61affe;
+}
+
+/* Métodos HTTP - POST */
+.swagger-ui .opblock.opblock-post {
+	border-color: #49cc90;
+	background-color: rgba(73, 204, 144, 0.1);
+}
+
+.swagger-ui .opblock.opblock-post .opblock-summary {
+	border-color: #49cc90;
+}
+
+/* Métodos HTTP - PUT */
+.swagger-ui .opblock.opblock-put {
+	border-color: #fca130;
+	background-color: rgba(252, 161, 48, 0.1);
+}
+
+.swagger-ui .opblock.opblock-put .opblock-summary {
+	border-color: #fca130;
+}
+
+/* Métodos HTTP - DELETE */
+.swagger-ui .opblock.opblock-delete {
+	border-color: #f93e3e;
+	background-color: rgba(249, 62, 62, 0.1);
+}
+
+.swagger-ui .opblock.opblock-delete .opblock-summary {
+	border-color: #f93e3e;
+}
+
+/* Métodos HTTP - PATCH */
+.swagger-ui .opblock.opblock-patch {
+	border-color: #50e3c2;
+	background-color: rgba(80, 227, 194, 0.1);
+}
+
+.swagger-ui .opblock.opblock-patch .opblock-summary {
+	border-color: #50e3c2;
+}
+
+/* Tags y cuerpo */
+.swagger-ui .opblock-tag {
+	color: #ffffff;
+	border-bottom: 1px solid #444444;
+}
+
+.swagger-ui .opblock-body {
+	background-color: #2d2d2d;
+}
+
+/* Parámetros */
+.swagger-ui .parameters-col_description {
+	color: #d4d4d4;
+}
+
+.swagger-ui .parameter__name {
+	color: #ffffff;
+}
+
+.swagger-ui .parameter__type {
+	color: #61dafb;
+}
+
+/* Respuestas */
+.swagger-ui .response-col_status {
+	color: #ffffff;
+}
+
+.swagger-ui .response-col_description {
+	color: #d4d4d4;
+}
+
+/* Modelos */
+.swagger-ui .model {
+	color: #d4d4d4;
+}
+
+.swagger-ui .model-box {
+	background-color: #2d2d2d;
+}
+
+.swagger-ui .model-title {
+	color: #ffffff;
+}
+
+.swagger-ui .prop-type {
+	color: #61dafb;
+}
+
+.swagger-ui .prop-name {
+	color: #ffffff;
+}
+
+/* Tablas */
+.swagger-ui table thead tr th {
+	color: #ffffff;
+	border-bottom: 1px solid #444444;
+}
+
+.swagger-ui table tbody tr td {
+	color: #d4d4d4;
+	border-bottom: 1px solid #333333;
+}
+
+/* Botones */
+.swagger-ui .btn {
+	color: #ffffff;
+	background-color: #61affe;
+	border-color: #61affe;
+}
+
+.swagger-ui .btn:hover {
+	background-color: #4a90e2;
+}
+
+/* Inputs y controles */
+.swagger-ui input[type=text],
+.swagger-ui input[type=password],
+.swagger-ui textarea {
+	background-color: #2d2d2d;
+	color: #ffffff;
+	border: 1px solid #444444;
+}
+
+.swagger-ui select {
+	background-color: #2d2d2d;
+	color: #ffffff;
+	border: 1px solid #444444;
+}
+
+/* Modales */
+.swagger-ui .dialog-ux .modal-ux-content {
+	background-color: #2d2d2d;
+	color: #ffffff;
+}
+
+/* Headers */
+.swagger-ui .responses-inner h4,
+.swagger-ui .responses-inner h5 {
+	color: #ffffff;
+}
+
+/* Tabs */
+.swagger-ui .tab li {
+	color: #d4d4d4;
+}
+
+.swagger-ui .tab li.active {
+	color: #ffffff;
+}
+
+/* Código resaltado */
+.swagger-ui .highlight-code {
+	background-color: #1a1a1a;
+}
+
+.swagger-ui .microlight {
+	color: #d4d4d4;
+}
+
