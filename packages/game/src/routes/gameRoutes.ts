@@ -1,9 +1,11 @@
 
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
-import { AuthMiddleware } from '../middleware/game.middleware.js';
+//import { AuthMiddleware } from '../middleware/game.middleware.js';
 import { GameGateway } from '../gateways/GameGateway.js';
 import { MatchSchemas } from '@transcendence/shared';
+// Importamos el nuevo middleware
+import { GameMiddleware } from '../middleware/game.middleware.js';
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
     // Instanciamos el controlador una sola vez
@@ -22,7 +24,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 		// Es el guardián. Si el usuario no envía un Header Authorization:
 		//  Bearer <token> válido, la petición se muere aquí y devuelve 401.
 		//  El Controller ni se entera. Esto mantiene tu código seguro y limpio.
-        //preHandler: [AuthMiddleware.validateJWT],====================================
+        preHandler: [GameMiddleware.validateJWT],
 
         // 2. VALIDADOR Contrato: Usamos el Schema "Endpoint-Centric" que creamos
 		// Fastify validará automáticamente el body y la respuesta.

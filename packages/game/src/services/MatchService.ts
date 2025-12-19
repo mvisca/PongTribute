@@ -140,7 +140,7 @@ export class MatchService {
         const targetUrl = `${baseUrl}/api/users/${userId}`;
 
         try {
-            // console.log(`   📡 [Network] GET ${targetUrl}`); // Descomenta para debug
+            // console.log(`   📡 [Network] GET ${targetUrl}`); // Debug
 
             // 2. Fetch Nativo (Node 18+)
             const response = await fetch(targetUrl);

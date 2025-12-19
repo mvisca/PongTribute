@@ -29,7 +29,8 @@
 		"dev": "pnpm redis && sleep 2 & pnpm start:dev",
 		"start:dev": "pnpm --parallel --filter '@transcendence/*' start:dev",
 		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
-		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev"
+		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev",
+		"start:dev-game": "pnpm --filter '@transcendence/game' start:dev"
 	},
 	"keywords": [],
 	"author": "",
