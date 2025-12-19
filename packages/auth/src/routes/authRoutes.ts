@@ -80,4 +80,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		schema: AuthSchemas.UpdatePasswordBodySchema,
 		handler: controller.updatePassword.bind(controller)
 	});
+
 } // TODO separar rutas publicas y privadas en ficheros
+
+// ft_transcendence git:(main) curl -X POST http://localhost:3002/api/auth/refresh \
+//   -H "Content-Type: application/json" \
+//   -d '{
+//     "refreshToken": "1701a49e114b23b292478a63b029399ef5eadfc2e0e909c6d44e0297c0ab8dd7"
+//   }'
+// {"error":"Not found","message":"Route POST /api/auth/refresh no encontrada"}
