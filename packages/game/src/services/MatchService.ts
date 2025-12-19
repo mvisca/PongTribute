@@ -165,7 +165,6 @@ export class MatchService {
 //         }
 //     }
 
-
 	// Método helper: Comunicación Inter-Servicio real 
 	// (pide al modulo user por HTTP el username del userId)
 	private async fetchUserProfile(userId: string): Promise<{ username: string }> {
