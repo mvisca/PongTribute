@@ -85,6 +85,11 @@
 - Consultar `docs/requirements.md` para requisitos completos
 - Consultar `docs/technical-specs.md` para especificaciones técnicas
 
+## 🔧 Reglas para el asistente/CLI
+
+- Cada comando solicitado debe ejecutarse de forma incremental: aplicar cambios pequeños, explicar lo realizado y preguntar cómo continuar antes del siguiente paso.
+- Nunca realizar cambios en más de una capa a la vez (p. ej. backend, frontend, infraestructura); trabajar una capa por iteración.
+
 ## 🎯 Principios de Desarrollo
 
 1. **Entender antes de usar:** Solo usar librerías/código que se entienda completamente

@@ -2,6 +2,9 @@ import { Static } from '@sinclair/typebox';
 import { UserSchemas } from '../schemas/user.schema.js';
 
 export namespace UserTypes {
+
+	// Identificador único de usuario (UUID). Validado por esquemas (formato uuid).
+	export type UserId = string;
 	
 	// ========================================================================
 	// DATABASE ROW (snake_case)

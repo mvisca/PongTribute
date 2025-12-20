@@ -1,5 +1,4 @@
-import { FriendshipStatus } from '@transcendence/shared'; 
-import { UserId } from '@transcendence/shared';
+import { FriendshipStatus, UserTypes } from '@transcendence/shared'; 
 import * as FriendshipTypes from '@transcendence/shared';
 
 /**
@@ -37,25 +36,25 @@ export interface IFriendshipRepository {
 	/**
 	 * Elimiar amistad específica entre dos users
 	 */
-	delete(userId: UserId, friendId: UserId): Promise<void>;
+	delete(userId: UserTypes.UserId, friendId: UserTypes.UserId): Promise<void>;
 
 	/**
 	 * Busca amistad específica entre dos users
 	 */
 	findByUserAndFriend(
-		userId: UserId, friendId: UserId
+		userId: UserTypes.UserId, friendId: UserTypes.UserId
 	): Promise<FriendshipTypes.Friendship | null>;
 
 	/**
 	 * Busca amistades de un user
 	 */
-	findByUser(userId: UserId): Promise<FriendshipTypes.Friendship[]>;
+	findByUser(userId: UserTypes.UserId): Promise<FriendshipTypes.Friendship[]>;
 
 	/**
 	 * El 'passwordHash' se incluye para validar la 'password' del usuario.
 	 */
 	findByUserAndStatus(
-		userId: UserId,
+		userId: UserTypes.UserId,
 		status: FriendshipStatus
 	): Promise<FriendshipTypes.Friendship[]>;
 }

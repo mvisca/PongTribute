@@ -1,8 +1,10 @@
 import BetterSqlite3 from "better-sqlite3";
-import { UserId, FriendshipStatus } from '@transcendence/shared';
+import { UserTypes, FriendshipStatus } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';
-import { IFriendshipRepository } from './IFriendshipRepository';      // ← Local
-import { FriendshipMapper } from '../mappers/FriendshipMapper';   
+import { IFriendshipRepository } from './IFriendshipRepository.js';      // ← Local
+import { FriendshipMapper } from '../mappers/FriendshipMapper.js';   
+
+type UserId = UserTypes.UserId;
 
 export class SQLiteFriendshipRepository implements IFriendshipRepository {
 

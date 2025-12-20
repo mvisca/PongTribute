@@ -20,8 +20,8 @@ export class FriendshipMapper {
 
 	static rowToFriendshipResponse(row: SharedTypes.FriendshipRow): SharedTypes.Friendship {
 		return {
-			userId: row.user_id as SharedTypes.UserId,
-			friendId: row.friend_id as SharedTypes.UserId,
+			userId: row.user_id as SharedTypes.UserTypes.UserId,
+			friendId: row.friend_id as SharedTypes.UserTypes.UserId,
 			status: row.status as SharedTypes.FriendshipStatus,
 			createdAt: new Date(row.created_at),
 			updatedAt: new Date(row.updated_at)

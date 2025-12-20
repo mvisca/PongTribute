@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
 CREATE TABLE IF NOT EXISTS friendships (
   user_id TEXT NOT NULL,
   friend_id TEXT NOT NULL,
+  initiator_id TEXT NOT NULL,
   status TEXT NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,
