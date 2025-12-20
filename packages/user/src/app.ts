@@ -41,7 +41,7 @@ export function buildApp(): FastifyInstance {
 	app.register(swagger, {
 		openapi: {
 			info: {
-				title: 'Transcndence User API',
+				title: 'Transcendence User API',
 				version: '1.0.0'
 			},
 			servers: [
