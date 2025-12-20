@@ -15,7 +15,12 @@ export const FRIENDSHIP_STATUS = {
 	/**
 	 * Solicitud aceptada, amistad activa
 	 */
-	ACCEPTED: "accepted"
+	ACCEPTED: "accepted",
+
+	/**
+	 * Solicitud rechazada
+	 */
+	REJECTED: "rejected"
 
 } as const;
 

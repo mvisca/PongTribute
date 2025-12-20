@@ -1,4 +1,7 @@
-import type { FriendshipStatus } from "../index.js";
+import { Static } from '@sinclair/typebox';
+import { UserTypes } from './user.types.js';
+import type { FriendshipStatus } from '../constants/friendship.constants.js';
+import { FriendshipSchemas } from '../schemas/friendship.schema.js';
 
 // ============================================================================
 // ENTIDAD DE DOMINIO
@@ -9,8 +12,8 @@ import type { FriendshipStatus } from "../index.js";
 * Representa la relación y su estado actual
 */
 export interface Friendship {
-	userId: string;
-	friendId: string;
+	userId: UserTypes.UserId;
+	friendId: UserTypes.UserId;
 	status: FriendshipStatus;
 	createdAt: Date;
 	updatedAt: Date;
@@ -25,18 +28,23 @@ export interface Friendship {
 * Enviada por el backend al crear relación
 */
 export interface CreateFriendshipData {
-	userId: string;
-	friendId: string;
+	userId: UserTypes.UserId;
+	friendId: UserTypes.UserId;
 	status: FriendshipStatus; // default 'pending'
 }
+
+/**
+ * Body HTTP para crear una amistad (entrada API)
+ */
+export type CreateFriendshipBody = Static<typeof FriendshipSchemas.CreateFriendshipBody>;
 
 /**
 * DTO IN - Actualizar amistad
 * Solo puede cambiar status y updatedAt
 */
 export interface UpdateFriendshipData {
-	userId: string;
-	friendId: string;
+	userId: UserTypes.UserId;
+	friendId: UserTypes.UserId;
 	status: FriendshipStatus;
 	updatedAt: Date;
 }
@@ -50,9 +58,9 @@ export interface UpdateFriendshipData {
 * Expresa keys snake_case con los tipos de la tabla
 */
 export interface FriendshipRow {
-	user_id: string;      // UserId (UUID)
-	friend_id: string;    // UserId (UUID)
-	status: string;       // FriendshipStatus
+	user_id: UserTypes.UserId;      // UserId (UUID)
+	friend_id: UserTypes.UserId;    // UserId (UUID)
+	status: FriendshipStatus;       // FriendshipStatus
 	created_at: number;   // Unix timestamp
 	updated_at: number;   // Unix timestamp
 }
@@ -62,8 +70,8 @@ export interface FriendshipRow {
 * Solo status y updated_at
 */
 export interface UpdateFriendshipRow {
-	user_id: string;      // UserId (UUID)
-	friend_id: string;    // UserId (UUID)
-	status: string;       // FriendshipStatus
+	user_id: UserTypes.UserId;      // UserId (UUID)
+	friend_id: UserTypes.UserId;    // UserId (UUID)
+	status: FriendshipStatus;       // FriendshipStatus
 	updated_at: number;   // Unix timestamp
 }
