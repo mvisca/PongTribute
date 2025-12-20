@@ -3,12 +3,13 @@ import { UserTypes, FriendshipStatus } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';
 import { IFriendshipRepository } from './IFriendshipRepository.js';      // ← Local
 import { FriendshipMapper } from '../mappers/FriendshipMapper.js';   
+import { getDatabase } from '../index.js';
 
 type UserId = UserTypes.UserId;
 
 export class SQLiteFriendshipRepository implements IFriendshipRepository {
 
-	constructor(private db: BetterSqlite3.Database) {}
+	constructor(private db: BetterSqlite3.Database = getDatabase()) {}
 
 	// =========================================================================
 	// MÉTODOS PRIVADOS

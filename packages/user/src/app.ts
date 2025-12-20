@@ -51,6 +51,7 @@ export function buildApp(): FastifyInstance {
 			tags: [
 				{ name: 'User', description: 'Gestión de usuarios' },
 				{ name: 'Token', description: 'Gestión de refresh tokens' },
+				{ name: 'Friendship', description: 'Gestión de amistades' }
 			]
 		},
 		transform: ({ schema, url }) => {

@@ -1,9 +1,10 @@
 import { FastifyPluginAsync } from 'fastify';
-import { UserSchemas } from '@transcendence/shared';
-import { UserController, AuthMiddleware } from '../index.js';
+import { UserSchemas, FriendshipSchemas } from '@transcendence/shared';
+import { UserController, FriendshipController, AuthMiddleware } from '../index.js';
 
 export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new UserController();
+	const friendshipController = new FriendshipController();
 
 	app.addHook('preHandler', AuthMiddleware.validateJWT);
 
@@ -57,5 +58,14 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.deleteUserSchema,
 		handler: controller.deleteUser.bind(controller)
+	});
+
+	// ============================================================================
+	// FRIENDSHIPS
+	// ============================================================================
+
+	app.post('/friendships', {
+		schema: FriendshipSchemas.CreateFriendshipSchema,
+		handler: friendshipController.createFriendship.bind(friendshipController)
 	});
 }
