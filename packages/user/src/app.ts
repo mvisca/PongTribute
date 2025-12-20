@@ -48,6 +48,16 @@ export function buildApp(): FastifyInstance {
 				{ url: `http://localhost:${UserEnv.PORT}`}
 				// TODO hacer que la url sea dinamica en sharedEnv para tener valores acordes a NODE_ENV
 			],
+			components: {
+				securitySchemes: {
+				  bearerAuth: {
+					type: 'http',
+					scheme: 'bearer',
+					bearerFormat: 'JWT'
+				  }
+				}
+			  },
+			  security: [{ bearerAuth: [] }], // aplica por defecto a todas las rutas
 			tags: [
 				{ name: 'User', description: 'Gestión de usuarios' },
 				{ name: 'Token', description: 'Gestión de refresh tokens' },

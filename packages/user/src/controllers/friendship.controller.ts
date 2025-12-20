@@ -32,8 +32,18 @@ export class FriendshipController {
 	// ============================================================================
 	async createFriendship(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
+			const initiatorId = request.user?.id;
+
+			if (!initiatorId) {
+				reply.code(401).send({
+					error: 'Unauthorized',
+					message: 'Usuario no autenticado'
+				});
+				return;
+			}
+
 			const data = request.body as FriendshipTypes.CreateFriendshipBody;
-			const friendship = await this.friendshipService.createFriendship(data);
+			const friendship = await this.friendshipService.createFriendship(initiatorId, data);
 			return reply.code(201).send(friendship);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);

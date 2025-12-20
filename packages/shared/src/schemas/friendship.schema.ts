@@ -20,6 +20,7 @@ export namespace FriendshipSchemas {
 	// ============================================================================
 
 	export const Friendship = Type.Object({
+		initiatorId: UuidField,
 		userId: UuidField,
 		friendId: UuidField,
 		status: FriendshipStatus,
@@ -32,17 +33,17 @@ export namespace FriendshipSchemas {
 	// ============================================================================
 
 	export const CreateFriendshipBody = Type.Object({
-		userId: UuidField,
-		friendId: UuidField,
+		friendId: UuidField
 	});
 
 	export const CreateFriendshipSchema = {
-		description: 'Crea una solicitud de amistad con estado pendiente',
+		description: 'Crea una solicitud de amistad con estado pendiente (initiatorId proviene del JWT)',
 		tags: ['Friendship'],
 		body: CreateFriendshipBody,
 		response: {
 			201: Friendship
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 }
 

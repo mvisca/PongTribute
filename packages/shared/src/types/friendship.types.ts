@@ -14,6 +14,7 @@ import { FriendshipSchemas } from '../schemas/friendship.schema.js';
 export interface Friendship {
 	userId: UserTypes.UserId;
 	friendId: UserTypes.UserId;
+	initiatorId: UserTypes.UserId;
 	status: FriendshipStatus;
 	createdAt: Date;
 	updatedAt: Date;
@@ -28,7 +29,7 @@ export interface Friendship {
 * Enviada por el backend al crear relación
 */
 export interface CreateFriendshipData {
-	userId: UserTypes.UserId;
+	initiatorId: UserTypes.UserId;
 	friendId: UserTypes.UserId;
 	status: FriendshipStatus; // default 'pending'
 }
@@ -60,6 +61,7 @@ export interface UpdateFriendshipData {
 export interface FriendshipRow {
 	user_id: UserTypes.UserId;      // UserId (UUID)
 	friend_id: UserTypes.UserId;    // UserId (UUID)
+	initiator_id: UserTypes.UserId; // UserId (UUID)
 	status: FriendshipStatus;       // FriendshipStatus
 	created_at: number;   // Unix timestamp
 	updated_at: number;   // Unix timestamp

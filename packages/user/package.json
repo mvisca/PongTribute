@@ -11,6 +11,8 @@
 		"test:user": "tsx ./test/test-user-repository.ts",
 		"test:user-api": "tsx ./test/test-user-api.ts",
 		"test:friendship": "tsx ./test/test-friendship-repository.ts",
+		"test:friendship:mapper": "tsx ./test/friendship.mapper.test.ts",
+		"test:friendship:repo": "pnpm exec tsx --test ./test/friendship.repository.test.ts",
 		"test:other": "tsx ./test/other-test.ts"
 	},
 	"dependencies": {

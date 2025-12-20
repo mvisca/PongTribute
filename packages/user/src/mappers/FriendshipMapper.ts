@@ -21,6 +21,7 @@ export class FriendshipMapper {
 	static rowToFriendshipResponse(row: SharedTypes.FriendshipRow): SharedTypes.Friendship {
 		return {
 			userId: row.user_id as SharedTypes.UserTypes.UserId,
+			initiatorId: row.initiator_id as SharedTypes.UserTypes.UserId,
 			friendId: row.friend_id as SharedTypes.UserTypes.UserId,
 			status: row.status as SharedTypes.FriendshipStatus,
 			createdAt: new Date(row.created_at),
@@ -31,6 +32,7 @@ export class FriendshipMapper {
 	static dataToInsert(data: SharedTypes.Friendship) : SharedTypes.FriendshipRow {
 		return {
 			user_id: data.userId,
+			initiator_id: data.initiatorId,
 			friend_id: data.friendId,
 			status: data.status,
 			created_at: data.createdAt.getTime(),

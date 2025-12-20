@@ -16,23 +16,24 @@ export class FriendshipService {
 	}
 
 	async createFriendship(
+		initiatorId: UserTypes.UserId,
 		data: FriendshipTypes.CreateFriendshipBody
 	): Promise<FriendshipTypes.Friendship> {
 
-		const { userId, friendId } = data;
+		const { friendId } = data;
 
-		if (userId === friendId)
+		if (initiatorId === friendId)
 			throw new SharedErrors.ValidationError('No puedes crear amistad contigo mismo', 'friendId');
 
-		const [sortedUserId, sortedFriendId] = this.sortIds(userId, friendId);
+		const [sortedUserId, sortedFriendId] = this.sortIds(initiatorId, friendId);
 		const existing = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 
 		if (existing)
 			throw new SharedErrors.ConflictError('La amistad ya existe', 'friendship');
 
 		return await this.friendshipRepo.create({
-			userId: sortedUserId,
-			friendId: sortedFriendId,
+			initiatorId,
+			friendId,
 			status: FRIENDSHIP_STATUS.PENDING
 		});
 	}

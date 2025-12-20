@@ -45,10 +45,11 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 	 */
 	private prepareData(data: FriendshipTypes.CreateFriendshipData): FriendshipTypes.Friendship {
 		const now = new Date();
-		const [userId, friendId] = this.sortIds(data.userId, data.friendId);
+		const [userId, friendId] = this.sortIds(data.initiatorId, data.friendId);
 		return {
 			userId,
 			friendId,
+			initiatorId: data.initiatorId,
 			status: data.status,
 			createdAt: now,
 			updatedAt: now
@@ -71,8 +72,8 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 		const row = FriendshipMapper.dataToInsert(newFriendship);
 
 		this.db.prepare(`
-			INSERT INTO friendships (user_id, friend_id, status, created_at, updated_at)
-			VALUES (@user_id, @friend_id, @status, @created_at, @updated_at)
+			INSERT INTO friendships (user_id, friend_id, initiator_id, status, created_at, updated_at)
+			VALUES (@user_id, @friend_id, @initiator_id, @status, @created_at, @updated_at)
 		`).run(row);
 
 		return FriendshipMapper.rowToFriendshipResponse(
