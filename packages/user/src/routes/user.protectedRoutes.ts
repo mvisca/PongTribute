@@ -68,4 +68,9 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 		schema: FriendshipSchemas.CreateFriendshipSchema,
 		handler: friendshipController.createFriendship.bind(friendshipController)
 	});
+
+	app.patch('/friendships/:friendId', {
+		schema: FriendshipSchemas.UpdateFriendshipSchema,
+		handler: friendshipController.updateFriendship.bind(friendshipController)
+	});
 }

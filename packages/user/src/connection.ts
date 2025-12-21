@@ -26,12 +26,26 @@ process.on('SIGTERM', () => {
 	db = null;
 }); // TODO revisar implementacion de señales, consitente en pattern y servicios, esta implementacion está ok o repetida, ver capas
 
+function resolveDbPath(): { path: string } {
+	// Permitir override en entorno de test para bases en memoria o URIs compartidas
+	if (process.env.NODE_ENV === 'test' && process.env.USER_SERVICE_DB_FULL_PATH) {
+		return {
+			path: process.env.USER_SERVICE_DB_FULL_PATH
+		};
+	}
+
+	return {
+		path: UserEnv.USER_SERVICE_DB_FULL_PATH
+	};
+}
+
 export function getDatabase(): Database.Database {
 	// LAZY INIT: solo se inicializa si se necesita (1st call)
 	// Para siguientes llamadas a getDatabse(), db ya está creada
 	if (!db) {
 		try {
-			db = new Database(UserEnv.USER_SERVICE_DB_FULL_PATH);
+			const { path: dbPath } = resolveDbPath();
+			db = new Database(dbPath);
 			// Write ahead loggin
 			db.pragma('journal_mode = WAL');
 			// Foreing keys está off por defecto

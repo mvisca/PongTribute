@@ -45,5 +45,30 @@ export namespace FriendshipSchemas {
 		},
 		security: [{ bearerAuth: [] }]
 	};
+
+	// PATCH /friendships/:friendId - Aceptar o rechazar amistad pendiente
+	export const UpdateFriendshipParams = Type.Object({
+		friendId: UuidField
+	});
+
+	export const UpdateFriendshipBody = Type.Object({
+		accepted: Type.Boolean()
+	});
+
+	export const UpdateFriendshipSchema = {
+		description: 'Actualiza el estado de una amistad pendiente (aceptar o rechazar)',
+		tags: ['Friendship'],
+		params: UpdateFriendshipParams,
+		body: UpdateFriendshipBody,
+		response: {
+			200: Friendship
+		},
+		security: [{ bearerAuth: [] }]
+	};
+
+	// Alias temporal para mantener compatibilidad con capas aún no migradas
+	export const AcceptFriendshipParams = UpdateFriendshipParams;
+	export const AcceptFriendshipBody = UpdateFriendshipBody;
+	export const AcceptFriendshipSchema = UpdateFriendshipSchema;
 }
 

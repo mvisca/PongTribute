@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, beforeEach, describe, it } from 'node:test';
 
-import { FRIENDSHIP_STATUS, UserTypes } from '@transcendence/shared';
+import { FRIENDSHIP_STATUS, SharedErrors, UserTypes } from '@transcendence/shared';
 import { SQLiteFriendshipRepository } from '../src/repositories/SQLiteFriendshipRepository.js';
 import {
 	getTestDB,
@@ -116,6 +116,114 @@ describe('SQLiteFriendshipRepository (DB en memoria)', { concurrency: false }, (
 		assert.equal(updated.status, FRIENDSHIP_STATUS.ACCEPTED);
 		assert.equal(updated.updatedAt.getTime(), newDate.getTime());
 		assert.equal(updated.createdAt.getTime(), created.createdAt.getTime());
+	});
+
+	it('update lanza NotFoundError si la amistad no existe', async () => {
+		const userA = insertUser();
+		const userB = insertUser();
+
+		await assert.rejects(
+			repository.update({
+				userId: userA,
+				friendId: userB,
+				status: FRIENDSHIP_STATUS.ACCEPTED,
+				updatedAt: new Date('2024-09-01T12:00:00Z')
+			}),
+			(error: unknown) => {
+				assert.ok(error instanceof SharedErrors.NotFoundError);
+				return true;
+			}
+		);
+	});
+
+	it('update permite aceptar y mantiene initiatorId/createdAt', async () => {
+		const initiatorId = insertUser({ id: 'user-A' as UserId });
+		const targetId = insertUser({ id: 'user-B' as UserId });
+
+		const friendship = await repository.create({
+			initiatorId,
+			friendId: targetId,
+			status: FRIENDSHIP_STATUS.PENDING
+		});
+
+		const newUpdatedAt = new Date('2024-10-01T15:30:00Z');
+		const accepted = await repository.update({
+			userId: friendship.friendId,
+			friendId: friendship.userId,
+			status: FRIENDSHIP_STATUS.ACCEPTED,
+			updatedAt: newUpdatedAt
+		});
+
+		assert.equal(accepted.status, FRIENDSHIP_STATUS.ACCEPTED);
+		assert.equal(accepted.updatedAt.getTime(), newUpdatedAt.getTime());
+		assert.equal(accepted.createdAt.getTime(), friendship.createdAt.getTime());
+		assert.equal(accepted.initiatorId, friendship.initiatorId);
+	});
+
+	it('update permite rechazar una solicitud pendiente y mantiene initiatorId/createdAt', async () => {
+		const initiatorId = insertUser({ id: 'user-C' as UserId });
+		const targetId = insertUser({ id: 'user-D' as UserId });
+
+		const friendship = await repository.create({
+			initiatorId,
+			friendId: targetId,
+			status: FRIENDSHIP_STATUS.PENDING
+		});
+
+		const newUpdatedAt = new Date('2024-10-02T10:00:00Z');
+		const rejected = await repository.update({
+			userId: friendship.friendId,
+			friendId: friendship.userId,
+			status: FRIENDSHIP_STATUS.REJECTED,
+			updatedAt: newUpdatedAt
+		});
+
+		assert.equal(rejected.status, FRIENDSHIP_STATUS.REJECTED);
+		assert.equal(rejected.updatedAt.getTime(), newUpdatedAt.getTime());
+		assert.equal(rejected.createdAt.getTime(), friendship.createdAt.getTime());
+		assert.equal(rejected.initiatorId, friendship.initiatorId);
+	});
+
+	it('update lanza NotFoundError si la amistad no existe (aceptar/rechazar)', async () => {
+		const userA = insertUser({ id: 'missing-a' as UserId });
+		const userB = insertUser({ id: 'missing-b' as UserId });
+
+		await assert.rejects(
+			repository.update({
+				userId: userA,
+				friendId: userB,
+				status: FRIENDSHIP_STATUS.ACCEPTED,
+				updatedAt: new Date('2024-11-01T08:00:00Z')
+			}),
+			(error: unknown) => {
+				assert.ok(error instanceof SharedErrors.NotFoundError);
+				return true;
+			}
+		);
+	});
+
+	it('update lanza ConflictError si la amistad no está pendiente', async () => {
+		const initiatorId = insertUser({ id: 'user-X' as UserId });
+		const targetId = insertUser({ id: 'user-Y' as UserId });
+
+		const friendship = await repository.create({
+			initiatorId,
+			friendId: targetId,
+			status: FRIENDSHIP_STATUS.ACCEPTED
+		});
+
+		await assert.rejects(
+			repository.update({
+				userId: friendship.userId,
+				friendId: friendship.friendId,
+				status: FRIENDSHIP_STATUS.REJECTED,
+				updatedAt: new Date('2024-12-01T10:00:00Z')
+			}),
+			(error: unknown) => {
+				assert.ok(error instanceof SharedErrors.ConflictError);
+				return true;
+			}
+		);
 	});
 
 	it('findByUser retorna todas las amistades (enviadas y recibidas) y findByUserAndStatus filtra por estado', async () => {

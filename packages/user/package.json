@@ -13,6 +13,9 @@
 		"test:friendship": "tsx ./test/test-friendship-repository.ts",
 		"test:friendship:mapper": "tsx ./test/friendship.mapper.test.ts",
 		"test:friendship:repo": "pnpm exec tsx --test ./test/friendship.repository.test.ts",
+		"test:friendship:api": "pnpm exec tsx --test ./test/friendship.api.test.ts",
+		"test:friendship:service": "pnpm exec tsx --test ./test/friendship.service.test.ts",
+		"test:friendship:new": "pnpm exec tsx --test ./test/friendship.*.test.ts",
 		"test:other": "tsx ./test/other-test.ts"
 	},
 	"dependencies": {

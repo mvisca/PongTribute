@@ -1,5 +1,5 @@
 import BetterSqlite3 from "better-sqlite3";
-import { UserTypes, FriendshipStatus } from '@transcendence/shared';
+import { UserTypes, FriendshipStatus, SharedErrors, FRIENDSHIP_STATUS } from '@transcendence/shared';
 import * as FriendshipTypes from '@transcendence/shared';
 import { IFriendshipRepository } from './IFriendshipRepository.js';      // ← Local
 import { FriendshipMapper } from '../mappers/FriendshipMapper.js';   
@@ -90,21 +90,41 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 	): Promise<FriendshipTypes.Friendship> {
 
 		const [userId, friendId] = this.sortIds(data.userId, data.friendId);
+
+		const existingRow = this.getRowFriendsByIds(userId, friendId);
+		if (!existingRow)
+			throw new SharedErrors.NotFoundError(
+				`No se encontró amistad entre ${userId} y ${friendId}`,
+				'friendship'
+			);
+
+		if (existingRow.status !== FRIENDSHIP_STATUS.PENDING)
+			throw new SharedErrors.ConflictError('La amistad no está pendiente', 'friendship');
+
 		const updateData = FriendshipMapper.dataToSet({
 			...data,
 			userId,
 			friendId
 		});
 
-		this.db.prepare(`
+		const result = this.db.prepare(`
 			UPDATE friendships
 			SET status = @status, updated_at = @updated_at 
 			WHERE (user_id = @user_id AND friend_id = @friend_id)
 		`).run(updateData);
 
-		return FriendshipMapper.rowToFriendshipResponse(
-			this.getRowFriendsByIds(data.userId, data.friendId)
-		);
+		if (result.changes === 0)
+			throw new SharedErrors.NotFoundError(
+				`No se pudo actualizar la amistad entre ${userId} y ${friendId}`,
+				'friendship'
+			);
+
+		const updatedRow = this.getRowFriendsByIds(userId, friendId);
+
+		if (!updatedRow)
+			throw new Error(`No se ha podido recuperar la amistad actualizada para ${userId} y ${friendId}`);
+
+		return FriendshipMapper.rowToFriendshipResponse(updatedRow);
 	}
 
 	/**

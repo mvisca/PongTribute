@@ -5,8 +5,8 @@ import { IFriendshipRepository, SQLiteFriendshipRepository } from '../index.js';
 export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
 
-	constructor() {
-		this.friendshipRepo = new SQLiteFriendshipRepository();
+	constructor(friendshipRepo: IFriendshipRepository = new SQLiteFriendshipRepository()) {
+		this.friendshipRepo = friendshipRepo;
 	}
 
 	private sortIds(userId: UserTypes.UserId, friendId: UserTypes.UserId): [UserTypes.UserId, UserTypes.UserId] {
@@ -35,6 +35,39 @@ export class FriendshipService {
 			initiatorId,
 			friendId,
 			status: FRIENDSHIP_STATUS.PENDING
+		});
+	}
+
+	async updateFriendshipStatus(
+		currentUserId: UserTypes.UserId,
+		friendId: UserTypes.UserId,
+		accepted: boolean
+	): Promise<FriendshipTypes.Friendship> {
+
+		const [sortedUserId, sortedFriendId] = this.sortIds(currentUserId, friendId);
+		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
+
+		if (!friendship)
+			throw new SharedErrors.NotFoundError('No existe la solicitud de amistad', 'friendship');
+
+		if (friendship.status !== FRIENDSHIP_STATUS.PENDING)
+			throw new SharedErrors.ConflictError('La amistad no está pendiente', 'friendship');
+
+		if (friendship.initiatorId === currentUserId)
+			throw new SharedErrors.ValidationError(
+				'El solicitante no puede decidir su propia solicitud',
+				'friendship'
+			);
+
+		const status: FriendshipTypes.FriendshipDecisionStatus = accepted
+			? FRIENDSHIP_STATUS.ACCEPTED
+			: FRIENDSHIP_STATUS.REJECTED;
+
+		return await this.friendshipRepo.update({
+			userId: sortedUserId,
+			friendId: sortedFriendId,
+			status,
+			updatedAt: new Date()
 		});
 	}
 }

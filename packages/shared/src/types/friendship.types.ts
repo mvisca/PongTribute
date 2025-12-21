@@ -40,13 +40,34 @@ export interface CreateFriendshipData {
 export type CreateFriendshipBody = Static<typeof FriendshipSchemas.CreateFriendshipBody>;
 
 /**
+ * Params HTTP para actualizar (aceptar/rechazar) una amistad pendiente
+ */
+export type UpdateFriendshipParams = Static<typeof FriendshipSchemas.UpdateFriendshipParams>;
+
+/**
+ * Body HTTP para actualizar (aceptar/rechazar) una amistad pendiente
+ */
+export type UpdateFriendshipBody = Static<typeof FriendshipSchemas.UpdateFriendshipBody>;
+
+/**
+ * Alias de compatibilidad mientras migran las capas superiores
+ */
+export type AcceptFriendshipParams = UpdateFriendshipParams;
+export type AcceptFriendshipBody = UpdateFriendshipBody;
+
+/**
+ * Status permitidos al decidir una solicitud pendiente (aceptada o rechazada)
+ */
+export type FriendshipDecisionStatus = Extract<FriendshipStatus, 'accepted' | 'rejected'>;
+
+/**
 * DTO IN - Actualizar amistad
 * Solo puede cambiar status y updatedAt
 */
 export interface UpdateFriendshipData {
 	userId: UserTypes.UserId;
 	friendId: UserTypes.UserId;
-	status: FriendshipStatus;
+	status: FriendshipDecisionStatus;
 	updatedAt: Date;
 }
 
@@ -74,6 +95,6 @@ export interface FriendshipRow {
 export interface UpdateFriendshipRow {
 	user_id: UserTypes.UserId;      // UserId (UUID)
 	friend_id: UserTypes.UserId;    // UserId (UUID)
-	status: FriendshipStatus;       // FriendshipStatus
+	status: FriendshipDecisionStatus;       // FriendshipStatus
 	updated_at: number;   // Unix timestamp
 }
