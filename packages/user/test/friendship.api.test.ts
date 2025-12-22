@@ -77,6 +77,31 @@ async function seedFriendship(
 	});
 }
 
+async function seedFriendshipsForListing() {
+	const ownerId = insertUser({
+		id: '00000000-0000-0000-0000-0000000000f0' as UserId,
+		username: 'owner-list'
+	});
+	const pendingFriendId = insertUser({
+		id: '00000000-0000-0000-0000-0000000000f1' as UserId,
+		username: 'pending-friend'
+	});
+	const acceptedFriendId = insertUser({
+		id: '00000000-0000-0000-0000-0000000000f2' as UserId,
+		username: 'accepted-friend'
+	});
+	const rejectedFriendId = insertUser({
+		id: '00000000-0000-0000-0000-0000000000f3' as UserId,
+		username: 'rejected-friend'
+	});
+
+	await seedFriendship(ownerId, pendingFriendId, FRIENDSHIP_STATUS.PENDING);
+	await seedFriendship(acceptedFriendId, ownerId, FRIENDSHIP_STATUS.ACCEPTED);
+	await seedFriendship(rejectedFriendId, ownerId, FRIENDSHIP_STATUS.REJECTED);
+
+	return { ownerId, pendingFriendId, acceptedFriendId, rejectedFriendId };
+}
+
 describe('Friendship API (Fastify inject, in-memory DB)', { concurrency: false }, () => {
 	let app: FastifyInstance;
 	let redisMock: any = null;
@@ -380,6 +405,97 @@ describe('Friendship API (Fastify inject, in-memory DB)', { concurrency: false }
 		});
 
 		assert.equal(response.statusCode, 401);
+	});
+
+	it('lista todas las amistades del usuario autenticado sin filtro', async () => {
+		const { ownerId, pendingFriendId, acceptedFriendId, rejectedFriendId } = await seedFriendshipsForListing();
+		const token = signToken(ownerId, 'owner-list', 'owner@test.com');
+
+		const response = await app.inject({
+			method: 'GET',
+			url: '/api/friendships',
+			headers: { authorization: `Bearer ${token}` }
+		});
+
+		assert.equal(response.statusCode, 200);
+
+		const friendships = response.json();
+		assert.equal(friendships.length, 3);
+		assert.deepEqual(friendships.map((f: any) => f.status).sort(), [
+			FRIENDSHIP_STATUS.ACCEPTED,
+			FRIENDSHIP_STATUS.PENDING,
+			FRIENDSHIP_STATUS.REJECTED
+		]);
+		assert.ok(friendships.every((f: any) => f.userId === ownerId));
+		assert.ok(friendships.some((f: any) => f.friendId === pendingFriendId));
+		assert.ok(friendships.some((f: any) => f.friendId === acceptedFriendId));
+		assert.ok(friendships.some((f: any) => f.friendId === rejectedFriendId));
+	});
+
+	it('filtra amistades por estado accepted', async () => {
+		const { ownerId, acceptedFriendId } = await seedFriendshipsForListing();
+		const token = signToken(ownerId, 'owner-list', 'owner@test.com');
+
+		const response = await app.inject({
+			method: 'GET',
+			url: '/api/friendships?status=accepted',
+			headers: { authorization: `Bearer ${token}` }
+		});
+
+		assert.equal(response.statusCode, 200);
+		const friendships = response.json();
+		assert.equal(friendships.length, 1);
+		assert.equal(friendships[0].status, FRIENDSHIP_STATUS.ACCEPTED);
+		assert.equal(friendships[0].friendId, acceptedFriendId);
+		assert.equal(friendships[0].userId, ownerId);
+	});
+
+	it('filtra amistades por estado pending', async () => {
+		const { ownerId, pendingFriendId } = await seedFriendshipsForListing();
+		const token = signToken(ownerId, 'owner-list', 'owner@test.com');
+
+		const response = await app.inject({
+			method: 'GET',
+			url: '/api/friendships?status=pending',
+			headers: { authorization: `Bearer ${token}` }
+		});
+
+		assert.equal(response.statusCode, 200);
+		const friendships = response.json();
+		assert.equal(friendships.length, 1);
+		assert.equal(friendships[0].status, FRIENDSHIP_STATUS.PENDING);
+		assert.equal(friendships[0].friendId, pendingFriendId);
+		assert.equal(friendships[0].userId, ownerId);
+	});
+
+	it('requiere JWT válido para listar amistades', async () => {
+		const response = await app.inject({
+			method: 'GET',
+			url: '/api/friendships'
+		});
+
+		assert.equal(response.statusCode, 401);
+	});
+
+	it('expone GET /api/friendships con tag Friendship y query status en OpenAPI', async () => {
+		const response = await app.inject({
+			method: 'GET',
+			url: '/docs/json'
+		});
+
+		assert.equal(response.statusCode, 200);
+		const spec = response.json();
+		const getSchema =
+			spec.paths?.['/api/friendships']?.get ||
+			spec.paths?.['/friendships']?.get;
+
+		assert.ok(getSchema, 'Ruta GET /friendships no encontrada en OpenAPI');
+		assert.ok(getSchema.tags?.includes('Friendship'));
+
+		const hasStatusQuery = Array.isArray(getSchema.parameters)
+			? getSchema.parameters.some((p: any) => p.in === 'query' && p.name === 'status')
+			: false;
+		assert.ok(hasStatusQuery, 'Falta parámetro de query status en OpenAPI');
 	});
 
 	it('expone PATCH /api/friendships/{friendId} con tag Friendship en OpenAPI', async () => {

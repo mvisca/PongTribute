@@ -9,11 +9,11 @@ export namespace FriendshipSchemas {
 	// ENUMS
 	// ============================================================================
 
-	export const FriendshipStatus = Type.Union([
-		Type.Literal(FRIENDSHIP_STATUS.PENDING),
-		Type.Literal(FRIENDSHIP_STATUS.ACCEPTED),
-		Type.Literal(FRIENDSHIP_STATUS.REJECTED)
-	]);
+	// Enum explícito para que Swagger UI muestre todas las opciones
+	export const FriendshipStatus = Type.String({
+		enum: Object.values(FRIENDSHIP_STATUS),
+		description: 'Estado de la amistad'
+	});
 
 	// ============================================================================
 	// ENTIDAD
@@ -31,6 +31,26 @@ export namespace FriendshipSchemas {
 	// ============================================================================
 	// DTOs / RUTAS
 	// ============================================================================
+
+	export const ListFriendshipsQuery = Type.Object({
+		status: Type.Optional(
+			Type.String({
+				enum: Object.values(FRIENDSHIP_STATUS),
+				description: 'Estado de la amistad',
+				nullable: true
+			})
+		)
+	});
+
+	export const ListFriendshipsSchema = {
+		description: 'Lista amistades del usuario autenticado (filtro opcional por estado)',
+		tags: ['Friendship'],
+	querystring: ListFriendshipsQuery,
+		response: {
+			200: Type.Array(Friendship)
+		},
+		security: [{ bearerAuth: [] }]
+	};
 
 	export const CreateFriendshipBody = Type.Object({
 		friendId: UuidField

@@ -40,6 +40,16 @@ export interface CreateFriendshipData {
 export type CreateFriendshipBody = Static<typeof FriendshipSchemas.CreateFriendshipBody>;
 
 /**
+ * Query opcional para listar amistades (filtra por status)
+ */
+export type ListFriendshipsQuery = Static<typeof FriendshipSchemas.ListFriendshipsQuery>;
+
+/**
+ * Respuesta HTTP para listar amistades del usuario autenticado
+ */
+export type ListFriendshipsResponse = Static<typeof FriendshipSchemas.ListFriendshipsSchema.response[200]>;
+
+/**
  * Params HTTP para actualizar (aceptar/rechazar) una amistad pendiente
  */
 export type UpdateFriendshipParams = Static<typeof FriendshipSchemas.UpdateFriendshipParams>;

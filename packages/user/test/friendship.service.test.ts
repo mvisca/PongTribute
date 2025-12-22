@@ -27,7 +27,11 @@ function buildFriendship(
 class FakeFriendshipRepository implements IFriendshipRepository {
 	public findCalls: Array<[UserId, UserId]> = [];
 	public createCalls: FriendshipTypes.CreateFriendshipData[] = [];
+	public findByUserCalls: Array<UserId> = [];
+	public findByUserAndStatusCalls: Array<[UserId, FriendshipTypes.FriendshipDecisionStatus]> = [];
 	public findByUserAndFriendResponse: FriendshipTypes.Friendship | null = null;
+	public findByUserResponse: FriendshipTypes.Friendship[] = [];
+	public findByUserAndStatusResponse: FriendshipTypes.Friendship[] = [];
 	public createResult: FriendshipTypes.Friendship | null = null;
 
 	async create(data: FriendshipTypes.CreateFriendshipData): Promise<FriendshipTypes.Friendship> {
@@ -63,12 +67,17 @@ class FakeFriendshipRepository implements IFriendshipRepository {
 		return this.findByUserAndFriendResponse;
 	}
 
-	async findByUser(): Promise<FriendshipTypes.Friendship[]> {
-		return [];
+	async findByUser(userId: UserId): Promise<FriendshipTypes.Friendship[]> {
+		this.findByUserCalls.push(userId);
+		return this.findByUserResponse;
 	}
 
-	async findByUserAndStatus(): Promise<FriendshipTypes.Friendship[]> {
-		return [];
+	async findByUserAndStatus(
+		userId: UserId,
+		status: FriendshipTypes.FriendshipDecisionStatus
+	): Promise<FriendshipTypes.Friendship[]> {
+		this.findByUserAndStatusCalls.push([userId, status]);
+		return this.findByUserAndStatusResponse;
 	}
 }
 
@@ -149,6 +158,51 @@ describe('FriendshipService (unit con dobles de repositorio)', () => {
 		});
 
 		assert.deepEqual(result, expected);
+	});
+
+	it('listFriendships sin filtro delega en findByUser y retorna el resultado', async () => {
+		const userId = 'user-list' as UserId;
+		const expected = [
+			buildFriendship({ userId, friendId: 'friend-1' as UserId }),
+			buildFriendship({ userId, friendId: 'friend-2' as UserId, status: FRIENDSHIP_STATUS.ACCEPTED })
+		];
+
+		fakeRepo.findByUserResponse = expected;
+
+		const result = await service.listFriendships(userId, {});
+
+		assert.deepEqual(fakeRepo.findByUserCalls, [userId]);
+		assert.equal(fakeRepo.findByUserAndStatusCalls.length, 0);
+		assert.deepEqual(result, expected);
+	});
+
+	it('listFriendships con filtro delega en findByUserAndStatus y retorna el resultado', async () => {
+		const userId = 'user-filter' as UserId;
+		const expected = [buildFriendship({ userId, friendId: 'friend-accepted' as UserId, status: FRIENDSHIP_STATUS.ACCEPTED })];
+
+		fakeRepo.findByUserAndStatusResponse = expected;
+
+		const result = await service.listFriendships(userId, { status: FRIENDSHIP_STATUS.ACCEPTED });
+
+		assert.deepEqual(fakeRepo.findByUserAndStatusCalls, [[userId, FRIENDSHIP_STATUS.ACCEPTED]]);
+		assert.equal(fakeRepo.findByUserCalls.length, 0);
+		assert.deepEqual(result, expected);
+	});
+
+	it('listFriendships lanza ValidationError si el status es inválido', async () => {
+		const userId = 'user-invalid' as UserId;
+
+		await assert.rejects(
+			service.listFriendships(userId, { status: 'wrong' as any }),
+			(err: unknown) => {
+				assert.ok(err instanceof SharedErrors.ValidationError);
+				assert.equal(err.field, 'status');
+				return true;
+			}
+		);
+
+		assert.equal(fakeRepo.findByUserCalls.length, 0);
+		assert.equal(fakeRepo.findByUserAndStatusCalls.length, 0);
 	});
 });
 

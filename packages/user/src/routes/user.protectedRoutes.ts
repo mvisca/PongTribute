@@ -64,6 +64,11 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// FRIENDSHIPS
 	// ============================================================================
 
+	app.get('/friendships', {
+		schema: FriendshipSchemas.ListFriendshipsSchema,
+		handler: friendshipController.listFriendships.bind(friendshipController)
+	});
+
 	app.post('/friendships', {
 		schema: FriendshipSchemas.CreateFriendshipSchema,
 		handler: friendshipController.createFriendship.bind(friendshipController)
