@@ -269,9 +269,12 @@ import { FastifyError } from 'fastify';
 		async register(
 			username: string,
 			email: string,
-			avatar: string,
-			password: string
+			password: string,
+			avatar?: string
 		): Promise<AuthTypes.LoginResponse> {
+			if (!avatar || avatar.trim() === '')
+				avatar = AuthEnv.CLOUDINARY_DEFAULT_AVATAR;
+
 			const createUserRes = await fetch(
 				`${AuthEnv.USER_SERVICE_URL}/internal/users`,
 				{

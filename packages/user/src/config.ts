@@ -72,6 +72,12 @@ export namespace UserEnv {
 	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS;
 
+	export const CLOUDINARY_URL: string = sharedEnv.CLOUDINARY_URL;
+	export const CLOUDINARY_API_KEY: string = sharedEnv.CLOUDINARY_API_KEY;
+	export const CLOUDINARY_API_SECRET: string = sharedEnv.CLOUDINARY_API_SECRET;
+	export const CLOUDINARY_CLOUD_NAME: string = sharedEnv.CLOUDINARY_CLOUD_NAME;
+	export const CLOUDINARY_DEFAULT_AVATAR: string = sharedEnv.CLOUDINARY_DEFAULT_AVATAR;
+
 	export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
 	export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
 	export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;

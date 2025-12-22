@@ -268,7 +268,7 @@ export namespace AuthSchemas {
 		username: UsernameField,
 		email: EmailField,
 		password: PasswordField,
-		avatar: AvatarField
+		avatar: Type.Optional(AvatarField)
 	});
 	
 	/** Schema completo de POST /api/auth/register */

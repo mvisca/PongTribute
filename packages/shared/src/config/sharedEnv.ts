@@ -37,6 +37,11 @@ interface EnvVars {
 	REFRESH_TOKEN_EXPIRY: string;
 	BCRYPT_ROUNDS: number;
 	UNIQUE_SESSION: boolean;
+	CLOUDINARY_URL: string;
+	CLOUDINARY_DEFAULT_AVATAR: string;
+	CLOUDINARY_CLOUD_NAME: string;
+	CLOUDINARY_API_KEY: string,
+	CLOUDINARY_API_SECRET: string,
 	
 	GAME_SERVICE_URL: string;
 	GAME_SERVICE_PORT: number;
@@ -75,6 +80,11 @@ const DEFAULTS: EnvVars = {
 	REFRESH_TOKEN_EXPIRY: '365d',
 	BCRYPT_ROUNDS: 10,
 	UNIQUE_SESSION: true,
+	CLOUDINARY_URL: 'Cloudinary_URL',
+	CLOUDINARY_DEFAULT_AVATAR: 'Cloudinary_default_avatar',
+	CLOUDINARY_CLOUD_NAME: 'Cloudinary_cloud_name',
+	CLOUDINARY_API_KEY: 'Cloudinary_api_key',
+	CLOUDINARY_API_SECRET: 'Cloudinary_api_secret',
 	
 	GAME_SERVICE_URL: 'http://localhost:3003',
 	GAME_SERVICE_PORT: 3003,
@@ -183,11 +193,11 @@ export namespace SharedEnv {
 		function validateRequired<T>(value: T | undefined, name: string): void {
 			if (value === undefined || value === null)
 				throw new Error(`Variable requerida faltante: ${name}`);
-
+			
 			if (typeof value === 'string' && value.trim() === '')
 				throw new Error(`Variable ${name} no puede estar vacía`);
 		}
-
+		
 		function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
 			const missing: string[] = [];
 			
@@ -248,6 +258,29 @@ export namespace SharedEnv {
 			return path.join(safeDir, safeFile);
 		}
 		
+		// Parser de CLOUDINARY_URL: cloudinary://KEY:SECRET@CLOUD
+		function parseCloudinaryUrl(url: string): { 
+			cloudName: string; 
+			apiKey: string; 
+			apiSecret: string; 
+		} {
+			const regex = /^cloudinary:\/\/([^:]+):([^@]+)@(.+)$/;
+			const match = url.match(regex);
+			
+			if (!match) {
+				throw new Error(
+					`CLOUDINARY_URL mal formada. Esperado: cloudinary://KEY:SECRET@CLOUD_NAME\n` +
+					`Recibido: ${url}`
+				);
+			}
+			
+			return {
+				apiKey: match[1],
+				apiSecret: match[2],
+				cloudName: match[3]
+			};
+		}
+		
 		const config: EnvVars = {
 			// AUTH SERVICE
 			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL'),
@@ -258,7 +291,12 @@ export namespace SharedEnv {
 			REFRESH_TOKEN_EXPIRY: envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
 			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, 'BCRYPT_ROUNDS'),
 			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION, 'UNIQUE_SESSION'),
-			
+			CLOUDINARY_URL: envOr(process.env.CLOUDINARY_URL, DEFAULTS.CLOUDINARY_URL, 'CLOUDINARY_URL'),
+			CLOUDINARY_DEFAULT_AVATAR: envOr(process.env.CLOUDINARY_DEFAULT_AVATAR, DEFAULTS.CLOUDINARY_DEFAULT_AVATAR, 'CLOUDINARY_DEFAULT_AVATAR'),
+			CLOUDINARY_CLOUD_NAME: DEFAULTS.CLOUDINARY_CLOUD_NAME,
+			CLOUDINARY_API_KEY: DEFAULTS.CLOUDINARY_API_KEY,
+			CLOUDINARY_API_SECRET: DEFAULTS.CLOUDINARY_API_SECRET,
+
 			// GAME SERVICE
 			GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL, 'GAME_SERVICE_URL'),
 			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_URL'),
@@ -315,22 +353,36 @@ export namespace SharedEnv {
 		validatePort(config.FRONTEND_PORT, 'FRONTEND_PORT');
 		validatePort(config.REDIS_PORT, 'REDIS_PORT');
 		
+		// Siempre requeridos
+		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
+		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
+		
+		validateRequired(config.CLOUDINARY_DEFAULT_AVATAR, 'CLOUDINARY_DEFAULT_AVATAR');
+		validateRequired(config.CLOUDINARY_URL, 'CLOUDINARY_URL');
+		const cloudinaryParse = parseCloudinaryUrl(config.CLOUDINARY_URL);
+		config.CLOUDINARY_API_KEY = cloudinaryParse.apiKey;
+		config.CLOUDINARY_API_SECRET = cloudinaryParse.apiSecret;
+		config.CLOUDINARY_CLOUD_NAME = cloudinaryParse.cloudName;
+
+		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
+		validateRequired(config.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH');
+		validateRequired(config.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME');
+		validateRequired(config.USER_SERVICE_DB_FULL_PATH, 'USER_SERVICE_DB_FULL_PATH');
+		
+		validateRequired(config.REDIS_HOST, 'REDIS_HOST');
+		validateRequired(config.REDIS_DB, 'REDIS_DB');
+		
 		// Secrets (requeridos + no defaults en producción)
 		validateSecrets({
 			JWT_SECRET: config.JWT_SECRET,
 			SERVICE_SECRET: config.SERVICE_SECRET,
-			REDIS_PASSWORD: config.REDIS_PASSWORD
+			REDIS_PASSWORD: config.REDIS_PASSWORD,
+			CLOUDINARY_URL: config.CLOUDINARY_URL
 		}, isProduction);
 		
-		// Siempre requeridos
-		validateRequired(config.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME');
-		
-		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
-		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
-		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
-		
-		validateRequired(config.REDIS_HOST, 'REDIS_HOST');
-		validateRequired(config.REDIS_DB, 'REDIS_DB');
+		// Secrets (requeridos + no defaults en producción)
+		validateSecrets({
+		}, isProduction);
 		
 		return config;
 	}

@@ -1,13 +1,15 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { UserTypes, SharedErrors } from '@transcendence/shared';
-import { UserService } from '../index.js';
+import { CloudinaryService, UserService } from '../index.js';
 
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
 	private userService: UserService;
-	
+	private cloudinaryService: CloudinaryService;
+
 	constructor() {
 		this.userService = new UserService();
+		this.cloudinaryService = new CloudinaryService();
 	}
 	
 	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
@@ -73,6 +75,15 @@ export class UserController {
 		try {
 			const { id } = request.params as { id: string };
 			const data = request.body as UserTypes.UpdateUserBody;
+
+			if (data.avatar && data.avatar.startsWith('data:image/')) {
+				try {
+					data.avatar = await this.cloudinaryService.uploadAvatar(data.avatar);
+				} catch(err) {
+					return this.errorHandler(err, request, reply);
+				}
+			}
+
 			const user = await this.userService.updateUser(id, data);
 			return reply .code(200).send(user);
 		} catch (err) {

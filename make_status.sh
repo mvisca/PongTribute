@@ -114,6 +114,7 @@ find . -type f \
     ! -name 'pnpm-lock.yaml' \
     ! -name 'package-lock.json' \
     ! -name '*.db' \
+    ! -name '*.pdf' \
     ! -name '*.db-shm' \
     ! -name '*.db-wal' \
     ! -name '*.log' \

@@ -146,4 +146,5 @@ notas.txt
 **.notas
 status*.txt
 .claude/
+.cursorrules
 .docs/

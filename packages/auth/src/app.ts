@@ -43,9 +43,7 @@ export function buildApp(): FastifyInstance {
 				title: 'Transcendence Auth API',
 				version: '1.0.0'
 			},
-			servers: [
-				{ url: `http://localhost:${AuthEnv.PORT}`}
-			],
+			servers: [ { url: `http://localhost:${AuthEnv.PORT}`} ],
 			tags: [
 				{ name: 'Auth', description: 'Authentication and authorization' },
 				{ name: '2FA', description: '2-Factor Authentication management' }
