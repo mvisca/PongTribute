@@ -63,17 +63,19 @@ export class GameGateway {
             socket.on('close', () => {
                 console.log(`❌ Jugador Desconectado: ${payload.username}`);
                 // TODO: Aquí llamaremos al servicio para borrar la partida si estaba pending
-            });
+				// TODO socket.close() ??? O se espera un poquito para hacer reconnect?
+			});
 
         } catch (err) {
             console.log('⛔ Conexión rechazada: Token inválido');
             socket.close(1008, 'Invalid Token');
+			// TODO no se hacen throw en los catch para levantar excepciones y que el controller envíe respuestas de fallo al clietne?
         }
     }
 
     private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string) {
         const welcome = {
-            event: 'JOINED_MATCH',
+            event: 'JOINED_MATCH', // TODO debería ser todo en minusculas?
             data: {
                 matchId,
                 playerId: userId,
