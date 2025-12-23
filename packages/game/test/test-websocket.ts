@@ -7,7 +7,15 @@
 	// 5. Escuchará el mensaje de bienvenida JOINED_MATCH.
 
 //Ejecutarlo con: pnpm --filter @transcendence/game exec tsx test/test-websocket.ts
-
+/**
+ * TEST E2E: CONEXIÓN WEBSOCKET (Handshake & Upgrade)
+ * * Objetivo: Validar que un cliente puede establecer conexión persistente con una partida creada.
+ * Escenario:
+ * 1. Se crea una partida vía REST (HTTP POST) para obtener un matchId real.
+ * 2. Se conecta el WebSocket pasando token y matchId en la URL (Query String).
+ * 3. Se espera el evento 'JOINED_MATCH' del servidor.
+ * * Valida: Autenticación en WS, parsing de URL y confirmación de unión a la sala.
+ */
 import { buildApp } from '../src/app';
 import jwt from 'jsonwebtoken';
 import { GameEnv } from '../src/config';
@@ -24,7 +32,7 @@ function signToken(id: string, username: string) {
 }
 
 async function testWebSocket() {
-    console.log('\n🔌 INICIANDO TEST DE WEBSOCKET (CORREGIDO)\n');
+    console.log('\n🔌 INICIANDO TEST DE WEBSOCKET\n');
 
     // 1. Levantar App
     const app = buildApp();
@@ -72,25 +80,25 @@ async function testWebSocket() {
     // ========================================================================
     console.log('\n👉 2. Conectando WebSocket...');
     
-    // CORRECCIÓN AQUÍ: Enviamos token Y matchId en la URL (Handshake)
+    // Enviamos token Y matchId en la URL (Handshake)
     const connectionUrl = `${wsUrl}?token=${gokuToken}&matchId=${matchId}`;
-    console.log(`   🔗 URL: ${wsUrl}?token=...&matchId=${matchId}`);
+    console.log(`   🔗 URL: ${wsUrl}?token=${gokuToken}&matchId=${matchId}`);
 
-    const ws = new WebSocket(connectionUrl);
+    //YO DIRIA QUE: AQUI ESTA LA MAGIA
+	const ws = new WebSocket(connectionUrl);
 
     return new Promise<void>((resolve) => {
         
         ws.on('open', () => {
             console.log('   ✅ WebSocket Abierto! (Handshake completado)');
-            // Ya no hace falta enviar "join_match" manual, tu Gateway 
-            // nos mete y saluda automáticamente.
+            // tu Gateway nos mete y saluda automáticamente.
         });
 
         ws.on('message', (data) => {
             const msg = JSON.parse(data.toString());
             console.log('   📥 Recibido del Servidor:', msg);
 
-            // CORRECCIÓN: Tu Gateway envía 'JOINED_MATCH', no 'match_joined'
+            // Tu Gateway envía 'JOINED_MATCH'
             if (msg.event === 'JOINED_MATCH' && msg.data.matchId === matchId) {
                 console.log('   ✅ ÉXITO: Recibido mensaje de bienvenida y confirmación de sala.');
                 ws.close();

@@ -1,7 +1,12 @@
-//TESTEA QUE SE CREA UNA PARTIDA O SE UNE A UNA CREADA (2 clientes)
-//PERO LOS TOKENS SON FALSOS NO ESTAN EN LA DB.
-//Para correr el test desde la raiz: npx tsx packages/game/test/test-matchmaking.ts
-
+//Ejecutar test desde la raiz: npx tsx packages/game/test/test-matchmaking.ts
+/**
+ * TEST DE INTEGRACIÓN: MATCHMAKING PÚBLICO (Redis Queue)
+ * * Objetivo: Validar el flujo de emparejamiento asíncrono mediante cola FIFO.
+ * Escenario:
+ * 1. Goku (Player 1) entra y espera -> Recibe 'added_to_queue'.
+ * 2. Vegeta (Player 2) entra y hace match -> Recibe 'match_found' y crea la partida.
+ * * Valida: Concurrencia, persistencia en Redis y creación de Match en DB.
+ */
 import { buildApp } from '../src/app';
 import jwt from 'jsonwebtoken';
 import { GameEnv } from '../src/config';
@@ -23,8 +28,8 @@ async function testMatchmaking() {
     const app = buildApp(); 
     await app.ready();
 
-    // 2. Preparamos 2 Jugadores (OJO, dado creo token falsos para que funcione,
-	//  pero no estan en la base de datos y el matchId sera con username "unknown" )
+    // 2. Preparamos 2 Jugadores (creo tokens falsos para que funcione,
+	//  pero no estan en la DB y el matchId sera con username "unknown" )
     const player1 = { id: 'user-1111', name: 'Goku', token: signToken('user-1111', 'Goku') };
     const player2 = { id: 'user-2222', name: 'Vegeta', token: signToken('user-2222', 'Vegeta') };
 
@@ -40,7 +45,7 @@ async function testMatchmaking() {
         method: 'POST',
         url: '/api/matches',
         headers: { Authorization: `Bearer ${player1.token}` },
-        payload: { matchType: 'public' } // <--- Payload v2 Correcto
+        payload: { matchType: 'public' }
     });
 
     const body1 = res1.json<any>();
@@ -63,7 +68,7 @@ async function testMatchmaking() {
         method: 'POST',
         url: '/api/matches',
         headers: { Authorization: `Bearer ${player2.token}` },
-        payload: { matchType: 'public' } // <--- Payload v2 Correcto
+        payload: { matchType: 'public' }
     });
 
     const match2 = res2.json<MatchTypes.Match>();

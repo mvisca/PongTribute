@@ -4,12 +4,18 @@
 //3. Valida manualmente el Token (ya que los navegadores no envian Headers en Websockets))
 //4. Acepta o rechaza la conexion
 
-import { WebSocket } from 'ws'; // Tipo para el socket
+// Tipo y clase para el socket de la lib ws
+// La necesitamos para TypeScript conozca los metodos del obj socket (.send(),.on(), close(), ...)
+import { WebSocket } from 'ws';
+//Contiene el tipo que define como es una peticion HTTP en Fastfy.
+//y empieza siendo una peticion HTTP antes de convertirse en WebSocket
 import { FastifyRequest } from 'fastify';
-// import { SocketStream } from '@fastify/websocket';
-import jwt from 'jsonwebtoken';
+//import { SocketStream } from '@fastify/websocket'; // VEREMOS SI LO NECESITO O NO
+import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
 import { GameEnv } from '../config.js';
 
+//Usaremos esta clase para encapsular toda la logica de conexion. Esto
+// nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
 export class GameGateway {
     
     /**
@@ -75,7 +81,7 @@ export class GameGateway {
 
     private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string) {
         const welcome = {
-            event: 'JOINED_MATCH', // TODO debería ser todo en minusculas?
+            event: 'JOINED_MATCH',
             data: {
                 matchId,
                 playerId: userId,

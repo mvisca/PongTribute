@@ -1,7 +1,12 @@
-//TESTEA QUE SE ADMITE O RECHAZA CORRECTAMENTE UN OPONENTE (FRIEND)
-//Para correr el test desde raiz:
-//pnpm --filter @transcendence/game exec tsx test/test-matchmaking.ts
-
+//Ejecutar desde raiz: pnpm --filter @transcendence/game exec tsx test/test-matchmaking.ts
+/**
+ * TEST DE INTEGRACIÓN: MATCHMAKING PRIVADO (Direct Challenge)
+ * * Objetivo: Validar la creación directa de partidas sabiendo el ID del oponente.
+ * Escenario:
+ * 1. Validación de Errores: Intentar desafiarse a uno mismo (debe dar 400).
+ * 2. Flujo Exitoso: Goku desafía a Vegeta con IDs válidos -> Crea partida inmediata.
+ * * Valida: Lógica de negocio (reglas de desafío), manejo de errores HTTP y creación en DB.
+ */
 import { buildApp } from '../src/app';
 import jwt from 'jsonwebtoken';
 import { GameEnv } from '../src/config';
@@ -26,6 +31,7 @@ async function testChallenge() {
     const gokuId = randomUUID();
     const vegetaId = randomUUID();
 
+	//Creamos los datos de los clientes
     const goku = { id: gokuId, name: 'Goku', token: signToken(gokuId, 'Goku') };
     const vegeta = { id: vegetaId, name: 'Vegeta', token: signToken(vegetaId, 'Vegeta') };
 
