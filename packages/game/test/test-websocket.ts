@@ -84,11 +84,15 @@ async function testWebSocket() {
     const connectionUrl = `${wsUrl}?token=${gokuToken}&matchId=${matchId}`;
     console.log(`   🔗 URL: ${wsUrl}?token=${gokuToken}&matchId=${matchId}`);
 
-    //YO DIRIA QUE: AQUI ESTA LA MAGIA
+	//AQUI ESTA LA CHISPA DE CONEXION
+	//El fastify-websocket al detectar el "/ws" en la ruta, ejecuta
+	// la funcion gateway.handleConnection() que lo manejara
 	const ws = new WebSocket(connectionUrl);
 
     return new Promise<void>((resolve) => {
         
+		// aviso que hubo un cambio de estado, unicamente a nivel de TCP,
+		//  no es para el server.
         ws.on('open', () => {
             console.log('   ✅ WebSocket Abierto! (Handshake completado)');
             // tu Gateway nos mete y saluda automáticamente.
