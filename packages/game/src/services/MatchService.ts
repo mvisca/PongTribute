@@ -96,12 +96,8 @@ export class MatchService {
         // 2. Mapear
 		const matchDomain = MatchMapper.toDomain(matchRow);
 		
-		//OJO, MAS ADELANTE: aqui pondre una llamada HTTP a user para obtener 
+		//Llamada HTTP a user para obtener 
 		// los username del objeto matchDomain antes de enviar el evento a Redis.
-		//De momento, con este metodo devuelvo un objeto MOCK basado en el ID
-		// en lugar de "unknown", para provar que funciona.
-		// 1. Llamamos al mock para AMBOS jugadores (usando await)
-		//Uso el objeto de dominio como fuente de la verdad
 		console.log("👉 ⚙️ [Service] Hidratando nombres...");
 		const player1Data = await this.fetchUserProfile(matchDomain.player1.userId);
 		matchDomain.player1.username = player1Data.username;
@@ -137,6 +133,8 @@ export class MatchService {
 			// console.log(`   📡 [Network] GET ${targetUrl} (S2S Auth)`); // Debug
 			
 			// 2. Fetch con Autenticación de Servicio
+			// Si la BD esta caida responde con "unknown" pero no se para el juego, aunque
+			//quizas no vean sus avatares bonitos.
 			const response = await fetch(targetUrl, {
 				method: 'GET',
 				headers: {
@@ -147,6 +145,7 @@ export class MatchService {
 			});
 			
 			// 3. Manejo de errores HTTP
+			// Responde con "unknown" pero no se cae el juego
 			if (!response.ok) {
 				console.warn(`   ⚠️ [Hydration] Falló petición a User Service (${response.status}): Usuario ${userId} no encontrado o auth rechazada.`);
 				return { username: 'Unknown' };

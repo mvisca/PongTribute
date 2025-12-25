@@ -1,8 +1,9 @@
-//Ejecutar test desde la raiz: npx tsx packages/game/test/test-matchmaking.ts
+//Ejecutar test desde la raiz: pnpm --filter @transcendence/game exec tsx packages/game/test/test-public-matchmaking.ts
 /**
  * TEST DE INTEGRACIÓN: MATCHMAKING PÚBLICO (Redis Queue)
  * * Objetivo: Validar el flujo de emparejamiento asíncrono mediante cola FIFO.
  * Escenario:
+ * 0. Usare tokens falsos y datos de players falsos (username: unknown)
  * 1. Goku (Player 1) entra y espera -> Recibe 'added_to_queue'.
  * 2. Vegeta (Player 2) entra y hace match -> Recibe 'match_found' y crea la partida.
  * * Valida: Concurrencia, persistencia en Redis y creación de Match en DB.
@@ -22,7 +23,7 @@ function signToken(id: string, username: string) {
 }
 
 async function testMatchmaking() {
-    console.log('\n🥊 INICIANDO TEST DE MATCHMAKING (REDIS QUEUE)\n');
+    console.log('\n🥊 INICIANDO TEST DE MATCHMAKING PUBLICO (REDIS QUEUE)\n');
 
     // 1. Levantamos la app en memoria
     const app = buildApp(); 

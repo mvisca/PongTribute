@@ -1,8 +1,9 @@
-//Ejecutar desde raiz: pnpm --filter @transcendence/game exec tsx test/test-matchmaking.ts
+//Ejecutar desde raiz: pnpm --filter @transcendence/game exec tsx test/test-private-matchmaking.ts
 /**
  * TEST DE INTEGRACIÓN: MATCHMAKING PRIVADO (Direct Challenge)
  * * Objetivo: Validar la creación directa de partidas sabiendo el ID del oponente.
  * Escenario:
+ * 0. Se autogeneran los datos de los players (falsos)
  * 1. Validación de Errores: Intentar desafiarse a uno mismo (debe dar 400).
  * 2. Flujo Exitoso: Goku desafía a Vegeta con IDs válidos -> Crea partida inmediata.
  * * Valida: Lógica de negocio (reglas de desafío), manejo de errores HTTP y creación en DB.

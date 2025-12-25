@@ -31,6 +31,20 @@ export function getDatabase(): Database.Database {
 	// Para siguientes llamadas a getDatabse(), db ya está creada
 	if (!db) {
 		try {
+			// === 🛡️ FIX DE ARQUITECTURA: CREACIÓN AUTOMÁTICA DE DIRECTORIO ===
+            const dbPath = UserEnv.USER_SERVICE_DB_FULL_PATH;
+            const dbDir = path.dirname(dbPath);
+            
+            if (!fs.existsSync(dbDir)) {
+                console.log(`📂 Creando directorio de DB faltante: ${dbDir}`);
+                fs.mkdirSync(dbDir, { recursive: true });
+			}
+			//Al añadir fs.mkdirSync, el servicio:
+			//Calcula la ruta absoluta (que viene de shared).
+			//Verifica si esa ruta existe en tu disco.
+			//Si no existe, la crea automáticamente.
+			// ================================================================
+			
 			db = new Database(UserEnv.USER_SERVICE_DB_FULL_PATH);
 			// Write ahead loggin
 			db.pragma('journal_mode = WAL');
@@ -50,6 +64,8 @@ export function getDatabase(): Database.Database {
 			db.exec(tablesSQL);
 		} catch(err) {
 			console.error('Error incializando DB: ', err);
+			// Tip de debug: imprimimos la ruta que intentó usar
+            console.error('Ruta intentada:', UserEnv.USER_SERVICE_DB_FULL_PATH);
 			process.exit(1);
 		}
 		

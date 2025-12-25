@@ -51,20 +51,19 @@ export class GameGateway {
 			console.log('⛔ Conexión rechazada: Faltan parámetros');
 			// En protocolo WebSocket, los cierres tiene codigos numericos:
 			//  1000: "Normal"
-			//  1008: significa "Policy Violation". 
+			//  1008: "Policy Violation". 
             socket.close(1008, 'Missing matchId or token');
             return;
         }
 
-		// 4. VALIDACION DE SEGURIDAD (JWT)
-		//Es vital envolver en un try catch por si falla algo (se desconectaria enseguida)
-		//Aqui no tenemos Fastify que revise si la configuracion es correcta, ni validaciones
-		//automaticas, ni middleware como en las peticiones HTTP. Lo hacemos todo manualmente aqui dentro.
-		// Es CLAVE la validacion con el JWT_SECRET para que no se cuele nadie.
 		try {
-			// Verificamos el token manualmente usando el Secreto Compartido
+			// 4. VALIDACION DE SEGURIDAD (JWT)
+			//Aqui no tenemos Fastify que revise si la configuracion es correcta, ni validaciones
+			//automaticas, ni middleware como en las peticiones HTTP. 
+			//Es vital envolver en un try catch por si falla algo.
+			// Verificamos el token manualmente usando el Secreto Compartido.
 			//Si el token esta caducado, es falso o la firma no coincide con JWT_SECRET,
-			//lanzara una exception
+			//lanzara una exception y cerrará la conexion.
             const payload = jwt.verify(token, GameEnv.JWT_SECRET) as { 
                 id: string, 
                 username: string 
@@ -72,10 +71,10 @@ export class GameGateway {
 
             console.log(`✅ Jugador Conectado: ${payload.username} (Match: ${matchId})`);
 
-			// 5. LOGICA DE BIENVENIDA
+			// 5. LOGICA DE BIENVENIDA. El servidor dice HOLA el primero.
 			// Aquí es donde confirmamos al cliente que "está dentro" y
 			// sabe que la conexion es estable y puede dejar de mostrar el spinner de carga 
-			// y mostrar la vista del juego
+			// y mostrar la vista del juego.
             // Vinculamos el socket con la partida (matchId) y el usuario (payload.id)
             // TODO: Aquí es donde en el futuro meteremos al socket en una "Sala"
             this.sendWelcomeMessage(socket, matchId, payload.id);
@@ -88,7 +87,7 @@ export class GameGateway {
                 // En lugar de un console.log, haremos: this.gameEngine.processInput(...)
 			});
 			
-			// TODO: discutir con colegas si implementamos un "Pause" de partida. 
+			// TODO: discutir con los compañeros si implementamos un "Pause" de partida. 
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
