@@ -1,4 +1,12 @@
 @import "tailwindcss";
+.input {
+  @apply w-full mb-3 p-2 rounded bg-purple-700 text-purple-100 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500;
+}
+
+.btn-primary {
+  @apply w-full bg-purple-600 hover:bg-purple-500 p-2 rounded text-purple-100 transition;
+}
+
 
 
 /*base: Carga los estilos basicos de Tailwind, esto incluye CSS reset y html. HAce que la webs se vea consistente
