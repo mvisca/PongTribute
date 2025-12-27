@@ -80,14 +80,14 @@ const DEFAULTS: EnvVars = {
 	GAME_SERVICE_PORT: 3003,
 	GAME_SERVICE_HOST: 'localhost',
 	GAME_SERVICE_DB_FILENAME: 'game.db',
-	GAME_SERVICE_DB_PATH: './db-data',
+	GAME_SERVICE_DB_PATH: '.',  //CAMBIO: antes era './db-data'
 	GAME_SERVICE_DB_FULL_PATH: './db-data/game.db',
 	
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
 	USER_SERVICE_HOST: 'localhost',
 	USER_SERVICE_DB_FILENAME: 'user.db',
-	USER_SERVICE_DB_PATH: './db-data',
+	USER_SERVICE_DB_PATH: '.', //CAMBIO: antes era './db-data'
 	USER_SERVICE_DB_FULL_PATH: './db-data/user.db',
 	
 	FRONTEND_URL: 'http://localhost:5173',
