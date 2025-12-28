@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { TestConstants, AuthTypes, UserTypes } from '../index.js';
+import { TestConstants, AuthTypes, UserTypes, SharedEnv } from '../index.js';
 
 export namespace TestUtils {
 
@@ -149,16 +149,21 @@ export namespace TestUtils {
 
 		// si no existe, lo crea
 		if (checkUser.available) {
+			// CORRECCIÓN: Cargar variables para obtener el secreto
+        	const env = SharedEnv.build();
 
 			const response = await request<UserTypes.UserPublic>({
 				method: 'POST',
-				path: '/api/users',
+				path: '/internal/users', // <--- CAMBIO: Ruta interna
 				serviceUrl: userServiceUrl,
 				payload: userData,
+				headers: {
+                'X-Service-Secret': env.SERVICE_SECRET // <--- CAMBIO: Auth header
+            	},
 				app: options.app
 			});
 		}
-
+	
 		// Si existe, solo login
 		const userSession = await doLogin(userData.email, userData.password, options);
 		return userSession;

@@ -64,6 +64,8 @@ export function getDatabase(): Database.Database {
 			db.exec(tablesSQL);
 		} catch(err) {
 			console.error('Error incializando DB: ', err);
+			// Tip de debug: imprimimos la ruta que intentó usar
+            console.error('Ruta intentada:', UserEnv.USER_SERVICE_DB_FULL_PATH);
 			process.exit(1);
 		}
 		

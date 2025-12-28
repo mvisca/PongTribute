@@ -31,7 +31,11 @@
 		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
 		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev",
 		"start:dev-game": "pnpm --filter '@transcendence/game' start:dev",
-		"qa": "pnpm --filter '@transcendence/user' test:friendship:new"
+		"test:friendship-new": "pnpm --filter '@transcendence/user' test:friendship:new",
+		"test:game:public-matchmaking": "pnpm --filter @transcendence/game test:public-matchmaking",
+    	"test:game:private-matchmaking": "pnpm --filter @transcendence/game test:private-matchmaking",
+    	"test:game:ws": "pnpm --filter @transcendence/game test:ws",
+    	"test:game:all": "pnpm --filter @transcendence/game test:all"
 	},
 	"keywords": [],
 	"author": "",

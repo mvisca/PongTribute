@@ -7,7 +7,11 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-	"start:dev": "tsx watch src/server.ts"
+	"start:dev": "tsx watch src/server.ts",
+	"test:private-matchmaking": "tsx test/test-private-matchmaking.ts",
+    "test:public-matchmaking": "tsx test/test-public-matchmaking.ts",
+    "test:ws": "tsx test/test-websocket.ts",
+    "test:all": "pnpm test:public-matchmaking && pnpm test:private-matchmaking && pnpm test:ws"
   },
   "dependencies": {
     "@fastify/helmet": "13.0.2",

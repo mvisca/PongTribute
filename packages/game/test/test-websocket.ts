@@ -1,147 +1,141 @@
 // Este script hará lo siguiente:
 
-	// 1.Levantará un servidor game real en un puerto aleatorio.
+	// 1.Levantará un servidor game real en un puerto aleatorio 3005.
 	// 2. Creará un Token válido (Goku) y uno inválido (Frieza).
 	// 3. Hará una petición HTTP para obtener un matchId.
 	// 4. Intentará conectar por WebSocket.
 	// 5. Escuchará el mensaje de bienvenida JOINED_MATCH.
 
 //Ejecutarlo con: pnpm --filter @transcendence/game exec tsx test/test-websocket.ts
-
+/**
+ * TEST E2E: CONEXIÓN WEBSOCKET (Handshake & Upgrade)
+ * * Objetivo: Validar que un cliente puede establecer conexión 
+ * persistente con una partida creada.
+ * Escenario:
+ * 0. Creo userId y token falsos
+ * 1. Se crea una partida vía REST (HTTP POST) para obtener un matchId real.
+ * 2. Se conecta el WebSocket pasando token y matchId en la URL (Query String).
+ * 3. Se espera el evento 'JOINED_MATCH' del servidor.
+ * * Valida: Autenticación en WS, parsing de URL y confirmación de unión a la sala.
+ */
 import { buildApp } from '../src/app';
-import { GameEnv } from '../src/config';
 import jwt from 'jsonwebtoken';
-import WebSocket from 'ws'; // Cliente WebSocket para Node
+import { GameEnv } from '../src/config';
+import WebSocket from 'ws';
+import { randomUUID } from 'crypto';
 
-// Helper para tokens
+// Configuración de prueba
+const PORT = 3005; 
+const baseUrl = `http://localhost:${PORT}`;
+const wsUrl = `ws://localhost:${PORT}/api/game/ws`;
+
 function signToken(id: string, username: string) {
-    return jwt.sign(
-        { id, username, email: `${username}@test.com` },
-        GameEnv.JWT_SECRET,
-        { expiresIn: '1h' }
-    );
+    return jwt.sign({ id, username }, GameEnv.JWT_SECRET, { expiresIn: '1h' });
 }
 
-async function testWebSocketFlow() {
-    console.log('\n🔌 INICIANDO TEST DE WEBSOCKETS\n');
+async function testWebSocket() {
+    console.log('\n🔌 INICIANDO TEST DE WEBSOCKET\n');
 
-    // 1. ARRANCAR SERVIDOR REAL
-    // Necesitamos escuchar en un puerto real, no solo en memoria,
-    // para que el cliente WebSocket pueda conectarse.
+	// 1. Levantar App
+	// Crea su propia instancia del servidor y la levanta en el puerto 3005
     const app = buildApp();
-    
-    // Puerto 0 hace que el SO asigne uno libre aleatorio
-    await app.listen({ port: 0, host: 'localhost' }); 
-    
-    // Obtenemos el puerto asignado dinámicamente
-    const address = app.server.address();
-    const port = typeof address === 'object' && address ? address.port : 0;
-    const baseUrl = `http://localhost:${port}`;
-    const wsBaseUrl = `ws://localhost:${port}`;
-
-    console.log(`📡 Servidor de prueba escuchando en puerto: ${port}`);
-
-    // 2. PREPARAR DATOS
-    const gokuToken = signToken('user-1111', 'Goku');
-    const badToken = 'token-falso-123';
-
     try {
-        // ====================================================================
-        // PASO 1: Obtener matchId vía HTTP (Como haría el Frontend)
-        // ====================================================================
-        console.log('\n👉 1. Creando partida vía HTTP...');
-        
-        const res = await fetch(`${baseUrl}/api/matches`, {
-            method: 'POST',
-            headers: { 
-                'Authorization': `Bearer ${gokuToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({})
-        });
-
-        if (res.status !== 201) throw new Error(`Fallo HTTP: ${res.status}`);
-        const matchData = await res.json() as any;
-        const matchId = matchData.id;
-        console.log(`   ✅ Partida creada. ID: ${matchId}`);
-
-        // ====================================================================
-        // PASO 2: Prueba Negativa (Token Inválido)
-        // ====================================================================
-        console.log('\n👉 2. Intentando conectar con Token Inválido...');
-        
-        await new Promise<void>((resolve, reject) => {
-            const badWs = new WebSocket(`${wsBaseUrl}/api/game/ws?matchId=${matchId}&token=${badToken}`);
-            
-			badWs.on('open', () => {
-				// No rechazamos inmediatamente.
-                // Es normal que se abra un instante antes de que el servidor nos eche.
-                console.log('   ⚠️ Socket abierto (Esperando que el servidor nos cierre la puerta...)');
-            });
-
-            badWs.on('error', (err) => {
-                // Algunos clientes lanzan error al recibir 401/1008 inmediato
-                console.log(`   ✅ Conexión rechazada correctamente (Error de red detectado)`);
-                resolve();
-            });
-
-            badWs.on('close', (code, reason) => {
-                if (code === 1008) { // Policy Violation (lo que programamos en el Gateway)
-                    console.log(`   ✅ Conexión cerrada por el servidor. Código: ${code} (${reason})`);
-                    resolve();
-                } else {
-                    // Si cierra por otra razón, asumimos éxito del rechazo para este test simple
-                    console.log(`   ✅ Conexión cerrada. Código: ${code}`);
-                    resolve();
-                }
-            });
-        });
-
-        // ====================================================================
-        // PASO 3: Prueba Positiva (Happy Path)
-        // ====================================================================
-        console.log('\n👉 3. Conectando WebSocket con Token Válido...');
-
-        await new Promise<void>((resolve, reject) => {
-            const wsUrl = `${wsBaseUrl}/api/game/ws?matchId=${matchId}&token=${gokuToken}`;
-            const socket = new WebSocket(wsUrl);
-
-            // Timeout de seguridad por si el servidor no responde nunca
-            const timeout = setTimeout(() => {
-                socket.close();
-                reject(new Error('❌ Timeout: No se recibió mensaje de bienvenida'));
-            }, 2000);
-
-            socket.on('open', () => {
-                console.log('   🔹 Socket abierto (Handshake completado)');
-            });
-
-            socket.on('message', (data) => {
-                const msg = JSON.parse(data.toString());
-                console.log('   📩 Mensaje Recibido:', msg);
-
-                if (msg.event === 'JOINED_MATCH' && msg.data.matchId === matchId) {
-                    console.log('   ✅ ÉXITO: Recibido evento JOINED_MATCH correcto.');
-                    clearTimeout(timeout);
-                    socket.close();
-                    resolve();
-                } else {
-                    console.log('   ⚠️ Mensaje inesperado');
-                }
-            });
-
-            socket.on('error', (err) => {
-                reject(new Error(`Error en socket: ${err.message}`));
-            });
-        });
-
-    } catch (error) {
-        console.error('💥 TEST FALLÓ:', error);
+        await app.listen({ port: PORT, host: '0.0.0.0' });
+        console.log(`✅ Servidor de test escuchando en puerto ${PORT}`);
+    } catch (err) {
+        console.error('❌ Error levantando servidor:', err);
         process.exit(1);
-    } finally {
-        await app.close();
-        console.log('\n🏁 Test finalizado. Servidor cerrado.');
     }
+
+    // 2. Preparar Datos
+    const gokuId = randomUUID();
+    const vegetaId = randomUUID();
+    const gokuToken = signToken(gokuId, 'Goku');
+    
+    // ========================================================================
+    // PASO 1: CREAR LA PARTIDA VÍA HTTP
+    // ========================================================================
+    console.log('\n👉 1. Creando partida Privada vía HTTP...');
+    
+    const createRes = await fetch(`${baseUrl}/api/matches`, {
+        method: 'POST',
+        headers: { 
+            'Authorization': `Bearer ${gokuToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+            matchType: 'private',
+            opponentId: vegetaId 
+        })
+    });
+
+    if (createRes.status !== 201) {
+        console.error(`❌ Fallo creando partida. Status: ${createRes.status}`);
+        process.exit(1);
+    }
+
+    const match = await createRes.json() as any;
+    const matchId = match.id;
+    console.log(`   ✅ Partida creada. ID: ${matchId}`);
+
+    // ========================================================================
+    // PASO 2: CONECTAR WEBSOCKET
+    // ========================================================================
+    console.log('\n👉 2. Conectando WebSocket...');
+    
+	// Enviamos token Y matchId en la URL (Handshake).
+	//OJO: Se envia token y matchId como Query String (no se permiten headers personalizados)
+    const connectionUrl = `${wsUrl}?token=${gokuToken}&matchId=${matchId}`;
+    console.log(`   🔗 URL: ${wsUrl}?token=${gokuToken}&matchId=${matchId}`);
+
+	//AQUI ESTA LA CHISPA DE CONEXION
+	//El fastify-websocket al detectar el "/ws" en la ruta, ejecuta
+	// la funcion gateway.handleConnection() que lo manejara
+	const ws = new WebSocket(connectionUrl);
+
+    return new Promise<void>((resolve) => {
+        
+		// aviso que hubo un cambio de estado, unicamente a nivel de TCP.
+        ws.on('open', () => {
+            console.log('   ✅ WebSocket Abierto! (Handshake completado)');
+            // tu GameGateway nos mete y saluda automáticamente.
+        });
+
+        ws.on('message', (data) => {
+            const msg = JSON.parse(data.toString());
+            console.log('   📥 Recibido del Servidor:', msg);
+
+            // Tu Gateway envía 'JOINED_MATCH'
+            if (msg.event === 'JOINED_MATCH' && msg.data.matchId === matchId) {
+                console.log('   ✅ ÉXITO: Recibido mensaje de bienvenida y confirmación de sala.');
+                ws.close();
+                resolve();
+            }
+        });
+
+        ws.on('error', (err) => {
+            console.error('   ❌ Error de WebSocket:', err);
+            resolve();
+        });
+        
+		// aviso que hubo un cambio de estado
+        ws.on('close', (code, reason) => {
+            console.log(`   🔌 Conexión cerrada. Código: ${code}, Razón: ${reason}`);
+        });
+	}) // Fin del constructor de la Promise
+	// ".then" se ejecuta CUANDO llamamos a "resolve()" dentro de la promesa.
+    // Es decir, cuando el test ha tenido éxito o ha terminado su flujo.
+    .then(async () => {
+		console.log('\n🎉 TEST WS FINALIZADO');
+		// 1. Apagamos el servidor de prueba. 
+        // Si no hacemos esto, el puerto 3005 se queda ocupado y el script no termina.
+		await app.close();
+		// 2. Forzamos la salida de Node.js.
+        // El '0' significa "Todo salió bien" (Exit Code Success).
+        // Si no ponemos esto, a veces los scripts de test se quedan "colgados" 
+        // en la terminal porque queda algún timer o conexión de Redis abierta.
+        process.exit(0);
+    });
 }
 
-testWebSocketFlow();
+testWebSocket();
