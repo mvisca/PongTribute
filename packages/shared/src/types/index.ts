@@ -5,3 +5,4 @@ export * from './match.types.js';
 export * from './middleware.types.js';
 export * from './user.types.js';
 export * from './fastify.js';
+export * from './game.types.js';

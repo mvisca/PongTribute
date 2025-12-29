@@ -26,12 +26,6 @@ export class GameGateway {
 	 * Sin await: Fíjate que handleConnection no es async. 
 	 * Los WebSockets funcionan por eventos (on('message'), 
 	 * on('close')). No bloqueamos el hilo esperando.
-	 * 
-	 * NOTA: En fastify-websocket v10+, el primer argumento 'connection' 
-     * puede ser directamente el Socket o un SocketStream dependiendo 
-	 * de cómo se use.
-     * Haremos un check seguro.
-	 * 
 	 **/
 	//VALIDA PARAMETROS Y SEGURIDAD (JWT)
 	handleConnection(connection: any, req: FastifyRequest): void {
