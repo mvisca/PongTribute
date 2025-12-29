@@ -1,16 +1,24 @@
 
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
-//import { AuthMiddleware } from '../middleware/game.middleware.js';
 import { GameGateway } from '../gateways/GameGateway.js';
+import { GameService } from '../services/GameService.js';
+import { MatchRepository } from '../repositories/MatchRepository.js';
 import { MatchSchemas } from '@transcendence/shared';
-// Importamos el nuevo middleware
 import { GameMiddleware } from '../middleware/game.middleware.js';
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
-    // Instanciamos el controlador una sola vez
-	const controller = new MatchController();
-	const gateway = new GameGateway();
+
+    // 1. Instanciar capas en orden (Dependency Injection manual)
+    const matchRepo = new MatchRepository();
+    const gameService = new GameService(matchRepo); // Inyectamos Repo en Servicio
+    const gateway = new GameGateway(gameService);   // Inyectamos Servicio en Gateway
+    
+    // El controller también podría necesitar el servicio, pero por ahora lo instancia dentro.
+    // Lo ideal sería: const controller = new MatchController(gameService);
+    // Pero el controller actual usa 'MatchService' (para matchmaking), no 'GameService' (para playing).
+    // Lo mantengo separado, por ahora.
+    const controller = new MatchController();
 
     // ========================================================================
     // HTTP: RUTAS DE CREAR PARTIDA (REST)

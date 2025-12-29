@@ -11,7 +11,7 @@ export interface GameConfig {
     ballRadius: number;
 }
 
-// 2. Objetos del juego. La referencia de la bola (BallState extiende de aqui)
+// 2. Objetos del juego. La referencia de la bola al centro (BallState extiende de aqui)
 export interface Coordinate {
     x: number;
     y: number;

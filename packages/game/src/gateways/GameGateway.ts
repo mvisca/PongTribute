@@ -13,6 +13,7 @@ import { FastifyRequest } from 'fastify';
 //import { SocketStream } from '@fastify/websocket'; // VEREMOS SI LO NECESITO O NO
 import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
 import { GameEnv } from '../config.js';
+import { GameService } from '../services/GameService.js';
 
 //Usaremos esta clase para encapsular toda la logica de conexion. Esto
 // nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
@@ -27,6 +28,12 @@ export class GameGateway {
 	 * Los WebSockets funcionan por eventos (on('message'), 
 	 * on('close')). No bloqueamos el hilo esperando.
 	 **/
+
+
+	// INYECCIÓN DE DEPENDENCIA
+    // Necesitamos el servicio para guardar la partida en memoria
+	constructor(private gameService: GameService) { }
+	
 	//VALIDA PARAMETROS Y SEGURIDAD (JWT)
 	handleConnection(connection: any, req: FastifyRequest): void {
 		// 1. EXTRACCION DEL SOCKET REAL
@@ -63,14 +70,19 @@ export class GameGateway {
                 username: string 
             };
 
+			const userId = payload.id;
+
             console.log(`✅ Jugador Conectado: ${payload.username} (Match: ${matchId})`);
+			
+			// USO DEL SERVICIO INYECTADO
+			//METEMOS AL SOCKET EN LA SALA DE JUEGO (map activeMatches<> en GameService)
+			this.gameService.joinMatch(matchId, userId, socket);
 
 			// 5. LOGICA DE BIENVENIDA. El servidor dice HOLA el primero.
 			// Aquí es donde confirmamos al cliente que "está dentro" y
 			// sabe que la conexion es estable y puede dejar de mostrar el spinner de carga 
 			// y mostrar la vista del juego.
             // Vinculamos el socket con la partida (matchId) y el usuario (payload.id)
-            // TODO: Aquí es donde en el futuro meteremos al socket en una "Sala"
             this.sendWelcomeMessage(socket, matchId, payload.id);
 
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
@@ -78,21 +90,20 @@ export class GameGateway {
 			socket.on('message', (message: string) => {
 				console.log(`📩 Mensaje de ${payload.username}: ${message}`);
 				// TODO: Aquí conectaremos el GameEngine más adelante.
-                // En lugar de un console.log, haremos: this.gameEngine.processInput(...)
+                // En lugar de un console.log, haremos: 
+				// this.gameEngine.processInput(matchId, userId, message);
 			});
 			
-			// TODO: discutir con los compañeros si implementamos un "Pause" de partida. 
+			// TODO: implementar un "PAUSE" de partida. 
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
             socket.on('close', () => {
-                console.log(`❌ Jugador Desconectado: ${payload.username}`);
-				// TODO: Notificar al otro jugador ("Game Over. Tu rival se ha
-				//  desconectado. Ganaste por abandono"). El que se queda se lleva 
-				// la puntuacion maxima y guardar resultado en DB. El servidor 
-				// cierra la sala y libera la memoria.
-				// No vamos a pausar el juego por desconexion, guardar el estado y 
-				// esperar una reconexion (eso es nivel muy PRO y no es para este proyecto pedagogico)
+				console.log(`❌ Jugador Desconectado: ${payload.username}`);
+				// Notificar al otro jugador "Rival desconectado. Ganaste 
+				// por abandono". El que se queda se lleva la puntuacion maxima y 
+				// guardar resultado en DB. El servidor cierra la sala y libera memoria.
+				this.gameService.handleDisconnect(userId, matchId);
 			});
 
 
