@@ -10,7 +10,6 @@ import { WebSocket } from 'ws';
 //Contiene el tipo que define como es una peticion HTTP en Fastfy.
 //y empieza siendo una peticion HTTP antes de convertirse en WebSocket
 import { FastifyRequest } from 'fastify';
-//import { SocketStream } from '@fastify/websocket'; // VEREMOS SI LO NECESITO O NO
 import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
@@ -88,10 +87,9 @@ export class GameGateway {
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
 			socket.on('message', (message: string) => {
-				console.log(`📩 Mensaje de ${payload.username}: ${message}`);
-				// TODO: Aquí conectaremos el GameEngine más adelante.
-                // En lugar de un console.log, haremos: 
-				// this.gameEngine.processInput(matchId, userId, message);
+				//console.log(`📩 Mensaje de ${payload.username}: ${message}`);
+				// CONECTAMOS EL GameEngine
+				this.gameService.processInput(matchId, userId, message);
 			});
 			
 			// TODO: implementar un "PAUSE" de partida. 

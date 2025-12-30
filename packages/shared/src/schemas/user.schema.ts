@@ -233,6 +233,20 @@ export namespace UserSchemas {
 		}
 	};
 	
+	/**------joan------no lo tengo muy claro
+	 * Schema para GET /users/me
+	 * No requiere params (el ID viene del JWT)
+	 */
+	export const getMeSchema = {
+		tags: ['User'],
+		response: {
+			200: UserPublic,
+			401: ErrorResponse,
+			404: NotFoundResponse
+		}
+	};
+
+
 	// ========================================================================
 	// CHECK SCHEMAS
 	// ========================================================================

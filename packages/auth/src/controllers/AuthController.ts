@@ -10,19 +10,22 @@ export class AuthController {
 		this.authService = new AuthService();
 	}
 
-		private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
+	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
 		if (err instanceof SharedErrors.NotFoundError) {
-			reply.code(404).send({error: 'Not Found', message: err.message, resource:err.resource});
+			const error = err as any;
+			reply.code(404).send({error: 'Not Found', message: error.message, resource:error.resource});
 			return;
 		}
 		
 		if (err instanceof SharedErrors.ConflictError) {
-			reply.code(409).send({error: 'Conflict', message: err.message, field: err.field});
+			const error = err as any;
+			reply.code(409).send({error: 'Conflict', message: error.message, field: error.field});
 			return;
 		}
 		
 		if (err instanceof SharedErrors.ValidationError) {
-			reply.code(403).send({error: 'Forbidden', message: err.message, field: err.field});
+			const error = err as any;
+			reply.code(403).send({error: 'Forbidden', message: error.message, field: error.field});
 			return;
 		}
 		
@@ -51,7 +54,7 @@ export class AuthController {
 			// Login exitoso sin  2FA
 			return reply.code(200).send(result); // TODO tiene sentido el if si la respuesta es igual?
 
-		} catch(err) {
+		} catch(err: any) {
 			this.errorHandler(err, request, reply);
 		}
 	}

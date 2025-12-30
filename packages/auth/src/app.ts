@@ -6,7 +6,7 @@ import swaggerUI from '@fastify/swagger-ui';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { Utils } from "@transcendence/shared/";
+import { Utils } from "@transcendence/shared";
 import { authRoutes, AuthEnv } from './index.js';
 
 const __filename = fileURLToPath(import.meta.url);
