@@ -8,9 +8,11 @@ async function start() {
 		await app.listen({ port: GatewayEnv.PORT, host: GatewayEnv.HOST });
 		app.log.info(`Gateway listening on http://${GatewayEnv.HOST}:${GatewayEnv.PORT}`);
 	} catch (err) {
+		console.error('Gateway failed to start:', err);
 		app.log.error(err);
 		process.exit(1);
 	}
+	  
 }
 
 process.on('SIGINT', () => process.exit(0));

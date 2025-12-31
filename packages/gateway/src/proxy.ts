@@ -38,8 +38,22 @@ function buildOutgoingHeaders(request: FastifyRequest, requestId: string): Recor
 	return headers;
 }
 
-function buildUpstreamUrl(targetBase: string, request: FastifyRequest): string {
+function buildUpstreamUrl(targetBase: string, request: FastifyRequest, overridePath?: string): string {
 	const pathAndQuery = request.raw.url || request.url || '/';
+
+	if (overridePath) {
+		let search = '';
+		try {
+			const parsed = new URL(pathAndQuery, 'http://placeholder');
+			search = parsed.search;
+		} catch {
+			search = '';
+		}
+
+		const normalizedPath = overridePath.startsWith('/') ? overridePath : `/${overridePath}`;
+		return new URL(`${normalizedPath}${search}`, targetBase).toString();
+	}
+
 	return new URL(pathAndQuery, targetBase).toString();
 }
 
@@ -61,10 +75,10 @@ function buildRequestBody(request: FastifyRequest): ProxyBody | undefined {
 }
 
 export function createProxyHandler(app: FastifyInstance) {
-	return (targetBase: string): ProxyHandler => {
+	return (targetBase: string, overridePath?: string): ProxyHandler => {
 		return async (request, reply) => {
 			const requestId = (request as any).gatewayRequestId as string | undefined || randomUUID();
-			const upstreamUrl = buildUpstreamUrl(targetBase, request);
+			const upstreamUrl = buildUpstreamUrl(targetBase, request, overridePath);
 
 			(request as any).gatewayUpstream = upstreamUrl;
 
