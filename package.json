@@ -28,6 +28,7 @@
 		"test:auth-e2e": "pnpm --filter '@transcendence/auth' test:jwt-api",
 		"dev": "pnpm redis && sleep 2 & pnpm start:dev",
 		"start:dev": "pnpm --parallel --filter '@transcendence/*' start:dev",
+		"gateway": "pnpm --filter '@transcendence/gateway' start:dev",
 		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
 		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev",
 		"start:dev-game": "pnpm --filter '@transcendence/game' start:dev",

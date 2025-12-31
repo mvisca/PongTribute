@@ -1,0 +1,23 @@
+{
+  "name": "@transcendence/gateway",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "start:dev": "tsx watch src/server.ts",
+    "build": "tsc -b",
+    "start": "node dist/server.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "10.0.1",
+    "@transcendence/shared": "workspace:*",
+    "dotenv": "17.2.3",
+    "fastify": "5.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "24.7.2",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  }
+}
+

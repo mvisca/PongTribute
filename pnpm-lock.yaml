@@ -184,6 +184,31 @@ importers:
         specifier: ^8.18.3
         version: 8.18.3
 
+  packages/gateway:
+    dependencies:
+      '@fastify/cors':
+        specifier: 10.0.1
+        version: 10.0.1
+      '@transcendence/shared':
+        specifier: workspace:*
+        version: link:../shared
+      dotenv:
+        specifier: 17.2.3
+        version: 17.2.3
+      fastify:
+        specifier: 5.6.2
+        version: 5.6.2
+    devDependencies:
+      '@types/node':
+        specifier: 24.7.2
+        version: 24.7.2
+      tsx:
+        specifier: 4.20.6
+        version: 4.20.6
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/shared:
     dependencies:
       '@sinclair/typebox':
@@ -437,6 +462,9 @@ packages:
 
   '@fastify/ajv-compiler@4.0.5':
     resolution: {integrity: sha512-KoWKW+MhvfTRWL4qrhUwAAZoaChluo0m0vbiJlGMt2GXvL4LVPQEjt8kSpHI3IBq5Rez8fg+XeH3cneztq+C7A==}
+
+  '@fastify/cors@10.0.1':
+    resolution: {integrity: sha512-O8JIf6448uQbOgzSkCqhClw6gFTAqrdfeA6R3fc/3gwTJGUp7gl8/3tbNB+6INuu4RmgVOq99BmvdGbtu5pgOA==}
 
   '@fastify/error@3.4.1':
     resolution: {integrity: sha512-wWSvph+29GR783IhmvdwWnN4bUxTD01Vm5Xad4i7i1VuAOItLvbPAb69sb0IQ2N57yprvhNIwAP5B6xfKTmjmQ==}
@@ -1821,6 +1849,11 @@ snapshots:
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       fast-uri: 3.1.0
+
+  '@fastify/cors@10.0.1':
+    dependencies:
+      fastify-plugin: 5.1.0
+      mnemonist: 0.39.8
 
   '@fastify/error@3.4.1': {}
 
