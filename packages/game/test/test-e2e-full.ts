@@ -47,7 +47,7 @@ async function registerAndLogin(alias: string) {
     const suffix = randomUUID().substring(0,5);
     
     const email = `test.${alias}.${suffix}@test.com`;
-    // CORRECCIÓN: Username único para evitar Conflictos en la DB
+    // Username único para evitar Conflictos en la DB
 	const uniqueUsername = `${alias}_${suffix}`;
 	
     const password = 'Password123!';

@@ -41,7 +41,7 @@ export class GameGateway {
         const socket = (connection.socket ? connection.socket : connection) as WebSocket;
 
         // 2. LECTURA DATOS. Extraer datos de la Query String (el standar
-		// WebSocket no permite enviarlos de otra forma(p.ej. headers personalizados))
+		// WebSocket, al hacer la 1ª conexion, no permite enviarlos de otra forma(p.ej. headers personalizados))
         // (ws://host/api/game/ws?matchId=...&token=...)
         const query = req.query as { matchId?: string, token?: string };
         const { matchId, token } = query;
@@ -82,26 +82,29 @@ export class GameGateway {
 			// sabe que la conexion es estable y puede dejar de mostrar el spinner de carga 
 			// y mostrar la vista del juego.
             // Vinculamos el socket con la partida (matchId) y el usuario (payload.id)
+            // ========TODO: Aquí es donde en el futuro meteremos al socket en una "Sala"
             this.sendWelcomeMessage(socket, matchId, payload.id);
 
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
 			socket.on('message', (message: string) => {
-				//console.log(`📩 Mensaje de ${payload.username}: ${message}`);
-				// CONECTAMOS EL GameEngine
-				this.gameService.processInput(matchId, userId, message);
+				console.log(`📩 Mensaje de ${payload.username}: ${message}`);
+				// ========TODO: Aquí conectaremos el GameEngine más adelante.
+                // En lugar de un console.log, haremos: this.gameEngine.processInput(...)
 			});
 			
-			// TODO: implementar un "PAUSE" de partida. 
+			// ==========TODO: implementar un "Pause" de partida. 
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
             socket.on('close', () => {
-				console.log(`❌ Jugador Desconectado: ${payload.username}`);
-				// Notificar al otro jugador "Rival desconectado. Ganaste 
-				// por abandono". El que se queda se lleva la puntuacion maxima y 
-				// guardar resultado en DB. El servidor cierra la sala y libera memoria.
-				this.gameService.handleDisconnect(userId, matchId);
+                console.log(`❌ Jugador Desconectado: ${payload.username}`);
+				// =========TODO: Notificar al otro jugador ("Game Over. Tu rival se ha
+				//  desconectado. Ganaste por abandono"). El que se queda se lleva 
+				// la puntuacion maxima y guardar resultado en DB. El servidor 
+				// cierra la sala y libera la memoria.
+				// No vamos a pausar el juego por desconexion, guardar el estado y 
+				// esperar una reconexion (eso es nivel muy PRO y no es para este proyecto pedagogico)
 			});
 
 
