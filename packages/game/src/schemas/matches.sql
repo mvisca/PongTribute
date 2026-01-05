@@ -21,20 +21,23 @@ CREATE TABLE IF NOT EXISTS matches (
     
     winner_id TEXT,
     
+	game_mode TEXT DEFAULT 'classic',
+    target_score INTEGER DEFAULT 11,
+
     -- Metadatos
     created_at INTEGER NOT NULL,
-    finished_at INTEGER,
+    finished_at INTEGER
     
     -- -- Configuración
     -- is_private INTEGER DEFAULT 0, -- 0: Público, 1: Privado
 
     -- Relación con Torneos (Del enfoque nuevo)
-    tournament_id TEXT,
-    round INTEGER
+    -- tournament_id TEXT,
+    -- round INTEGER
 );
 
 -- Índices para velocidad (Inspirados en indexes.sql [cite: 229])
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 CREATE INDEX IF NOT EXISTS idx_matches_p1 ON matches(player1_id);
 CREATE INDEX IF NOT EXISTS idx_matches_p2 ON matches(player2_id);
-CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);
+-- CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);

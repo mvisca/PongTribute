@@ -31,6 +31,9 @@ export namespace MatchTypes {
         winner_id: string | null;
         
         created_at: number;     // Timestamp numérico
-        finished_at: number | null;
+		finished_at: number | null;
+		
+		game_mode: string;
+        target_score: number;
     }
 }

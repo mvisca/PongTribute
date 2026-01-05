@@ -1,6 +1,6 @@
 //Este archivo es el que comunica directamente con la BD
 
-import { MatchTypes } from '@transcendence/shared';
+import { MatchTypes, MatchSchemas } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
 import { randomUUID } from 'node:crypto'; // Usamos librería nativa de Node
 
@@ -23,10 +23,10 @@ export class MatchRepository {
         const stmt = this.db.prepare(`
             INSERT INTO matches (
                 id, status, player1_id, player1_score, player2_id, player2_score, 
-                winner_id, created_at, finished_at
+                winner_id, created_at, finished_at, game_mode, target_score
             ) VALUES (
                 @id, @status, @player1_id, @player1_score, @player2_id, @player2_score,
-                @winner_id, @created_at, @finished_at
+                @winner_id, @created_at, @finished_at, @game_mode, @target_score
             )
         `);
 		//@id le dice a SQLite: "Aquí irá un valor que buscaré con 
@@ -47,7 +47,13 @@ export class MatchRepository {
      * Crea una partida pública lista para jugar (ACTIVE).
      * El Repo se encarga de generar ID, Fechas y Scores iniciales.
      */
-    async createPublicMatch(player1Id: string, player2Id: string): Promise<MatchTypes.MatchRow> {
+	// Aceptamos 'config' como parámetro opcional
+	async createPublicMatch(
+		player1Id: string,
+		player2Id: string,
+		config?: Partial<MatchSchemas.CreateMatchBodyType>
+	): Promise<MatchTypes.MatchRow> {
+
         const newMatch: MatchTypes.MatchRow = {
             id: randomUUID(),
             status: 'active',
@@ -58,7 +64,10 @@ export class MatchRepository {
             winner_id: null,
             created_at: Date.now(),
             finished_at: null,
-            // match_type: 'public' // TODO: Agregar columna a tu DB SQL si aún no existe
+            // Usamos los valores del config o defaults
+            game_mode: config?.gameMode || 'classic',
+			target_score: config?.targetScore || 11
+			// match_type: 'private' // TODO: Agregar columna a tu DB
         };
 
         // Reusamos tu lógica de inserción
@@ -71,7 +80,11 @@ export class MatchRepository {
     /**
      * Crea una partida privada en espera (PENDING).
      */
-    async createPrivateMatch(hostId: string, guestId: string): Promise<MatchTypes.MatchRow> {
+	async createPrivateMatch(
+		hostId: string,
+		guestId: string,
+		config?: Partial<MatchSchemas.CreateMatchBodyType>
+	): Promise<MatchTypes.MatchRow> {
         const newMatch: MatchTypes.MatchRow = {
             id: randomUUID(),
             status: 'pending',
@@ -81,14 +94,15 @@ export class MatchRepository {
             player2_score: 0,
             winner_id: null,
             created_at: Date.now(),
-            finished_at: null,
+			finished_at: null,
+			game_mode: config?.gameMode || 'classic',
+            target_score: config?.targetScore || 11
             // match_type: 'private' // TODO: Agregar columna a tu DB
         };
 
         this.create(newMatch);
         return newMatch;
     }
-
 
     /**
      * Busca una partida por su ID único.
@@ -110,7 +124,6 @@ export class MatchRepository {
         return row ? (row as MatchTypes.MatchRow) : null;
 	}
 	
-
 	/**
 	 * Actualiza el resultado final de la partida.
 	 */
@@ -121,47 +134,4 @@ export class MatchRepository {
 			WHERE id = ?
 		`).run(winnerId, p1Score, p2Score, finishedAt, id);
 	}
-
-	
-	//=====ESTE METODO CON REDIS YA NO LO VAMOS A USAR=====
-	/**
-     * MATCHMAKING SIMPLE (FIFO):
-     * Busca la partida pública más antigua que esté en estado 'pending'
-     * y que aún no tenga jugador 2.
-     */
-	findPendingPublicMatch(): MatchTypes.MatchRow | null {
-		// 1. CONSULTA FIFO
-        // SELECT * ... WHERE status = 'pending' AND player2_id IS NULL
-        // ORDER BY created_at ASC (Dame la más vieja primero -> FIFO)
-        // LIMIT 1 (Solo quiero una)
-        const row = this.db.prepare(`
-            SELECT * FROM matches 
-            WHERE status = 'pending'  
-            AND player2_id IS NULL
-            ORDER BY created_at ASC
-            LIMIT 1
-        `).get(); // .get() devuelve UN objeto o undefined
-		// 2. RETORNO SEGURO
-        return row ? (row as MatchTypes.MatchRow) : null;
-    }
-
-
-	//=====ESTE METODO CON REDIS YA NO LO VAMOS A USAR=====
-    /**
-     * Une al Jugador 2 a una partida existente.
-     * Cambia el estado a 'active'.
-     */
-    joinMatch(matchId: string, player2Id: string): void {
-        const result = this.db.prepare(`
-            UPDATE matches 
-            SET player2_id = ?, status = 'active'
-            WHERE id = ? AND status = 'pending'
-        `).run(player2Id, matchId);
-        
-        // Verificamos si realmente se actualizó algo (changes > 0)
-        if (result.changes === 0) {
-            throw new Error(`No se pudo unir a la partida ${matchId} (quizás ya no está pendiente o no existe)`);
-        }
-    }
-
 }

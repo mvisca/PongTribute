@@ -30,16 +30,18 @@ export class MatchMapper {
                 score: row.player1_score,
                 isWinner: row.winner_id === row.player1_id
             },
-            
             player2: player2Obj,
-            
             winnerId: row.winner_id,
             
             // 3. Conversión de Fechas: Number (DB) -> ISO String (API)
             createdAt: new Date(row.created_at).toISOString(),
-            finishedAt: row.finished_at 
-                ? new Date(row.finished_at).toISOString() 
-                : undefined
+            finishedAt: row.finished_at ? new Date(row.finished_at).toISOString() : undefined,
+			
+			// Como en DB es TEXT, TypeScript lo trata como string genérico.
+            // Lo casteamos a 'any' o al tipo Union específico si es necesario, 
+            // pero el Schema de salida ya lo validará.
+            gameMode: row.game_mode as any, 
+            targetScore: row.target_score
         };
     }
 }

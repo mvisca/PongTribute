@@ -42,9 +42,18 @@ export namespace MatchSchemas {
         player2: Type.Optional(MatchPlayer), // Opcional: Al crear partida pública, P2 es null
         winnerId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
         createdAt: Type.String({ format: 'date-time' }),
-        finishedAt: Type.Optional(Type.String({ format: 'date-time' }))
+		finishedAt: Type.Optional(Type.String({ format: 'date-time' })),
+		gameMode: Type.Union([
+            Type.Literal('classic'),
+            Type.Literal('speed'),
+            Type.Literal('retro')
+        ]),
+        targetScore: Type.Number()
     });
 
+	// Esto actualiza automáticamente el tipo estático MatchTypes.Match
+	export type Match = Static<typeof Match>;
+	
     // ========================================================================
     // DTOs (Inputs API)
     // ========================================================================
@@ -52,18 +61,25 @@ export namespace MatchSchemas {
     // POST /matches - Crear una partida
 	export const CreateMatchBody = Type.Object({
 		matchType: MatchType,
-        opponentId: Type.Optional(Type.String({ format: 'uuid' })) // Si null -> Matchmaking público
+		opponentId: Type.Optional(Type.String({ format: 'uuid' })), // Si null -> Matchmaking público
+		gameMode: Type.Optional(Type.Union([
+			Type.Literal('classic'),
+			Type.Literal('speed'),
+			Type.Literal('retro')
+		], { default: 'classic' })),
+  
+		targetScore: Type.Optional(Type.Number({ minimum: 1, maximum: 21, default: 11 })),
     });
 
 	// ESTA LÍNEA ES MÁGICA: Convierte el Schema de JS a un Tipo de TS
 	export type CreateMatchBodyType = Static<typeof CreateMatchBody>;
 
-	// NUEVO: Definimos la respuesta para "En cola"
+	// Definimos la respuesta para "En cola"
     export const JoinQueueResponse = Type.Object({
         outcome: Type.Literal('added_to_queue')
 	});
 	
-    // ACTUALIZADO: Schema para la ruta POST
+    // Schema para la ruta POST
     export const CreateMatchSchema = {
         description: 'Crea una partida nueva o entra al matchmaking',
         tags: ['Game'],
