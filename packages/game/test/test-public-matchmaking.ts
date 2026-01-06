@@ -91,7 +91,8 @@ async function testMatchmaking() {
         process.exit(1);
     }
 
-    console.log('\n🎉 TEST FINALIZADO CORRECTAMENTE');
+	console.log('\n🎉 TEST FINALIZADO CORRECTAMENTE');
+	console.log('========================================================');
 	await app.close();  // Intenta cerrar
 	
 	// FORZAR SALIDA (Mata cualquier conexión pendiente: Redis, Timers, DB)

@@ -158,7 +158,8 @@ async function runTest() {
             connectWebSocket(tokenP2, matchId, 'Player2')
         ]);
 
-        console.log('\n🎉 TEST FINALIZADO CON ÉXITO: Flujo Completo Validado.');
+		console.log('\n🎉 TEST FINALIZADO CON ÉXITO: Flujo Completo Validado.');
+		console.log('========================================================');
         process.exit(0);
 
     } catch (error) {

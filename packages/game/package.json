@@ -11,7 +11,8 @@
 	"test:private-matchmaking": "tsx test/test-private-matchmaking.ts",
     "test:public-matchmaking": "tsx test/test-public-matchmaking.ts",
     "test:ws": "tsx test/test-websocket.ts",
-    "test:all": "pnpm test:public-matchmaking && pnpm test:private-matchmaking && pnpm test:ws"
+	"test:game": "tsx test/simulate-game.ts",
+    "test:all": "pnpm test:public-matchmaking && pnpm test:private-matchmaking && pnpm test:ws && pnpm test:game"
   },
   "dependencies": {
     "@fastify/helmet": "13.0.2",

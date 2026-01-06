@@ -129,7 +129,7 @@ export class GameService {
         let winnerId: string | null = null;
 
         // Aquí podríamos usar session.player1Id directamente para ahorrar DB call,
-        // pero seguimos tu lógica original por seguridad.
+        // pero seguimos la lógica original por seguridad.
         const matchFromDb = await this.matchRepo.findById(matchId); // AWAIT
         if (!matchFromDb) return;
 
@@ -224,7 +224,7 @@ export class GameService {
                 ball.x = player2.x - r - 1;
         }
 
-        const WIN_SCORE = 6; //OJO esto manejarlo desde constants ??????
+        const WIN_SCORE = 6; //OJO esto seria mejor manejarlo desde constants. Creo.
 
         // 3. PUNTUACION
         if (ball.x < 0) {
@@ -261,24 +261,49 @@ export class GameService {
         session.socketP2?.send(updateMsg);
     }
     
-    // MÉTODO ENDGAME CORREGIDO
+    
+    // 
     private endGame(matchId: string, winnerId: string) {
         const session = this.activeMatches.get(matchId);
         if (!session) return;
 
-        // Casting 'as any' o 'as GameStatus' para evitar líos de tipos si shared no actualizó
-        (session.gameState.status as any) = 'FINISHED';
-
+		// 1. Detener el bucle de juego (Game Loop)
+		// Si no paramos el intervalo, el servidor seguiría calculando 
+		// la física de una partida terminada, consumiendo CPU inútilmente.
         if (session.loopId) {
             clearInterval(session.loopId);
-            session.loopId = null; 
+            session.loopId = null;
         }
         
+		// 2. Actualizar estado y recuperar puntuaciones finales
+		// El as any es un "truco" temporal porque el tipo GameState 
+		// en shared podría no tener actualizado el estado 'FINISHED' todavía.
+        (session.gameState.status as any) = 'FINISHED';
         const p1Score = session.gameState.player1.score;
         const p2Score = session.gameState.player2.score;
 
         console.log(`🏆 GAME OVER. Winner: ${winnerId} | Score: ${p1Score}-${p2Score}`);
 
+        // 3. PERSISTENCIA: Guardar resultado en Base de Datos 
+		// (llama al repo para escribir quien gano y demas datos).
+		// Importante: Hacer esto ANTES de borrar la sesión de memoria.
+		// Esta envuelto en un try-catch por si la base de datos falla que 
+		// no se caiga el servidor (loguea el error y continua para cerrar 
+		// la conexion de los clientes limpiamente).
+        try {
+            this.matchRepo.finishMatch(
+                matchId, 
+                winnerId, 
+                p1Score, 
+                p2Score, 
+                Date.now()
+            );
+            console.log('✅ Resultado guardado en DB');
+        } catch (error) {
+            console.error('❌ Error guardando resultado en DB:', error);
+        }
+
+        // 4. Notificar a los clientes vía WebSocket
         const endMsg = JSON.stringify({
             event: 'GAME_OVER',
             data: { 
@@ -286,14 +311,15 @@ export class GameService {
                 reason: 'SCORE_LIMIT_REACHED'
             }
         });
-        
+
+		// Usamos try-catch individual por si un socket ya se cerró abruptamente
+		// Con el '?': si el socketP1 existe llama a send(), sino no hace nada. 
+		// Evita errores si un jugador se desconectó antes de ganar.
         try { session.socketP1?.send(endMsg); } catch(e) {}
         try { session.socketP2?.send(endMsg); } catch(e) {}
         
-        // Limpiamos memoria
+        // 5. Eliminamos la session del Map en memoria RAM (para evitar leaks y/o colapso de server)
         this.activeMatches.delete(matchId);
-        
-        // TODO: Llamar a this.matchRepo.finishMatch aquí también en el futuro
     }
     
     // -------------------------------------------------------------------

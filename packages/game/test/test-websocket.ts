@@ -127,6 +127,7 @@ async function testWebSocket() {
     // Es decir, cuando el test ha tenido éxito o ha terminado su flujo.
     .then(async () => {
 		console.log('\n🎉 TEST WS FINALIZADO');
+		console.log('========================================================');
 		// 1. Apagamos el servidor de prueba. 
         // Si no hacemos esto, el puerto 3005 se queda ocupado y el script no termina.
 		await app.close();

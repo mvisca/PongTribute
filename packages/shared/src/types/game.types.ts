@@ -11,11 +11,17 @@ export interface GameConfig {
     ballRadius: number;
 }
 
-// 2. Objetos del juego. La referencia de la bola al centro (BallState extiende de aqui)
+// 2. Objetos del juego. La referencia al centro de la bola (BallState extiende de aqui)
 export interface Coordinate {
     x: number;
     y: number;
 }
+
+export interface BallState extends Coordinate {
+	dx: number;     // Velocidad X (para predicción en cliente)
+	dy: number;     // Velocidad Y
+}
+
 
 export interface PaddleState {
     x: number;      // Necesario para dibujar (aunque sea fijo, el front debe saberlo)
@@ -23,10 +29,6 @@ export interface PaddleState {
     score: number;
 }
 
-export interface BallState extends Coordinate {
-    dx: number;     // Velocidad X (para predicción en cliente)
-    dy: number;     // Velocidad Y
-}
 
 // 3. Estado completo de la partida (Snapshot)
 export interface GameState {

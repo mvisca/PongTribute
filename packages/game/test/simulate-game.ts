@@ -114,7 +114,9 @@ async function runSimulation() {
                 }
 
                 if (msg.event === 'GAME_OVER') {
-                    console.log(`\n\n🏆 JUEGO TERMINADO: ${msg.data.reason}`);
+					console.log(`\n\n🏆 JUEGO TERMINADO: ${msg.data.reason}`);
+					console.log('\n🎉 TEST FINALIZADO CON ÉXITO: Flujo Completo Validado.');
+					console.log('========================================================');
                     process.exit(0);
                 }
             });

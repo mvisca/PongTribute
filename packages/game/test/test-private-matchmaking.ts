@@ -96,7 +96,8 @@ async function testChallenge() {
         process.exit(1);
     }
 
-    console.log('\n🎉 TEST DE DESAFÍO FINALIZADO');
+	console.log('\n🎉 TEST DE DESAFÍO FINALIZADO');
+	console.log('========================================================');
     await app.close();
     process.exit(0);
 }
