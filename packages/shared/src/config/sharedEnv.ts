@@ -80,14 +80,14 @@ const DEFAULTS: EnvVars = {
 	GAME_SERVICE_PORT: 3003,
 	GAME_SERVICE_HOST: 'localhost',
 	GAME_SERVICE_DB_FILENAME: 'game.db',
-	GAME_SERVICE_DB_PATH: '.',  //CAMBIO: antes era './db-data'
-	GAME_SERVICE_DB_FULL_PATH: './db-data/game.db',
+	GAME_SERVICE_DB_PATH: './packages/game',  //CAMBIO: lo pongo dentro del microservicio
+	GAME_SERVICE_DB_FULL_PATH: './packages/game/db-data/game.db',
 	
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
 	USER_SERVICE_HOST: 'localhost',
 	USER_SERVICE_DB_FILENAME: 'user.db',
-	USER_SERVICE_DB_PATH: '.', //CAMBIO: antes era './db-data'
+	USER_SERVICE_DB_PATH: '.', //CAMBIO: antes era './db-data' OJO DEBERIA VERIFICARSE
 	USER_SERVICE_DB_FULL_PATH: './db-data/user.db',
 	
 	FRONTEND_URL: 'http://localhost:5173',
@@ -260,6 +260,7 @@ export namespace SharedEnv {
 			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION, 'UNIQUE_SESSION'),
 			
 			// GAME SERVICE
+			/*
 			GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL, 'GAME_SERVICE_URL'),
 			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_URL'),
 			GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST, 'GAME_SERVICE_HOST'),
@@ -270,7 +271,25 @@ export namespace SharedEnv {
 				envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
 				getBaseDir()
 			),
-			
+			*/
+			// GAME SERVICE
+            GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL, 'GAME_SERVICE_URL'),
+            GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_URL'),
+            GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST, 'GAME_SERVICE_HOST'),
+            GAME_SERVICE_DB_FILENAME: envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME'),
+            GAME_SERVICE_DB_PATH: envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
+            
+            // --- CAMBIO AQUÍ --- para colocar db-data dentro del Servicio Game
+            // Usamos path.resolve manual para apuntar dentro de packages/game/db-data
+            // Ignoramos safeFullPath porque esa funcion fuerza a usar la carpeta root
+            GAME_SERVICE_DB_FULL_PATH: path.resolve(
+                path.dirname(fileURLToPath(import.meta.url)), // Estoy en shared/src/config
+                '../../../../packages/game/db-data',          // Subo a root y bajo a game
+                envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME')
+            ),
+
+
+
 			// USER SERVICE
 			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL, 'USER_SERVICE_URL'),
 			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT, 'USER_SERVICE_PORT'),

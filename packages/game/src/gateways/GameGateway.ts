@@ -48,7 +48,7 @@ export class GameGateway {
 
         // 3. VALIDACION DE ENTRADA
         if (!matchId || !token) {
-			console.log('⛔ Conexión rechazada: Faltan parámetros');
+			console.log('⛔ [Gateway] Conexión rechazada: Faltan parámetros');
 			// En protocolo WebSocket, los cierres tiene codigos numericos:
 			//  1000: "Normal"
 			//  1008: "Policy Violation". 
@@ -71,7 +71,7 @@ export class GameGateway {
 
 			const userId = payload.id;
 
-            console.log(`✅ Jugador Conectado: ${payload.username} (Match: ${matchId})`);
+            console.log(`✅ [Gateway] Jugador Conectado: ${payload.username} (Match: ${matchId})`);
 			
 			// USO DEL SERVICIO INYECTADO
 			//METEMOS AL SOCKET EN LA SALA DE JUEGO (map activeMatches<> en GameService)
@@ -88,7 +88,7 @@ export class GameGateway {
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
 			socket.on('message', (message: string) => {
-				console.log(`📩 Mensaje de ${payload.username}: ${message}`);
+				console.log(`📩 [Gateway] Mensaje de ${payload.username}: ${message}`);
 				// ========TODO: Aquí conectaremos el GameEngine más adelante.
                 // En lugar de un console.log, haremos: this.gameEngine.processInput(...)
 			});
@@ -98,7 +98,7 @@ export class GameGateway {
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
             socket.on('close', () => {
-                console.log(`❌ Jugador Desconectado: ${payload.username}`);
+                console.log(`❌ [Gateway] Jugador Desconectado: ${payload.username}`);
 				// =========TODO: Notificar al otro jugador ("Game Over. Tu rival se ha
 				//  desconectado. Ganaste por abandono"). El que se queda se lleva 
 				// la puntuacion maxima y guardar resultado en DB. El servidor 
@@ -109,7 +109,7 @@ export class GameGateway {
 
 
         } catch (err) {
-            console.log('⛔ Conexión rechazada: Token inválido');
+            console.log('⛔ [Gateway] Conexión rechazada: Token inválido');
             socket.close(1008, 'Invalid Token'); //codigo de desconexion 1008: Policy violation 
 			// Martin: no se hacen throw en los catch para que el controller envíe respuestas de fallo al clietne?
 			// No, aqui la conexion HTTP ya no existe mas, termino, ahora es un socket y

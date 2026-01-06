@@ -22,7 +22,7 @@ export namespace MatchSchemas {
 
 
     // ========================================================================
-    // OBJETOS DE DOMINIO (Entidades)
+    // DEFINIMOS LOS OBJETOS DE DOMINIO (Entidades)
     // ========================================================================
 
     // Representa a un jugador dentro de la partida (simplificado para UI)

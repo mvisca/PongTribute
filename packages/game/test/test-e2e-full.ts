@@ -1,4 +1,4 @@
-// TEST DE INTEGRACION REAL QUE SIMULA 2 CLIENTES REMOTOS JUGANDO
+// TEST/SCRIPT DE INTEGRACION REAL QUE SIMULA 2 CLIENTES REMOTOS JUGANDO
 //
 //1. Registra y loguea a Player1 (contra Auth/User Service)
 //2. Registra y loguea a Player2
@@ -19,13 +19,13 @@
 	// pnpm build --filter @transcendence/shared
 
 	//3. Levantar User Service (Puerto 3001)
-	// pnpm --filter @transcendence/user start:dev
+	// pnpm start:dev-user
 //Terminal2:
 	// Levantar Auth Service (Puerto 3002). Emite los JWT que Game validará.
-	// pnpm --filter @transcendence/auth start:dev
+	// pnpm start:dev-auth
 //Terminal3:
 	// Levantar Game Service (Puerto 3003). Aqui veras los logs del jugador
-	// pnpm --filter @transcendence/game start:dev
+	// pnpm start:dev-game
 // Terminal4:
 	// Ejecutar directamente con tsx desde la raíz
 	// pnpm --filter @transcendence/game exec tsx test/test-e2e-full.ts
