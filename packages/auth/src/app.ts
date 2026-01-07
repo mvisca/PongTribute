@@ -46,6 +46,16 @@ export function buildApp(): FastifyInstance {
 			servers: [
 				{ url: `http://localhost:${AuthEnv.PORT}`}
 			],
+			components: {
+				securitySchemes: {
+				  bearerAuth: {
+					type: 'http',
+					scheme: 'bearer',
+					bearerFormat: 'JWT'
+				  }
+				}
+			},
+			security: [{ bearerAuth: [] }], // aplica por defecto a todas las rutas
 			tags: [
 				{ name: 'Auth', description: 'Authentication and authorization' },
 				{ name: '2FA', description: '2-Factor Authentication management' }
