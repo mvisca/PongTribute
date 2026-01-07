@@ -1,4 +1,3 @@
-
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
 import { GameGateway } from '../gateways/GameGateway.js';
@@ -6,63 +5,62 @@ import { GameService } from '../services/GameService.js';
 import { MatchRepository } from '../repositories/MatchRepository.js';
 import { MatchSchemas } from '@transcendence/shared';
 import { GameMiddleware } from '../middleware/game.middleware.js';
+import { MatchService } from '../services/MatchService.js';
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
 
-    // 1. Instanciar capas en orden (Dependency Injection manual)
-    const matchRepo = new MatchRepository();
-    const gameService = new GameService(matchRepo); // Inyectamos Repo en Servicio
-    const gateway = new GameGateway(gameService);   // Inyectamos Servicio en Gateway
-    
-    // El controller también podría necesitar el servicio, pero por ahora lo instancia dentro.
-    // Lo ideal sería: const controller = new MatchController(gameService);
-    // Pero el controller actual usa 'MatchService' (para matchmaking), no 'GameService' (para playing).
-    // Lo mantengo separado, por ahora.
-    const controller = new MatchController();
+	// ========================================================================
+    // 1. INYECCIÓN DE DEPENDENCIAS (COMPOSITION ROOT)
+    // ========================================================================
+    // Centralizamos la creación de instancias aquí para facilitar el testing.
+	// Si quisiéramos testear, podríamos pasar Repositorios "Mock" (falsos).
+
+	const matchRepo = new MatchRepository();
+	// Service para la lógica de tiempo real (Game Loop, Física)
+	const gameService = new GameService(matchRepo); // Inyectamos Repo en Servicio
+	// Service para la lógica administrativa (Crear partida en DB, Historial)
+	// Instanciamos el servicio UNA VEZ (Singleton por ámbito)
+    // Este servicio manejará tanto DB (privadas) como Redis (públicas)
+	const matchService = new MatchService(matchRepo);
+	// Inicializamos los manejadores de tráfico (pasamos las instancias a los consumidores)
+    const controller = new MatchController(matchService);
+    const gateway = new GameGateway(gameService);   // Inyectamos Servicio game en Gateway
 
     // ========================================================================
-    // HTTP: RUTAS DE CREAR PARTIDA (REST)
+    // 2. RUTA HTTP DE CREAR PARTIDA (REST)
     // ========================================================================
 	
-	// si viene una request de tipo POST para la ruta /matches:
-	// Esto conecta el tipado de la ruta con lo que espera el controlador.
+	/**
+     * POST /matches
+     * Crea una nueva partida en la base de datos y devuelve su ID.
+     * * Flujo:
+     * 1. Middleware: Valida JWT (Authentication).
+     * 2. Schema: Valida que el body cumpla CreateMatchSchema (Validation).
+     * 3. Controller: Orquesta la creación y responde al cliente.
+     */
     app.post<{ Body: MatchSchemas.CreateMatchBodyType }>('/matches', {
-        // 1. GUARDIAN Seguridad: Ejecutamos el middleware antes que nada
-		// Esto valida el Token JWT y rellena request.user
-		// Es el guardián. Si el usuario no envía un Header Authorization:
-		//  Bearer <token> válido, la petición se muere aquí y devuelve 401.
-		//  El Controller ni se entera. Esto mantiene tu código seguro y limpio.
         preHandler: [GameMiddleware.validateJWT],
-
-        // 2. VALIDADOR Contrato: Usamos el Schema "Endpoint-Centric" que creamos
-		// Fastify validará automáticamente el body y la respuesta.
-		//Si el usuario envía basura en el JSON, Fastify devuelve 
-		// 400 Bad Request automáticamente.
         schema: MatchSchemas.CreateMatchSchema,
-
-        // 3. EJECUTOR Manejador: Llamamos al método del controlller
-        // Usamos .bind() para no perder el contexto 'this' dentro del controller
         handler: controller.createMatch.bind(controller)
     });
 
 	// ========================================================================
-    // WEBSOCKET: CONEXIÓN REAL-TIME
+    // 3. RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
 	// ========================================================================
-	// 	app.get: Los WebSockets siempre empiezan como una petición GET normal
-	//  antes de "transformarse".
-	// { websocket: true }: Esta es la opción mágica de fastify-websocket.
-	// Le dice al router: "Espera un Handshake, no una petición normal".
-	// (connection, req): Al activar el modo websocket, los argumentos cambian.
-	// Ya no recibes (request, reply).
-	// Recibes (connection, request). El objeto connection contiene el socket real.
-	// gateway.handleConnection: Pasamos la pelota al Gateway que creaste antes.
-	//  Él validará el token de la URL y aceptará o cerrará el socket.
-	
+
+	/**
+     * GET /game/ws
+     * Endpoint de actualización a protocolo WebSocket.
+     * * Flujo:
+     * 1. Handshake: El cliente solicita upgrade HTTP -> WS.
+     * 2. Fastify (websocket: true): Intercepta y expone el objeto 'connection'.
+     * 3. Gateway: Valida el ticket de conexión y gestiona los eventos del socket.
+     */
     // Ruta final: /api/game/ws  (El prefijo /api viene de app.ts)
 	app.get('/game/ws', { websocket: true }, (connection, req) => {
-        // Delegamos todo el trabajo sucio al Gateway
         gateway.handleConnection(connection, req);
     });
     
+	console.log('✅ Game Routes registered: HTTP POST /matches & WS /game/ws');
 };
 

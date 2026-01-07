@@ -67,7 +67,6 @@ export namespace MatchSchemas {
 			Type.Literal('speed'),
 			Type.Literal('retro')
 		], { default: 'classic' })),
-  
 		targetScore: Type.Optional(Type.Number({ minimum: 1, maximum: 21, default: 11 })),
     });
 

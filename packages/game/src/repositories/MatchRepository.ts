@@ -4,56 +4,75 @@ import { MatchTypes, MatchSchemas } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
 import { randomUUID } from 'node:crypto'; // Usamos librería nativa de Node
 
+
+/**
+ * MatchRepository
+ * Capa de Persistencia (Data Access Layer).
+ * Se comunica directamente con SQLite usando 'better-sqlite3'.
+ * * NOTA: Aunque better-sqlite3 es síncrono, mantenemos la firma 'async' en 
+ * los métodos públicos para facilitar una futura migración a DBs asíncronas (Postgres/MySQL)
+ * sin romper el Servicio que consume esta clase.
+ */
 export class MatchRepository {
 	// 1. Obtenemos la conexión lista para usar y la guardamos para usarla
 	// en los metodos de la clase sin tener que reconectar cada vez (porque
 	//better-squlite3 trabaja de forma sincrona(bloqueante, pero rapidissima)
     private db = getDatabase();
 
+	// ========================================================================
+    // MÉTODOS DE BAJO NIVEL (CRUD)
+    // ========================================================================
+
     /**
-     * Inserta (Low-level). Mantenemos tu método original pero lo hacemos privado
-     * o lo dejamos público si lo usas en tests.
-     */
-	/**
-     * Inserta una nueva partida en la base de datos.
+     * create (Primitive)
+     * Inserta un registro crudo (una nueva partida) en la tabla 'matches'.
      * Recibe el objeto 'MatchRow' que ya preparó el Servicio con todos los datos.
      */
-    create(match: MatchTypes.MatchRow): void {
-        // 2. Preparamos la sentencia SQL (Query)
-        const stmt = this.db.prepare(`
-            INSERT INTO matches (
-                id, status, player1_id, player1_score, player2_id, player2_score, 
-                winner_id, created_at, finished_at, game_mode, target_score
-            ) VALUES (
-                @id, @status, @player1_id, @player1_score, @player2_id, @player2_score,
-                @winner_id, @created_at, @finished_at, @game_mode, @target_score
-            )
-        `);
-		//@id le dice a SQLite: "Aquí irá un valor que buscaré con 
-		// la clave id en el objeto que me pases".
+	create(match: MatchTypes.MatchRow): void {
+		try {
+			// 2. Preparamos la sentencia SQL (Query)
+			// SQLite compila esto una vez y lo reutiliza.
+			const stmt = this.db.prepare(`
+				INSERT INTO matches (
+					id, status, player1_id, player1_score, player2_id, player2_score, 
+					winner_id, created_at, finished_at, game_mode, target_score
+				) VALUES (
+					@id, @status, @player1_id, @player1_score, @player2_id, @player2_score,
+					@winner_id, @created_at, @finished_at, @game_mode, @target_score
+				)
+			`);
+			//@id le dice a SQLite: "Aquí irá un valor que buscaré con 
+			// la clave id en el objeto que me pases".
 
-        // 3. Ejecutamos la sentencia y better-sqlite3 inyecta las
-		// propiedades del objeto recibido como argumento (contiene
-		// valores como match.id, match.status, etc).
-		// run(): se usa para INSERT, UPDATE, DELETE (operaciones que 
-		// no devuelven datos, solo cambian cosas).
-        stmt.run(match);
+			// 3. Ejecutamos la sentencia y better-sqlite3 inyecta las
+			// propiedades del objeto recibido como argumento (contiene
+			// valores como match.id, match.status, etc).
+			// run(): se usa para cambios INSERT, UPDATE, DELETE (operaciones que
+			// no devuelven datos).
+			stmt.run(match);
+		} catch (error) {
+			console.error('❌ [Repo] Error fatal insertando match en DB:', error);
+            // Relanzamos para que el Servicio se entere y maneje el error
+            throw new Error('Database Insert Failed');
+		}
     }
 
-
-	// --- MÉTODOS DE ALTO NIVEL PARA EL SERVICIO ---
+	// ========================================================================
+    // MÉTODOS DE NEGOCIO (ALTO NIVEL)
+    // ========================================================================
 
     /**
-     * Crea una partida pública lista para jugar (ACTIVE).
-     * El Repo se encarga de generar ID, Fechas y Scores iniciales.
+     * createPublicMatch
+     * Genera una partida publica 'ACTIVE' lista para jugarse inmediatamente.
+     * Usado por el Matchmaking cuando encuentra dos jugadores.
      */
-	// Aceptamos 'config' como parámetro opcional
 	async createPublicMatch(
 		player1Id: string,
 		player2Id: string,
 		config?: Partial<MatchSchemas.CreateMatchBodyType>
 	): Promise<MatchTypes.MatchRow> {
 
+		// Construcción del objeto Entidad (Row)
         const newMatch: MatchTypes.MatchRow = {
             id: randomUUID(),
             status: 'active',
@@ -67,27 +86,28 @@ export class MatchRepository {
             // Usamos los valores del config o defaults
             game_mode: config?.gameMode || 'classic',
 			target_score: config?.targetScore || 11
-			// match_type: 'private' // TODO: Agregar columna a tu DB
         };
 
-        // Reusamos tu lógica de inserción
+        // Reusamos la lógica de inserción
         this.create(newMatch);
-
         // Devolvemos el objeto completo (envuelto en Promise para compatibilidad)
         return newMatch; 
     }
 
     /**
-     * Crea una partida privada en espera (PENDING).
+     * createPrivateMatch
+     * Genera una partida privada 'PENDING'.
+     * Usado cuando un usuario desafía a otro. Requiere aceptación posterior.
      */
 	async createPrivateMatch(
 		hostId: string,
 		guestId: string,
 		config?: Partial<MatchSchemas.CreateMatchBodyType>
 	): Promise<MatchTypes.MatchRow> {
+
         const newMatch: MatchTypes.MatchRow = {
             id: randomUUID(),
-            status: 'pending',
+            status: 'pending',  // Esperando que el invitado acepte (o se conecte)
             player1_id: hostId,
             player1_score: 0,
             player2_id: guestId, // Ya asignamos el rival, aunque esté pending
@@ -97,27 +117,29 @@ export class MatchRepository {
 			finished_at: null,
 			game_mode: config?.gameMode || 'classic',
             target_score: config?.targetScore || 11
-            // match_type: 'private' // TODO: Agregar columna a tu DB
         };
 
         this.create(newMatch);
         return newMatch;
     }
 
+
+	// ========================================================================
+    // LECTURAS Y ACTUALIZACIONES
+    // ========================================================================
+
     /**
-     * Busca una partida por su ID único.
+     * findById
+     * Recupera una partida por su Primary Key.
      * Devuelve el objeto puro de la base de datos o null si no existe.
      */
     findById(id: string): MatchTypes.MatchRow | null {
 		// 4. Preparamos la consulta de lectura
-		// El signo "?": Parametro Posicional. El primer ? corresponde al
-		// primer argumento que pasamos al ejecutar 
+		// SELECT * es seguro aquí porque conocemos todas las columnas y no hay datos sensibles
         const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
         
-		// 5. Ejecutamos obteniendo un solo resultado (.get)
-		//get(): Se usa para SELECT cuando esperas una sola fila
-		// (o ninguna). Devuelve el objeto encontrado o undefined.
-		// Si esperamos muchas filas usaremos all().
+		// 5. Ejecutamos obteniendo un solo resultado.
+		// .get(): Optimizado para devolver 0 o 1 fila.
         const row = stmt.get(id);
 
         // 6. Retornamos con el tipado correcto
@@ -125,13 +147,32 @@ export class MatchRepository {
 	}
 	
 	/**
-	 * Actualiza el resultado final de la partida.
-	 */
+     * finishMatch
+     * Cierra la partida escribiendo el ganador y los resultados finales.
+     * Es crítico para la integridad histórica.
+     */
 	finishMatch(id: string, winnerId: string, p1Score: number, p2Score: number, finishedAt: number): void {
-		this.db.prepare(`
-			UPDATE matches
-			SET status = 'finished', winner_id = ?, player1_score = ?, player2_score = ?, finished_at = ?
-			WHERE id = ?
-		`).run(winnerId, p1Score, p2Score, finishedAt, id);
-	}
+		try {
+            // UPDATE con parámetros posicionales (?)
+            const stmt = this.db.prepare(`
+                UPDATE matches
+                SET status = 'finished', 
+                    winner_id = ?, 
+                    player1_score = ?, 
+                    player2_score = ?, 
+                    finished_at = ?
+                WHERE id = ?
+            `);
+
+            // .run() devuelve info sobre cambios (changes: 1 si funcionó)
+            const result = stmt.run(winnerId, p1Score, p2Score, finishedAt, id);
+
+            if (result.changes === 0) {
+                console.warn(`⚠️ [Repo] finishMatch no encontró la partida ID: ${id}`);
+            }
+
+        } catch (error) {
+            console.error(`❌ [Repo] Error actualizando finishMatch para ID ${id}:`, error);
+        }
+    }
 }
