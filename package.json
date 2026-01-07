@@ -17,6 +17,7 @@
 		"redis:cli": "docker exec -it ft_transcendence_redis redis-cli",
 		"redis:flush": "docker exec ft_transcendence_redis redis-cli FLUSHALL",
 		"build": "tsc --build && pnpm --filter '@transcendence/frontend' build",
+		"build:api": "pnpm --filter '!@transcendence/frontend' --filter '@transcendence/*' build",
 		"clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
 		"test": "pnpm -r --no-bail test",
 		"test:user": "pnpm --filter '@transcendence/user' test:user",
