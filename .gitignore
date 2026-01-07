@@ -148,3 +148,6 @@ status*.txt
 .claude/
 .cursorrules
 .docs/
+
+# Contracts generados
+packages/shared/contracts/*.json

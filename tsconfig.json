@@ -29,5 +29,8 @@
 		{ "path": "./packages/auth" },
 		{ "path": "./packages/game" }
 	],
-	"files": []
+	"files": [],
+	"exclude": [
+		"packages/images/**/*"
+	]
 }

@@ -1,8 +1,7 @@
 import { Utils, UserTypes, UserConstants, SharedErrors } from "@transcendence/shared";
 import { getDatabase, UserMapper } from "../index.js";
 import { IUserRepository } from './IUserRepository.js';
-import { NotBeforeError } from "jsonwebtoken";
-import { Ident } from "node_modules/@sinclair/typebox/build/esm/parser/runtime/types.mjs";
+import { UserEnv } from '../config.js';
 
 export class SQLiteUserRepository implements IUserRepository {
 	
@@ -27,7 +26,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			avatar: data.avatar ?? UserConstants.DEFAULT_AVATAR, // TODO pendiente de implementar feature de avatares en USER , asume front sirve /public/avatars/default.png
+			avatar: data.avatar ?? UserEnv.CLOUDINARY_DEFAULT_AVATAR, // TODO pendiente de implementar feature de avatares en USER , asume front sirve /public/avatars/default.png
 			passwordHash: data.passwordHash,
 			isOnline: false,
 			isDeleted: false,

@@ -1,15 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { UserTypes, SharedErrors } from '@transcendence/shared';
-import { CloudinaryService, UserService } from '../index.js';
+import { UserEnv, UserService } from '../index.js';
 
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
 	private userService: UserService;
-	private cloudinaryService: CloudinaryService;
 
 	constructor() {
 		this.userService = new UserService();
-		this.cloudinaryService = new CloudinaryService();
 	}
 	
 	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
@@ -68,6 +66,18 @@ export class UserController {
 	}
 
 	// ========================================================================
+	// UPLOAD AVATAR
+	// ========================================================================
+
+	async uploadAvatar(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			
+		} catch (err) {
+			this.errorHandler(err, request, reply);
+		}
+	}
+
+	// ========================================================================
 	// UPDATE USER
 	// ========================================================================
 
@@ -78,7 +88,7 @@ export class UserController {
 
 			if (data.avatar && data.avatar.startsWith('data:image/')) {
 				try {
-					data.avatar = await this.cloudinaryService.uploadAvatar(data.avatar);
+					data.avatar = UserEnv.CLOUDINARY_DEFAULT_AVATAR; // TODO Reemplazar por llamada a Image Service
 				} catch(err) {
 					return this.errorHandler(err, request, reply);
 				}

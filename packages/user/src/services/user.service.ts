@@ -38,6 +38,7 @@ export class UserService {
 		return await this.userRepo.create(fullData);
 	}
 
+	// TODO aqui se debe incluir el update de avatar o hace falta algo en Auth... hay metodos auxiliares en auth que serían útiles aqui.... not DRY pero ok
 	async updateUser(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 
 		const user = await this.userRepo.findUserByIdInternal(id);

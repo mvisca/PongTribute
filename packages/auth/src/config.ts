@@ -82,6 +82,7 @@ import {
 
 		export const USER_SERVICE_URL: string = sharedEnv.USER_SERVICE_URL;
 		export const AUTH_SERVICE_URL: string = sharedEnv.AUTH_SERVICE_URL;
+		export const IMAGE_SERVICE_URL: string = sharedEnv.IMAGE_SERVICE_URL;
 		
 		// =====================================================
 		// EXPORTS PÚBLICOS - OBJETOS

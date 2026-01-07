@@ -33,7 +33,7 @@
 		}
 	},
 
-	"include": ["src/**/*", "../shared/src/errors", "src/services/cloudinary.service.ts"],
+	"include": ["src/**/*", "../shared/src/errors"],
 	
 	"exclude": [
 		"node_modules",
