@@ -2,7 +2,7 @@
 
 import { MatchTypes, MatchSchemas } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
-import { randomUUID } from 'node:crypto'; // Usamos librería nativa de Node
+import { randomUUID } from 'node:crypto'; // librería nativa de Node
 
 
 /**
@@ -25,7 +25,7 @@ export class MatchRepository {
 
     /**
      * create (Primitive)
-     * Inserta un registro crudo (una nueva partida) en la tabla 'matches'.
+     * INSERTA UN REGISTRO crudo (una nueva partida) en la tabla 'matches'.
      * Recibe el objeto 'MatchRow' que ya preparó el Servicio con todos los datos.
      */
 	create(match: MatchTypes.MatchRow): void {
