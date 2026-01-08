@@ -280,12 +280,11 @@ export namespace SharedEnv {
 					`Recibido: ${url}`
 				);
 			}
-*/
-			console.log("CLOUDINARY API KEY --------------\n", CLOUDINARY_API_KEY);
+*/ // TODO evaluar implementar parser manual sin regex
 			const confirmUrl = `cloudinary://${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}@${CLOUDINARY_CLOUD_NAME}`;
 			if (confirmUrl !== CLOUDINARY_URL)
 				throw new Error(
-					`CLOUDINARY_URL mal formada.\nFormado: ${confirmUrl}\nRecibido: ${CLOUDINARY_URL}`
+					`CLOUDINARY_URL mal formada.` //\nFormado: ${confirmUrl}\nRecibido: ${CLOUDINARY_URL}`
 				);
 			return {
 				apiKey: CLOUDINARY_API_KEY,

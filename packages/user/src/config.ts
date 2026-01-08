@@ -67,6 +67,7 @@ export namespace UserEnv {
 	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
 
 	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+	export const IMAGE_SERVICE_URL: string = sharedEnv.IMAGE_SERVICE_URL;
 	export const USER_SERVICE_DB_FULL_PATH = sharedEnv.USER_SERVICE_DB_FULL_PATH;
 
 	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;

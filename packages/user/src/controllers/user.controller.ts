@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { UserTypes, SharedErrors } from '@transcendence/shared';
-import { UserEnv, UserService } from '../index.js';
+import { UserService } from '../index.js';
 
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
@@ -86,16 +86,8 @@ export class UserController {
 			const { id } = request.params as { id: string };
 			const data = request.body as UserTypes.UpdateUserBody;
 
-			if (data.avatar && data.avatar.startsWith('data:image/')) {
-				try {
-					data.avatar = UserEnv.CLOUDINARY_DEFAULT_AVATAR; // TODO Reemplazar por llamada a Image Service
-				} catch(err) {
-					return this.errorHandler(err, request, reply);
-				}
-			}
-
 			const user = await this.userService.updateUser(id, data);
-			return reply .code(200).send(user);
+			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}
