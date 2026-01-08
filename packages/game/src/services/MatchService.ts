@@ -52,7 +52,7 @@ export class MatchService {
             let matchDomain = MatchMapper.toDomain(matchRow);
             matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
-			// c. Notificar evento 'match.found'
+			// c. Notificar evento 'match.found' via REDIS (Pub/Subs)
             // El Gateway lo interceptará para avisar a los clientes que se conecten al juego
             await redisClient.publish('game_events', JSON.stringify({
                 type: 'match.found',
