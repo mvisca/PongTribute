@@ -1,0 +1,22 @@
+source 'https://rubygems.org'
+
+ruby '3.2.9'
+
+# Core rails (solo lo necesario)
+gem 'rails', '~> 7.1.0'
+
+# Imports específicos, el anterior es más grande
+# gem 'railties', '~> 7.1.0'
+# gem 'actionpack', '~> 7.1.0'	# HTTP/Routing
+# gem 'activesupport', '~> 7.1.0'	# Utilidades
+
+# Server
+gem 'puma', '~> 6.0'
+
+# Business logic
+gem 'cloudinary', '~> 1.28'
+gem 'json_schemer', '~> 2.0'
+
+group :development, :test do
+	gem 'rspec-rails', '~> 6.0'
+end

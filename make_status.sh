@@ -84,6 +84,10 @@ find . -type f \
     ! -name 'status*.txt' \
     ! -name 'pnpm-lock.yaml' \
     ! -name 'package-lock.json' \
+    ! -name '*.db' \
+    ! -name '*.pdf' \
+    ! -name '*.db-shm' \
+    ! -name '*.db-wal' \
     ! -name '*.log' \
     ! -name '.DS_Store' \
     ! -name 'tsconfig.tsbuildinfo' \

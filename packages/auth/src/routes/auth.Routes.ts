@@ -54,21 +54,21 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 	
 	/** Activar 2FA */
-	app.post('/auth/enable-2fa', {
+	app.post('/auth/:id/enable-2fa', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.Enable2FABodySchema,
 		handler: controller.enable2FA.bind(controller)
 	});
 	
 	/** Completar configuración de 2FA */
-	app.post('/auth/verify-2fa-setup', {
+	app.post('/auth/:id/verify-2fa-setup', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.Verify2FASetupBodySchema,
 		handler: controller.verify2FASetup.bind(controller)
 	});
 	
 	/** Desactivar 2FA */
-	app.post('/auth/disable-2fa', {
+	app.post('/auth/:id/disable-2fa', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.Disable2FABodySchema,
 		handler: controller.disable2FA.bind(controller)

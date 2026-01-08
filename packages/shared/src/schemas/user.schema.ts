@@ -27,7 +27,8 @@ const PasswordHashField = Type.String({
 });
 
 const AvatarField = Type.String({
-	format: 'uri',
+	minLength: 1,
+	maxLength: 102400 // max 10MB
 });
 
 const UuidField = Type.String({
