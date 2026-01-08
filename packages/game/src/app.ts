@@ -7,12 +7,19 @@ import swaggerUI from '@fastify/swagger-ui';
 import { gameRoutes } from './index.js';
 import { GameEnv } from './config.js';
 import { Utils } from '@transcendence/shared';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 // Cliente Redis de toda la app Game
 export let redisClient: Redis | null = null;
 
 export function buildApp(): FastifyInstance {
-
+	
+	const __filename = fileURLToPath(import.meta.url);
+	const __dirname = dirname(__filename);
+	
+	
 	try {
 		const redisConfig = GameEnv.getRedisConfig();
 		redisClient = Utils.createRedisClient(redisConfig);
@@ -21,16 +28,16 @@ export function buildApp(): FastifyInstance {
 		console.error('Error conectando Redis en Game: ', err);
 		process.exit(1);
 	}
-
+	
 	// 1. Inicialización con Configuración (Logger, etc.)
 	const app = Fastify(GameEnv.getFastifyConfig());
-
+	
 	// 2. Plugins Globales de Seguridad
 	app.register(helmet, {
 		contentSecurityPolicy: false, // Ajustar según necesidad del juego
 		crossOriginEmbedderPolicy: false
 	});
-
+	
 	// 2. Plugins de documentación
 	app.register(swagger, {
 		openapi: {
@@ -41,39 +48,70 @@ export function buildApp(): FastifyInstance {
 			servers: [
 				{ url: `http://localhost:${GameEnv.PORT}` }
 			],
+			components: {
+				securitySchemes: {
+					bearerAuth: {
+						type: 'http',
+						scheme: 'bearer',
+						bearerFormat: 'JWT'
+					}
+				}
+			},
+			security: [{ bearerAuth: [] }],
 			tags: [
-				{ name: 'Game', description: 'Gestión de partidas' }
+				{ name: 'Game', description: 'Game service' }
 			]
 		},
-		transform: ({ schema, url }: { schema: any, url: string }) => {
-			return {
-				schema,
-				url
-			};
+		transform: ({ schema, url }) => {
+			return { schema, url };
 		}
 	});
-
+	
 	// 2. Plugins de documentacion con UI interactiva
+	/*app.register(swaggerUI, {
+	routePrefix: '/docs',
+	staticCSP: true,
+	uiConfig: {
+	docExpansion: 'list',
+	deepLinking: false
+	}
+	});*/
+
+	const swaggerThemeCSS = readFileSync(
+		join(__dirname, '../../shared/src/styles/', 'swagger-custom.css'),
+		'utf-8'
+	);
+	
 	app.register(swaggerUI, {
 		routePrefix: '/docs',
 		staticCSP: true,
 		uiConfig: {
 			docExpansion: 'list',
 			deepLinking: false
+		},
+		theme: {
+			title: 'Transcendence Game API',
+			css: [
+				{
+					filename: 'swagger-custom.css',
+					content: swaggerThemeCSS
+				}
+			]
 		}
 	});
-
+	
+	
 	// 2.1. REGISTRO DE WEBSOCKETS
 	// Esto habilita ws:// en tu servidor
 	app.register(fastifyWebsocket);
-
+	
 	// 3. Hooks Globales (Logging de peticiones)
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
-
+		
 		if (method == 'HEAD')
 			return;
-
+		
 		const url = route.url;
 		const icon = {
 			POST: 'GAME 📝: ',
@@ -84,7 +122,7 @@ export function buildApp(): FastifyInstance {
 		}[method as string] || '📌';
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	});
-
+	
 	// 4. Health Check (Vital para Docker/K8s)
 	app.get('/health', async (request, reply) => {
 		return {
@@ -94,12 +132,12 @@ export function buildApp(): FastifyInstance {
 			uptime: process.uptime()
 		};
 	});
-
+	
 	// 5. Registro de Rutas del Dominio
 	// Prefijo '/api' para que quede como: POST /api/matches
 	console.log('REG GAME ROUTES');
 	app.register(gameRoutes, { prefix: '/api' });
-
+	
 	// 6. Manejador de Errores Global
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error({
@@ -107,9 +145,9 @@ export function buildApp(): FastifyInstance {
 			url: request.url,
 			method: request.method
 		});
-
+		
 		const typedError = error as FastifyError;
-
+		
 		if ('validation' in typedError && typedError.validation) {
 			return reply.status(400).send({
 				error: 'Ostras! Error de validación',
@@ -117,29 +155,29 @@ export function buildApp(): FastifyInstance {
 				details: typedError.validation
 			})
 		}
-
+		
 		if (typedError.statusCode) {
 			return reply.status(typedError.statusCode).send({
 				error: typedError.name,
 				message: typedError.message
 			})
 		}
-
+		
 		return reply.status(500).send({
 			error: 'Internal server error',
 			message: GameEnv.NODE_ENV === 'production'
-				? 'Algo salió mal'
-				: (error as FastifyError).message
+			? 'Algo salió mal'
+			: (error as FastifyError).message
 		});
 	});
-
+	
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
 			error: 'Not found',
 			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
-
+	
 	console.log('Returning App: GAME');
 	return app;
 }
