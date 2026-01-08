@@ -78,6 +78,7 @@ export function buildApp(): FastifyInstance {
   app.register(swaggerUi, {
     routePrefix: '/docs',
     uiConfig: {
+      persistAuthorization: true,
       urls: [
         { name: 'Auth Service', url: '/docs/auth.json' },
         { name: 'User Service', url: '/docs/user.json' },
