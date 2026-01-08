@@ -72,6 +72,7 @@ import {
 		export const UNIQUE_SESSION: boolean = sharedEnv.UNIQUE_SESSION;
 		export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 		export const TOKEN_EXPIRY: number = sharedEnv.TOKEN_EXPIRY;
+		export const REFRESH_TOKEN_EXPIRY: string = sharedEnv.REFRESH_TOKEN_EXPIRY;
 		export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
 		export const CLOUDINARY_DEFAULT_AVATAR: string = sharedEnv.CLOUDINARY_DEFAULT_AVATAR;
 

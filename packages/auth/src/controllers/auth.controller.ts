@@ -11,24 +11,30 @@ export class AuthController {
 	}
 
 	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
+		if (err instanceof SharedErrors.UnauthorizedError) {
+			const error = err as any;
+			reply.code(401).send({error: 'Unauthorized', message: error.message});
+			return;
+		}
+
 		if (err instanceof SharedErrors.NotFoundError) {
 			const error = err as any;
 			reply.code(404).send({error: 'Not Found', message: error.message, resource:error.resource});
 			return;
 		}
-		
+
 		if (err instanceof SharedErrors.ConflictError) {
 			const error = err as any;
 			reply.code(409).send({error: 'Conflict', message: error.message, field: error.field});
 			return;
 		}
-		
+
 		if (err instanceof SharedErrors.ValidationError) {
 			const error = err as any;
 			reply.code(403).send({error: 'Forbidden', message: error.message, field: error.field});
 			return;
 		}
-		
+
 		request.log.error(err);
 		const message = err instanceof Error ? err.message : 'Unknown Error';
 		reply.code(500).send({error: 'Internal Server Error', message});

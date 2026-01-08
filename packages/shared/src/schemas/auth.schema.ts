@@ -14,11 +14,15 @@ const EmailField = Type.String({
 	format: 'email',
 });
 
-const AvatarField = Type.Optional(Type.String({
-	minLength: 1,
-	maxLength: 1024 * 1024 * 10, // max 10MB
-	pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
-}));
+const AvatarField = Type.Optional(
+	Type.Union([
+		Type.String({ maxLength: 0 }), // Allow empty string
+		Type.String({
+			maxLength: 1024 * 1024 * 10, // max 10MB
+			pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
+		})
+	])
+);
 
 const PasswordField = Type.String({
 	minLength: 8,
@@ -270,7 +274,7 @@ export namespace AuthSchemas {
 		username: UsernameField,
 		email: EmailField,
 		password: PasswordField,
-		avatar: Type.Optional(AvatarField)
+		avatar: AvatarField
 	});
 	
 	/** Schema completo de POST /api/auth/register */

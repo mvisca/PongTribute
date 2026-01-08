@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
+import ms from 'ms';
 import QRcode from 'qrcode';
 import speakeasy from 'speakeasy';
 import {
@@ -41,16 +42,16 @@ export class AuthService {
 	// FETCHERS
 	
 	/** Fetch user con email desde user service */
-	private async fetchUserByEmail(email: string): Promise<UserTypes.UserInternal> {
+	private async fetchUserByEmail(email: string): Promise<UserTypes.UserInternal | null> {
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-email/${email}`,
 			{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET } }
 		)
-		
+
 		if (!response.ok) {
-			throw new SharedErrors.NotFoundError('Usuario no encontrado', 'auth');
+			return null; // Retornar null en lugar de lanzar error (para evitar user enumeration en login)
 		}
-		
+
 		return await response.json() as UserTypes.UserInternal;
 	}
 	
@@ -140,8 +141,8 @@ export class AuthService {
 		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 		
 		//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
-		// calcula expiración (TOKEN_EXPIRY está en segundos, convertir a milisegundos)
-		const expiresAt = new Date(Date.now() + AuthEnv.TOKEN_EXPIRY * 1000);
+		// calcula expiración usando REFRESH_TOKEN_EXPIRY (formato: "7d", "24h", etc.)
+		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY));
 		
 		// almacenar record refresh token
 		const response = await fetch(
@@ -239,9 +240,16 @@ export class AuthService {
 				})
 			}
 		);
-		
-		if (!response.ok)
-			throw new Error(`Fallo actualizando 2FA: ${response.status}`);
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+			console.error('Error updating 2FA status:', {
+				status: response.status,
+				errorData,
+				requestBody: { has2FAEnabled: enabled, totpSecret, backupCodeHash }
+			});
+			throw new Error(`Fallo actualizando 2FA: ${response.status} - ${JSON.stringify(errorData)}`);
+		}
 	}
 	
 	/** Set user online/offline status */
@@ -501,16 +509,20 @@ export class AuthService {
 		// PASO 1 generar totp secret con speakeasy
 		const secret = speakeasy.generateSecret({
 			length: 32,									// largo 32
-			name: `ft_transcendence (${user.email})`,	// nombre en google authenticator
-			issuer: 'ft_transcendence'					// emisor (aparece en la app)
+			name: user.email,							// nombre en google authenticator (simplificado)
+			issuer: 'transcend'							// emisor (aparece en la app, más corto)
 		});
 		// output
 		// secret.base32 -> Secret en formato Base32 (para almacenar y verificar)
 		// secret.otpauth_url -> URL para generar QR
-		
-		// PASO 2 genearar QRCode
-		const qr = await QRcode.toDataURL(secret.otpauth_url as string)
-		// q es un Data URL base64: "dataimage/png;base64,...(hash like)"
+
+		// PASO 2 genearar QRCode con configuración optimizada
+		const qr = await QRcode.toDataURL(secret.otpauth_url as string, {
+			width: 256,					// Tamaño en píxeles (más grande = más fácil de escanear)
+			margin: 1,					// Margen blanco mínimo
+			errorCorrectionLevel: 'L'	// Nivel bajo de corrección de errores (menos denso)
+		})
+		// qr es un Data URL base64: "data:image/png;base64,...(hash)"
 		
 		// PASO 3 generar backupCode
 		const backupCode = this.generate2FABackupCode();
@@ -523,7 +535,7 @@ export class AuthService {
 		// almacenar en setupCache(prefix: '2fa:setup:'), TTL Time To Live (AuthEnv)
 		const setupData: AuthTypes.SetupTokenData = {
 			userId: user.id,
-			totpSecret: secret.base32,					// Base32 secret para verificar
+			totpSecret: secret.base32?.replace(/\s/g, '').toUpperCase() ?? '',	// Base32 en mayúsculas sin espacios
 			backupCodeHash								// Para verificar en solicitud de recuperación
 		};
 		
@@ -546,7 +558,15 @@ export class AuthService {
 		const verified = this.verify2FATotpCode(setupData.totpSecret, totpCode);
 		if (!verified)
 			throw new SharedErrors.UnauthorizedError('Código 2FA inválido');
-		
+
+		// Debug: validar formato antes de enviar
+		console.log('Datos 2FA a enviar:', {
+			totpSecretLength: setupData.totpSecret.length,
+			totpSecretMatches: /^[A-Z2-7]+$/.test(setupData.totpSecret),
+			backupCodeHashLength: setupData.backupCodeHash.length,
+			backupCodeHashMatches: /^\$2[ayb]\$[0-9]{2}\$[A-Za-z0-9./]{53}$/.test(setupData.backupCodeHash)
+		});
+
 		// Activar 2FA en user service
 		await this.update2FAStatus(setupData.userId, true, setupData.totpSecret, setupData.backupCodeHash);
 		
