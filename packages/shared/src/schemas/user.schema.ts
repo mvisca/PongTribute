@@ -26,10 +26,10 @@ const PasswordHashField = Type.String({
 	pattern: '^\\$2[aby]\\$\\d{2}\\$.{53}$',
 });
 
-const AvatarField = Type.String({
+const AvatarField = Type.Optional(Type.String({
 	minLength: 1,
-	maxLength: 102400 // max 10MB
-});
+	maxLength: 1024 * 1024 * 10 // max 10MB
+}));
 
 const UuidField = Type.String({
 	format: 'uuid'
