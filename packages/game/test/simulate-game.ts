@@ -1,4 +1,9 @@
 // packages/game/test/simulate-game.ts
+
+//Arrancar el test con: 
+// pnpm --filter @transcendence/game exec tsx test/simulate-game.ts
+
+
 import { randomUUID } from 'crypto';
 import WebSocket from 'ws';
 
