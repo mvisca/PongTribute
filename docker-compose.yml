@@ -12,7 +12,49 @@ services:
         interval: 5s
         timeout: 3s
         retries: 5
+    
+    images:
+      build:
+        context: ./packages/images
+        dockerfile: Dockerfile
+      container_name: ft_transcendence_images
+      ports:
+        - "3004:3004"
+      environment:
+        PORT: "3004"
+        CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+        CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+        CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+        SERVICE_SECRET: ${SERVICE_SECRET}
+        RAILS_ENV: "production"
+        RAILS_LOG_TO_STDOUT: "true"
+      env_file:
+        - .env
+      volumes:
+        - ./packages/shared/contracts:/app/contracts:ro
+      deploy:
+        resources:
+          limits:
+            memory: 256M
+            cpus: '0.5'
+          reservations:
+            memory: 128M
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q --spider http://localhost:3004/health || exit 1"]
+        interval: 30s
+        timeout: 3s
+        retries: 3
+        start_period: 40s
+      networks:
+        - transcendence
+      depends_on:
+        redis:
+          condition: service_healthy
 
 volumes:
   redis-data:
     driver: local
+
+networks:
+  transcendence:
+    driver: bridge

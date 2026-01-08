@@ -9,6 +9,59 @@ export class UserService {
 		this.userRepo = new SQLiteUserRepository();
 	}
 
+	/** Validación de argumento avatar en updateUser */
+	private validateAvatar(avatar?: string): boolean {
+		if (!avatar || avatar.trim() === "") return false;
+
+		// Validar base64
+		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+		if (!base64Regex.test(avatar)) return false;
+
+		// Validar tamaño
+		const base64Data = avatar.split(',')[1];
+		if (!base64Data) return false;
+
+		const sizeInBytes = (base64Data.length * 3) / 4; // Aproximación base64
+		const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+
+		return sizeInBytes <= maxSizeBytes;
+	}
+
+	/** Upload de imagen llamando a Image Service */
+	private async uploadAvatarToCloudinary(
+		base64Image: string,
+		oldAvatarUrl?: string
+	): Promise<string> {
+		try {
+			const response = await fetch(
+				`${UserEnv.IMAGE_SERVICE_URL}/internal/upload`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': UserEnv.SERVICE_SECRET
+					},
+					body: JSON.stringify({
+						base64: base64Image,
+						...( oldAvatarUrl && { old_avatar: oldAvatarUrl })
+					})
+				}
+			);
+
+			if (!response.ok) {
+				const error = await response.json() as { message: string }; // TODO tipar adecuadamente
+				throw new Error(`Image service error: ${error?.message || response.statusText}`);
+			}
+
+			const data = await response.json() as { url: string };
+			return data.url;
+		} catch (err) {
+			console.error('Fallo subiendo avatar: ', err);
+			// Mantener avatar actual si falla (diferente de Auth Service)
+			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR;
+		}
+	}
+
 	async createUser(data: UserTypes.CreateUserInput): Promise<UserTypes.UserPublic> {
 
 		const [emailTaken, usernameTaken] = await Promise.all([
@@ -43,6 +96,20 @@ export class UserService {
 		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
+
+		// Si hay avatar nuevo en formato base64, procesarlo
+		if (data.avatar && data.avatar.startsWith('data:image/')) {
+			if (this.validateAvatar(data.avatar)) {
+				// Subir nuevo avatar (uploadAvatarToCloudinary maneja el fallback)
+				data.avatar = await this.uploadAvatarToCloudinary(
+					data.avatar,
+					user.avatar  // Se pasa para eliminación si upload exitoso
+				);
+			} else {
+				// Avatar inválido - mantener el actual
+				delete data.avatar;
+			}
+		}
 
 		if (data.email && data.email !== user.email) {
 			const isEmailTaken = await this.userRepo.isEmailTaken(data.email);

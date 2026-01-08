@@ -62,20 +62,27 @@ import {
 		// EXPORTS PÚBLICOS - VALORES
 		// =====================================================
 
+		export const NODE_ENV: string = sharedEnv.NODE_ENV;
+		
 		export const PORT: number = sharedEnv.AUTH_SERVICE_PORT;
 		export const HOST: string = sharedEnv.AUTH_SERVICE_HOST;
-		export const NODE_ENV: string = sharedEnv.NODE_ENV;
+		
 		export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
+		
 		export const UNIQUE_SESSION: boolean = sharedEnv.UNIQUE_SESSION;
 		export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
 		export const TOKEN_EXPIRY: number = sharedEnv.TOKEN_EXPIRY;
 		export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
+		export const CLOUDINARY_DEFAULT_AVATAR: string = sharedEnv.CLOUDINARY_DEFAULT_AVATAR;
+
 		export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
 		export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
 		export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
 		export const REDIS_DB: number = sharedEnv.REDIS_DB;
+
 		export const USER_SERVICE_URL: string = sharedEnv.USER_SERVICE_URL;
 		export const AUTH_SERVICE_URL: string = sharedEnv.AUTH_SERVICE_URL;
+		export const IMAGE_SERVICE_URL: string = sharedEnv.IMAGE_SERVICE_URL;
 		
 		// =====================================================
 		// EXPORTS PÚBLICOS - OBJETOS

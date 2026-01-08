@@ -5,7 +5,7 @@ import { UserService } from '../index.js';
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
 	private userService: UserService;
-	
+
 	constructor() {
 		this.userService = new UserService();
 	}
@@ -66,6 +66,18 @@ export class UserController {
 	}
 
 	// ========================================================================
+	// UPLOAD AVATAR
+	// ========================================================================
+
+	async uploadAvatar(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			
+		} catch (err) {
+			this.errorHandler(err, request, reply);
+		}
+	}
+
+	// ========================================================================
 	// UPDATE USER
 	// ========================================================================
 
@@ -73,8 +85,9 @@ export class UserController {
 		try {
 			const { id } = request.params as { id: string };
 			const data = request.body as UserTypes.UpdateUserBody;
+
 			const user = await this.userService.updateUser(id, data);
-			return reply .code(200).send(user);
+			return reply.code(200).send(user);
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}

@@ -30,5 +30,8 @@
 		{ "path": "./packages/game" },
 		{ "path": "./packages/gateway" }
 	],
-	"files": []
+	"files": [],
+	"exclude": [
+		"packages/images/**/*"
+	]
 }

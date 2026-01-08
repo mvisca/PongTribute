@@ -181,7 +181,7 @@ export class AuthController {
 				avatar,
 				password } = request.body as AuthTypes.RegisterBody;
 				
-			const result = await this.authService.register(username, email, avatar, password);
+			const result = await this.authService.register(username, email, password, avatar);
 			
 			return reply.code(201).send(result);
 

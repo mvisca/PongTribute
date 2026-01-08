@@ -1,0 +1,14 @@
+refinar data db folder
+
+game customization
+score limit 3 - 6 - 12
+custom paddle velocidad
+
+partida anonima
+como hacerlo
+como es el json de la partida
+abstraer el inicio de apartida, depende de 2 uuid user 
+match making puede obtener los 2 uuid por publico o privado
+
+
+revisar manejo de errores con tipos custom en todo el proyecto

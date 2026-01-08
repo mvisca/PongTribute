@@ -2,7 +2,6 @@ export * from './app.js';
 export * from './config.js';
 export * from './connection.js';
 export * from './controllers/index.js';
-export * from '../../shared/src/errors/index.js';
 export * from './mappers/index.js';
 export * from './middleware/index.js';
 export * from './repositories/index.js';
