@@ -94,6 +94,25 @@ export namespace MatchSchemas {
         id: Type.String({ format: 'uuid' })
     });
 
+
+	// POST /matches/id:/accept
+	export const AcceptMatchParams = Type.Object({
+		id: Type.String({ format: 'uuid' })
+	});
+
+
+	export const AcceptMatchSchema = {
+		description: 'Acepta una invitación a partida privada',
+		tags: ['Game'],
+		params: AcceptMatchParams,
+		response: {
+			200: Match,
+			403: Type.Object({ error: Type.String(), message: Type.String() }),
+			404: Type.Object({ error: Type.String(), message: Type.String() })
+		}
+	}
+
+
     export const GetMatchSchema = {
         description: 'Obtiene el estado de una partida por ID',
         tags: ['Game'],

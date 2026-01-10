@@ -13,7 +13,7 @@ export class MatchMapper {
         if (row.player2_id) {
             player2Obj = {
                 userId: row.player2_id,
-                username: "Unknown", // TODO: El servicio de usuarios debería rellenar esto después
+                username: "Unknown", // El servicio de usuarios hidratara esto después
                 score: row.player2_score ?? 0, // Si es null, ponemos 0
                 isWinner: row.winner_id === row.player2_id
             };
@@ -26,7 +26,7 @@ export class MatchMapper {
             
             player1: {
                 userId: row.player1_id,
-                username: "Unknown", // TODO: Placeholder hasta integrar usuarios
+                username: "Unknown", // El servicio de usuarios hidratara esto después
                 score: row.player1_score,
                 isWinner: row.winner_id === row.player1_id
             },

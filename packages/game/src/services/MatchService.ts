@@ -53,7 +53,7 @@ export class MatchService {
             matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
 			// c. Notificar evento 'match.found' via REDIS (Pub/Subs)
-            // El Gateway lo interceptará para avisar a los clientes que se conecten al juego
+            // El Gateway lo interceptará para avisar a los 2 clientes que se conecten al juego
             await redisClient.publish('game_events', JSON.stringify({
                 type: 'match.found',
                 payload: {
@@ -139,6 +139,44 @@ export class MatchService {
         return match;
 	}
 	
+	/**
+     * acceptMatch
+     * Confirma una partida privada, cambia su estado y notifica.
+     */
+    async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
+        // 1. Obtener la partida cruda (Row)
+        const matchRow = this.matchRepo.findById(matchId); 
+
+        // 2. Guards
+        if (!matchRow) throw new Error('Match not found');
+        if (matchRow.status !== 'pending') throw new Error('Match is not pending');
+        if (matchRow.player2_id !== userId) throw new Error('You are not the invited player');
+
+        // 3. Actualizar estado en DB
+        await this.matchRepo.updateStatus(matchId, 'active');
+
+        // 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
+        // Convertimos el Row crudo a Objeto de Dominio
+        let matchDomain = MatchMapper.toDomain(matchRow);
+        
+        // Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
+        // (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM)
+        matchDomain.status = 'active'; 
+
+        // Rellenamos los nombres de usuario (S2S)
+        matchDomain = await this.hydrateMatchPlayers(matchDomain);
+
+        // 5. Notificar inicio de partida (Redis)
+        await redisClient?.publish('game_events', JSON.stringify({
+            type: 'match.started',
+            payload: matchDomain
+        }));
+
+        return matchDomain;
+    }
+
+
+
 	/**
      * fetchUserProfile
      * Helper para la comunicación S2S (Service-to-Service)

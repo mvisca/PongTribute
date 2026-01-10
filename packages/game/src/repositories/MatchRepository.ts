@@ -128,6 +128,33 @@ export class MatchRepository {
     // LECTURAS Y ACTUALIZACIONES
     // ========================================================================
 
+	/**
+	 * updateStatus
+	 * Cambia el status de una partida (pending -> active)
+	 */
+	updateStatus(id: string, status: MatchTypes.MatchStatus): void {
+
+		try {
+			const stmt = this.db.prepare(`
+				UPDATE matches 
+				SET status = ?
+				WHERE id = ?)
+			`);
+
+			const result = stmt.run(status, id);
+
+			if (result.changes === 0) {
+				console.warn(`⚠️ [Repo] finishMatch no encontró la partida ID: ${id}`);
+			}
+		} catch (error) {
+			console.error(`❌ [Repo] Error en updateState para ID ${id}:`, error);
+			throw error; // Re-lanzar para que el servicio sepa que falló
+        }
+	}
+
+
+
+
     /**
      * findById
      * Recupera una partida por su Primary Key.

@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MatchService } from '../services/MatchService.js';
 // Importamos el Schema (Valor) Y el Tipo
-import { MatchSchemas, AuthTypes } from '@transcendence/shared';
+import { MatchSchemas, AuthTypes, MatchTypes } from '@transcendence/shared';
 
 
 /**
@@ -21,7 +21,9 @@ export class MatchController {
         this.matchService = matchService;
     }
 
-	/*===== HANDLER(discrimina entre partida 'private' o 'public') ====*/
+	// ========================================================================
+    // MÉTODO CREATE MATCH (Discrimina entre partida 'private' o 'public')
+    // ========================================================================
 	/**
      * createMatch
      * Orquesta la creación de partidas o la unión a colas de espera.
@@ -56,7 +58,7 @@ export class MatchController {
 			});
 		}
 
-		// 4. LÓGICA Y DELEGACIÓN (Envuelto en TRY-CATCH)
+		// 4. LÓGICA Y DELEGACIÓN
 		try {
 			let result;
 
@@ -124,4 +126,72 @@ export class MatchController {
 			});
 		}
 	}
+
+
+	// ========================================================================
+    // MÉTODO ACCEPT MATCH
+	// ========================================================================
+	
+    async acceptMatch(
+		//Le dice a Fastify (y a TypeScript) que req.params tendrá la forma { id: string } definida en Shared
+        req: FastifyRequest<{ Params: MatchTypes.AcceptMatchParams }>, 
+        reply: FastifyReply
+    ) {
+        console.log("👉 🎮 [Controller] Entrando en acceptMatch");
+
+        // 1. EXTRAE DATOS Y VALIDA JWT 
+        const { id } = req.params;
+        const user = req.user as AuthTypes.JWTPayload;
+
+        console.log(`User ${user.id} attempting to accept match ${id}`);
+        
+        try {
+            // 2. Llama a MatchService para VALIDAR si existe, si es 'pending', 
+			// si soy el invitado y entonces lo pone en 'active'
+            const match = await this.matchService.acceptMatch(user.id, id);
+
+            // 3. Respuesta Exitosa
+			// Devolvemos el objeto Match actualizado (status: 'active')
+			// El frontend usara esto para redirigir a la pantalla de juego
+            return reply.status(200).send(match);
+
+        } catch (error) {
+            // 4. Manejo de Errores (Error Mapping)
+            // Convertimos las excepciones del dominio en códigos HTTP estándar
+            console.error("❌ 🎮 [Controller] Error en acceptMatch:", error);
+
+            if (error instanceof Error) {
+                // 404 Not Found: El ID de partida no existe
+                if (error.message.includes('not found')) {
+                    return reply.status(404).send({ 
+                        error: 'Not Found', 
+                        message: error.message 
+                    });
+                }
+
+                // 403 Forbidden: Soy un usuario cotilla intentando aceptar una partida ajena
+                if (error.message.includes('not the invited player')) {
+                    return reply.status(403).send({ 
+                        error: 'Forbidden', 
+                        message: error.message 
+                    });
+                }
+
+                // 400 Bad Request: La partida ya empezó o terminó
+                if (error.message.includes('not pending')) {
+                    return reply.status(400).send({ 
+                        error: 'Bad Request', 
+                        message: error.message 
+                    });
+                }
+            }
+
+            // 500 Internal Server Error: Fallo de DB o código inesperado
+            return reply.status(500).send({ 
+                error: 'Internal Server Error', 
+                message: 'Could not accept match' 
+            });
+        }
+    }
+
 }

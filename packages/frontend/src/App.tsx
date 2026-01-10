@@ -16,7 +16,7 @@ export default function App() {
       {page === "login" && (
         <Login
           onLoginSuccess={(username) => {
-            setUser({ username }); // 👈 simulamos login
+            setUser({ username } as any); // 👈 simulamos login
             setPage("home");
           }}
           onRegister={() => setPage("register")}

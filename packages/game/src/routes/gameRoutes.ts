@@ -3,7 +3,7 @@ import { MatchController } from '../controllers/MatchController.js';
 import { GameGateway } from '../gateways/GameGateway.js';
 import { GameService } from '../services/GameService.js';
 import { MatchRepository } from '../repositories/MatchRepository.js';
-import { MatchSchemas } from '@transcendence/shared';
+import { MatchSchemas, MatchTypes } from '@transcendence/shared';
 import { GameMiddleware } from '../middleware/game.middleware.js';
 import { MatchService } from '../services/MatchService.js';
 
@@ -44,8 +44,20 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
         handler: controller.createMatch.bind(controller)
     });
 
+   // ========================================================================
+    // 3. RUTA HTTP DE ACEPTAR PARTIDA (REST)
+    // ========================================================================
+	
+	//id:/accept: Los dos puntos indican a Fastify que esa parte de la URL es 
+	// una variable. Fastify la extraerá automáticamente y la pondrá en req.params.id
+	app.post<{ Params: MatchTypes.AcceptMatchParams }>('/matches/id:/accept', {
+        preHandler: [GameMiddleware.validateJWT],
+        schema: MatchSchemas.AcceptMatchSchema,
+        handler: controller.acceptMatch.bind(controller)
+    });
+
 	// ========================================================================
-    // 3. RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
+    // 4. RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
 	// ========================================================================
 
 	/**
@@ -61,6 +73,6 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
         gateway.handleConnection(connection, req);
     });
     
-	console.log('✅ Game Routes registered: HTTP POST /matches & WS /game/ws');
+	console.log('✅ Game Routes registered');
 };
 
