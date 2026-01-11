@@ -95,6 +95,7 @@ export namespace MatchSchemas {
     });
 
 
+
 	// POST /matches/id:/accept
 	export const AcceptMatchParams = Type.Object({
 		id: Type.String({ format: 'uuid' })
@@ -110,8 +111,23 @@ export namespace MatchSchemas {
 			403: Type.Object({ error: Type.String(), message: Type.String() }),
 			404: Type.Object({ error: Type.String(), message: Type.String() })
 		}
-	}
+	};
 
+	// POST /matches/id:/reject
+	export const RejectMatchParams = Type.Object({
+		id: Type.String({ format: 'uuid' })
+	});
+
+	export const RejectMatchSchema = {
+		description: 'Rechaza una invitación a partida privada',
+		tags: ['Game'],
+		params: RejectMatchParams,
+		response: {
+			200: Match,
+			403: Type.Object({ error: Type.String(), message: Type.String() }),
+			404: Type.Object({ error: Type.String(), message: Type.String() })
+		}
+	};
 
     export const GetMatchSchema = {
         description: 'Obtiene el estado de una partida por ID',
@@ -122,6 +138,7 @@ export namespace MatchSchemas {
             404: Type.Object({ error: Type.String(), message: Type.String() })
         }
 	};
+
 	
 
 }

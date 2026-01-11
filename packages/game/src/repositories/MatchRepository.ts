@@ -130,7 +130,7 @@ export class MatchRepository {
 
 	/**
 	 * updateStatus
-	 * Cambia el status de una partida (pending -> active)
+	 * Cambia el status de una partida: (pending -> active) (pending -> rejected)
 	 */
 	updateStatus(id: string, status: MatchTypes.MatchStatus): void {
 

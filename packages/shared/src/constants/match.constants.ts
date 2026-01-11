@@ -90,7 +90,11 @@ export namespace MatchConstants {
 		/**
 		 * Partida terminada
 		*/
-		FINISHED: "finished"
+		FINISHED: "finished",
+
+		// Partida rechazada por el friend retado
+		REJECTED: "rejected"
+
 	}as const;
 	
 	export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];

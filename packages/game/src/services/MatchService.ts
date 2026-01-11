@@ -160,7 +160,8 @@ export class MatchService {
         let matchDomain = MatchMapper.toDomain(matchRow);
         
         // Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
-        // (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM)
+        // (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
+		// ya lo hemos actualizado)
         matchDomain.status = 'active'; 
 
         // Rellenamos los nombres de usuario (S2S)
