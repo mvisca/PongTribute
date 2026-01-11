@@ -11,7 +11,8 @@ export namespace MatchSchemas {
     export const MatchStatus = Type.Union([
         Type.Literal("pending"),
         Type.Literal("active"),
-        Type.Literal("finished")
+		Type.Literal("finished"),
+		Type.Literal("rejected")
     ]);
 
 	

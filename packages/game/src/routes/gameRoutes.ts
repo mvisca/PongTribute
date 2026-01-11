@@ -10,7 +10,7 @@ import { MatchService } from '../services/MatchService.js';
 export const gameRoutes: FastifyPluginAsync = async (app) => {
 
 	// ========================================================================
-    // 1. INYECCIÓN DE DEPENDENCIAS (COMPOSITION ROOT)
+    // INYECCIÓN DE DEPENDENCIAS (COMPOSITION ROOT)
     // ========================================================================
     // Centralizamos la creación de instancias aquí para facilitar el testing.
 	// Si quisiéramos testear, podríamos pasar Repositorios "Mock" (falsos).
@@ -27,7 +27,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     const gateway = new GameGateway(gameService);   // Inyectamos Servicio game en Gateway
 
     // ========================================================================
-    // 2. RUTA HTTP DE CREAR PARTIDA (REST)
+    // RUTA HTTP DE CREAR PARTIDA (REST)
     // ========================================================================
 	
 	/**
@@ -45,19 +45,31 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     });
 
    // ========================================================================
-    // 3. RUTA HTTP DE ACEPTAR PARTIDA (REST)
+    // RUTA HTTP DE ACEPTAR PARTIDA (REST)
     // ========================================================================
 	
 	//id:/accept: Los dos puntos indican a Fastify que esa parte de la URL es 
 	// una variable. Fastify la extraerá automáticamente y la pondrá en req.params.id
-	app.post<{ Params: MatchTypes.AcceptMatchParams }>('/matches/id:/accept', {
+	app.post<{ Params: MatchTypes.AcceptMatchParams }>('/matches/:id/accept', {
         preHandler: [GameMiddleware.validateJWT],
         schema: MatchSchemas.AcceptMatchSchema,
         handler: controller.acceptMatch.bind(controller)
     });
 
 	// ========================================================================
-    // 4. RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
+    // RUTA HTTP DE RECHAZAR PARTIDA (REST)
+    // ========================================================================
+	
+	//id:/reject: Los dos puntos indican a Fastify que esa parte de la URL es 
+	// una variable. Fastify la extraerá automáticamente y la pondrá en req.params.id
+	app.post<{ Params: MatchTypes.RejectMatchParams }>('/matches/:id/reject', {
+        preHandler: [GameMiddleware.validateJWT],
+        schema: MatchSchemas.RejectMatchSchema,
+        handler: controller.rejectMatch.bind(controller)
+	});
+	
+	// ========================================================================
+    // RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
 	// ========================================================================
 
 	/**

@@ -145,7 +145,7 @@ export class MatchService {
      */
     async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
         // 1. Obtener la partida cruda (Row)
-        const matchRow = this.matchRepo.findById(matchId); 
+        const matchRow = await this.matchRepo.findById(matchId); 
 
         // 2. Guards
         if (!matchRow) throw new Error('Match not found');
@@ -170,6 +170,43 @@ export class MatchService {
         // 5. Notificar inicio de partida (Redis)
         await redisClient?.publish('game_events', JSON.stringify({
             type: 'match.started',
+            payload: matchDomain
+        }));
+
+        return matchDomain;
+	}
+	
+	/**
+     * acceptMatch
+     * Rechaza una partida privada, cambia su estado y notifica.
+     */
+    async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
+        // 1. Obtener la partida cruda (Row)
+        const matchRow = await this.matchRepo.findById(matchId); 
+
+        // 2. Guards
+        if (!matchRow) throw new Error('Match not found');
+        if (matchRow.status !== 'pending') throw new Error('Match is not pending');
+        if (matchRow.player2_id !== userId) throw new Error('Only the invited player can reject');
+
+        // 3. Actualizar estado en DB
+        await this.matchRepo.updateStatus(matchId, 'rejected');
+
+        // 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
+        // Convertimos el Row crudo a Objeto de Dominio
+        let matchDomain = MatchMapper.toDomain(matchRow);
+        
+        // Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
+        // (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
+		// ya lo hemos actualizado)
+        matchDomain.status = 'rejected'; 
+
+        // Rellenamos los nombres de usuario (S2S)
+        matchDomain = await this.hydrateMatchPlayers(matchDomain);
+
+        // 5. Notificar inicio de partida (Redis)
+        await redisClient?.publish('game_events', JSON.stringify({
+            type: 'match.rejected',
             payload: matchDomain
         }));
 

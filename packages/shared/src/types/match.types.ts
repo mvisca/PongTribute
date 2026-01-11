@@ -12,6 +12,7 @@ export namespace MatchTypes {
     export type CreateMatchBody = Static<typeof MatchSchemas.CreateMatchBody>;
 	export type GetMatchParams = Static<typeof MatchSchemas.GetMatchParams>;
 	export type AcceptMatchParams = Static<typeof MatchSchemas.AcceptMatchParams>;
+	export type RejectMatchParams = Static<typeof MatchSchemas.RejectMatchParams>;
 
     // 2. Tipos de Base de Datos (SQLite)
     // Usamos Snake_Case porque así es SQL.
@@ -19,7 +20,7 @@ export namespace MatchTypes {
 	// la misma fila para evitar JOINs constantes.
     export interface MatchRow {
         id: string;
-        status: MatchStatus;         // 'pending' | 'active' | 'finished'
+        status: MatchStatus;         // 'pending' | 'active' | 'finished' | 'rejected'
         
         // Player 1
         player1_id: string;
