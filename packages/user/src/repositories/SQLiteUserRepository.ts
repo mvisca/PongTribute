@@ -176,7 +176,11 @@ export class SQLiteUserRepository implements IUserRepository {
 	async setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic> {
 		const result = this.db.prepare(`
 			UPDATE users SET is_online = ?, updated_at = ? WHERE id = ?
-		`).run(isOnline ? 1 : 0, Date.now(), id);
+		`).run(
+			isOnline ? 1 : 0,
+			Date.now(),
+			id
+		);
 									
 		if (result.changes === 0)
 			throw new SharedErrors.NotFoundError(`Usuario ${id} sin cambios`, 'user');
@@ -225,7 +229,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		`).run(
 			finalTotpSecret,
 			finalBackupCodeHash,
-			has2FAEnabled,
+			has2FAEnabled ? 1 : 0,
 			Date.now(),
 			userId
 		);
