@@ -534,7 +534,7 @@ export class AuthService {
 		// PASO 1 generar totp secret con speakeasy
 		const secret = speakeasy.generateSecret({
 			length: 32,									// largo 32
-			name: user.email,							// nombre en google authenticator (simplificado)
+			name: `Transcendence: ${user.email}`,		// nombre en google authenticator (simplificado)
 			issuer: 'transcend'							// emisor (aparece en la app, más corto)
 		});
 		// output
