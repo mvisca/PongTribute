@@ -1,4 +1,5 @@
-refinar data db folder
+refinar data db folder, como inmpacta .env en la ubicacion de la bd, no esta claro el control de esto
+no es consiste creo que game service crea el folder si no está pero los otros servicios fallan
 
 game customization
 score limit 3 - 6 - 12
@@ -10,5 +11,16 @@ como es el json de la partida
 abstraer el inicio de apartida, depende de 2 uuid user 
 match making puede obtener los 2 uuid por publico o privado
 
-
 revisar manejo de errores con tipos custom en todo el proyecto
+
+consitent manejo de errores
+
+abstraccionuserClient en authService
+
+constantes para strings usados en condiciones
+
+duplicacion en verificacion de passowrod en authService.changePassword y authService.diable2FA
+crear un metodo privado para DRY
+
+error handling en change password : evaluar mapeo de errores especificos, nuevo error ServiceError, dejar error generico?
+

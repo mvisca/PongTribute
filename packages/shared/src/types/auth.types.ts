@@ -79,8 +79,9 @@ export namespace AuthTypes {
 	 */
 	export interface SetupTokenData {
 		userId: string;
-		totpSecret: string;        // Base32 TOTP secret
-		backupCodeHash: string;    // Bcrypt hash del backup code
+		totpSecret: string;			// Base32 TOTP secret
+		backupCodeHash: string;		// Bcrypt hash del backup code
+		attempts: number;			// Para evitar vulnerabilidad de fuerza bruta
 	}
 	
 	// ========================================================================
@@ -88,7 +89,6 @@ export namespace AuthTypes {
 	// ========================================================================
 
 	export type RegisterBody = Static<typeof AuthSchemas.RegisterBody>;
-// TODO hace falta tipo para errores, debe estar en types/errors? Sirve para registrar el tipo de respuesta de error de register endpoint de AUTH
 
 	// ========================================================================
 	// UPDATE PASSWORD

@@ -55,9 +55,10 @@ export class AuthController {
 			
 			// Login pide 2FA totpCode
 			if ('twoFactorRequired' in result)
-				return reply.code(200).send(result);
+				// 202 ACCEPTED => autenticación parcial, requiere paso adicional 
+				return reply.code(202).send(result);
 			
-			// Login exitoso sin  2FA
+			// 200 OK = Login exitoso sin 2FA
 			return reply.code(200).send(result); // TODO tiene sentido el if si la respuesta es igual?
 
 		} catch(err: any) {
@@ -71,7 +72,7 @@ export class AuthController {
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			const { id } = request.user!;
+			const { id } = request.user!; 
 			await this.authService.logout(id);
 
 			return reply.code(204).send();

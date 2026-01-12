@@ -54,9 +54,10 @@ export class UserController {
 
 			const user = await this.userService.update2FAStatus(
 				id,
-				data.totpSecret ?? null,
-				data.backupCodeHash ?? null,
-				data.has2FAEnabled);
+				data.has2FAEnabled,
+				data.totpSecret,
+				data.backupCodeHash
+			);
 
 			return reply.code(200).send(user);
 			

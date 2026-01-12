@@ -372,18 +372,8 @@ export namespace UserSchemas {
 	 */
 	export const Update2FAStatusBody = Type.Object({
 		has2FAEnabled: BooleanField,
-		totpSecret: Type.Optional(
-			Type.Union([
-				TotpSecretField,
-				Type.Null()
-			])
-		),
-		backupCodeHash: Type.Optional(
-			Type.Union([
-				BackupCodeHashField,
-				Type.Null()
-			])
-		)
+		totpSecret: Type.Optional(TotpSecretField),
+		backupCodeHash: Type.Optional(BackupCodeHashField)
 	});
 	
 	/**

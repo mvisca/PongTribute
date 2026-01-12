@@ -12,7 +12,7 @@ import {
 	RedisCache,
 	SharedErrors
 } from '@transcendence/shared';
-import { AuthEnv } from '../config.js';
+import { AuthEnv } from '../index.js';
 import { redisClient } from '../app.js';
 
 export class AuthService {
@@ -47,11 +47,11 @@ export class AuthService {
 			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-email/${email}`,
 			{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET } }
 		)
-
+		
 		if (!response.ok) {
 			return null; // Retornar null en lugar de lanzar error (para evitar user enumeration en login)
 		}
-
+		
 		return await response.json() as UserTypes.UserInternal;
 	}
 	
@@ -172,17 +172,29 @@ export class AuthService {
 	
 	/** Delete all refresh tokens for a user */
 	private async deleteRefreshTokensById(userId: string): Promise<void> {
-		try {
-			await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/tokens/user/${userId}`, {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET
-				}
-			});			
-		} catch {
-			console.log('Fallo cerrando sesión de usaurio');
+		const response = await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/tokens/user/${userId}`, {
+			method: 'DELETE',
+			headers: {
+				'X-Service-Secret': AuthEnv.SERVICE_SECRET
+			},
+			signal: AbortSignal.timeout(5000)
+		});
+		
+		// Casos exitosos, se silencia Not Found para evitar enumeracion de sesiones
+		if (response.ok) return;
+		if (response.status === 404) return;
+		
+		// Casos de error mapeados a SharedErrors
+		if (response.status === 401 || response.status === 403) {
+			throw new SharedErrors.UnauthorizedError(
+				`Autenticación de servicio falló al borrar tokens`
+			);
 		}
+		
+		const errorBody = await response.text().catch(() => 'Response sin body');
+		throw new Error(
+			`Error en User Service borrando tokens (${response.status} ${response.statusText})`
+		);
 	}
 	
 	// 2FA BACKUP CODE GENERATION AND TOTP CODE VERIFICATION
@@ -210,7 +222,7 @@ export class AuthService {
 	private verifyProvisionalToken(token: string) {
 		const payload = jwt.verify(token, AuthEnv.JWT_SECRET);
 		
-		if (typeof payload === 'string' || payload.purpose !== '2fa_verification')
+		if (typeof payload === 'string' || payload.purpose !== AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION)
 			throw new SharedErrors.UnauthorizedError('Token provisional inválido');
 		
 		return payload as AuthTypes.ProvisionalTokenPayload;
@@ -218,13 +230,26 @@ export class AuthService {
 	
 	// USER STATUS
 	
-	/** Actualiza el 2FA status del usuario */
+	/** Actualiza el 2FA status del usuario 
+	* @param userId - ID del usuario
+	* @param enabled - true para activar, false para desactivar
+	* @param totpSecret - REQUERIDO si enabled=true, omitir si enabled=false
+	* @param backupCodeHash - REQUERIDO si enabled=true, omitir si enabled=false
+	*/
 	private async update2FAStatus(
 		userId: string,
 		enabled: boolean,
-		totpSecret: string | null = null,
-		backupCodeHash: string | null = null
+		totpSecret?: string,
+		backupCodeHash?: string
 	): Promise<void> {
+		const body: any = { has2FAEnabled: enabled };
+
+		// Incluir secrets si existen (enabled=true)
+		if (totpSecret !== undefined)
+			body.totpSecret = totpSecret;
+		if (backupCodeHash !== undefined)
+			body.backupCodeHash = backupCodeHash;
+
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/2fa-status`,
 			{
@@ -233,14 +258,10 @@ export class AuthService {
 					'Content-Type': 'application/json',
 					'X-Service-Secret': AuthEnv.SERVICE_SECRET
 				},
-				body: JSON.stringify({
-					has2FAEnabled: enabled,
-					totpSecret,
-					backupCodeHash
-				})
+				body: JSON.stringify(body)
 			}
 		);
-
+		
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
 			console.error('Error updating 2FA status:', {
@@ -254,39 +275,40 @@ export class AuthService {
 	
 	/** Set user online/offline status */
 	private async setUserIsOnline(userId: string, isOnline: boolean): Promise<void> {
-		try {
-			await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/online-status`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET
-				},
-				body: JSON.stringify({ isOnline })
-			});
-		} catch (err) {
-			console.log('Fallo al actualizar online status: ', err);
-			console.log('Login no ha sido bloqueado');
+		const response = await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/online-status`, {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-Service-Secret': AuthEnv.SERVICE_SECRET
+			},
+			body: JSON.stringify({ isOnline })
+		});
+		
+		if (!response.ok) {
+			throw new Error(
+				`Fallo al actualizar estado online del usuario: ${response.status} ${response.statusText}`
+			);
 		}
 	}
 	
 	/** Validación de argumento avatar en register y updateUser */
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;
-
+		
 		// Validar base64
 		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
 		if (!base64Regex.test(avatar)) return false;
-
+		
 		// Validar tamaño
 		const base64Data = avatar.split(',')[1];
 		if (!base64Data) return false;
-
+		
 		const sizeInBytes = (base64Data.length * 3) / 4; // Aproximación base64
 		const maxSizeBytes = 10 * 1024 * 1024; // 10MB
-
+		
 		return sizeInBytes <= maxSizeBytes;
 	}
-
+	
 	//** Upload de imagen llamando a Image Service */
 	private async uploadAvatarToCloudinary(
 		base64Image: string,
@@ -307,13 +329,13 @@ export class AuthService {
 					})
 				}
 			)  // TODO Tipar retorno
-
+			
 			if (!response.ok) {
 				const error = await response.json();
 				const errorMessage = error ? error : "No hay mensaje de error";
 				throw new Error(`Image service error: ${errorMessage || response.statusText}`);
 			}
-
+			
 			const data = await response.json() as { url: string }; // TODO Mejorar tipado
 			return data.url;
 		} catch (err) {
@@ -322,7 +344,7 @@ export class AuthService {
 			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR;
 		}
 	}
-
+	
 	// ========================================================================
 	// CREATE USER
 	// ========================================================================
@@ -333,14 +355,14 @@ export class AuthService {
 		password: string,
 		avatar?: string
 	): Promise<AuthTypes.LoginResponse> {
-
+		
 		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR;
-
+		
 		// Si existe avatar, validarlo y subirlo a cloudinary
 		if (avatar && this.validateAvatar(avatar)) {
 			avatarUrl = await this.uploadAvatarToCloudinary(avatar);
 		}
-
+		
 		const createUserRes = await fetch(
 			`${AuthEnv.USER_SERVICE_URL}/internal/users`,
 			{
@@ -399,7 +421,7 @@ export class AuthService {
 				{
 					userId: user.id,
 					email: user.email,
-					purpose: '2fa_verification', // TODO: AGREGAR A CONSTANTES DE AUTH
+					purpose: AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION,
 					iat: Math.floor(Date.now() / 1000)
 				},
 				AuthEnv.JWT_SECRET,
@@ -421,14 +443,19 @@ export class AuthService {
 	/** Logout */
 	async logout(userId: string): Promise<void> {
 		await this.deleteRefreshTokensById(userId);
-		await this.setUserIsOnline(userId, false);
+		
+		try {
+			await this.setUserIsOnline(userId, false);
+		} catch (err) {
+			console.error(`Fallo al actualizar el estado online del usuario: ${userId}`, err);
+		}
 	}
 	
 	// ========================================================================
 	// PUBLIC API - LOGIN 2FA VERIFY
 	// ========================================================================
 	
-	/** Completa el proceso de login con 2FA */
+	/** Completa el proceso de login con 2FA utilizando el provisionalToken */
 	async verify2FAWithToken(provisionalToken: string, totpCode: string): Promise<AuthTypes.LoginResponse> {
 		// Verificar token provisional con user payload
 		const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET);
@@ -463,7 +490,7 @@ export class AuthService {
 	// PUBLIC API - CHANGE PASSWORD
 	//=========================================================================
 	
-	async changePassword(userId: string, oldPassword: string, newPassword: string):Promise<boolean> {
+	async changePassword(userId: string, oldPassword: string, newPassword: string):Promise<void> {
 		const user = await this.fetchUserById(userId);
 		
 		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
@@ -490,9 +517,7 @@ export class AuthService {
 			throw new Error(`Fallo al actualizar password: ${updateResponse.status}`);
 			// TODO Es necesario un SharedError nuevo para manejar este error?
 		}
-		
-		return true;
-	} // TODO es necesario devolver true aquí? para qué?
+	}
 	
 	// ========================================================================
 	// PUBLIC API - 2FA MANAGEMENT
@@ -515,7 +540,7 @@ export class AuthService {
 		// output
 		// secret.base32 -> Secret en formato Base32 (para almacenar y verificar)
 		// secret.otpauth_url -> URL para generar QR
-
+		
 		// PASO 2 genearar QRCode con configuración optimizada
 		const qr = await QRcode.toDataURL(secret.otpauth_url as string, {
 			width: 256,					// Tamaño en píxeles (más grande = más fácil de escanear)
@@ -536,10 +561,11 @@ export class AuthService {
 		const setupData: AuthTypes.SetupTokenData = {
 			userId: user.id,
 			totpSecret: secret.base32?.replace(/\s/g, '').toUpperCase() ?? '',	// Base32 en mayúsculas sin espacios
-			backupCodeHash								// Para verificar en solicitud de recuperación
+			backupCodeHash,														// Para verificar en solicitud de recuperación
+			attempts: 0
 		};
 		
-		await this.setupCache.set(setupToken, setupData, 600); // 10 minutos TODO poner en .env y en SharedEnv
+		await this.setupCache.set(setupToken, setupData, AuthConstants.SETUP_TOKEN_TTL);
 		
 		return {
 			setupToken,									// cliente lo devolverá en verify-2fa-setup
@@ -548,32 +574,50 @@ export class AuthService {
 		};
 	}
 	
+	/** Completa el proceso de activación de 2FA */
 	async verify2FASetup(setupToken: string, totpCode: string): Promise<void> {
 		// Recuperar setupData de setupCache
 		const setupData = await this.setupCache.get(setupToken) as AuthTypes.SetupTokenData
+
 		if (!setupData)
 			throw new SharedErrors.UnauthorizedError('SetupToken es inválido o expirado');
 		
+		// Verificar límite de intentos
+		const MAX_ATTEMPTS = AuthConstants.SETUP_MAX_ATTEMPTS;
+		const attempts = (setupData.attempts || 0) + 1;
+		
+		if (attempts > MAX_ATTEMPTS) {
+			await this.setupCache.delete(setupToken);
+			throw new SharedErrors.UnauthorizedError(
+				`Demasiados intentos fallidos. Solicita un nuevo código QR.`
+			);
+		}
+		
 		// Verificar código totp XXXX-XXXX
 		const verified = this.verify2FATotpCode(setupData.totpSecret, totpCode);
-		if (!verified)
-			throw new SharedErrors.UnauthorizedError('Código 2FA inválido');
 
-		// Debug: validar formato antes de enviar
-		console.log('Datos 2FA a enviar:', {
-			totpSecretLength: setupData.totpSecret.length,
-			totpSecretMatches: /^[A-Z2-7]+$/.test(setupData.totpSecret),
-			backupCodeHashLength: setupData.backupCodeHash.length,
-			backupCodeHashMatches: /^\$2[ayb]\$[0-9]{2}\$[A-Za-z0-9./]{53}$/.test(setupData.backupCodeHash)
-		});
+		if (!verified) {
+			// Actualiza el contador de intentos
+			setupData.attempts = attempts;
+			await this.setupCache.set(setupToken, setupData, AuthConstants.SETUP_TOKEN_TTL);
 
+			const remaining = MAX_ATTEMPTS - attempts;
+			throw new SharedErrors.UnauthorizedError(`Código 2FA inválido. ${remaining} intentos restantes de ${MAX_ATTEMPTS}`);
+		}
+		
 		// Activar 2FA en user service
-		await this.update2FAStatus(setupData.userId, true, setupData.totpSecret, setupData.backupCodeHash);
+		await this.update2FAStatus(
+			setupData.userId,
+			true,
+			setupData.totpSecret,
+			setupData.backupCodeHash
+		);
 		
 		// Limpiar setupCache
 		await this.setupCache.delete(setupToken);
 	}
 	
+	/** Desactivar 2FA para usuarios  */
 	async disable2FA(userId: string, password: string): Promise<void> {
 		
 		// Recuperar user
@@ -586,7 +630,10 @@ export class AuthService {
 			throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
 		}
 		
-		await this.update2FAStatus(userId, false);
+		await this.update2FAStatus(
+			userId,
+			false
+		);
 	}
 	
 	async verifyBackupCode(provisionalToken: string, backupCode: string): Promise<AuthTypes.LoginResponse> {

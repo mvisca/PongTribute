@@ -26,7 +26,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			avatar: data.avatar ?? UserEnv.CLOUDINARY_DEFAULT_AVATAR, // TODO pendiente de implementar feature de avatares en USER , asume front sirve /public/avatars/default.png
+			avatar: data.avatar || UserEnv.CLOUDINARY_DEFAULT_AVATAR,
 			passwordHash: data.passwordHash,
 			isOnline: false,
 			isDeleted: false,
@@ -192,10 +192,28 @@ export class SQLiteUserRepository implements IUserRepository {
 	/** Actualiza estado 2FA, lanza NotFoundError si no existe */
 	async update2FAStatus(
 		userId: string, 
-		totpSecret: string | null, 
-		backupCodeHash: string | null,
-		has2FAEnabled: boolean
+		has2FAEnabled: boolean,
+		totpSecret?: string, 
+		backupCodeHash?: string
 	): Promise<UserTypes.UserPublic> {
+		let finalTotpSecret: string | null;
+		let finalBackupCodeHash: string | null;
+
+		if (!has2FAEnabled) {
+			finalTotpSecret = null;
+			finalBackupCodeHash = null;
+		} else {
+			if (!totpSecret || !backupCodeHash) {
+				throw new SharedErrors.ValidationError(
+					'totpSecret y backupCodeHash son requeridos al activar 2FA',
+					'2fa_credentials'
+				);
+			}
+
+			finalTotpSecret = totpSecret;
+			finalBackupCodeHash = backupCodeHash;
+		}
+
 		const result = this.db.prepare(`
 			UPDATE users
 			SET
@@ -205,8 +223,8 @@ export class SQLiteUserRepository implements IUserRepository {
 				updated_at = ?
 			WHERE id = ?
 		`).run(
-			totpSecret,
-			backupCodeHash,
+			finalTotpSecret,
+			finalBackupCodeHash,
 			has2FAEnabled,
 			Date.now(),
 			userId
@@ -215,7 +233,10 @@ export class SQLiteUserRepository implements IUserRepository {
 		const updated = await this.findUserById(userId);
 
 		if (!updated)
-			throw new Error(`No se ha podido recuperar el usuario: ${userId}`);
+			throw new Error(
+				`No se ha podido recuperar el usuario: ${userId}` +
+				`Esto no debería pasar. Posible race condition o DB corrupta.`
+			);
 
 		return updated;
 	}

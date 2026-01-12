@@ -402,7 +402,6 @@ export namespace SharedEnv {
 		config.CLOUDINARY_API_KEY = cloudinaryParse.apiKey;
 		config.CLOUDINARY_API_SECRET = cloudinaryParse.apiSecret;
 		config.CLOUDINARY_CLOUD_NAME = cloudinaryParse.cloudName;
-		// TODO analizar si no es mejor cojer los valores directos de .env
 
 		validateRequired(config.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH');
 		validateRequired(config.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME');

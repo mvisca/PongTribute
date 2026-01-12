@@ -37,11 +37,6 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	// SETTERS
 	// ============================================================================
 
-	// Subir avatar del usuario
-	app.post('/users/:id/uploadAvatar', {
-		handler: controller.uploadAvatar.bind(controller)
-	});
-
 	// Actualizar el estado online del usuario (interno)
 	app.patch('/users/:id/online-status', {
 		schema: UserSchemas.setOnlineStatusSchema,
