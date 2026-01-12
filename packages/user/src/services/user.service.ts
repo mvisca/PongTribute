@@ -126,13 +126,18 @@ export class UserService {
 		return await this.userRepo.update(id, data);
 	}
 
-	async update2FAStatus(
+	async update2FAStatus( // TODO actualizar llamado en user.controller
 		userId: string,
-		totpSecret: string | null,
-		backupCodeHash: string | null,
-		has2FAEnabled: boolean
+		has2FAEnabled: boolean,
+		totpSecret?: string,
+		backupCodeHash?: string
 	): Promise<UserTypes.UserPublic> {
-		return await this.userRepo.update2FAStatus(userId, totpSecret, backupCodeHash, has2FAEnabled);
+		return await this.userRepo.update2FAStatus(
+			userId,
+			has2FAEnabled,
+			totpSecret,
+			backupCodeHash
+		);
 	}
 
 	async updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic> {

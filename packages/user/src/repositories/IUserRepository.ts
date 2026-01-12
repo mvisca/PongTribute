@@ -31,9 +31,9 @@ export interface IUserRepository {
     /** Actualizar estado 2FA - Lanza NotFoundError si no existe */
     update2FAStatus(
         userId: string,
-        totpSecret: string | null,
-        backupCodeHash: string | null,
-        has2FAEnabled: boolean
+        has2FAEnabled: boolean,
+        totpSecret?: string,
+        backupCodeHash?: string
     ): Promise<UserTypes.UserPublic>;
     
     // ========================================================================

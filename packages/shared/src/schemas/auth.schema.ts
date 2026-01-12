@@ -211,7 +211,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/verify-2fa */
 	export const LoginVerify2FABodySchema = {
-		tags: ['Auth', '2FA'],
+		tags: ['2FA'],
 		body: LoginVerify2FABody,
 		response: {
 			200: LoginSuccessResponse,
@@ -234,7 +234,7 @@ export namespace AuthSchemas {
 	
 	/** Schema completo de POST /auth/verify-backup-code */
 	export const VerifyBackupCodeBodySchema = {
-		tags: ['Auth', '2FA'],
+		tags: ['2FA'],
 		body: VerifyBackupCodeBody,
 		response: {
 			200: LoginSuccessResponse,
