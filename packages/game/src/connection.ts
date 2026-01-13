@@ -23,7 +23,14 @@ export function getDatabase(): Database.Database {
 
 		console.log(`🔌 Conectando a Game DB en: ${dbPath}`);
 		db = new Database(dbPath);
+		// Establece el mode WAL (+velocidad, solo bloquea 'escritura' vs 'escritura')
 		db.pragma('journal_mode = WAL');
+
+		// TODO: para evitar problemas de bloqueo cuando haya alta concurrencia
+		// configurar un tiempo de espera (busy_timeout) para que la 
+		// aplicación "espere" unos milisegundos a que se libere el bloqueo
+		//  antes de fallar. Con 5000 ms es suficiente para que las escrituras
+		//  se pongan en cola y se ejecuten secuencialmente sin lanzar errores.
 
 		const schemasDir = path.join(__dirname, 'schemas');
 
