@@ -30,9 +30,17 @@ export class MatchService {
      * 2. Si encuentra uno válido: Crea la partida en DB y notifica.
      * 3. Si no: Se añade a la cola (RPUSH) y espera.
      */
-    async joinPublicQueue(userId: string): Promise<JoinQueueResponse> {
+	async joinPublicQueue(userId: string): Promise<JoinQueueResponse> {
+		
         // Validación de seguridad por si el servidor arrancó mal
         if (!redisClient) throw new Error('Redis client not initialized');
+
+	// ✓ VALIDA QUE USER NO ESTA YA EN UNA PARTIDA PREVIA
+		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
+		if (activeMatch) {
+			throw new Error('You are already in an active match');
+		}
+
 
 		const QUEUE_KEY = 'match:queue:public';
 		
@@ -53,7 +61,9 @@ export class MatchService {
             matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
 			// c. Notificar evento 'match.found' via REDIS (Pub/Subs)
-            // El Gateway lo interceptará para avisar a los 2 clientes que se conecten al juego
+			// El Gateway lo interceptará para avisar a los 2 clientes que se conecten al juego
+			//=======TODO: OJO envolver en try-catch para evitar crash si REDIS cae
+			// no estoy seguro si eso lo cubre la 1a linea de este metodo ??????
             await redisClient.publish('game_events', JSON.stringify({
                 type: 'match.found',
                 payload: {
@@ -78,7 +88,11 @@ export class MatchService {
             }
 
 			// Me pongo al final de la fila
-            await redisClient.rpush(QUEUE_KEY, userId);
+			await redisClient.rpush(QUEUE_KEY, userId);
+			//Defino timeout para la cola: si en 2 minutos nadie lo encuentra, sale automaticamente
+			await redisClient.expire(`match:queue:user:${userId}`, 300);
+
+			//TODO: No estoy seguro si he de implementar un cron job que limpie la cola cada x
             return { outcome: 'added_to_queue' };
         }
     }
@@ -96,6 +110,10 @@ export class MatchService {
             throw new Error("No puedes desafiarte a ti mismo");
         }
 
+		//=======TODO: EL OPONENT SOLO SERA INVITABLE A TRAVES DE LA VENTANITA FRIENDS,
+		// SI NO ESTA YA DENTRO DE UNA PARTIDA ACTIVA
+
+		
         // 1. Crear en DB (Status PENDING)
         const matchRow = await this.matchRepo.createPrivateMatch(userId, opponentId);
 

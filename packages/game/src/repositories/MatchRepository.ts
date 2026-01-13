@@ -129,6 +129,21 @@ export class MatchRepository {
     // ========================================================================
 
 	/**
+	 * findActiveMatchByUserId
+	 * Verifica si el user esta ya en una partida 'active' o 'pending'
+	 */
+	findActiveMatchByUserId(userId: string): MatchTypes.MatchRow | null {
+    const stmt = this.db.prepare(`
+        SELECT * FROM matches
+        WHERE (player1_id = ? OR player2_id = ?)
+        AND status IN ('active', 'pending')
+        LIMIT 1
+    `);
+    const row = stmt.get(userId, userId);
+    return row ? (row as MatchTypes.MatchRow) : null;
+	}
+	
+	/**
 	 * updateStatus
 	 * Cambia el status de una partida: (pending -> active) (pending -> rejected)
 	 */

@@ -89,8 +89,13 @@ export class GameGateway {
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
 			socket.on('message', (message: string) => {
 				console.log(`📩 [Gateway] Mensaje de ${payload.username}: ${message}`);
-				// ========TODO: Aquí conectaremos el GameEngine más adelante.
-                // En lugar de un console.log, haremos: this.gameEngine.processInput(...)
+			// ========TODO: Aquí conectaremos el GameEngine más adelante.
+			// En lugar de un console.log, haremos: this.gameEngine.processInput(...)
+			//Posible solucion:
+			//socket.on('message', async (message: string) => {
+				// ANTES: console.log(...)
+				// DESPUÉS:
+			//	await this.gameService.processInput(matchId, userId, message);
 			});
 			
 			// ==========TODO: implementar un "Pause" de partida. 
@@ -99,12 +104,13 @@ export class GameGateway {
 			// Se dispara si pierde internet o cierra la pestanya
             socket.on('close', () => {
                 console.log(`❌ [Gateway] Jugador Desconectado: ${payload.username}`);
-				// =========TODO: Notificar al otro jugador ("Game Over. Tu rival se ha
-				//  desconectado. Ganaste por abandono"). El que se queda se lleva 
-				// la puntuacion maxima y guardar resultado en DB. El servidor 
-				// cierra la sala y libera la memoria.
-				// No vamos a pausar el juego por desconexion, guardar el estado y 
-				// esperar una reconexion (eso es nivel muy PRO y no es para este proyecto pedagogico)
+				// =========TODO: No destruir sesión inmediatamente en `handleDisconnect()`
+				// Esperar 20 segundos antes de dar victoria por abandono
+				// Si reconecta en ese tiempo, reasignar socket (pero solo en partidas).
+				// Si no reconecta: Notificar al otro jugador ("Ganaste por 
+				// abandono de tu rival")se lleva la puntuacion maxima y 
+				// guardar resultado en DB. El servidor cierra la sala y libera la memoria.
+
 			});
 
 
