@@ -167,7 +167,19 @@ export class MatchRepository {
         }
 	}
 
-
+	/**
+     * Elimina una partida por su ID.
+     * CRÍTICO para Rollback: Se usa si falla la notificación en Redis
+     * para no dejar partidas "zombies" en la base de datos.
+     */
+    async delete(matchId: string): Promise<void> {
+        const stmt = this.db.prepare('DELETE FROM matches WHERE id = ?');
+        
+        // Ejecutamos la eliminación
+        stmt.run(matchId);
+        
+        console.log(`🗑️ [Repository] Rollback ejecutado: Partida ${matchId} eliminada.`);
+    }
 
 
     /**

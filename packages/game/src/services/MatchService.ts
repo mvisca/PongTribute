@@ -93,21 +93,35 @@ export class MatchService {
             // 2. Persistir en DB (P1: Opponent, P2: Me)
             const matchRow = await this.matchRepo.createPublicMatch(opponentId, userId);
 
-            // 3. Mapear e Hidratar
-            let matchDomain = MatchMapper.toDomain(matchRow);
-            matchDomain = await this.hydrateMatchPlayers(matchDomain);
+			try {
 
-            // 4. Notificar Evento
-            await redisClient.publish('game_events', JSON.stringify({
-                type: 'match.found',
-                payload: {
-                    matchId: matchDomain.id,
-                    opponentId: userId,
-                    match: matchDomain
-                }
-            }));
+				// 3. Mapear e Hidratar
+				let matchDomain = MatchMapper.toDomain(matchRow);
+				matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
-            return { outcome: 'match_found', match: matchDomain };
+				// 4. Notificar Evento
+				await redisClient.publish('game_events', JSON.stringify({
+					type: 'match.found',
+					payload: {
+						matchId: matchDomain.id,
+						opponentId: userId,
+						match: matchDomain
+					}
+				}));
+
+				return { outcome: 'match_found', match: matchDomain };
+
+			} catch (error) {
+				console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
+    
+				// 🚨 COMPENSACIÓN / ROLLBACK 🚨
+				// Como falló la notificación o la hidratación, borramos la partida de la DB
+				// para que los usuarios no se queden "atrapados" en una partida fantasma.
+				await this.matchRepo.delete(matchRow.id); 
+
+				// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
+				throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+			}
 
         } else {
             // --- AÑADIR A LA COLA ---
@@ -153,18 +167,30 @@ export class MatchService {
         // 1. Crear en DB (Status PENDING)
         const matchRow = await this.matchRepo.createPrivateMatch(userId, opponentId);
 
-        // 2. Mapear e Hidratar
-		let matchDomain = MatchMapper.toDomain(matchRow);
-        matchDomain = await this.hydrateMatchPlayers(matchDomain);
-			
-        // 3. Notificar invitación via Redis
-        await redisClient.publish('game_events', JSON.stringify({
-            type: 'match.invite',
-            targetUserId: opponentId,
-            payload: matchDomain
-        }));
+		try {
+			// 2. Mapear e Hidratar
+			let matchDomain = MatchMapper.toDomain(matchRow);
+			matchDomain = await this.hydrateMatchPlayers(matchDomain);
+				
+			// 3. Notificar invitación via Redis
+			await redisClient.publish('game_events', JSON.stringify({
+				type: 'match.invite',
+				targetUserId: opponentId,
+				payload: matchDomain
+			}));
 
-        return matchDomain;
+			return matchDomain;
+		} catch (error) {
+			console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
+    
+			// 🚨 COMPENSACIÓN / ROLLBACK 🚨
+			// Como falló la notificación o la hidratación, borramos la partida de la DB
+			// para que los usuarios no se queden "atrapados" en una partida fantasma.
+			await this.matchRepo.delete(matchRow.id);
+
+			// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
+			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+		}
 	}
 
 	// ========================================================================
@@ -209,62 +235,86 @@ export class MatchService {
         // 3. Actualizar estado en DB
         await this.matchRepo.updateStatus(matchId, 'active');
 
-        // 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
-        // Convertimos el Row crudo a Objeto de Dominio
-        let matchDomain = MatchMapper.toDomain(matchRow);
-        
-        // Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
-        // (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
-		// ya lo hemos actualizado)
-        matchDomain.status = 'active'; 
+		try {
+			// 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
+			// Convertimos el Row crudo a Objeto de Dominio
+			let matchDomain = MatchMapper.toDomain(matchRow);
+			
+			// Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
+			// (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
+			// ya lo hemos actualizado)
+			matchDomain.status = 'active';
 
-        // Rellenamos los nombres de usuario (S2S)
-        matchDomain = await this.hydrateMatchPlayers(matchDomain);
+			// Rellenamos los nombres de usuario (S2S)
+			matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
-        // 5. Notificar inicio de partida (Redis)
-        await redisClient?.publish('game_events', JSON.stringify({
-            type: 'match.started',
-            payload: matchDomain
-        }));
+			// 5. Notificar inicio de partida (Redis)
+			await redisClient?.publish('game_events', JSON.stringify({
+				type: 'match.started',
+				payload: matchDomain
+			}));
 
-        return matchDomain;
+			return matchDomain;
+		} catch (error) {
+			console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
+    
+			// 🚨 COMPENSACIÓN / ROLLBACK 🚨
+			// Como falló la notificación o la hidratación, borramos la partida de la DB
+			// para que los usuarios no se queden "atrapados" en una partida fantasma.
+			await this.matchRepo.delete(matchRow.id);
+			// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
+			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+		}
 	}
 	
 	/**
      * acceptMatch
      * Rechaza una partida privada, cambia su estado y notifica.
      */
-    async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
-        // 1. Obtener la partida cruda (Row)
-        const matchRow = await this.matchRepo.findById(matchId); 
+	async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
+		// 1. Obtener la partida cruda (Row)
+		const matchRow = await this.matchRepo.findById(matchId);
 
-        // 2. Guards
-        if (!matchRow) throw new Error('Match not found');
-        if (matchRow.status !== 'pending') throw new Error('Match is not pending');
-        if (matchRow.player2_id !== userId) throw new Error('Only the invited player can reject');
+		// 2. Guards
+		if (!matchRow) throw new Error('Match not found');
+		if (matchRow.status !== 'pending') throw new Error('Match is not pending');
+		if (matchRow.player2_id !== userId) throw new Error('Only the invited player can reject');
 
-        // 3. Actualizar estado en DB
-        await this.matchRepo.updateStatus(matchId, 'rejected');
+		// 3. Actualizar estado en DB
+		await this.matchRepo.updateStatus(matchId, 'rejected');
 
-        // 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
-        // Convertimos el Row crudo a Objeto de Dominio
-        let matchDomain = MatchMapper.toDomain(matchRow);
-        
-        // Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
-        // (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
-		// ya lo hemos actualizado)
-        matchDomain.status = 'rejected'; 
+		try {
 
-        // Rellenamos los nombres de usuario (S2S)
-        matchDomain = await this.hydrateMatchPlayers(matchDomain);
+			// 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
+			// Convertimos el Row crudo a Objeto de Dominio
+			let matchDomain = MatchMapper.toDomain(matchRow);
+			
+			// Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
+			// (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
+			// ya lo hemos actualizado)
+			matchDomain.status = 'rejected';
 
-        // 5. Notificar inicio de partida (Redis)
-        await redisClient?.publish('game_events', JSON.stringify({
-            type: 'match.rejected',
-            payload: matchDomain
-        }));
+			// Rellenamos los nombres de usuario (S2S)
+			matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
-        return matchDomain;
+			// 5. Notificar inicio de partida (Redis)
+			await redisClient?.publish('game_events', JSON.stringify({
+				type: 'match.rejected',
+				payload: matchDomain
+			}));
+
+			return matchDomain;
+		} catch (error) {
+			console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
+    
+			// 🚨 COMPENSACIÓN / ROLLBACK 🚨
+			// Como falló la notificación o la hidratación, borramos la partida de la DB
+			// para que los usuarios no se queden "atrapados" en una partida fantasma.
+			await this.matchRepo.delete(matchRow.id);
+
+			// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
+			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+		}
     }
 
 
