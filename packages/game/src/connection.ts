@@ -22,16 +22,16 @@ export function getDatabase(): Database.Database {
 		}
 
 		console.log(`🔌 Conectando a Game DB en: ${dbPath}`);
-		db = new Database(dbPath);
-		// Establece el mode WAL (+velocidad, solo bloquea 'escritura' vs 'escritura')
+
+		// En el constructor añado un Timeout de 5000 ms para evitar concurrencia
+		db = new Database(dbPath, {
+			timeout: 5000 // Espera hasta 5 seg para lanzar el error, si la DB esta ocupada.
+		});
+		// Optimizaciones para alto rendimiento
 		db.pragma('journal_mode = WAL');
+		db.pragma('synchronous = NORMAL');
 
-		// TODO: para evitar problemas de bloqueo cuando haya alta concurrencia
-		// configurar un tiempo de espera (busy_timeout) para que la 
-		// aplicación "espere" unos milisegundos a que se libere el bloqueo
-		//  antes de fallar. Con 5000 ms es suficiente para que las escrituras
-		//  se pongan en cola y se ejecuten secuencialmente sin lanzar errores.
-
+		// Carga de esquemas
 		const schemasDir = path.join(__dirname, 'schemas');
 
 		if (fs.existsSync(schemasDir)) {

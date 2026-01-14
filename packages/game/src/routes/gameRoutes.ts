@@ -59,9 +59,6 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 	// ========================================================================
     // RUTA HTTP DE RECHAZAR PARTIDA (REST)
     // ========================================================================
-	
-	//id:/reject: Los dos puntos indican a Fastify que esa parte de la URL es 
-	// una variable. Fastify la extraerá automáticamente y la pondrá en req.params.id
 	app.post<{ Params: MatchTypes.RejectMatchParams }>('/matches/:id/reject', {
         preHandler: [GameMiddleware.validateJWT],
         schema: MatchSchemas.RejectMatchSchema,

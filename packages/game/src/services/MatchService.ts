@@ -35,64 +35,91 @@ export class MatchService {
         // Validación de seguridad por si el servidor arrancó mal
         if (!redisClient) throw new Error('Redis client not initialized');
 
-	// ✓ VALIDA QUE USER NO ESTA YA EN UNA PARTIDA PREVIA
+	//  VALIDA QUE USER NO ESTA YA EN UNA PARTIDA ACTIVA PREVIA
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
 		if (activeMatch) {
 			throw new Error('You are already in an active match');
 		}
 
-
 		const QUEUE_KEY = 'match:queue:public';
+		const TICKET_PREFIX = 'match:ticket:'; // Prefijo para controlar validez
 		
 		console.log(`👉 ⚙️ [Service] Revisando cola Redis (${QUEUE_KEY})...`);
 
-        // 1. Intentamos sacar un oponente de la cola (Operación Atómica)
-        const opponentId = await redisClient.lpop(QUEUE_KEY);
+		
+		// =====================================================================
+        // PATRÓN: LOOP DE BÚSQUEDA Y LIMPIEZA DE LA COLA(LAZY EXPIRATION)
+		// =====================================================================
+		// Creamos un ticket de 120 seg para cada usuario que se mete en la cola.
+		// Al ir a buscar oponente en la cola comprueba que el ticket de 120 seg este
+		// vigente y hace el MATCH, sino lo descarta y da una vuelta mas al bucle
+		//para ver si el siguiente de la fila es valido.
+		
+        let opponentId: string | null = null;
+        let foundValidOpponent = false;
 
-		// --- MATCH ENCONTRADO ---
-		if (opponentId && opponentId !== userId) {
-			console.log(`👉 ⚙️ [Service] ¡Oponente encontrado! (${opponentId}) vs Yo (${userId})`);
+        // Intentamos sacar gente de la cola hasta encontrar uno VÁLIDO o vaciarla
+        while (!foundValidOpponent) {
+            opponentId = await redisClient.lpop(QUEUE_KEY);
 
-            // a. Persistir en DB (El oponente es P1 porque estaba esperando, yo soy P2)(Estado: ACTIVE)
+            // Si la cola está vacía, terminamos el loop
+            if (!opponentId) break;
+
+            // Si me encuentro a mí mismo (caso borde), me ignoro y sigo
+            if (opponentId === userId) continue;
+
+            // VERIFICACIÓN DE TICKET (¿Sigue esperando este usuario?)
+            const isTicketValid = await redisClient.exists(`${TICKET_PREFIX}${opponentId}`);
+            
+            if (isTicketValid) {
+                // ¡Encontramos uno vivo!
+                foundValidOpponent = true;
+            } else {
+                // El usuario caducó (su ticket expiró). 
+                // Al hacer LPOP ya lo sacamos de la lista, así que simplemente
+                // logueamos y el loop continuará con el siguiente.
+                console.log(`🧹 [Cleaner] Usuario ${opponentId} descartado por timeout.`);
+            }
+        }
+
+        // --- MATCH ENCONTRADO ---
+        if (foundValidOpponent && opponentId) {
+            console.log(`👉 ⚙️ [Service] ¡Match! (${opponentId}) vs (${userId})`);
+
+            // 1. Borrar tickets de ambos para que no vuelvan a matchear si hubo race condition
+            await redisClient.del(`${TICKET_PREFIX}${opponentId}`);
+            await redisClient.del(`${TICKET_PREFIX}${userId}`); // Por si acaso yo tenía uno viejo
+
+            // 2. Persistir en DB (P1: Opponent, P2: Me)
             const matchRow = await this.matchRepo.createPublicMatch(opponentId, userId);
 
-            // b. Mapear a Objeto de Dominio e hidratar nombres(S2S Call)
+            // 3. Mapear e Hidratar
             let matchDomain = MatchMapper.toDomain(matchRow);
             matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
-			// c. Notificar evento 'match.found' via REDIS (Pub/Subs)
-			// El Gateway lo interceptará para avisar a los 2 clientes que se conecten al juego
-			//=======TODO: OJO envolver en try-catch para evitar crash si REDIS cae
-			// no estoy seguro si eso lo cubre la 1a linea de este metodo ??????
+            // 4. Notificar Evento
             await redisClient.publish('game_events', JSON.stringify({
                 type: 'match.found',
                 payload: {
                     matchId: matchDomain.id,
-                    opponentId: userId, // ID de quien disparó el evento (yo)
+                    opponentId: userId,
                     match: matchDomain
                 }
             }));
 
-            // d. Retornar al Controller
             return { outcome: 'match_found', match: matchDomain };
 
-		} else {
-			
+        } else {
             // --- AÑADIR A LA COLA ---
-			console.log("👉 ⚙️ [Service] Cola vacía o soy yo mismo. Añadiéndome a la cola...");
-			
-            // Si por error me saqué a mí mismo, me ignoro.
-            if (opponentId === userId) {
-				// log de warning opcional
-				console.warn("⚠️ ⚙️ [Service] Warning: Me saqué a mí mismo de la cola. Reinsertando.");
-            }
+            console.log("👉 ⚙️ [Service] Nadie válido en cola. Entrando a esperar...");
 
-			// Me pongo al final de la fila
-			await redisClient.rpush(QUEUE_KEY, userId);
-			//Defino timeout para la cola: si en 2 minutos nadie lo encuentra, sale automaticamente
-			await redisClient.expire(`match:queue:user:${userId}`, 300);
+            // 1. Crear el Ticket de validez (TTL 120 segundos)
+            // Si esto desaparece, el usuario se considera "fuera de la cola"
+            await redisClient.set(`${TICKET_PREFIX}${userId}`, 'valid', 'EX', 120);
 
-			//TODO: No estoy seguro si he de implementar un cron job que limpie la cola cada x
+            // 2. Entrar a la lista física
+            await redisClient.rpush(QUEUE_KEY, userId);
+
             return { outcome: 'added_to_queue' };
         }
     }
@@ -110,9 +137,18 @@ export class MatchService {
             throw new Error("No puedes desafiarte a ti mismo");
         }
 
-		//=======TODO: EL OPONENT SOLO SERA INVITABLE A TRAVES DE LA VENTANITA FRIENDS,
-		// SI NO ESTA YA DENTRO DE UNA PARTIDA ACTIVA
+		//OJO: EL OPONENT SOLO SERA INVITABLE A TRAVES DE LA VENTANITA FRIENDS,
+		// por tanto no se si tiene mucho sentido verificar de nuevo aqui???
 
+		//  VALIDA QUE NINGUNO DE LOS 2 NO ESTÉ YA EN UNA PARTIDA ACTIVA PREVIA
+		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
+		if (activeMatch) {
+			throw new Error('You are already in an active match');
+		}
+		const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
+		if (activeMatchOpponent) {
+			throw new Error('Your opponent is already in an active match');
+		}
 		
         // 1. Crear en DB (Status PENDING)
         const matchRow = await this.matchRepo.createPrivateMatch(userId, opponentId);
@@ -236,7 +272,7 @@ export class MatchService {
 	/**
      * fetchUserProfile
      * Helper para la comunicación S2S (Service-to-Service)
-	 * (pide al modulo user por HTTP el username del userId)
+	 * (pide al modulo User por HTTP el username del userId)
 	*/
 	private async fetchUserProfile(userId: string): Promise<{ username: string }> {
 		// 1. Obtener URL Base
