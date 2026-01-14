@@ -181,10 +181,10 @@ export class GameService {
                 return;
             }
             
-            if (session.gameState.status === 'PAUSED') {
-                 this.broadcastState(session);
-                 return;
-            }
+//            if (session.gameState.status === 'PAUSED') {
+//                 this.broadcastState(session);
+//                 return;
+//            }
 
             this.updatePhysics(session);
 
@@ -338,6 +338,10 @@ export class GameService {
             return;
         }
 
+		//VALIDACION DE INPUTS. SEGURIDAD.
+		// Si el userId no coincide con ninguno de los jugadores
+		//  de la sesión, aborto la ejecución silenciosamente.
+
         // Si ya tenemos los IDs en la sesión, NO hace falta ir a DB.
         // Optimizamos usando la caché de sesión.
         let playerPaddle = null;
@@ -359,12 +363,13 @@ export class GameService {
             case 'MOVE_DOWN':
                 playerPaddle.y = Math.min(height - paddleHeight, playerPaddle.y + GAME_CONSTANTS.PADDLE_SPEED);
                 break;
-            case 'PAUSE_TOGGLE':
-                this.togglePause(session);
-                break;
+            //case 'PAUSE_TOGGLE':
+            //    this.togglePause(session);
+            //    break;
         }
     }
 
+/*
     private togglePause(session: GameSession) {
         if (session.gameState.status === 'PLAYING') {
             session.gameState.status = 'PAUSED';
@@ -372,4 +377,6 @@ export class GameService {
             session.gameState.status = 'PLAYING';
         }
     }
+*/
+	
 }
