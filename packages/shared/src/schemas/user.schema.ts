@@ -128,6 +128,7 @@ export namespace UserSchemas {
 		avatar: AvatarField,
 		isOnline: Type.Boolean(),
 		has2FAEnabled: Type.Boolean(),
+		lastLogoutAt: DateTimeField,
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});
@@ -148,6 +149,7 @@ export namespace UserSchemas {
 		has2FAEnabled: BooleanField,
 		totpSecret: Type.Optional(TotpSecretField),
 		backupCodeHash: Type.Optional(BackupCodeHashField),
+		lastLogoutAt: DateTimeField,
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});

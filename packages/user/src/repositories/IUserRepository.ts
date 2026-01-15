@@ -1,4 +1,4 @@
-import { UserTypes } from '@transcendence/shared';
+import { AuthTypes, UserTypes } from '@transcendence/shared';
 
 /**
  * Interfaz que define el contrato para el repositorio de Usuarios.
@@ -36,6 +36,9 @@ export interface IUserRepository {
         backupCodeHash?: string
     ): Promise<UserTypes.UserPublic>;
     
+	/** Actualizar lastLogoutAt para caducar tokens de acceso*/
+	updateLastLogoutAt(userId: string, lastLogoutAt: string): Promise<void>;
+
     // ========================================================================
     // QUERIES - Retornan null si no encuentran
     // ========================================================================
@@ -54,6 +57,9 @@ export interface IUserRepository {
     
     /** Buscar usuario por email (con passwordHash) - alias */
     findUserByEmail(email: string): Promise<UserTypes.UserInternal | null>;
+
+	/** Retorna el lastLogoutAt de un userId (timestamp en milisegundos) */
+	getLastLogoutAt(userId:string): Promise<number | null>;
 
 	// ========================================================================
     // CHECKERS - Retornan siempre un valor

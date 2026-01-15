@@ -33,6 +33,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			has2FAEnabled: false,
 			totpSecret: undefined,
 			createdAt: now,
+			lastLogoutAt: now,
 			updatedAt: now
 		};
 		
@@ -42,10 +43,10 @@ export class SQLiteUserRepository implements IUserRepository {
 		this.db.prepare(`
 			INSERT INTO users (
 				id, username, email, password_hash, avatar,
-				is_online, is_deleted, created_at, updated_at)
+				is_online, is_deleted, last_logout_at, created_at, updated_at)
 			VALUES (
 				@id, @username, LOWER(@email), @password_hash, @avatar,
-				@is_online, @is_deleted, @created_at, @updated_at)
+				@is_online, @is_deleted, @last_logout_at, @created_at, @updated_at)
 		`).run(row);
 
 		const created = await this.findUserById(row.id);
@@ -245,6 +246,28 @@ export class SQLiteUserRepository implements IUserRepository {
 		return updated;
 	}
 
+	/** Actualizar lastLogoutAt para caducar tokens de acceso*/
+	async updateLastLogoutAt(userId: string, lastLogoutAt: string): Promise<void> {
+		const last_logout_at = new Date(lastLogoutAt).getTime();
+		const now = Date.now();
+
+		const result = this.db.prepare(`
+			UPDATE users
+			SET
+				last_logout_at = ?,
+				updated_at = ?
+			WHERE id = ?
+		`).run(
+			last_logout_at,
+			now,
+			userId
+		);
+
+		if (result.changes === 0) {
+			throw new SharedErrors.NotFoundError(`Usuario ${userId} sin cambios`, 'user');
+		}
+	}
+
 	// ========================================================================
 	// QUERIES - Retornan null si no encuentran
 	// ========================================================================
@@ -298,6 +321,14 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToResponse(row) : null;
 	}
 
+	async getLastLogoutAt(userId: string): Promise<number | null> {
+		const result = this.db.prepare(`
+			SELECT last_logout_at FROM users WHERE id = ?
+		`).get(userId) as { last_logout_at: number } | undefined; // TODO tipar con typo específico??
+
+		return result ? result.last_logout_at : null;
+	}
+	
 	// ========================================================================
 	// CHECKERS - Retornan siempre un valor
 	// ========================================================================

@@ -78,7 +78,7 @@ const LocalUserPayloadObject = Type.Object({
 // RESPUESTAS DE ERROR
 // ============================================================================
 
-const ErrorResponse = Type.Object({
+const UnauthorizedError = Type.Object({
 	error: Type.String(),
 	message: Type.String(),
 	details: Type.Optional(Type.Any())
@@ -114,7 +114,7 @@ export namespace AuthSchemas {
 	});
 
 	// ========================================================================
-	// LOGIN - Body y Schemas
+	// LOGIN / LOGOUT - Body y Schemas
 	// ========================================================================
 	
 	/** Body para login (email + password) */
@@ -147,9 +147,34 @@ export namespace AuthSchemas {
 				LoginSuccessResponse,
 				Login2FARequiredResponse
 			]),
-			401: ErrorResponse
+			401: UnauthorizedError
 		}
 	};
+
+	/** Schema para logout sin body */
+	export const LogoutBodySchema = {
+		tags: ['Auth'],
+		response: { 
+			204: Type.Null(),
+			401: UnauthorizedError
+		}
+	}
+
+	export const LastLogoutAtBody = Type.Object({
+		lastLogoutAt: Type.String({ format: 'date-time' })
+	});
+
+	export const UpdateLastLogoutAtSchema = {
+		tags: ['Auth'],
+		params: UserIdParams,
+		body: LastLogoutAtBody,
+		response: {
+			204: Type.Null(),
+			401: UnauthorizedError,
+			403: UnauthorizedError,
+			404: NotFoundResponse
+		}
+	}
 	
 	// ========================================================================
 	// 2FA SETUP - Activar y Verificar 2FA
@@ -171,7 +196,7 @@ export namespace AuthSchemas {
 		params: UserIdParams,
 		response: {
 			200: Enable2FAResponse,
-			401: ErrorResponse,
+			401: UnauthorizedError,
 			404: NotFoundResponse,
 			409: ConflictErrorResponse
 		}
@@ -191,8 +216,8 @@ export namespace AuthSchemas {
 		params: UserIdParams,
 		body: Verify2FASetupBody,
 		response: {
-			204: Type.Null(),
-			401: ErrorResponse,
+			200: LoginSuccessResponse,
+			401: UnauthorizedError,
 			404: NotFoundResponse
 		}
 	};
@@ -215,7 +240,7 @@ export namespace AuthSchemas {
 		body: LoginVerify2FABody,
 		response: {
 			200: LoginSuccessResponse,
-			401: ErrorResponse
+			401: UnauthorizedError
 		}
 	};
 	
@@ -238,7 +263,7 @@ export namespace AuthSchemas {
 		body: VerifyBackupCodeBody,
 		response: {
 			200: LoginSuccessResponse,
-			401: ErrorResponse
+			401: UnauthorizedError
 		}
 	};
 	
@@ -259,8 +284,8 @@ export namespace AuthSchemas {
 		params: UserIdParams,
 		body: Disable2FABody,
 		response: {
-			204: Type.Null(),
-			401: ErrorResponse,
+			200: LoginSuccessResponse,
+			401: UnauthorizedError,
 			404: NotFoundResponse
 		}
 	};
@@ -304,7 +329,7 @@ export namespace AuthSchemas {
 		body: UpdatePasswordBody,
 		response: {
 			204: Type.Null(),
-			401: ErrorResponse,
+			401: UnauthorizedError,
 			404: NotFoundResponse
 		}
 	};
@@ -331,23 +356,24 @@ export namespace AuthSchemas {
 		body: RefreshTokenBody,
 		response: {
 			200: RefreshTokenResponse,
-			401: ErrorResponse
+			401: UnauthorizedError
 		}
 	};
 
     // ========================================================================
-    // JWT PAYLOAD SCHEMAS
+    // ACCESS TOKEN PAYLOAD SCHEMA
     // ========================================================================
 
     /**
      * Schema base para el payload de un JWT estándar en el sistema
-     * Contiene los campos mínimos necesarios para identificar al usuario
+     * Contiene los campos necesarios para authorizacion e identificación de usuario
      */
-    export const JWTPayloadSchema = Type.Object({
-        id: UuidField, // Reutilizamos tu definición de UUID existente
-        username: Type.Optional(UsernameField),
-        email: Type.Optional(EmailField),
-        // Claims estándar de JWT
+    export const AccessTokenPayloadSchema = Type.Object({
+        id: UuidField,
+        username: UsernameField,
+        email: EmailField,
+		has2FAEnabled: BooleanField,
+		is2FAVerified: BooleanField,
         iat: Type.Optional(Type.Integer()),
         exp: Type.Optional(Type.Integer())
     });

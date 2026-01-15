@@ -1,5 +1,5 @@
 import { Static } from '@sinclair/typebox';
-import { AuthSchemas } from '../index.js';
+import { AuthSchemas, AuthConstants } from '../index.js';
 import { UserSchemas } from '../index.js';
 
 export namespace AuthTypes {
@@ -15,7 +15,7 @@ export namespace AuthTypes {
 	export type UserIdParams = Static<typeof AuthSchemas.UserIdParams>;
 	
 	// ========================================================================
-	// LOGIN
+	// LOGIN / LOGOUT
 	// ========================================================================
 	
 	/** Body de POST /auth/login */
@@ -29,6 +29,9 @@ export namespace AuthTypes {
 	
 	/** Union type para response de login */
 	export type LoginResponse = LoginSuccessResponse | Login2FARequiredResponse;
+
+	/** Typo para lastLogoutAt */
+	export type LastLogoutAt = Static<typeof AuthSchemas.LastLogoutAtBody>;
 	
 	// ========================================================================
 	// 2FA SETUP - Activar y Verificar
@@ -134,18 +137,14 @@ export namespace AuthTypes {
 	export type RefreshTokenRecord = RefreshTokenResponseBody;
 	
 	// ========================================================================
-	// JWT PAYLOADS
+	// TOKEN PAYLOADS
 	// ========================================================================
 	
 	/**
-	 * Payload dentro del JWT de acceso (access token)
-	 * Incluye claim is2FAVerified para validar 2FA
+	 * Tipo inferido automáticamente del Schema.
+	 * Usar este tipo en Middlewares y decodificadores de JWT.
 	 */
-	export interface AccessTokenPayload extends UserPayload {
-		is2FAVerified: boolean;
-		iat: number;
-		exp: number;
-	}
+	export type AccessTokenPayload = Static<typeof AuthSchemas.AccessTokenPayloadSchema>;
 	
 	/**
 	 * Payload dentro del JWT provisional (login con 2FA)
@@ -154,7 +153,7 @@ export namespace AuthTypes {
 	export interface ProvisionalTokenPayload {
 		userId: string;
 		email: string;
-		purpose: '2fa_verification';
+		purpose: typeof AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION;
 		iat: number;
 		exp: number;
 	}
@@ -170,20 +169,6 @@ export namespace AuthTypes {
 		iat: number;
 		exp: number;
 	}
-
-	// ========================================================================
-	// JWT PAYLOADS (TypeBox Inferred)
-	// ========================================================================
-	
-	/**
-	 * Tipo inferido automáticamente del Schema.
-	 * Usar este tipo en Middlewares y decodificadores de JWT.
-	 */
-	export type JWTPayload = Static<typeof AuthSchemas.JWTPayloadSchema>;
-
-	// NOTA: Si quieres migrar AccessTokenPayload también:
-	// export type AccessTokenPayload = Static<typeof AuthSchemas.AccessTokenPayloadSchema>; 
-	// (Requeriría definir AccessTokenPayloadSchema en el archivo de schemas)
 	
 	// ========================================================================
 	// DATABASE ROWS (snake_case)

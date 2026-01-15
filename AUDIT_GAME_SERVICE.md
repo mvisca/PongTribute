@@ -28,23 +28,23 @@
 ### 2.1 Estructura de Componentes
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                         CLIENTE                              │
-│  ┌──────────────┐              ┌─────────────────────┐      │
-│  │  HTTP REST   │              │  WebSocket Game     │      │
-│  └──────┬───────┘              └──────────┬──────────┘      │
-└─────────┼────────────────────────────────┼─────────────────┘
-          │                                 │
-          │                                 │
-┌─────────▼────────────────────────────────▼─────────────────┐
-│                    GAME SERVICE                             │
+┌────────────────────────────────────────────────────────────┐
+│                         CLIENTE                            │
+│    ┌──────────────┐              ┌─────────────────────┐   │
+│    │  HTTP REST   │              │  WebSocket Game     │   │
+│    └──────┬───────┘              └──────────┬──────────┘   │
+└───────────┼─────────────────────────────────┼──────────────┘
+            │                                 │
+            │                                 │
+┌───────────▼─────────────────────────────────▼──────────────┐
+│                    GAME SERVICE                            │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  MatchController (REST Endpoints)                    │  │
 │  │  - POST /api/matches                                 │  │
 │  │  - POST /api/matches/:id/accept                      │  │
 │  │  - POST /api/matches/:id/reject                      │  │
 │  └────────────────────┬─────────────────────────────────┘  │
-│                       │                                     │
+│                       │                                    │
 │  ┌────────────────────▼────────────────────────────────┐   │
 │  │  MatchService (Lógica de Negocio)                   │   │
 │  │  - joinPublicQueue()    → Matchmaking FIFO          │   │
@@ -52,7 +52,7 @@
 │  │  - acceptMatch()        → Confirma partida          │   │
 │  │  - rejectMatch()        → Rechaza partida           │   │
 │  └────────┬────────────────────────────────────────────┘   │
-│           │                                                 │
+│           │                                                │
 │  ┌────────▼────────────────────────────────────────────┐   │
 │  │  MatchRepository (Persistencia)                     │   │
 │  │  - createPublicMatch()  → INSERT active             │   │
@@ -61,18 +61,18 @@
 │  │  - findById()           → SELECT                    │   │
 │  │  - finishMatch()        → UPDATE winner             │   │
 │  └────────┬────────────────────────────────────────────┘   │
-│           │                                                 │
-│           ▼                                                 │
-│     ┌─────────┐                                             │
-│     │ SQLite  │                                             │
-│     └─────────┘                                             │
-│                                                             │
+│           │                                                │
+│           ▼                                                │
+│     ┌─────────┐                                            │
+│     │ SQLite  │                                            │
+│     └─────────┘                                            │
+│                                                            │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  GameGateway (WebSocket Handler)                     │  │
 │  │  - handleConnection() → Valida JWT                   │  │
 │  │  - Eventos: message, close                           │  │
 │  └────────────────────┬─────────────────────────────────┘  │
-│                       │                                     │
+│                       │                                    │
 │  ┌────────────────────▼────────────────────────────────┐   │
 │  │  GameService (Motor de Juego)                       │   │
 │  │  - joinMatch()      → Asigna socket a sesión        │   │
@@ -81,23 +81,23 @@
 │  │  - processInput()   → Mueve paletas                 │   │
 │  │  - endGame()        → Guarda resultado              │   │
 │  └────────┬────────────────────────────────────────────┘   │
-│           │                                                 │
-│           ▼                                                 │
+│           │                                                │
+│           ▼                                                │
 │  ┌────────────────────┐                                    │
 │  │ Map<matchId,       │                                    │
 │  │  GameSession>      │  (Sesiones en memoria)             │
 │  └────────────────────┘                                    │
-└─────────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────┘
           │
           │ Redis Pub/Sub
           ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                    REDIS (Canal: game_events)                │
-│  Eventos publicados:                                         │
-│  - match.found    → Matchmaking exitoso                      │
-│  - match.invite   → Invitación privada                       │
-│  - match.started  → Partida aceptada                         │
-│  - match.rejected → Partida rechazada                        │
+│                    REDIS (Canal: game_events)               │
+│  Eventos publicados:                                        │
+│  - match.found    → Matchmaking exitoso                     │
+│  - match.invite   → Invitación privada                      │
+│  - match.started  → Partida aceptada                        │
+│  - match.rejected → Partida rechazada                       │
 └─────────────────────────────────────────────────────────────┘
           │
           ▼

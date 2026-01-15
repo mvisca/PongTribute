@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { UserTypes, SharedErrors } from '@transcendence/shared';
+import { UserTypes, SharedErrors, AuthTypes } from '@transcendence/shared';
 import { UserService } from '../index.js';
 
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
@@ -67,18 +67,6 @@ export class UserController {
 	}
 
 	// ========================================================================
-	// UPLOAD AVATAR
-	// ========================================================================
-
-	async uploadAvatar(request: FastifyRequest, reply: FastifyReply): Promise<void> {
-		try {
-			
-		} catch (err) {
-			this.errorHandler(err, request, reply);
-		}
-	}
-
-	// ========================================================================
 	// UPDATE USER
 	// ========================================================================
 
@@ -100,11 +88,27 @@ export class UserController {
 
 	async updatePassword(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
-			const { id } = request.params as { id: string };
+			const { id } = request.params as UserTypes.UserIdParams;
 			const data = request.body as UserTypes.UpdatePasswordInternalBody;
 			await this.userService.updatePassword(id, data.newPasswordHash);
 			return reply.code(204).send();
 		} catch (err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
+	// ========================================================================
+	// UPDATE LAST LOGOUT AT
+	// ========================================================================
+
+	async updateLastLogoutAt(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { id } = request.params as UserTypes.UserIdParams;
+			const data = request.body as AuthTypes.LastLogoutAt;
+
+			await this.userService.updateLastLogoutAt(id, data.lastLogoutAt);
+			return reply.code(204).send();
+		} catch(err) {
 			return this.errorHandler(err, request, reply);
 		}
 	}
@@ -131,7 +135,7 @@ export class UserController {
 
 	async anonymizeUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { id } = request.params as { id: string };
+			const { id } = request.params as UserTypes.UserIdParams;
 			await this.userService.anonymizeUser(id);
 			return reply.code(204).send();
 		} catch (err) {
@@ -145,7 +149,7 @@ export class UserController {
 
 	async deleteUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { id } = request.params as { id: string };
+			const { id } = request.params as UserTypes.UserIdParams;
 			await this.userService.deleteUser(id);			
 			return reply.code(204).send();
 		} catch (err) {
@@ -159,7 +163,7 @@ export class UserController {
 
 	async findUserById(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { id } = request.params as { id: string };
+			const { id } = request.params as UserTypes.UserIdParams;
 			const user = await this.userService.findUserById(id);
 			return reply.code(200).send(user);
 		} catch (err) {
@@ -169,7 +173,7 @@ export class UserController {
 	
 	async findUserByUsername(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { username } = request.params as { username: string };
+			const { username } = request.params as UserTypes.UsernameParams;
 			const user = await this.userService.findUserByUsername(username);
 			return reply.code(200).send(user);
 		} catch (err) {
@@ -179,7 +183,7 @@ export class UserController {
 	
 	async findUserByEmail(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { email } = request.params as { email: string };
+			const { email } = request.params as UserTypes.EmailParams;
 			const user = await this.userService.findUserByEmail(email);
 			return reply.code(200).send(user);
 		} catch (err) {
@@ -187,13 +191,23 @@ export class UserController {
 		}
 	}
 	
+	async getLastLogoutAt(request: FastifyRequest, reply: FastifyReply) {
+		try {
+			const { id } = request.params as UserTypes.UserIdParams;
+			const lastLogoutAt = await this.userService.getLastLogoutAt(id);
+			return reply.code(200).send({ lastLogoutAt });
+		} catch (err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
 	// ========================================================================
 	// GETTERS INTERNALS
 	// ========================================================================
 
 	async findUserByEmailInternal(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
-			const { email } = request.params as { email: string };
+			const { email } = request.params as UserTypes.EmailParams;
 			const user = await this.userService.findUserByEmailInternal(email);
 			return reply.code(200).send(user);
 		} catch (err) {
@@ -203,7 +217,7 @@ export class UserController {
 	
 	async findUserByIdInternal(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
-			const { id } = request.params as { id: string };
+			const { id } = request.params as UserTypes.UserIdParams;
 			const user = await this.userService.findUserByIdInternal(id);
 			return reply.code(200).send(user);
 		} catch (err) {
@@ -217,7 +231,7 @@ export class UserController {
 
 	async checkUsername(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { username } = request.params as { username: string };
+			const { username } = request.params as UserTypes.UsernameParams;
 			const taken = await this.userService.checkUsername(username);			
 			return reply.code(200).send({
 				available: !taken,
@@ -230,7 +244,7 @@ export class UserController {
 
 	async checkEmail(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const { email } = request.params as { email: string };
+			const { email } = request.params as UserTypes.EmailParams;
 			const taken = await this.userService.checkEmail(email);
 			return reply.code(200).send({
 				available: !taken,

@@ -24,6 +24,7 @@ export class UserMapper {
 			has2FAEnabled: row.has_2fa_enabled === 1,
 			totpSecret: row.totp_secret ?? undefined,
 			backupCodeHash: row.backup_code_hash ?? undefined,
+			lastLogoutAt: new Date(row.last_logout_at).toISOString(),
 			createdAt: new Date(row.created_at).toISOString(),
 			updatedAt: new Date(row.updated_at).toISOString()
 		};
@@ -62,6 +63,7 @@ export class UserMapper {
 			has_2fa_enabled: user.has2FAEnabled ? 1 : 0,
 			totp_secret: user.totpSecret ?? null,
 			backup_code_hash: user.backupCodeHash ?? null,
+			last_logout_at: new Date(user.lastLogoutAt).getTime(),
 			created_at: new Date(user.createdAt).getTime(),
 			updated_at: new Date(user.updatedAt).getTime()
 		};

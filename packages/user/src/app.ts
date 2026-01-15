@@ -6,7 +6,7 @@ import swaggerUI from '@fastify/swagger-ui';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { UserEnv, UserRoutes } from './index.js';
+import { UserEnv, UserRoutes, UserService, AuthMiddleware } from './index.js';
 import { Utils } from '@transcendence/shared';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +30,12 @@ export function buildApp(): FastifyInstance {
 	
 	/** 1. Crear instancia app */
 	const app = Fastify(UserEnv.getFastifyConfig());
-	
+
+	/** 1.1 Inicializar UserService e inyectarlo en middleware */
+	const userService = new UserService();
+	AuthMiddleware.setUserService(userService);
+	console.log('UserService inyectado en AuthMiddleware');
+
 	/** 2. Plugins de seguridad */
 	app.register(helmet, {
 		contentSecurityPolicy: false,
