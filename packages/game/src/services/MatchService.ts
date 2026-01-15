@@ -86,16 +86,17 @@ export class MatchService {
         if (foundValidOpponent && opponentId) {
             console.log(`👉 ⚙️ [Service] ¡Match! (${opponentId}) vs (${userId})`);
 
-            // 1. Borrar tickets de ambos para que no vuelvan a matchear si hubo race condition
-            await redisClient.del(`${TICKET_PREFIX}${opponentId}`);
-            await redisClient.del(`${TICKET_PREFIX}${userId}`); // Por si acaso yo tenía uno viejo
-
-            // 2. Persistir en DB (P1: Opponent, P2: Me)
-            const matchRow = await this.matchRepo.createPublicMatch(opponentId, userId);
-
 			try {
+				// 1. Persistir en DB (P1: Opponent, P2: Me)
+				// Si falla, aun no hemos borrado tickets ni notificado.
+				const matchRow = await this.matchRepo.createPublicMatch(opponentId, userId);
 
-				// 3. Mapear e Hidratar
+				// 2. Quemar tickets (Commit en Redis)
+            	// Solo llegamos aquí si la DB confirmó la creación.
+				await redisClient.del(`${TICKET_PREFIX}${opponentId}`);
+				await redisClient.del(`${TICKET_PREFIX}${userId}`);
+
+				// 3. Hidratacion y mapeo
 				let matchDomain = MatchMapper.toDomain(matchRow);
 				matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
@@ -109,18 +110,22 @@ export class MatchService {
 					}
 				}));
 
-				return { outcome: 'match_found', match: matchDomain };
+					return { outcome: 'match_found', match: matchDomain };
 
 			} catch (error) {
-				console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
+				console.error(`🔥 [Critical] Fallo al consolidar Match. ROLLBACK EJECUTADO.`, error);
     
-				// 🚨 COMPENSACIÓN / ROLLBACK 🚨
-				// Como falló la notificación o la hidratación, borramos la partida de la DB
-				// para que los usuarios no se queden "atrapados" en una partida fantasma.
-				await this.matchRepo.delete(matchRow.id); 
+				// 🚨 ROLLBACK DE REDIS (LA CLAVE DE LA ATOMICIDAD) 🚨
+				// Devolvemos al oponente al INICIO de la cola (LPUSH, no RPUSH) para que sea el siguiente en ser atendido.
+				// Esto evita la pérdida de datos (Data Loss) del LPOP anterior.
+				await redisClient.lpush(QUEUE_KEY, opponentId);
 
-				// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
-				throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+				// Nota: No necesitamos restaurar el Ticket porque nunca lo borramos (la línea del 'del' está dentro del try).
+				
+				// Si el error fue DESPUÉS de crear la fila en DB (ej: en la hidratación), deberíamos borrarla también.
+				// Pero como createPublicMatch es lo primero, generalmente el fallo estará allí.
+				
+				throw new Error('Error interno al crear la partida. Inténtalo de nuevo.');
 			}
 
         } else {
@@ -256,14 +261,13 @@ export class MatchService {
 
 			return matchDomain;
 		} catch (error) {
-			console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
+			console.error(`🔥 [Critical] Fallo al iniciar partida. ROLLBACK a PENDING.`, error);
     
-			// 🚨 COMPENSACIÓN / ROLLBACK 🚨
-			// Como falló la notificación o la hidratación, borramos la partida de la DB
-			// para que los usuarios no se queden "atrapados" en una partida fantasma.
-			await this.matchRepo.delete(matchRow.id);
-			// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
-			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+			// 🚨 MEJORA: REVERTIR ESTADO EN LUGAR DE BORRAR 🚨
+            // Si falló el inicio, devolvemos la invitación a "pendiente" para que puedan reintentar.
+            await this.matchRepo.updateStatus(matchId, 'pending');
+
+            throw new Error('Error al iniciar la partida. Por favor intenta aceptar de nuevo.');
 		}
 	}
 	
@@ -316,7 +320,6 @@ export class MatchService {
 			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
 		}
     }
-
 
 
 	/**

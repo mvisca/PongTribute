@@ -153,7 +153,7 @@ export class MatchRepository {
 			const stmt = this.db.prepare(`
 				UPDATE matches 
 				SET status = ?
-				WHERE id = ?)
+				WHERE id = ?
 			`);
 
 			const result = stmt.run(status, id);
