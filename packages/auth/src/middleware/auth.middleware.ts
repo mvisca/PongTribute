@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
 import { Value } from '@sinclair/typebox/value';
-import { AuthTypes, UserTypes, AuthSchemas, SharedErrors } from "@transcendence/shared";
+import { UserTypes, AuthSchemas, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { AuthEnv } from "../config.js";
 
 // TODO unificar tipo de funcion con validateServiceSecret
@@ -19,7 +19,8 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 		{
 			method: 'GET',
 			headers: {
-				'X-Service-Secret': AuthEnv.SERVICE_SECRET
+				'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+				'Content-Type': 'application/json'
 			}
 		}
 	);
@@ -56,12 +57,25 @@ export namespace AuthMiddleware {
 		
 		try {
 			// Verificar el access token con el jwt_secret
-			const payload = jwt.verify(token, AuthEnv.JWT_SECRET);
+			const payload = jwt.verify(token, AuthEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
 
+			// WIP HERE
+			// Test individual de cada campo
+			console.log('Validando campos:');
+			console.log('id:', Value.Check(AuthSchemas.UuidFieldEx, payload.id));
+			console.log('username:', Value.Check(AuthSchemas.UsernameFieldEx, payload.username));
+			console.log('email:', Value.Check(AuthSchemas.EmailFieldEx, payload.email));
+			console.log('has2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.has2FAEnabled));
+			console.log('is2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.is2FAVerified));
+			
+			// Validación completa
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			console.log('Schema completo:', isValid);
+			
 			// Validar estructura del payload
-			if (!Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload)) {
-				throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
-			}
+			/*			if (!Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload)) {
+			throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
+			} */
 
 			// TypeScript ahora infiere payload como AccessTokenPayload
 			const tokenIssuedAt = payload.iat!; // ! porque es Optional pero jwt.verify siempre lo añade

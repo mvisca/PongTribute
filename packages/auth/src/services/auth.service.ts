@@ -250,7 +250,10 @@ export class AuthService {
 			`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
 			{
 				method: 'PUT',
-				headers: { 'X-Service-Secret': AuthEnv.SERVICE_SECRET },
+				headers: {
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+					'Content-Type': 'application/json'
+				 },
 				body: JSON.stringify(body)
 			}
 		);
