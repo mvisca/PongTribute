@@ -76,7 +76,7 @@ export class AuthService {
 	/** Completa el proceso de login generando tokens y seteando el usuario online */
 	private async completeLogin(
 		user: UserTypes.UserInternal,
-		has2FAEnabled: boolean = user.has2FAEnabled
+		has2FAEnabled: boolean = false
 	): Promise<AuthTypes.LoginSuccessResponse> {
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION === true) {
@@ -87,7 +87,7 @@ export class AuthService {
 		await this.setUserIsOnline(user.id, true);
 		
 		// Crear user payload y par tokens
-		return this.generateTokenPair(user, true); // por que true el is2FAVerified? debería provenir del llamador del método, puede ser con o sin...
+		return this.generateTokenPair(user, has2FAEnabled); // por que true el is2FAVerified? debería provenir del llamador del método, puede ser con o sin...
 	}
 	
 	// VERIFICA PASSWORD
@@ -594,7 +594,7 @@ export class AuthService {
 		}
 		
 		// actualizar tokens de refresh, estado online y generar access token
-		return await this.completeLogin(user);
+		return await this.completeLogin(user, true);
 	}
 	
 	//=========================================================================
