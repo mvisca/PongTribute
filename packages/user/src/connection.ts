@@ -45,9 +45,18 @@ export function getDatabase(): Database.Database {
 	if (!db) {
 		try {
 			const { path: dbPath } = resolveDbPath();
+
+			// Asegurar directorio de la DB
+			const dbDir = path.dirname(dbPath);
+			if (!fs.existsSync(dbDir)) {
+				fs.mkdirSync(dbDir, { recursive: true });
+			}
+
 			db = new Database(dbPath);
+
 			// Write ahead loggin
 			db.pragma('journal_mode = WAL');
+
 			// Foreing keys está off por defecto
 			// Con esto se activa ON DELETE CASCADE
 			db.pragma('foreign_keys = ON');
