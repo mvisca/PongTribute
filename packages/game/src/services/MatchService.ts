@@ -321,6 +321,42 @@ export class MatchService {
 		}
     }
 
+	/**
+     * cancelPrivateMatch
+     * Permite al creador (P1) revocar la invitación antes de que sea aceptada.
+     */
+    async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
+        console.log(`👉 ⚙️ [Service] Cancelando invitación ${matchId} por usuario ${userId}`);
+
+        // 1. Obtener la partida
+        const matchRow = await this.matchRepo.findById(matchId);
+
+        // 2. Guards (Validaciones)
+        if (!matchRow) throw new Error('Match not found');
+        
+        // Solo se puede cancelar si no ha empezado
+        if (matchRow.status !== 'pending') {
+            throw new Error('Cannot cancel a match that is not pending');
+        }
+
+        // SEGURIDAD: Solo el creador (Player 1) puede cancelar SU invitación
+        if (matchRow.player1_id !== userId) {
+            throw new Error('You are not the creator of this match');
+        }
+
+        // 3. Borrar de la DB (Hard Delete porque nunca ocurrió)
+        // Al borrarla, liberamos a ambos usuarios del bloqueo de "Active Match".
+        await this.matchRepo.delete(matchId);
+
+        // 4. Notificar al invitado (Player 2)
+        // Es importante para que su interfaz se limpie si tenía el popup abierto.
+        await redisClient?.publish('game_events', JSON.stringify({
+            type: 'match.cancelled', 
+            targetUserId: matchRow.player2_id, // Avisamos al invitado
+            payload: { matchId }
+        }));
+    }
+
 
 	/**
      * fetchUserProfile

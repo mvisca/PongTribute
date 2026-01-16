@@ -64,6 +64,15 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
         schema: MatchSchemas.RejectMatchSchema,
         handler: controller.rejectMatch.bind(controller)
 	});
+
+	// ========================================================================
+    // ???????????????????????????RUTA HTTP DE CANCELAR LA INVITACION A PARTIDA (REST)?????????????????????????????
+    // ========================================================================
+	// app.post<{ Params: MatchTypes.RejectMatchParams }>('/matches/:id/reject', {
+    //     preHandler: [GameMiddleware.validateJWT],
+    //     schema: MatchSchemas.RejectMatchSchema,
+    //     handler: controller.rejectMatch.bind(controller)
+	// });
 	
 	// ========================================================================
     // RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
