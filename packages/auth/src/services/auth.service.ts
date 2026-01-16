@@ -411,7 +411,7 @@ export class AuthService {
 						...( oldAvatarUrl && { old_avatar: oldAvatarUrl })
 					})
 				}
-			)  // TODO Tipar retorno
+			)  // DUDA Tipar retorno
 			
 			if (!response.ok) {
 				const error = await response.json();
@@ -419,7 +419,7 @@ export class AuthService {
 				throw new Error(`Image service error: ${errorMessage || response.statusText}`);
 			}
 			
-			const data = await response.json() as { url: string }; // TODO Mejorar tipado
+			const data = await response.json() as { url: string }; // DUDA Mejorar tipado
 			return data.url;
 		} catch (err) {
 			console.error('Fallo subiendo avatar: ', err);
@@ -569,7 +569,7 @@ export class AuthService {
 		// Verificar token provisional con user payload
 		const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET);
 		
-		if (typeof payload === 'string' || payload.purpose !== '2fa_verification') { // TODO Aplicar la constante de AUTH al implementarla
+		if (typeof payload === 'string' || payload.purpose !== AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION) {
 			throw new SharedErrors.UnauthorizedError('Token inválido');
 		}
 		
@@ -623,8 +623,7 @@ export class AuthService {
 		);
 		
 		if (!updateResponse.ok) {
-			throw new Error(`Fallo al actualizar password: ${updateResponse.status}`);
-			// TODO Es necesario un SharedError nuevo para manejar este error?
+			throw new SharedErrors.InternalError(`Fallo al actualizar password: ${updateResponse.status}`); // DUDA es error correcto
 		}
 	}
 	

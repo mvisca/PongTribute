@@ -12,7 +12,6 @@ import { Utils } from '@transcendence/shared';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// TODO revisar la línea con statusCode y as FastifyError, tipar mejor con instanceof para no usar as 
 // Cliente Redis de toda la app User
 export let redisClient: Redis | null = null;
 
@@ -50,8 +49,7 @@ export function buildApp(): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${UserEnv.PORT}`}
-				// TODO hacer que la url sea dinamica en sharedEnv para tener valores acordes a NODE_ENV
+				{ url: `http://localhost:${UserEnv.PORT}`} // DUDA como se comporta esto en produccion? Se rompe? Habría que hacerl odierente?
 			],
 			components: {
 				securitySchemes: {

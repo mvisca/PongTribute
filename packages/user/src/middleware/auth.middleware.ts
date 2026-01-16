@@ -1,13 +1,9 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
-import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Value } from '@sinclair/typebox/value';
 import { AuthSchemas, UserTypes, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { UserEnv } from "../config.js";
 import { UserService } from "../services/user.service.js";
-
-// TODO unificar tipo de funcion con validateServiceSecret
-// TODO verificar que este middleware y el otro en este directorio son necesarios ambos, deben centralizarse si son iguales al de auth?
 
 export namespace AuthMiddleware {
 	let userServiceInstance: UserService | null = null;
@@ -37,22 +33,18 @@ export namespace AuthMiddleware {
 			// Verificar el access token con jwt_secret
 			const payload = jwt.verify(token, UserEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
 			
-			// Validación completa
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
-			console.log('Schema completo:', isValid);
+			if (!isValid) 
+				throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
+			console.log('== Schema completo:', isValid);
 			
-			// Validar estructura del payload
-			/*			if (!Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload)) {
-			throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
-			} */
-			
-			// Después de la validación anterior Typescript infiere Payload como AccessTokenPayload
-			const tokenIssuedAt = payload.iat!; // iat! porque es Optional, pero jwt.verify siempre lo añade
+			// TypeScript ahora infiere payload como AccessTokenPayload
+			const tokenIssuedAt = payload.iat!;
 			const userId = payload.id;
 			
 			// Validar lastLogoutAt usando acceso directo al servicio
 			if (!userServiceInstance) {
-				throw new Error('UserService no inyectado en middleware');
+				throw new SharedErrors.InternalError('UserService no inyectado en middleware');
 			}
 			
 			// Validar lastLogoutAt
@@ -68,7 +60,7 @@ export namespace AuthMiddleware {
 			
 			request.user = payload;
 		} catch (err) {
-			return SharedErrors.handleAuthError(err, reply); // TODO por consistencia en manejo de errores centralizado qué se debería lanzar aquí? un Error genérico que maneje el setErrorandler de la app?
+			return SharedErrors.handleError(err, reply);
 		}
 		
 		console.log('JWT válido @ AuthMiddleware @ User');
@@ -90,7 +82,7 @@ export namespace AuthMiddleware {
 				throw new SharedErrors.UnauthorizedError('No tienes permiso para acceder a este recurso'); // DUDA forbiden 403 (está lanznado el correcto)
 			}
 		} catch (err) {
-			throw SharedErrors.handleAuthError(err, reply);  // TODO idem catch del validateJWT / APlicar decision tambien a auth middlewares y game middlewares
+			throw SharedErrors.handleError(err, reply);
 		}
 	}
 }

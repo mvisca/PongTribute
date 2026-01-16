@@ -2,8 +2,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// TODO arreglar manejo centralizado de variables de entorno
-// TODO implementar correctamente en Auth service y en Game service la build() de env si aun no lo esta, y donde haya base de datos su construccion
+// DUDA es consistente el manejo de variables de entorno / build()?
+
 // ==================================================
 // CARGAR .ENV DESDE RAÍZ
 // ==================================================
@@ -130,7 +130,8 @@ export type EnviromentVars = typeof DEFAULTS;
 
 export namespace SharedEnv {
 	
-	// TODO donde se llama build de sharedEnv pone try catch para hacer gracefullShutdown si hay error
+	// DUDA Los llamados a build() están todos en try catch adecuados?
+
 	// Build configuration object from process.env (no side-effects)
 	export function build() {
 		const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
@@ -280,7 +281,7 @@ export namespace SharedEnv {
 					`Recibido: ${url}`
 				);
 			}
-*/ // TODO evaluar implementar parser manual sin regex
+			*/ // DUDA evaluar estrategia de validacion de url de cloudinary
 			const confirmUrl = `cloudinary://${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}@${CLOUDINARY_CLOUD_NAME}`;
 			if (confirmUrl !== CLOUDINARY_URL)
 				throw new Error(
