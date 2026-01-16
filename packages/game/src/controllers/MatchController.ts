@@ -284,6 +284,7 @@ export class MatchController {
         // Delegamos al servicio (que ya tiene la lógica de guards)
         await this.matchService.cancelPrivateMatch(userId, matchId);
 
+		
         // Retornamos estructura definida en Schema
         const response: MatchTypes.CancelMatchResponse = {
             success: true,
