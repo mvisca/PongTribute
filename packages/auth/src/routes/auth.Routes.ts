@@ -4,14 +4,14 @@ import { AuthController, AuthMiddleware, AuthService } from "../index.js";
 
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
-	
+
 	// instancia única de controller para todas las rutas
 	const controller = new AuthController();
-	
+
 	// ============================================================================
 	// PUBLIC ROUTES // LOGIN & VERIFY 2FA & VERIFY BACKUP CODE
 	// ============================================================================
-	
+
 	/** Registrar nuevo usuario */
 	app.post('/auth/register', {
 		schema: AuthSchemas.RegisterBodySchema,
@@ -35,19 +35,19 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		schema: AuthSchemas.VerifyBackupCodeBodySchema,
 		handler: controller.verifyBackupCode.bind(controller)
 	});
-	
+
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT
 	// ============================================================================
-	
+
 	/** Desautenticar usuario y borrar tokens */
 	app.post('/auth/logout', {
 		schema: AuthSchemas.LogoutBodySchema,
 		preHandler: [AuthMiddleware.validateJWT],
 		handler: controller.logout.bind(controller)
 	});
-	
-		/** Regeneración de access token con refresh token */
+
+	/** Regeneración de access token con refresh token */
 	app.post('/auth/refresh', {
 		schema: AuthSchemas.RefreshTokenBodySchema,
 		handler: controller.refreshAccessToken.bind(controller)
@@ -55,28 +55,28 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT + OWNERSHIP
 	// ============================================================================
-	
+
 	/** Activar 2FA */
 	app.post('/auth/:id/enable-2fa', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.Enable2FABodySchema,
 		handler: controller.enable2FA.bind(controller)
 	});
-	
+
 	/** Completar configuración de 2FA */
 	app.post('/auth/:id/verify-2fa-setup', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.Verify2FASetupBodySchema,
 		handler: controller.verify2FASetup.bind(controller)
 	});
-	
+
 	/** Desactivar 2FA */
 	app.post('/auth/:id/disable-2fa', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
 		schema: AuthSchemas.Disable2FABodySchema,
 		handler: controller.disable2FA.bind(controller)
 	});
-	
+
 	/** Actualizar contraseña (requiere verificación de propiedad) */
 	app.put('/auth/:id/password', {
 		preHandler: [AuthMiddleware.validateJWT, AuthMiddleware.verifyOwnership],
@@ -84,11 +84,4 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.updatePassword.bind(controller)
 	});
 
-} // TODO separar rutas publicas y privadas en ficheros
-
-// ft_transcendence git:(main) curl -X POST http://localhost:3002/api/auth/refresh \
-//   -H "Content-Type: application/json" \
-//   -d '{
-//     "refreshToken": "1701a49e114b23b292478a63b029399ef5eadfc2e0e909c6d44e0297c0ab8dd7"
-//   }'
-// {"error":"Not found","message":"Route POST /api/auth/refresh no encontrada"}
+} // DUDA separar rutas publicas y privadas en ficheros

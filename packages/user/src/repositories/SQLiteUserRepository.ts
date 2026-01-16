@@ -2,6 +2,7 @@ import { Utils, UserTypes, UserConstants, SharedErrors } from "@transcendence/sh
 import { getDatabase, UserMapper } from "../index.js";
 import { IUserRepository } from './IUserRepository.js';
 import { UserEnv } from '../config.js';
+import { NotFoundError } from "@transcendence/shared/errors/AppError.js";
 
 export class SQLiteUserRepository implements IUserRepository {
 	
@@ -31,6 +32,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			isOnline: false,
 			isDeleted: false,
 			has2FAEnabled: false,
+			is2FAVerified: false,
 			totpSecret: undefined,
 			createdAt: now,
 			lastLogoutAt: now,
@@ -52,11 +54,11 @@ export class SQLiteUserRepository implements IUserRepository {
 		const created = await this.findUserById(row.id);
 			
 		if (!created)
-			throw new Error(`No se ha podido recuperar usuario: ${UserMapper.internalToResponse(newUser)}`);
+			throw new SharedErrors.NotFoundError(`No se ha podido recuperar usuario: ${UserMapper.internalToResponse(newUser)}`);
 			
 		return created;
 	}
-		
+
 	/** Actualizar usuario, lanza NotFoundError si no existe */
 	async update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 		// Normalizar
@@ -73,7 +75,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		
 		// Validar que haya campos con valores válidos para actualizar
 		if (Object.values(updateData).filter(v => v !== undefined).length === 0)
-			throw new Error('No hay campos válidos para actualizar');
+			throw new SharedErrors.ValidationError('No hay campos válidos para actualizar', 'body');
 
 		// Mapea a row
 		const updateRow = UserMapper.updateToRow(updateData);
@@ -165,8 +167,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		const anonymized = await this.findUserById(id);
 
 		if (!anonymized)
-			throw new Error(`No se ha podido recuperar el usuario: ${id}`); // TODO en campos de verificacion de recuperacion de usuario modificado, es notfounderror o Error para tirar un 500?
-			// TODO si es 500 hay que revisar otros metodos en ese repository
+			throw new SharedErrors.NotFoundError(`No se ha podido recuperar el usuario: ${id}`);
 		return anonymized;
 	}
 

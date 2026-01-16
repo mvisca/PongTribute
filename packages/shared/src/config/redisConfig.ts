@@ -1,4 +1,5 @@
-import { Redis, RedisOptions } from 'ioredis'; // TODO verificar si este import se esta reimportando en otro sitio y si lo está, si es buena practica
+import { Redis, RedisOptions } from 'ioredis'; 
+// DUDA verificar si este import se esta reimportando en otro sitio y si lo está, si es buena practica
 
 /** Configuración para clientes Redis */
 export interface RedisConfig {

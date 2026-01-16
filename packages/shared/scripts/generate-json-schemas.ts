@@ -9,7 +9,7 @@ const OUTPUT_DIR = join(__dirname, '..', 'contracts');
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-// TODO Placeholder, actualizar cuando exista image.schema.ts
+// DUDA Placeholder, actualizar cuando exista image.schema.ts // VERIFICAR ESTADO DE ESTO
 const schemas = {
 	'image-upload-request.json': {
 		$schema: 'http://json-schema.org/draft-07/schema#',

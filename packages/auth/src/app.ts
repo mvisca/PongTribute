@@ -126,7 +126,7 @@ export function buildApp(): FastifyInstance {
 	app.register(authRoutes, { prefix: '/api' });
 	
 	/** Manejo global de errores. Captura cualquier error no manejado */
-	app.setErrorHandler((error, request, reply) => {
+	app.setErrorHandler((error, request, reply) => { // TODO Usar gestión global centrilizada de errores en App.ts de Auth y de User y de Game
 		request.log.error({
 			err: error,
 			url: request.url,
@@ -141,7 +141,8 @@ export function buildApp(): FastifyInstance {
 			})
 		}
 		
-		const statusCode = (error as FastifyError).statusCode; // TODO arreglar este apanyo causado por type asertion para resolver conflicto de tipo Fastify Error
+		const statusCode = (error as FastifyError).statusCode; 
+		// TODO arreglar este apanyo causado por type asertion para resolver conflicto de tipo Fastify Error
 		if (statusCode) {
 			return reply.status(statusCode).send({
 				error: (error as FastifyError).name,

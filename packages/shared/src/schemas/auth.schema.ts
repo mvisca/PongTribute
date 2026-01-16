@@ -71,7 +71,8 @@ const LocalUserPayloadObject = Type.Object({
 	id: UuidField,
 	username: UsernameField,
 	email: EmailField,
-	has2FAEnabled: BooleanField
+	has2FAEnabled: BooleanField,
+	is2FAVerified: BooleanField
 });
 
 // ============================================================================
@@ -383,4 +384,13 @@ export namespace AuthSchemas {
         exp: Type.Optional(Type.Integer())
     });
 
+	export const AccessTokenPayloadUntypedSchema = Type.Object({
+		id: Type.String(),
+        username: UsernameField,
+        email: Type.String(),
+		has2FAEnabled: BooleanField,
+		is2FAVerified: BooleanField,
+        iat: Type.Optional(Type.Integer()),
+        exp: Type.Optional(Type.Integer())
+	})
 }

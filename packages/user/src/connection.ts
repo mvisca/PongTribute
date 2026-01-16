@@ -24,7 +24,7 @@ process.on('SIGTERM', () => {
 	console.log('SIGTERM: Closing Database');
 	closeDatabase();
 	db = null;
-}); // TODO revisar implementacion de señales, consitente en pattern y servicios, esta implementacion está ok o repetida, ver capas
+}); // DUDA revisar implementacion de señales, consitente en pattern y servicios, esta implementacion está ok o repetida, ver capas
 
 function resolveDbPath(): { path: string } {
 	// Permitir override en entorno de test para bases en memoria o URIs compartidas
