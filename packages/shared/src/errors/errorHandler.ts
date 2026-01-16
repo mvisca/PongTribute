@@ -34,3 +34,11 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 		message: 'Error interno del servidor'
 	});
 }
+
+/**
+ * Alias de compatibilidad: algunos servicios usan `SharedErrors.handleAuthError`.
+ * Internamente delega al handler centralizado.
+ */
+export function handleAuthError(error: unknown, reply: FastifyReply): void {
+	return handleError(error, reply);
+}

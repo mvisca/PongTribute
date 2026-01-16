@@ -1,5 +1,3 @@
 export * from './AppError.js';
 export * from './errorHandler.js';
-
-// Rexport
-export
+export * from '../types/error.types.js';
