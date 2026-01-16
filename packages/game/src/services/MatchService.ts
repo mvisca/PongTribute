@@ -1,13 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { MatchRepository } from '../repositories/MatchRepository.js';
 import { MatchMapper } from '../mappers/MatchMapper.js';
 import { redisClient } from '../app.js'; 
-import { MatchTypes } from '@transcendence/shared';
-
-
-// Definimos el tipo de retorno para la cola pública
-export type JoinQueueResponse = 
-    | { outcome: 'match_found'; match: MatchTypes.Match }
-    | { outcome: 'added_to_queue' };
+import { MatchTypes, MatchSchemas, SharedErrors } from '@transcendence/shared';
 
 
 /**
@@ -25,178 +20,155 @@ export class MatchService {
 
 	/**
      * joinPublicQueue
-     * Algoritmo de Matchmaking simple (FIFO).
-     * 1. Intenta sacar un oponente de la cola (LPOP).
-     * 2. Si encuentra uno válido: Crea la partida en DB y notifica.
-     * 3. Si no: Se añade a la cola (RPUSH) y espera.
+     * 
+     * 
+     * 
+     * 
      */
-	async joinPublicQueue(userId: string): Promise<JoinQueueResponse> {
-		
-        // Validación de seguridad por si el servidor arrancó mal
-        if (!redisClient) throw new Error('Redis client not initialized');
+	async joinPublicQueue(userId: string): Promise<MatchTypes.JoinQueueResponse> {
 
-	//  VALIDA QUE USER NO ESTA YA EN UNA PARTIDA ACTIVA PREVIA
-		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
-		if (activeMatch) {
-			throw new Error('You are already in an active match');
+		// GUARD: Validación crítica de infraestructura
+        if (!redisClient) {
+            throw new SharedErrors.ServiceError('redis', 'Redis client not available');
 		}
+		
+		// 1. Validaciones previas (igual que antes)
+		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
+		if (activeMatch) throw new SharedErrors.ConflictError('User already has an active match');
 
 		const QUEUE_KEY = 'match:queue:public';
-		const TICKET_PREFIX = 'match:ticket:'; // Prefijo para controlar validez
+		const TICKET_TIMESTAMP = Date.now();
+
+		// 2. Intentar sacar al usuario más antiguo (ZPOPMIN es atómico)
+		// Devuelve [userId, score, userId, score...] pero como pedimos 1, devuelve [id, score]
+		const result = await redisClient.zpopmin(QUEUE_KEY, 1);
+
+		// Parsear resultado de Redis (puede venir null o array vacío dependiendo del driver)
+		const opponentId = (result && result.length > 0) ? result[0] : null;
+
+		// CASO A: Encontramos oponente
+		if (opponentId && opponentId !== userId) {
+			
+			// Creamos la partida (El servicio es dueño del ID)
+			const newMatch: MatchTypes.MatchRow = {
+				id: randomUUID(),
+				status: 'active',
+				player1_id: opponentId, // El que tenía el ticket más viejo va primero
+				player1_score: 0,
+				player2_id: userId,     // Nosotros llegamos ahora
+				player2_score: 0,
+				winner_id: null,
+				created_at: Date.now(),
+				finished_at: null,
+				game_mode: 'classic',
+				target_score: 11
+			};
+
+			// Persistencia Bubble-Up
+			await this.matchRepo.create(newMatch);
+
+			// Notificar match...
+			
+			return { 
+				outcome: 'match_found', 
+				match: MatchMapper.toDomain(newMatch) 
+			};
 		
-		console.log(`👉 ⚙️ [Service] Revisando cola Redis (${QUEUE_KEY})...`);
-
-		
-		// =====================================================================
-        // PATRÓN: LOOP DE BÚSQUEDA Y LIMPIEZA DE LA COLA(LAZY EXPIRATION)
-		// =====================================================================
-		// Creamos un ticket de 120 seg para cada usuario que se mete en la cola.
-		// Al ir a buscar oponente en la cola comprueba que el ticket de 120 seg este
-		// vigente y hace el MATCH, sino lo descarta y da una vuelta mas al bucle
-		//para ver si el siguiente de la fila es valido.
-		
-        let opponentId: string | null = null;
-        let foundValidOpponent = false;
-
-        // Intentamos sacar gente de la cola hasta encontrar uno VÁLIDO o vaciarla
-        while (!foundValidOpponent) {
-            opponentId = await redisClient.lpop(QUEUE_KEY);
-
-            // Si la cola está vacía, terminamos el loop
-            if (!opponentId) break;
-
-            // Si me encuentro a mí mismo (caso borde), me ignoro y sigo
-            if (opponentId === userId) continue;
-
-            // VERIFICACIÓN DE TICKET (¿Sigue esperando este usuario?)
-            const isTicketValid = await redisClient.exists(`${TICKET_PREFIX}${opponentId}`);
-            
-            if (isTicketValid) {
-                // ¡Encontramos uno vivo!
-                foundValidOpponent = true;
-            } else {
-                // El usuario caducó (su ticket expiró). 
-                // Al hacer LPOP ya lo sacamos de la lista, así que simplemente
-                // logueamos y el loop continuará con el siguiente.
-                console.log(`🧹 [Cleaner] Usuario ${opponentId} descartado por timeout.`);
-            }
-        }
-
-        // --- MATCH ENCONTRADO ---
-        if (foundValidOpponent && opponentId) {
-            console.log(`👉 ⚙️ [Service] ¡Match! (${opponentId}) vs (${userId})`);
-
-			try {
-				// 1. Persistir en DB (P1: Opponent, P2: Me)
-				// Si falla, aun no hemos borrado tickets ni notificado.
-				const matchRow = await this.matchRepo.createPublicMatch(opponentId, userId);
-
-				// 2. Quemar tickets (Commit en Redis)
-            	// Solo llegamos aquí si la DB confirmó la creación.
-				await redisClient.del(`${TICKET_PREFIX}${opponentId}`);
-				await redisClient.del(`${TICKET_PREFIX}${userId}`);
-
-				// 3. Hidratacion y mapeo
-				let matchDomain = MatchMapper.toDomain(matchRow);
-				matchDomain = await this.hydrateMatchPlayers(matchDomain);
-
-				// 4. Notificar Evento
-				await redisClient.publish('game_events', JSON.stringify({
-					type: 'match.found',
-					payload: {
-						matchId: matchDomain.id,
-						opponentId: userId,
-						match: matchDomain
-					}
-				}));
-
-					return { outcome: 'match_found', match: matchDomain };
-
-			} catch (error) {
-				console.error(`🔥 [Critical] Fallo al consolidar Match. ROLLBACK EJECUTADO.`, error);
-    
-				// 🚨 ROLLBACK DE REDIS (LA CLAVE DE LA ATOMICIDAD) 🚨
-				// Devolvemos al oponente al INICIO de la cola (LPUSH, no RPUSH) para que sea el siguiente en ser atendido.
-				// Esto evita la pérdida de datos (Data Loss) del LPOP anterior.
-				await redisClient.lpush(QUEUE_KEY, opponentId);
-
-				// Nota: No necesitamos restaurar el Ticket porque nunca lo borramos (la línea del 'del' está dentro del try).
-				
-				// Si el error fue DESPUÉS de crear la fila en DB (ej: en la hidratación), deberíamos borrarla también.
-				// Pero como createPublicMatch es lo primero, generalmente el fallo estará allí.
-				
-				throw new Error('Error interno al crear la partida. Inténtalo de nuevo.');
+		} else {
+			// CASO B: Nadie esperando. Nos metemos a la cola con nuestro TICKET.
+			
+			// Edge case: Si nos sacamos a nosotros mismos (race condition rara), nos ignoramos
+			if (opponentId === userId) {
+			// log warning
 			}
 
-        } else {
-            // --- AÑADIR A LA COLA ---
-            console.log("👉 ⚙️ [Service] Nadie válido en cola. Entrando a esperar...");
+			// ZADD: Añade al set. 
+			// Score = TICKET_TIMESTAMP (para ordenar por tiempo).
+			// Member = userId.
+			await redisClient.zadd(QUEUE_KEY, TICKET_TIMESTAMP, userId);
+			
+			return { outcome: 'added_to_queue' };
+		}
+	}
 
-            // 1. Crear el Ticket de validez (TTL 120 segundos)
-            // Si esto desaparece, el usuario se considera "fuera de la cola"
-            await redisClient.set(`${TICKET_PREFIX}${userId}`, 'valid', 'EX', 120);
+	/**
+	 * Método extra necesario para tu gestión de Timeouts/Cancelación
+	 * Esto permite al usuario decir "me cansé de esperar, sácame".
+	 */
+	async leavePublicQueue(userId: string): Promise<void> {
+		if (!redisClient) return;
 
-            // 2. Entrar a la lista física
-            await redisClient.rpush(QUEUE_KEY, userId);
-
-            return { outcome: 'added_to_queue' };
-        }
-    }
-
+		const QUEUE_KEY = 'match:queue:public';
+		// ZREM es O(1) en complejidad. Con Listas esto era O(N).
+		await redisClient.zrem(QUEUE_KEY, userId);
+	}
+	
+	
 	/**
      * createPrivateMatch
      * Crea una partida directamente entre dos usuarios conocidos.
      */
-    async createPrivateMatch(userId: string, opponentId: string): Promise<MatchTypes.Match> {
-        if (!redisClient) throw new Error('Redis client not initialized');
+	async createPrivateMatch(
+		userId: string,
+		opponentId: string,
+		config?: Partial<MatchSchemas.CreateMatchBodyType>): Promise<MatchTypes.Match> {
+		
+		//Guard
+		if (!redisClient) {
+			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
+		}
 
-		console.log(`👉 ⚙️ [Service] Creando partida privada: ${userId} vs ${opponentId}`);
-
+        // 1. Validaciones de Negocio
         if (userId === opponentId) {
-            throw new Error("No puedes desafiarte a ti mismo");
+            throw new SharedErrors.ConflictError('No puedes desafiarte a ti mismo');
         }
 
-		//OJO: EL OPONENT SOLO SERA INVITABLE A TRAVES DE LA VENTANITA FRIENDS,
-		// por tanto no se si tiene mucho sentido verificar de nuevo aqui???
+        const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
+        if (activeMatch) throw new SharedErrors.ConflictError('You are already in an active match');
+        
+        const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
+        if (activeMatchOpponent) throw new SharedErrors.ConflictError('Opponent is already in an active match');
+        
+        // 2. Construcción de la Entidad (El Servicio decide ID y Estado)
+        const newMatch: MatchTypes.MatchRow = {
+            id: randomUUID(),           // ID generado en lógica de negocio
+            status: 'pending',          // Nace pendiente de aceptación
+            player1_id: userId,
+            player1_score: 0,
+            player2_id: opponentId,
+            player2_score: 0,
+            winner_id: null,
+            created_at: Date.now(),
+            finished_at: null,
+            game_mode: config?.gameMode || 'classic',
+            target_score: config?.targetScore || 11
+        };
 
-		//  VALIDA QUE NINGUNO DE LOS 2 NO ESTÉ YA EN UNA PARTIDA ACTIVA PREVIA
-		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
-		if (activeMatch) {
-			throw new Error('You are already in an active match');
-		}
-		const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
-		if (activeMatchOpponent) {
-			throw new Error('Your opponent is already in an active match');
-		}
-		
-        // 1. Crear en DB (Status PENDING)
-        const matchRow = await this.matchRepo.createPrivateMatch(userId, opponentId);
+        // 3. Persistencia (Bubble Up de errores SQL)
+        await this.matchRepo.create(newMatch); // Usamos el create genérico
 
-		try {
-			// 2. Mapear e Hidratar
-			let matchDomain = MatchMapper.toDomain(matchRow);
-			matchDomain = await this.hydrateMatchPlayers(matchDomain);
-				
-			// 3. Notificar invitación via Redis
-			await redisClient.publish('game_events', JSON.stringify({
-				type: 'match.invite',
-				targetUserId: opponentId,
-				payload: matchDomain
-			}));
+        try {
+            // 4. Mapeo e Hidratación
+            let matchDomain = MatchMapper.toDomain(newMatch);
+            matchDomain = await this.hydrateMatchPlayers(matchDomain);
+                
+            // 5. Notificar invitación
+            await redisClient.publish('game_events', JSON.stringify({
+                type: 'match.invite',
+                targetUserId: opponentId,
+                payload: matchDomain
+            }));
 
-			return matchDomain;
-		} catch (error) {
-			console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
-    
-			// 🚨 COMPENSACIÓN / ROLLBACK 🚨
-			// Como falló la notificación o la hidratación, borramos la partida de la DB
-			// para que los usuarios no se queden "atrapados" en una partida fantasma.
-			await this.matchRepo.delete(matchRow.id);
+            return matchDomain;
 
-			// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
-			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
-		}
-	}
+        } catch (error) {
+            console.error(`🔥 [Critical] Fallo post-creación. ROLLBACK.`, error);
+            
+            // ROLLBACK: Borramos la partida física si falló la notificación
+            await this.matchRepo.delete(newMatch.id);
+            throw new SharedErrors.ServiceError('redis','Error iniciando partida privada.');
+        }
+    }
 
 	// ========================================================================
     // MÉTODOS PRIVADOS (HELPERS)
@@ -228,33 +200,36 @@ export class MatchService {
      * acceptMatch
      * Confirma una partida privada, cambia su estado y notifica.
      */
-    async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
+	async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
+		//Guard: Infraestructura
+		if (!redisClient) {
+            throw new SharedErrors.ServiceError('redis', 'Redis client not available');
+		}
+		
         // 1. Obtener la partida cruda (Row)
         const matchRow = await this.matchRepo.findById(matchId); 
 
         // 2. Guards
-        if (!matchRow) throw new Error('Match not found');
-        if (matchRow.status !== 'pending') throw new Error('Match is not pending');
-        if (matchRow.player2_id !== userId) throw new Error('You are not the invited player');
+        if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
+        if (matchRow.status !== 'pending') throw new SharedErrors.ValidationError('Match is not pending');
+        if (matchRow.player2_id !== userId) throw new SharedErrors.ForbiddenError('You are not the invited player');
 
         // 3. Actualizar estado en DB
         await this.matchRepo.updateStatus(matchId, 'active');
 
 		try {
-			// 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
+			// 4. Hidratación y Mapeo
 			// Convertimos el Row crudo a Objeto de Dominio
 			let matchDomain = MatchMapper.toDomain(matchRow);
 			
-			// Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
-			// (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
-			// ya lo hemos actualizado)
+			// Forzamos el estado a 'active' en el objeto en memoria porque toDomain usa el dato viejo
 			matchDomain.status = 'active';
-
+			
 			// Rellenamos los nombres de usuario (S2S)
 			matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
 			// 5. Notificar inicio de partida (Redis)
-			await redisClient?.publish('game_events', JSON.stringify({
+			await redisClient.publish('game_events', JSON.stringify({
 				type: 'match.started',
 				payload: matchDomain
 			}));
@@ -263,61 +238,54 @@ export class MatchService {
 		} catch (error) {
 			console.error(`🔥 [Critical] Fallo al iniciar partida. ROLLBACK a PENDING.`, error);
     
-			// 🚨 MEJORA: REVERTIR ESTADO EN LUGAR DE BORRAR 🚨
+			// COMPENSACIÓN: Revertir estado si falla la notificación/hidratación
             // Si falló el inicio, devolvemos la invitación a "pendiente" para que puedan reintentar.
             await this.matchRepo.updateStatus(matchId, 'pending');
 
-            throw new Error('Error al iniciar la partida. Por favor intenta aceptar de nuevo.');
+            throw new SharedErrors.ServiceError('game', 'Error al iniciar la partida. Por favor intenta aceptar de nuevo.');
 		}
 	}
 	
 	/**
-     * acceptMatch
+     * rejecttMatch
      * Rechaza una partida privada, cambia su estado y notifica.
      */
 	async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
+		// Guard: Infraestructura
+        if (!redisClient) throw new SharedErrors.ServiceError('redis', 'Redis not available');
+		
 		// 1. Obtener la partida cruda (Row)
 		const matchRow = await this.matchRepo.findById(matchId);
 
 		// 2. Guards
-		if (!matchRow) throw new Error('Match not found');
-		if (matchRow.status !== 'pending') throw new Error('Match is not pending');
-		if (matchRow.player2_id !== userId) throw new Error('Only the invited player can reject');
+		if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
+		if (matchRow.status !== 'pending') throw new SharedErrors.ValidationError('Match is not pending');
+		if (matchRow.player2_id !== userId) throw new SharedErrors.ForbiddenError('Only the invited player can reject');
 
 		// 3. Actualizar estado en DB
 		await this.matchRepo.updateStatus(matchId, 'rejected');
 
 		try {
 
-			// 4. Hidratación y Mapeo (CRÍTICO para devolver el tipo correcto)
+			// 4. Hidratación y Mapeo
 			// Convertimos el Row crudo a Objeto de Dominio
 			let matchDomain = MatchMapper.toDomain(matchRow);
 			
-			// Actualizamos el estado manualmente en el objeto de dominio para devolverlo actualizado
-			// (Ya que toDomain usó el row viejo que decía 'pending' y vive en la memoria RAM. En la DB 
-			// ya lo hemos actualizado)
-			matchDomain.status = 'rejected';
-
-			// Rellenamos los nombres de usuario (S2S)
+			matchDomain.status = 'rejected'; // Actualizacion manual en memoria
 			matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
-			// 5. Notificar inicio de partida (Redis)
-			await redisClient?.publish('game_events', JSON.stringify({
+			// 5. Notificar rechazo (Redis)
+			await redisClient.publish('game_events', JSON.stringify({
 				type: 'match.rejected',
 				payload: matchDomain
 			}));
 
 			return matchDomain;
 		} catch (error) {
-			console.error(`🔥 [Critical] Fallo post-creación de partida. HACIENDO ROLLBACK.`, error);
-    
-			// 🚨 COMPENSACIÓN / ROLLBACK 🚨
-			// Como falló la notificación o la hidratación, borramos la partida de la DB
-			// para que los usuarios no se queden "atrapados" en una partida fantasma.
-			await this.matchRepo.delete(matchRow.id);
-
-			// Opcional: Devolver los tickets a Redis o simplemente lanzar error para que reintenten
-			throw new Error('Error de sistema al iniciar partida. Por favor intenta de nuevo.');
+			console.error(`🔥 [Critical] Fallo post-rechazo.`, error);
+			// En rechazo, el rollback es menos crítico, pero idealmente revertimos
+            await this.matchRepo.updateStatus(matchId, 'pending');
+            throw new SharedErrors.ServiceError('game', 'Error rejecting match.');
 		}
     }
 
@@ -325,23 +293,24 @@ export class MatchService {
      * cancelPrivateMatch
      * Permite al creador (P1) revocar la invitación antes de que sea aceptada.
      */
-    async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
+	async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
+		// Guard
+        if (!redisClient) throw new SharedErrors.ServiceError('redis', 'Redis not available');
+		
         console.log(`👉 ⚙️ [Service] Cancelando invitación ${matchId} por usuario ${userId}`);
 
         // 1. Obtener la partida
         const matchRow = await this.matchRepo.findById(matchId);
 
         // 2. Guards (Validaciones)
-        if (!matchRow) throw new Error('Match not found');
-        
+        if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
         // Solo se puede cancelar si no ha empezado
         if (matchRow.status !== 'pending') {
-            throw new Error('Cannot cancel a match that is not pending');
+            throw new SharedErrors.ValidationError('Cannot cancel a match that is not pending');
         }
-
         // SEGURIDAD: Solo el creador (Player 1) puede cancelar SU invitación
         if (matchRow.player1_id !== userId) {
-            throw new Error('You are not the creator of this match');
+            throw new SharedErrors.ForbiddenError('You are not the creator of this match');
         }
 
         // 3. Borrar de la DB (Hard Delete porque nunca ocurrió)
@@ -350,9 +319,9 @@ export class MatchService {
 
         // 4. Notificar al invitado (Player 2)
         // Es importante para que su interfaz se limpie si tenía el popup abierto.
-        await redisClient?.publish('game_events', JSON.stringify({
+        await redisClient.publish('game_events', JSON.stringify({
             type: 'match.cancelled', 
-            targetUserId: matchRow.player2_id, // Avisamos al invitado
+            targetUserId: matchRow.player2_id, // Avisamos al invitado para que cierre el popup
             payload: { matchId }
         }));
     }

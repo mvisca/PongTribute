@@ -16,6 +16,10 @@ export namespace MatchTypes {
 	export type CancelMatchParams = Static<typeof MatchSchemas.CancelMatchParams>;
 	export type CancelMatchResponse = Static<typeof MatchSchemas.CancelMatchResponse>;
 
+	export type JoinQueueResponse = 
+		| { outcome: 'match_found'; match: Match }   // Devuelve la partida completa si se creó
+		| { outcome: 'added_to_queue' };             // Solo avisa que estás esperando
+
     // 2. Tipos de Base de Datos (SQLite)
     // Usamos Snake_Case porque así es SQL.
     // Estructura "Desnormalizada": Guardamos scores en 
@@ -39,5 +43,7 @@ export namespace MatchTypes {
 		
 		game_mode: string;
         target_score: number;
-    }
+	}
+	
+
 }

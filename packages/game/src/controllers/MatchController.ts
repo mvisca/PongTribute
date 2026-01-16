@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MatchService } from '../services/MatchService.js';
 // Importamos el Schema (Valor) Y el Tipo
-import { MatchSchemas, AuthTypes, MatchTypes } from '@transcendence/shared';
+import { MatchSchemas, AuthTypes, MatchTypes, SharedErrors } from '@transcendence/shared';
 
 
 /**
@@ -95,6 +95,8 @@ export class MatchController {
 			return reply.status(500).send({ error: 'Unexpected state' });
 
 		} catch (error) {
+			SharedErrors.handleError(error, reply);
+			/*
 			// 6. MANEJO DE ERRORES DE NEGOCIO
 			// Transformamos errores de lógica (throw Error) en respuestas HTTP coherentes.
 			// Convertir excepciones de código (throw new Error) en códigos HTTP (400, 404, 500)
@@ -124,6 +126,7 @@ export class MatchController {
 				error: 'Internal Server Error',
 				message: 'An internal error occurred processing the match'
 			});
+			*/
 		}
 	}
 
