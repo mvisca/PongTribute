@@ -66,13 +66,24 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 	});
 
 	// ========================================================================
-    // ???????????????????????????RUTA HTTP DE CANCELAR LA INVITACION A PARTIDA (REST)?????????????????????????????
+    // RUTA HTTP DE CANCELAR LA INVITACION A PARTIDA (REST)
     // ========================================================================
-	// app.post<{ Params: MatchTypes.RejectMatchParams }>('/matches/:id/reject', {
-    //     preHandler: [GameMiddleware.validateJWT],
-    //     schema: MatchSchemas.RejectMatchSchema,
-    //     handler: controller.rejectMatch.bind(controller)
-	// });
+    /**
+     * DELETE /matches/:id
+     * Permite al creador (Player 1) cancelar una invitación pendiente.
+     * Si la partida ya empezó o no es el creador, devuelve error.
+     */
+    app.delete<{ Params: MatchTypes.CancelMatchParams }>('/matches/:id', {
+        // 1. Auth: Aseguramos que sabemos quién es el usuario (req.user)
+        preHandler: [GameMiddleware.validateJWT],
+        // 2. Schema: Validamos que el ID sea UUID y documentamos respuestas (Swagger)
+        schema: MatchSchemas.CancelMatchSchema,
+        // 3. Handler: Delegamos al controlador manteniendo el contexto 'this'
+        handler: controller.cancelMatch.bind(controller)
+    });
+
+
+
 	
 	// ========================================================================
     // RUTAS WEBSOCKET: CONEXIÓN REAL-TIME

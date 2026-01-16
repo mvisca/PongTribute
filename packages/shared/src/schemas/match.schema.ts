@@ -97,7 +97,7 @@ export namespace MatchSchemas {
 
 
 
-	// POST /matches/id:/accept
+	// POST /matches/:id/accept
 	export const AcceptMatchParams = Type.Object({
 		id: Type.String({ format: 'uuid' })
 	});
@@ -114,7 +114,7 @@ export namespace MatchSchemas {
 		}
 	};
 
-	// POST /matches/id:/reject
+	// POST /matches/:id/reject
 	export const RejectMatchParams = Type.Object({
 		id: Type.String({ format: 'uuid' })
 	});
@@ -139,7 +139,28 @@ export namespace MatchSchemas {
             404: Type.Object({ error: Type.String(), message: Type.String() })
         }
 	};
-
 	
+	// DELETE /matches/:id
+	// El anfitrion cancela la invitacion antes de que el invitado la acepte o si nunca la acepta
+    export const CancelMatchParams = Type.Object({
+        id: Type.String({ format: 'uuid' })
+    });
+
+    export const CancelMatchResponse = Type.Object({
+        success: Type.Boolean(),
+        message: Type.String()
+    });
+
+    export const CancelMatchSchema = {
+        description: 'Cancela una invitación a partida privada (solo creador)',
+        tags: ['Game'],
+        params: CancelMatchParams,
+        response: {
+            200: CancelMatchResponse,
+            400: Type.Object({ error: Type.String(), message: Type.String() }),
+            403: Type.Object({ error: Type.String(), message: Type.String() }),
+            404: Type.Object({ error: Type.String(), message: Type.String() })
+        }
+    };
 
 }

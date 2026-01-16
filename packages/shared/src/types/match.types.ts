@@ -13,6 +13,8 @@ export namespace MatchTypes {
 	export type GetMatchParams = Static<typeof MatchSchemas.GetMatchParams>;
 	export type AcceptMatchParams = Static<typeof MatchSchemas.AcceptMatchParams>;
 	export type RejectMatchParams = Static<typeof MatchSchemas.RejectMatchParams>;
+	export type CancelMatchParams = Static<typeof MatchSchemas.CancelMatchParams>;
+	export type CancelMatchResponse = Static<typeof MatchSchemas.CancelMatchResponse>;
 
     // 2. Tipos de Base de Datos (SQLite)
     // Usamos Snake_Case porque así es SQL.
