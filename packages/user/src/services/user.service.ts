@@ -93,7 +93,6 @@ export class UserService {
 
 	async updateUser(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 
-
 		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
