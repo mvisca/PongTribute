@@ -10,14 +10,14 @@ type Props = {
 export function EditProfile({ user, onSave, onCancel }: Props) {
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
-  const [password, setPassword] = useState(user.password);
+//  const [password, setPassword] = useState(user.password);
+// NOTA: Poner en otro componente
 
   function handleSave() {
     onSave({
       ...user,
       username,
-      email,
-      password,
+      email
     });
   }
 
@@ -37,14 +37,6 @@ export function EditProfile({ user, onSave, onCancel }: Props) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-      />
-
-      <input
-        type="password"
-        className="input mt-2"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        placeholder="Password"
       />
 
       <div className="flex gap-2 mt-4">

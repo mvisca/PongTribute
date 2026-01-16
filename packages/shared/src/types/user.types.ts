@@ -25,6 +25,7 @@ export namespace UserTypes {
 		has_2fa_enabled: number;
 		totp_secret: string | null;
 		backup_code_hash: string | null;
+		last_logout_at: number;
 		created_at: number;
 		updated_at: number;
 	};

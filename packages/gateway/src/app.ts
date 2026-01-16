@@ -2,7 +2,8 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 import cors from '@fastify/cors';
 import swaggerUi from '@fastify/swagger-ui';
 import swagger from '@fastify/swagger';
-
+import websocket from '@fastify/websocket';
+import WebSocket from 'ws';
 import { randomUUID } from 'node:crypto';
 import { GatewayEnv, getFastifyConfig } from './config.js';
 import { createProxyHandler } from './proxy.js';
@@ -17,6 +18,8 @@ export function buildApp(): FastifyInstance {
     { parseAs: 'buffer', bodyLimit: GatewayEnv.BODY_LIMIT },
     (_request: FastifyRequest, payload: Buffer, done: (err: Error | null, body?: Buffer) => void) => done(null, payload)
   );
+
+  app.register(websocket);
 
   // CORS only at the gateway
   app.register(cors, {
@@ -95,9 +98,71 @@ export function buildApp(): FastifyInstance {
   app.get('/docs/auth.json', createOpenApiHandler(GatewayEnv.AUTH_SERVICE_URL, GatewayEnv.AUTH_OPENAPI_PATH));
   app.get('/docs/user.json', createOpenApiHandler(GatewayEnv.USER_SERVICE_URL, GatewayEnv.USER_OPENAPI_PATH));
   app.get('/docs/game.json', createOpenApiHandler(GatewayEnv.GAME_SERVICE_URL, GatewayEnv.GAME_OPENAPI_PATH));
-
-  // HTTP proxy routes
+    // HTTP proxy routes
   const proxy = createProxyHandler(app);
+    // WS proxy (debug logs with console.* so they always show)
+    app.get('/api/game/ws', { websocket: true }, (connection, req) => {
+      const client = (connection as any).socket as WebSocket;
+  
+      const wsBase = GatewayEnv.GAME_SERVICE_URL
+        .replace(/^http:/, 'ws:')
+        .replace(/^https:/, 'wss:')
+        .replace(/\/$/, '');
+  
+      const rawUrl = req.raw.url ?? '/api/game/ws';
+      const query = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?')) : '';
+      const upstreamUrl = `${wsBase}/api/game/ws${query}`;
+  
+      console.log('[GW WS] incoming rawUrl =', rawUrl);
+      console.log('[GW WS] wsBase         =', wsBase);
+      console.log('[GW WS] upstreamUrl    =', upstreamUrl);
+  
+      const upstream = new WebSocket(upstreamUrl);
+  
+      upstream.on('open', () => {
+        console.log('[GW WS] upstream OPEN');
+      });
+  
+      upstream.on('message', (data: WebSocket.RawData) => {
+        console.log('[GW WS] upstream -> client message (bytes):', Buffer.byteLength(data as any));
+        if (client.readyState === WebSocket.OPEN) client.send(data);
+      });
+  
+      upstream.on('close', (code, reason) => {
+        console.log('[GW WS] upstream CLOSE:', code, reason.toString());
+        try {
+          client.close(code, reason.toString());
+        } catch {}
+      });
+  
+      upstream.on('error', (err) => {
+        console.error('[GW WS] upstream ERROR:', err);
+        try {
+          client.close();
+        } catch {}
+      });
+  
+      client.on('message', (data: WebSocket.RawData) => {
+        console.log('[GW WS] client -> upstream message (bytes):', Buffer.byteLength(data as any));
+        if (upstream.readyState === WebSocket.OPEN) upstream.send(data);
+      });
+  
+      client.on('close', (code, reason) => {
+        console.log('[GW WS] client CLOSE:', code, reason.toString());
+        try {
+          upstream.close(code, reason.toString());
+        } catch {}
+      });
+  
+      client.on('error', (err) => {
+        console.error('[GW WS] client ERROR:', err);
+        try {
+          upstream.close();
+        } catch {}
+      });
+    });
+  
+
 
   const authProxy = proxy(GatewayEnv.AUTH_SERVICE_URL);
   app.all('/api/auth', authProxy);

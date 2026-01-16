@@ -12,9 +12,10 @@ CREATE TABLE IF NOT EXISTS users (
   has_2fa_enabled INTEGER DEFAULT 0,
   backup_code_hash TEXT DEFAULT NULL,
   totp_secret TEXT DEFAULT NULL,
+  last_logout_at INTEGER DEFAULT 0 NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
-);
+); 
 
 -- ============================================================================
 -- TABLA: refresh_tokens

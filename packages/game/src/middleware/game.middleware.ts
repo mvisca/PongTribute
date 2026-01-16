@@ -9,7 +9,7 @@ import jwt from 'jsonwebtoken';
 // Importamos de shared para tener los tipos (AuthenticatedUser, etc.)
 // y para que TS reconozca request.user automáticamente
 //import { JWTPayload } from '@transcendence/shared'; 
-import { AuthTypes } from '@transcendence/shared'; 
+import { AuthTypes, SharedErrors } from '@transcendence/shared'; 
 
 export class GameMiddleware {
     
@@ -18,24 +18,20 @@ export class GameMiddleware {
             const authHeader = request.headers.authorization;
             
             // 1. Verificamos que venga el header
-            if (!authHeader) {
-                return reply.status(401).send({ error: 'Unauthorized', message: 'No token provided' });
+            if (!authHeader || !authHeader.startsWith('Bearer ')) {
+                console.error("🔥 Authorization token faltante");
+				throw new SharedErrors.UnauthorizedError('Authorizarion token faltante')
             }
 
             // 2. Limpiamos el prefijo 'Bearer '
-            const token = authHeader.replace('Bearer ', '');
+            const token = authHeader.replace('Bearer ', ''); // DUDA que es mejor. esta solucion o esta: const token = authHeader.substring(7);
             
             // 3. Obtenemos el secreto del entorno (debe ser el mismo que Auth)
 			// CORRECCIÓN: Usar GameEnv en lugar de process.env directo
             // GameEnv asegura que el .env se cargó y aplica valores por defecto si es necesario
             //const secret = process.env.JWT_SECRET;
-			const secret = GameEnv.JWT_SECRET;
+			const secret = GameEnv.JWT_SECRET; // DUDA esto ya se validó en config.ts de game al crear GameEnv? es redundante?
 			
-            if (!secret) {
-                console.error("🔥 FATAL: JWT_SECRET no definido en Game Service .env");
-                return reply.status(500).send({ error: 'Internal Server Error' });
-            }
-
             // 4. Verificamos la firma criptográfica
             // TypeScript inferirá que decoded es JWTPayload gracias al import
             const decoded = jwt.verify(token, secret) as AuthTypes.AccessTokenPayload;
@@ -45,9 +41,10 @@ export class GameMiddleware {
 			request.user = decoded;
 			
 
+			// Incorporar aquí toda la validación de LastLogoutAt...
         } catch (error) {
-            console.error("⚠️ Token inválido en Game:", error);
-            return reply.status(401).send({ error: 'Unauthorized', message: 'Invalid token' });
+            console.error("⚠️ Token inválido en Game:", error); // DUDA es necesario tener estos logs? se ven en test? en produccion? En dev?
+			throw new SharedErrors.UnauthorizedError('Invalid token');
         }
     }
 }

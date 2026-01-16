@@ -66,6 +66,22 @@ export class AuthController {
 		}
 	}
 
+	/** Refresh access token */
+	async refreshAccessToken(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const { refreshToken } = request.body as AuthTypes.RefreshTokenBody;
+
+			const result = await this.authService.refreshAccessToken(refreshToken);
+
+			return reply.code(200).send(result);
+		} catch(err) {
+			this.errorHandler(err, request, reply); // Este es el manejador de fastify o el propio
+		} //DUDA hay que refinar el manejo centralizado de errores
+	}
+
 	/** Logout con JWT y ownership */
 	async logout(
 		request: FastifyRequest,
@@ -147,9 +163,9 @@ export class AuthController {
 	): Promise<void> {
 		try {
 			const { setupToken, totpCode } = request.body as AuthTypes.Verify2FASetupBody;
-			await this.authService.verify2FASetup(setupToken, totpCode);
+			const tokens = await this.authService.verify2FASetup(setupToken, totpCode);
 
-			return reply.code(204).send();
+			return reply.code(200).send(tokens);
 
 		} catch(err) {
 			this.errorHandler(err, request, reply);
@@ -165,9 +181,9 @@ export class AuthController {
 			const { id } = request.params as AuthTypes.UserIdParams;
 			const { password } = request.body as AuthTypes.Disable2FABody;
 			
-			await this.authService.disable2FA(id, password);
+			const tokens = await this.authService.disable2FA(id, password);
 
-			return reply.code(204).send();
+			return reply.code(200).send(tokens);
 
 		} catch(err) {
 			this.errorHandler(err, request, reply);
@@ -221,4 +237,5 @@ export class AuthController {
 			this.errorHandler(err, request, reply);
 		}
 	}
+
 }

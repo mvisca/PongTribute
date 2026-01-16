@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserController, validateServiceSecret } from '../index.js';
-import { UserSchemas } from '@transcendence/shared';
+import { AuthSchemas, UserSchemas } from '@transcendence/shared';
 
 export const internalRoutes: FastifyPluginAsync = async (app) => {
 	const controller = new UserController();
@@ -33,6 +33,12 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.findUserByIdInternal.bind(controller)
 	});
 
+	// Obtener lastLogoutAt de usuario
+	app.get('/users/:id/logout', {
+		schema: { tags: ['User'] },
+		handler: controller.getLastLogoutAt.bind(controller)
+	});
+
 	// ============================================================================
 	// SETTERS
 	// ============================================================================
@@ -49,7 +55,7 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	
 	// Actualizar status del 2FA, totpSecret y backupCode
 	app.patch('/users/:id/2fa-status', {
-		schema: UserSchemas.Update2FAStatusBodySchema, // TODO resolver agrupacion de tags en swagger
+		schema: UserSchemas.Update2FAStatusBodySchema,
 		handler: controller.update2FAStatus.bind(controller)
 	});
 
@@ -62,4 +68,13 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 		schema: UserSchemas.updatePasswordInternalSchema,
 		handler: controller.updatePassword.bind(controller)
 	});
+
+	// ============================================================================
+	// UPDATE LAST LOGOUT AT
+	// ============================================================================
+	app.put('/users/:id/logout', { 
+		schema: AuthSchemas.UpdateLastLogoutAtSchema,
+		handler: controller.updateLastLogoutAt.bind(controller)
+	});
+
 };

@@ -24,3 +24,29 @@ crear un metodo privado para DRY
 
 error handling en change password : evaluar mapeo de errores especificos, nuevo error ServiceError, dejar error generico?
 
+para hacer logout falta que se elimine en backend el access token de algun modo.
+no sería suficiente que se elimine en un solo sitio.
+validar que se este eliminando la sesion en el otro sitio... user login dispara un coportamiento que si, existe un ws con ese usuario, lo rompa para los casos de sessions=1
+
+en authMiddleware es el sitio para incluir nuevas validaciones a jwtoken
+
+resolver logou
+
+update user no va bien, para avatar se guarda una url cuando debería recivir un base64 nada mas, y realizar todo el proceso. debe validar protected y ownership.
+en caso de actualizar el nombre, si usa su propio nombre cambiando la capitalizacion o uso de mayusculas, dice no permitido, pero podría permitirlo para el owner de ese nombre. la iniqueness se evalua case insensitive.
+
+no hay endpoint para reject una friendship que ha sido aceptada previamente. el endpoint depende que el status sea pending para actualizar a rejected. deberia generalizarse?
+
+on anomimize, las friendship deben desaparecer. borrar como on cascade delete, pero sin el delete.
+
+falta el endpoint para refresh token?
+
+se puede estar en dos partidas a la vez? de momento sí, debe bloquearse.
+
+Usamos dual websocket pattern. para tener el websocket persistente hace falta servicio de notificaciones.
+
+Revisar comentarios // DUDA
+
+User nuevo. JWT payload con is2FAValidated true, no debería
+
+ratelimit en endpoint de refreshAccessToken

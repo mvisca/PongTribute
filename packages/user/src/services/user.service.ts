@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { UserTypes, Utils, SharedErrors } from '@transcendence/shared';
+import { UserTypes, Utils, SharedErrors, AuthTypes } from '@transcendence/shared';
 import { IUserRepository, SQLiteUserRepository, UserEnv, UserMapper } from '../index.js';
 
 export class UserService {
@@ -28,7 +28,7 @@ export class UserService {
 	}
 
 	/** Upload de imagen llamando a Image Service */
-	private async uploadAvatarToCloudinary(
+	private async uploadAvatarToCloudinary( // DUDA no lo está haciendo AUTH Service
 		base64Image: string,
 		oldAvatarUrl?: string
 	): Promise<string> {
@@ -117,7 +117,8 @@ export class UserService {
 				throw new SharedErrors.ConflictError('El email ya está en uso', 'email');
 		}
 
-		if (data.username && data.username !== user.username) {
+		// DUDA es esta condicion suficiente para que el user pueda modificar el uso de mayusculas en su propio nombre
+		if (data.username && data.username.toLowerCase() !== user.username.toLowerCase()) {
 			const isUsernameTaken = await this.userRepo.isUsernameTaken(data.username);
 			if (isUsernameTaken)
 				throw new SharedErrors.ConflictError('El username ya está en uso', 'username');
@@ -142,6 +143,10 @@ export class UserService {
 
 	async updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic> {
 		return await this.userRepo.updatePassword(id, newPasswordHash);
+	}
+
+	async updateLastLogoutAt(id: string, lastLogoutAt: string): Promise<void> {
+		await this.userRepo.updateLastLogoutAt(id, lastLogoutAt);
 	}
 
 	async updateOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic> {
@@ -180,6 +185,14 @@ export class UserService {
 
 		const publicUser = UserMapper.internalToResponse(user);
 		return publicUser;
+	}
+
+	async getLastLogoutAt(userId: string): Promise<number> {
+		const response = await this.userRepo.getLastLogoutAt(userId);
+		if (response === null)
+			throw new SharedErrors.NotFoundError('User not found', 'user');
+
+		return response;
 	}
 
 	async checkUsername(username: string): Promise<boolean> {

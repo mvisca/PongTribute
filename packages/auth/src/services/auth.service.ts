@@ -10,10 +10,12 @@ import {
 	UserTypes,
 	Utils,
 	RedisCache,
-	SharedErrors
+	SharedErrors,
+	isConflictError
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
 import { redisClient } from '../app.js';
+import { tokenId } from 'node_modules/@transcendence/shared/src/utils/uuidGenerator.js';
 
 export class AuthService {
 	
@@ -69,7 +71,7 @@ export class AuthService {
 		return await response.json() as UserTypes.UserInternal;
 	}
 	
-	// LOGIN PROCESS 
+	// LOGIN PROCESS - COMPLETAR LOGIN CON O SIN 2FA
 	
 	/** Completa el proceso de login generando tokens y seteando el usuario online */
 	private async completeLogin(
@@ -84,32 +86,39 @@ export class AuthService {
 		// establecer usuario online
 		await this.setUserIsOnline(user.id, true);
 		
-		// Crear payload usuario
-		const userPayload: AuthTypes.UserPayload = {
-			id: user.id,
-			username: user.username,
-			email: user.email,
-			has2FAEnabled
-		};
-		
-		// Generar tokens
-		const accessToken = this.generateJWT(userPayload, true, AuthEnv.TOKEN_EXPIRY);
-		const refreshToken = await this.createAndStoreRefreshToken(user.id, true);
-		
-		return {
-			token: accessToken,
-			refreshToken,
-			user: userPayload
-		};
+		// Crear user payload y par tokens
+		return this.generateTokenPair(user, true); // por que true el is2FAVerified? debería provenir del llamador del método, puede ser con o sin...
 	}
 	
-	// JWT MANGEMENT
-	
+	// VERIFICA PASSWORD
+
 	/** Verify password against hash */
 	private async verifyPassword(password: string, passwordHash: string): Promise<boolean> {
 		return await bcrypt.compare(password, passwordHash);
 	}
 	
+	// GENERACION DE PAR DE ACCESS Y REFRESH TOKENS
+	private async generateTokenPair(
+		user: UserTypes.UserInternal,
+		is2FAVerified: boolean
+	): Promise<AuthTypes.LoginSuccessResponse> {
+		const userPayload: AuthTypes.UserPayload = {
+			id: user.id,
+			username: user.username,
+			email: user.email,
+			has2FAEnabled: user.has2FAEnabled
+		};
+
+		const accessToken = this.generateJWT(userPayload, is2FAVerified, AuthEnv.TOKEN_EXPIRY);
+		const refreshToken = await this.createAndStoreRefreshToken(user.id, is2FAVerified);
+
+		return { token: accessToken, refreshToken: refreshToken, user: userPayload };
+	}
+
+	// ACCESS TOKEN MANGEMENT
+	
+		// GENERAR ACCESS TOKEN
+
 	/** Generate JWT access token */
 	private generateJWT(
 		userPayload: AuthTypes.UserPayload,
@@ -127,6 +136,8 @@ export class AuthService {
 	}
 	
 	// REFRESH TOKENS
+
+		// GENERAR REFRESH TOKEN Y ALMACENAR EN USER DB 
 	
 	/** Create and store refresh token */
 	private async createAndStoreRefreshToken(
@@ -169,15 +180,44 @@ export class AuthService {
 		// devuelve refresh token sin hashear
 		return refreshToken;
 	}
+
+		// VERIFICAR REFRESH TOKENS
+
+	/** Verifica refresh token para refrescar tokens */
+	private async verifyRefreshToken(refreshTokenHash: string): Promise<AuthTypes.RefreshTokenRecord> {
+		
+		const verified = await fetch(
+			`${AuthEnv.USER_SERVICE_URL}/internal/tokens/verify`,
+			{
+				method: 'POST',
+				headers: { 
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+					'Content-Type': 'application/json' 
+				},
+				body: JSON.stringify({ tokenHash: refreshTokenHash })
+			}
+		);
+
+		if (verified.status === 404)
+			throw new SharedErrors.UnauthorizedError('Token inválido o expirado');
+
+		if (!verified.ok)
+			throw new Error('Fallo conectando con User Service');
+		// DUDA en algun caso hago estas dos comprabaciones anidadas, cual es mejor, esta lo parece
+
+		return await verified.json() as AuthTypes.RefreshTokenRecord;
+	}
+
+		// ELIMINAR TODOS LOS REFRESH TOKENS DEL USUARIO CADUCADOS O POR ROTACIÓN
 	
-	/** Delete all refresh tokens for a user */
+	/** Elimina todos los refresh token del usuario */
 	private async deleteRefreshTokensById(userId: string): Promise<void> {
 		const response = await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/tokens/user/${userId}`, {
 			method: 'DELETE',
 			headers: {
 				'X-Service-Secret': AuthEnv.SERVICE_SECRET
 			},
-			signal: AbortSignal.timeout(5000)
+			signal: AbortSignal.timeout(5000) // DUDA explicarlo, hace falta en otros endpoints? por qué se usa aqui?
 		});
 		
 		// Casos exitosos, se silencia Not Found para evitar enumeracion de sesiones
@@ -193,11 +233,52 @@ export class AuthService {
 		
 		const errorBody = await response.text().catch(() => 'Response sin body');
 		throw new Error(
-			`Error en User Service borrando tokens (${response.status} ${response.statusText})`
+			`Error en User Service borrando tokens (${response.status} ${response.statusText}). Body: ${errorBody}`
 		);
 	}
+
+		// ELIMINAR UN REFRESH TOKEN EN PARTICULAR
+		/* Mas granular para manejo de múltiples sesiones simultaneas. */
+
+	// LOGOUT 
+
+	/** Actualiza el lastLogoutAt del usuario con timestamp generado por el servicio Auth que también generar el timestamp del JWT */
+	private async updateLastLogoutAt(userId: string) { // DUDA Tipar retorno
+		const body = { lastLogoutAt: new Date().toISOString() };
+		
+		const response = await fetch(
+			`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+			{
+				method: 'PUT',
+				headers: {
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+					'Content-Type': 'application/json'
+				 },
+				body: JSON.stringify(body)
+			}
+		);
+
+		if (response.ok) return;
+		if (response.status === 404) {
+			console.debug(`Logout 404 para userId: ${userId}`);
+			return;
+		} 
+
+		if (response.status === 401 || response.status === 403) {
+			throw new SharedErrors.UnauthorizedError(
+				'Autenticación de servicio falló al realizar logout'
+			);
+		}
+
+		const errorBody = await response.text().catch(() => 'Response sin body'); // DUDA Explicar este caso, no se usa errorBody?
+		throw new Error(
+			`Error en User Service haciendo logout (${response.status} ${response.statusText}). Body: ${errorBody}`
+		)
+	}
+
+	// 2FA SETUP
 	
-	// 2FA BACKUP CODE GENERATION AND TOTP CODE VERIFICATION
+		// GENERA BACKUP CODE
 	
 	/** Genera backup code en formato XXXX-XXXX */
 	private generate2FABackupCode(): string {
@@ -205,18 +286,8 @@ export class AuthService {
 		const hex = bytes.toString('hex').toUpperCase();
 		return `${hex.slice(0,4)}-${hex.slice(4)}`
 	}
-	
-	/** Verfica totp code recibido en login con 2FA */
-	private verify2FATotpCode(secret: string, token: string): boolean {
-		return speakeasy.totp.verify({
-			secret,
-			encoding: 'base32',
-			token,
-			window: 1 // +/- 1 intervalo de tiempo
-		});
-	}
-	
-	// PROVSIONAL TOKEN VERIFICATION
+
+		// PROVSIONAL TOKEN VERIFICATION
 	
 	/** Verificay parsea provisional token */
 	private verifyProvisionalToken(token: string) {
@@ -227,22 +298,36 @@ export class AuthService {
 		
 		return payload as AuthTypes.ProvisionalTokenPayload;
 	}
+
+	// 2FA USO (Y SETUP)
+
+		// VERIFICA TOTP CODE
 	
+	/** Verfica totp code recibido en login de 2FA y setup de 2FA */
+	private verify2FATotpCode(secret: string, token: string): boolean {
+		return speakeasy.totp.verify({
+			secret,
+			encoding: 'base32',
+			token,
+			window: 1 // +/- 1 intervalo de tiempo
+		});
+	}
+
 	// USER STATUS
 	
 	/** Actualiza el 2FA status del usuario 
 	* @param userId - ID del usuario
-	* @param enabled - true para activar, false para desactivar
+	* @param has2FAEnabled - true para activar, false para desactivar
 	* @param totpSecret - REQUERIDO si enabled=true, omitir si enabled=false
 	* @param backupCodeHash - REQUERIDO si enabled=true, omitir si enabled=false
 	*/
 	private async update2FAStatus(
 		userId: string,
-		enabled: boolean,
+		has2FAEnabled: boolean,
 		totpSecret?: string,
 		backupCodeHash?: string
 	): Promise<void> {
-		const body: any = { has2FAEnabled: enabled };
+		const body: any = { has2FAEnabled: has2FAEnabled };
 
 		// Incluir secrets si existen (enabled=true)
 		if (totpSecret !== undefined)
@@ -267,7 +352,7 @@ export class AuthService {
 			console.error('Error updating 2FA status:', {
 				status: response.status,
 				errorData,
-				requestBody: { has2FAEnabled: enabled, totpSecret, backupCodeHash }
+				requestBody: { has2FAEnabled: has2FAEnabled, totpSecret, backupCodeHash }
 			});
 			throw new Error(`Fallo actualizando 2FA: ${response.status} - ${JSON.stringify(errorData)}`);
 		}
@@ -399,7 +484,7 @@ export class AuthService {
 	}
 	
 	// ========================================================================
-	// PUBLIC API - LOGIN / LOGOUT
+	// PUBLIC API - LOGIN / REFRES TOKENS / LOGOUT
 	// ========================================================================
 	
 	/** Login */
@@ -440,9 +525,35 @@ export class AuthService {
 		return await this.completeLogin(user, false);
 	}
 	
+
+	/** Renovar access token usando refresh token */
+	async refreshAccessToken(refreshToken: string): Promise<AuthTypes.LoginSuccessResponse> {
+		// Hashear token
+		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+
+		// Verificar token con User Service via helper method
+		const tokenRecord = await this.verifyRefreshToken(tokenHash);
+
+		// Obtener datos actuales del usuario
+		const user = await this.fetchUserById(tokenRecord.userId);
+
+		// Validar si cambio la configuracion de 2FA desded que se generó el refresh token
+		if (user.has2FAEnabled !== tokenRecord.is2FAVerified) {
+			await this.deleteRefreshTokensById(user.id);
+			throw new SharedErrors.UnauthorizedError(
+				'Configuración de seguridad modificada. Inicia sesión nuevamente'
+			);
+		}
+
+		// Generar token pai y user payload
+		return await this.generateTokenPair(user, tokenRecord.is2FAVerified);
+	}
+
 	/** Logout */
 	async logout(userId: string): Promise<void> {
+
 		await this.deleteRefreshTokensById(userId);
+		await this.updateLastLogoutAt(userId);
 		
 		try {
 			await this.setUserIsOnline(userId, false);
@@ -575,10 +686,11 @@ export class AuthService {
 	}
 	
 	/** Completa el proceso de activación de 2FA */
-	async verify2FASetup(setupToken: string, totpCode: string): Promise<void> {
-		// Recuperar setupData de setupCache
+	async verify2FASetup(setupToken: string, totpCode: string): Promise<AuthTypes.LoginSuccessResponse> {
+		// Recuperar setupData de setupCache (userId, totpSecret, backupCodeHash, attempts)
 		const setupData = await this.setupCache.get(setupToken) as AuthTypes.SetupTokenData
 
+		// Si falta en cache inválido o expirado
 		if (!setupData)
 			throw new SharedErrors.UnauthorizedError('SetupToken es inválido o expirado');
 		
@@ -586,6 +698,7 @@ export class AuthService {
 		const MAX_ATTEMPTS = AuthConstants.SETUP_MAX_ATTEMPTS;
 		const attempts = (setupData.attempts || 0) + 1;
 		
+		// Si son demasiados, borrar el setupToken del cache, terminar
 		if (attempts > MAX_ATTEMPTS) {
 			await this.setupCache.delete(setupToken);
 			throw new SharedErrors.UnauthorizedError(
@@ -596,6 +709,7 @@ export class AuthService {
 		// Verificar código totp XXXX-XXXX
 		const verified = this.verify2FATotpCode(setupData.totpSecret, totpCode);
 
+		// Si la verificacion totp falla, se incrementa el número de intentos en el cache, termina
 		if (!verified) {
 			// Actualiza el contador de intentos
 			setupData.attempts = attempts;
@@ -615,10 +729,18 @@ export class AuthService {
 		
 		// Limpiar setupCache
 		await this.setupCache.delete(setupToken);
+
+		// Borrar antiguo refresh token
+		await this.deleteRefreshTokensById(setupData.userId);
+
+		// Conseguir usuario para pasarlo como parametro
+		// Generar nuevo par de tokens
+		const user = await this.fetchUserById(setupData.userId); // DUDA se está pasando demasiada info con este user creo... que se necesita realmente... se puede obtenerdel jwtPayload? es esta una buena via? ya esta aregando una apicall más
+		return await this.generateTokenPair(user, true);
 	}
 	
 	/** Desactivar 2FA para usuarios  */
-	async disable2FA(userId: string, password: string): Promise<void> {
+	async disable2FA(userId: string, password: string): Promise<AuthTypes.LoginSuccessResponse> {
 		
 		// Recuperar user
 		const user = await this.fetchUserById(userId);
@@ -634,6 +756,12 @@ export class AuthService {
 			userId,
 			false
 		);
+
+		// Borrar antiguo refresh token
+		await this.deleteRefreshTokensById(userId);
+
+		// Generar nuevo par de tokens
+		return await this.generateTokenPair(user, false);
 	}
 	
 	async verifyBackupCode(provisionalToken: string, backupCode: string): Promise<AuthTypes.LoginResponse> {

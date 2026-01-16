@@ -42,13 +42,16 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	
 	/** Desautenticar usuario y borrar tokens */
 	app.post('/auth/logout', {
-		schema: {
-			tags: ['Auth']
-		},
+		schema: AuthSchemas.LogoutBodySchema,
 		preHandler: [AuthMiddleware.validateJWT],
 		handler: controller.logout.bind(controller)
 	});
 	
+		/** Regeneración de access token con refresh token */
+	app.post('/auth/refresh', {
+		schema: AuthSchemas.RefreshTokenBodySchema,
+		handler: controller.refreshAccessToken.bind(controller)
+	});
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT + OWNERSHIP
 	// ============================================================================

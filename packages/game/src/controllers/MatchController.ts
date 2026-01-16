@@ -41,8 +41,8 @@ export class MatchController {
 		console.log("👉 🎮 [Controller] 1. Entrando en createMatch");
 
 		// 1. AUTENTICACIÓN
-		// El casting es seguro porque el middleware 'validateJWT' ya se ejecutó.
-		const user = request.user as AuthTypes.JWTPayload;
+        // El casting es seguro porque el middleware 'validateJWT' ya se ejecutó.
+		const user = request.user as AuthTypes.AccessTokenPayload;
 		console.log(`👉 🎮 [Controller] User Authenticated: ${user.id}`);
 		
 		// 2. EXTRACCION DE DATOS
@@ -143,7 +143,7 @@ export class MatchController {
 		// Extrae matchId de req.params
 		const { id } = req.params;
 		// Extrae userId de req.user
-		const user = req.user as AuthTypes.JWTPayload;
+        const user = req.user as AuthTypes.AccessTokenPayload;
 
 		console.log(`User ${user.id} attempting to accept match ${id}`);
         
@@ -212,7 +212,7 @@ export class MatchController {
 		// Extrae matchId de req.params
 		const { id } = req.params;
 		// Extrae userId de req.user
-		const user = req.user as AuthTypes.JWTPayload;
+		const user = req.user as AuthTypes.AccessTokenPayload;
 
 		console.log(`User ${user.id} attempting to reject match ${id}`);
         
