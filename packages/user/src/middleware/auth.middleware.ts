@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
+import { TypeCompiler } from '@sinclair/typebox/compiler';
 import { Value } from '@sinclair/typebox/value';
 import { AuthSchemas, UserTypes, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { UserEnv } from "../config.js";
@@ -36,17 +37,8 @@ export namespace AuthMiddleware {
 			// Verificar el access token con jwt_secret
 			const payload = jwt.verify(token, UserEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
 			
-			// WIP HERE
-			// Test individual de cada campo
-			console.log('Validando campos:');
-			console.log('id:', Value.Check(AuthSchemas.UuidFieldEx, payload.id));
-			console.log('username:', Value.Check(AuthSchemas.UsernameFieldEx, payload.username));
-			console.log('email:', Value.Check(AuthSchemas.EmailFieldEx, payload.email));
-			console.log('has2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.has2FAEnabled));
-			console.log('is2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.is2FAVerified));
-			
 			// Validación completa
-			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			console.log('Schema completo:', isValid);
 			
 			// Validar estructura del payload
@@ -79,7 +71,7 @@ export namespace AuthMiddleware {
 			return SharedErrors.handleAuthError(err, reply); // TODO por consistencia en manejo de errores centralizado qué se debería lanzar aquí? un Error genérico que maneje el setErrorandler de la app?
 		}
 		
-		console.log('JWT válido');
+		console.log('JWT válido @ AuthMiddleware @ User');
 	}
 	
 	export const verifyOwnership = async (

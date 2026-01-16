@@ -8,14 +8,11 @@ import {
 	AuthTypes,
 	AuthConstants,
 	UserTypes,
-	Utils,
 	RedisCache,
 	SharedErrors,
-	isConflictError
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
 import { redisClient } from '../app.js';
-import { tokenId } from 'node_modules/@transcendence/shared/src/utils/uuidGenerator.js';
 
 export class AuthService {
 	
@@ -106,7 +103,8 @@ export class AuthService {
 			id: user.id,
 			username: user.username,
 			email: user.email,
-			has2FAEnabled: user.has2FAEnabled
+			has2FAEnabled: user.has2FAEnabled,
+			is2FAVerified: user.is2FAVerified // DUDA debería ser el argumento???  o el miembro de user...?
 		};
 
 		const accessToken = this.generateJWT(userPayload, is2FAVerified, AuthEnv.TOKEN_EXPIRY);

@@ -22,6 +22,7 @@ export class UserMapper {
 			isOnline: row.is_online === 1,
 			isDeleted: row.is_deleted === 1,
 			has2FAEnabled: row.has_2fa_enabled === 1,
+			is2FAVerified: row.is_2fa_verified === 1,
 			totpSecret: row.totp_secret ?? undefined,
 			backupCodeHash: row.backup_code_hash ?? undefined,
 			lastLogoutAt: new Date(row.last_logout_at).toISOString(),

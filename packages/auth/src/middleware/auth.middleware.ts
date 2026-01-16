@@ -59,17 +59,12 @@ export namespace AuthMiddleware {
 			// Verificar el access token con el jwt_secret
 			const payload = jwt.verify(token, AuthEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
 
+			
 			// WIP HERE
 			// Test individual de cada campo
-			console.log('Validando campos:');
-			console.log('id:', Value.Check(AuthSchemas.UuidFieldEx, payload.id));
-			console.log('username:', Value.Check(AuthSchemas.UsernameFieldEx, payload.username));
-			console.log('email:', Value.Check(AuthSchemas.EmailFieldEx, payload.email));
-			console.log('has2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.has2FAEnabled));
-			console.log('is2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.is2FAVerified));
-			
+
 			// Validación completa
-			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			console.log('Schema completo:', isValid);
 			
 			// Validar estructura del payload
@@ -97,7 +92,7 @@ export namespace AuthMiddleware {
 			return SharedErrors.handleAuthError(err, reply);
 		}
 		
-		console.log('JWT válido');
+		console.log('JWT válido @ AuthMiddleware @ Auth');
 	}
 
 	export const verifyOwnership = async (

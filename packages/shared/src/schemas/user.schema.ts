@@ -147,6 +147,7 @@ export namespace UserSchemas {
 		isOnline: BooleanField,
 		isDeleted: BooleanField,
 		has2FAEnabled: BooleanField,
+		is2FAVerified: BooleanField,
 		totpSecret: Type.Optional(TotpSecretField),
 		backupCodeHash: Type.Optional(BackupCodeHashField),
 		lastLogoutAt: DateTimeField,

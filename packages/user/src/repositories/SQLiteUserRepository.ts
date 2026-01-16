@@ -31,6 +31,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			isOnline: false,
 			isDeleted: false,
 			has2FAEnabled: false,
+			is2FAVerified: false,
 			totpSecret: undefined,
 			createdAt: now,
 			lastLogoutAt: now,
