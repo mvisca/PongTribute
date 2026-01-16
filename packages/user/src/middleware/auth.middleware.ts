@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
 import { Value } from '@sinclair/typebox/value';
-import { AuthSchemas, UserTypes, SharedErrors } from "@transcendence/shared";
+import { AuthSchemas, UserTypes, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { UserEnv } from "../config.js";
 import { UserService } from "../services/user.service.js";
 
@@ -34,12 +34,25 @@ export namespace AuthMiddleware {
 		
 		try {
 			// Verificar el access token con jwt_secret
-			const payload = jwt.verify(token, UserEnv.JWT_SECRET);
+			const payload = jwt.verify(token, UserEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
+			
+			// WIP HERE
+			// Test individual de cada campo
+			console.log('Validando campos:');
+			console.log('id:', Value.Check(AuthSchemas.UuidFieldEx, payload.id));
+			console.log('username:', Value.Check(AuthSchemas.UsernameFieldEx, payload.username));
+			console.log('email:', Value.Check(AuthSchemas.EmailFieldEx, payload.email));
+			console.log('has2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.has2FAEnabled));
+			console.log('is2FA:', Value.Check(AuthSchemas.BooleanFieldEx, payload.is2FAVerified));
+			
+			// Validación completa
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			console.log('Schema completo:', isValid);
 			
 			// Validar estructura del payload
-			if (!Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload)) {
-				throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
-			}
+			/*			if (!Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload)) {
+			throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
+			} */
 			
 			// Después de la validación anterior Typescript infiere Payload como AccessTokenPayload
 			const tokenIssuedAt = payload.iat!; // iat! porque es Optional, pero jwt.verify siempre lo añade

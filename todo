@@ -46,3 +46,7 @@ se puede estar en dos partidas a la vez? de momento sí, debe bloquearse.
 Usamos dual websocket pattern. para tener el websocket persistente hace falta servicio de notificaciones.
 
 Revisar comentarios // DUDA
+
+User nuevo. JWT payload con is2FAValidated true, no debería
+
+ratelimit en endpoint de refreshAccessToken

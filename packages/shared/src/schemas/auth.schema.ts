@@ -101,6 +101,11 @@ const NotFoundResponse = Type.Object({
 
 export namespace AuthSchemas {
 	
+	export const UuidFieldEx = UuidField;
+	export const BooleanFieldEx = BooleanField;
+	export const UsernameFieldEx = UsernameField;
+	export const EmailFieldEx = EmailField;
+
 	// ========================================================================
 	// COMUNES A TODOS
 	// ========================================================================
