@@ -1,0 +1,10 @@
+# Configuración de status.sh - ft_transcendence
+# Generado: Mon Jan 19 17:23:12 CET 2026
+
+INCLUDED_EXTENSIONS=(tsx ts jsx js json md txt yml css scss html xml sh env.exmple gitignore dockerignore Dockerfile prism sql ex)
+EXCLUDED_DIRS=(node_modules .git dist build .next out coverage .cache .turbo docs .claude public/assets .vscode db-data game/db-data .make_status_adv scripts .cursorrules)
+EXCLUDED_FILES=(pnpm-lock.yaml package-lock.json *.db *.db-shm *.db-wal *.log .DS_Store tsconfig.tsbuildinfo content.pdf *.jpg *.png *.gif *.ico *.svg)
+
+MAX_FILES=500
+MAX_TOTAL_SIZE_MB=100
+MAX_FILE_SIZE_KB=1500

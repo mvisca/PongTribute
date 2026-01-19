@@ -36,6 +36,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.verifyBackupCode.bind(controller)
 	});
 
+	/** Refresca tokens de acceso y refresh */
+	app.post('/auth/refresh', {
+		schema: AuthSchemas.RefreshTokenBodySchema,
+		handler: controller.refreshAccessToken.bind(controller)
+	});
+
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT
 	// ============================================================================
@@ -47,11 +53,6 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.logout.bind(controller)
 	});
 
-	/** Regeneración de access token con refresh token */
-	app.post('/auth/refresh', {
-		schema: AuthSchemas.RefreshTokenBodySchema,
-		handler: controller.refreshAccessToken.bind(controller)
-	});
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT + OWNERSHIP
 	// ============================================================================

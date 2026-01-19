@@ -192,7 +192,7 @@ export class AuthService {
 					'X-Service-Secret': AuthEnv.SERVICE_SECRET(),
 					'Content-Type': 'application/json' 
 				},
-				body: JSON.stringify({ tokenHash: refreshTokenHash })
+				body: JSON.stringify({ tokenHash: refreshTokenHash }) // Este parámetro está ok así?
 			}
 		);
 

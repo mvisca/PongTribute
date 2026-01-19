@@ -49,7 +49,7 @@ export class AuthController {
 			return reply.code(200).send(result);
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
-		} //DUDA hay que refinar el manejo centralizado de errores
+		}
 	}
 
 	/** Logout con JWT y ownership */
