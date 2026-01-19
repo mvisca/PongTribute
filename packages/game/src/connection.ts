@@ -5,10 +5,11 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { GameEnv } from './config.js';
 
-// Truco para tener __dirname en ES Modules
+// ES Module compatibility: Recrear __dirname y __filename que no existen en ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Declara variable Singleton, no inicializada, compartida por todas las llamadas a detDatabase()
 let db: Database.Database | null = null;
 
 export function getDatabase(): Database.Database {
@@ -25,6 +26,9 @@ export function getDatabase(): Database.Database {
 		db = new Database(dbPath);
 		// Establece el mode WAL (+velocidad, solo bloquea 'escritura' vs 'escritura')
 		db.pragma('journal_mode = WAL');
+		// Foreing keys está off por defecto
+		// Con esto se activa ON DELETE CASCADE
+		db.pragma('foreign_keys = ON');
 
 		// TODO: para evitar problemas de bloqueo cuando haya alta concurrencia
 		// configurar un tiempo de espera (busy_timeout) para que la 
@@ -48,8 +52,16 @@ export function getDatabase(): Database.Database {
 				}
 			}
 		} else {
-			console.error(`CRITICAL: No se encontró directorio schemas en: ${schemasDir}`);
+			console.error(`CRITICAL: No se encontró directorio 'schemas' en: ${schemasDir}`);
 		}
 	}
 	return db;
+}
+
+export function closeDatabase(): void {
+	if (db) {
+		db.close();
+		db = null;
+		console.log('DB cerrada: ', __filename);
+	}
 }

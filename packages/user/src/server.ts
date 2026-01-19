@@ -1,7 +1,8 @@
+import { FastifyInstance } from 'fastify';
 import { buildApp, UserEnv, redisClient, closeDatabase } from './index.js';
 import { TokenService } from './index.js';
 
-let app: ReturnType<typeof buildApp> | null = null;
+let app: FastifyInstance | null = null;
 
 async function start() {
 	try {
@@ -18,10 +19,8 @@ async function start() {
 		});
 
 		console.log(`App log level: ${app.log.level}`);
-
-		app.log.info(`Servicio user listening en ${UserEnv.HOST()}:${UserEnv.PORT()}`);
-		app.log.info(`Environment: ${UserEnv.NODE_ENV()}`);
-		app.log.info(`Database: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
+		console.log(`USER Service listo en ${UserEnv.HOST()}:${UserEnv.PORT()}`);
+		console.log(`DB Path: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
 
 		// Limpieza de tabla 'refresh_tokens' para development y production
 		if (UserEnv.NODE_ENV() !== 'test') {

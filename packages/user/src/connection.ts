@@ -9,62 +9,52 @@ import { UserEnv } from './index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Declara variable Singleton
-// No inicializada
-// Será compartida por todas las llamadas a getDatabase()
+// Declara variable Singleton, no inicializada, compartida por todas las llamadas a detDatabase()
 let db: Database.Database | null = null;
-
-function resolveDbPath(): { path: string } {
-	// Permitir override en entorno de test para bases en memoria o URIs compartidas
-	if (process.env.NODE_ENV === 'test' && process.env.USER_SERVICE_DB_FULL_PATH) {
-		return {
-			path: process.env.USER_SERVICE_DB_FULL_PATH
-		};
-	}
-
-	return {
-		path: UserEnv.USER_SERVICE_DB_FULL_PATH()
-	};
-}
 
 export function getDatabase(): Database.Database {
 	// LAZY INIT: solo se inicializa si se necesita (1st call)
 	// Para siguientes llamadas a getDatabse(), db ya está creada
 	if (!db) {
-		try {
-			const { path: dbPath } = resolveDbPath();
-
-			// Asegurar directorio de la DB
-			const dbDir = path.dirname(dbPath);
-			if (!fs.existsSync(dbDir)) {
-				fs.mkdirSync(dbDir, { recursive: true });
-			}
-
-			db = new Database(dbPath);
-
-			// Write ahead loggin
-			db.pragma('journal_mode = WAL');
-
-			// Foreing keys está off por defecto
-			// Con esto se activa ON DELETE CASCADE
-			db.pragma('foreign_keys = ON');
-			// Lee archivos SQL con tablas e indexes en formato utf-8
-			// Se separan tablas de codigo, más mantenible
-			// Idempotencia = CREATE TABLE IF NOT EXISTS
-			// Es seguro ejecturar múltipes veces
-	
-			const tablesSQL = fs.readFileSync(
-				path.join(__dirname, 'schemas/users_tables.sql'),
-				'utf-8'
-			);
-	
-			db.exec(tablesSQL);
+		const dbPath = UserEnv.USER_SERVICE_DB_FULL_PATH();
+		
+		// Asegurar directorio de la DB
+		const dbDir = path.dirname(dbPath);
+		if (!fs.existsSync(dbDir)) {
+			fs.mkdirSync(dbDir, { recursive: true });
+		}
+		
+		console.log(`🔌 Conectando a Game DB en: ${dbPath}`);
+		db = new Database(dbPath);
+		
+		// Write ahead loggin
+		db.pragma('journal_mode = WAL');
+		// Foreing keys está off por defecto
+		// Con esto se activa ON DELETE CASCADE
+		db.pragma('foreign_keys = ON');
+		
+		// Lee archivos SQL con tablas e indexes en formato utf-8
+		// Se separan tablas de codigo, más mantenible
+		// Idempotencia = CREATE TABLE IF NOT EXISTS
+		// Es seguro ejecturar múltipes veces	
+		const schemasDir = path.join(__dirname, 'schemas');
+		
+		if (fs.existsSync(schemasDir)){
+			const files = fs.readdirSync(schemasDir).filter(file => file.endsWith('.sql'));
 			
-		} catch(err) {
-			console.error('Error incializando DB: ', err);
-			// Tip de debug: imprimimos la ruta que intentó usar
-            console.error('Ruta intentada:', UserEnv.USER_SERVICE_DB_FULL_PATH());
-			process.exit(1);
+			for (const file of files) {
+				const schemaPath = path.join(schemasDir, file);
+				const schema = fs.readFileSync(schemaPath, 'utf-8');
+				
+				try {
+					db.exec(schema);
+					console.log(`Esquema cargado: ${file}`);
+				} catch (err) {
+					console.error(`Errod cargando ${file}:`, err);
+				}
+			}
+		} else {
+			console.error(`CRITICAL: No se encontró directorio 'schemas' en ${schemasDir}`);
 		}
 		
 		console.log('DB inicializada: ', UserEnv.USER_SERVICE_DB_FULL_PATH(), '\n[ ', __filename, ' ]');

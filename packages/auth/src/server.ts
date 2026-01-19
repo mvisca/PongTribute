@@ -18,12 +18,14 @@ async function start() {
 			host: AuthEnv.HOST()
 		});
 
-		console.log(`Auth en ${AuthEnv.HOST()}:${AuthEnv.PORT}`);
+		console.log(`App log level: ${app.log.level}`);
+		console.log(`USER Service listo en ${AuthEnv.HOST()}:${AuthEnv.PORT()}`);
 
 	} catch (err) {
 		console.log(`ERROR:`, err instanceof Error ? err.message : err);
 		console.log('Verifica .env y si no existe ejecuta: "cp .env.example .env"');
-		process.exit(1);
+		await gracefulShutdown('STARTUP ERROR');
+		process.exit(1); // DUDA esta línea no tiene sentido porque ya se cierra todo en gracefull shutdown. debería gracefull shutdown devolver la aejecucion a su llamador??
 	}
 }
 
