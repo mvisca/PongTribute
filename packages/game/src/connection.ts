@@ -30,6 +30,7 @@ export function getDatabase(): Database.Database {
 		// Con esto se activa ON DELETE CASCADE
 		db.pragma('foreign_keys = ON');
 
+		db.pragma('busy_timeout = 5000');
 		// TODO: para evitar problemas de bloqueo cuando haya alta concurrencia
 		// configurar un tiempo de espera (busy_timeout) para que la 
 		// aplicación "espere" unos milisegundos a que se libere el bloqueo
