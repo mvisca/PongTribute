@@ -6,7 +6,9 @@
   "scripts": {
     "start:dev": "tsx watch src/server.ts",
     "build": "tsc -b",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test:ws": "tsx test/test-ws-gateway.ts",
+    "test": "pnpm test:ws"
   },
   "dependencies": {
     "@fastify/cors": "10.0.1",
