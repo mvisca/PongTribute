@@ -1,6 +1,11 @@
 import { Type, Static } from '@sinclair/typebox';
 
-
+// DEFINICION DEL ENUM (La única fuente de la verdad)
+export enum GameMode {
+	CLASSIC = 'classic',
+	SPEED = 'speed',
+	RETRO = 'retro'
+};
 
 export namespace MatchSchemas {
 
@@ -22,6 +27,7 @@ export namespace MatchSchemas {
 	]);
 
 
+	
     // ========================================================================
     // DEFINIMOS LOS OBJETOS DE DOMINIO (Entidades)
     // ========================================================================
@@ -34,7 +40,7 @@ export namespace MatchSchemas {
         isWinner: Type.Boolean({ default: false }) // Útil para frontend
     });
 
-    // La Partida completa
+    // La Partida completa (Objeto Match)
     export const Match = Type.Object({
         id: Type.String({ format: 'uuid' }),
         status: MatchStatus,
@@ -44,11 +50,12 @@ export namespace MatchSchemas {
         winnerId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
         createdAt: Type.String({ format: 'date-time' }),
 		finishedAt: Type.Optional(Type.String({ format: 'date-time' })),
-		gameMode: Type.Union([
-            Type.Literal('classic'),
-            Type.Literal('speed'),
-            Type.Literal('retro')
-        ]),
+		// gameMode: Type.Union([
+        //     Type.Literal('classic'),
+        //     Type.Literal('speed'),
+        //     Type.Literal('retro')
+		// ]),
+		gameMode: Type.Enum(GameMode),
         targetScore: Type.Number()
     });
 
@@ -63,11 +70,12 @@ export namespace MatchSchemas {
 	export const CreateMatchBody = Type.Object({
 		matchType: MatchType,
 		opponentId: Type.Optional(Type.String({ format: 'uuid' })), // Si null -> Matchmaking público
-		gameMode: Type.Optional(Type.Union([
-			Type.Literal('classic'),
-			Type.Literal('speed'),
-			Type.Literal('retro')
-		], { default: 'classic' })),
+		// gameMode: Type.Optional(Type.Union([
+		// 	Type.Literal('classic'),
+		// 	Type.Literal('speed'),
+		// 	Type.Literal('retro')
+		// ], { default: 'classic' })),
+		gameMode: Type.Optional(Type.Enum(GameMode, { default: GameMode.CLASSIC })),
 		targetScore: Type.Optional(Type.Number({ minimum: 1, maximum: 21, default: 11 })),
     });
 
@@ -95,13 +103,10 @@ export namespace MatchSchemas {
         id: Type.String({ format: 'uuid' })
     });
 
-
-
 	// POST /matches/:id/accept
 	export const AcceptMatchParams = Type.Object({
 		id: Type.String({ format: 'uuid' })
 	});
-
 
 	export const AcceptMatchSchema = {
 		description: 'Acepta una invitación a partida privada',
@@ -161,6 +166,14 @@ export namespace MatchSchemas {
             403: Type.Object({ error: Type.String(), message: Type.String() }),
             404: Type.Object({ error: Type.String(), message: Type.String() })
         }
-    };
+	};
+	
+	// Definir el Schema del Response de abandonar/cancelar un usuario de una cola
+	export const LeaveQueueResponseSchema = Type.Object({
+		message: Type.String(),
+		success: Type.Boolean()
+	});
+
+
 
 }

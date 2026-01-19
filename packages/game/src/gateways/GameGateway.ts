@@ -22,8 +22,16 @@ export class GameGateway {
 	 * AQUI ESTAMOS DESNUDOS PORQUE HEMOS SALIDO DEL FLUJO HTTP ESTANDAR
 	 *  DONDE FASTIFY NOS PROTEGE AUTOMATICAMENTE. HEMOS DE IMPEMENTAR
 	 * MANUALMENTE LA SEGURIDAD.
+	 * 
+	 * Al no soportar headers estándar en el handshake inicial del navegador, 
+	 * se implementa validación manual del token vía Query Param (`?token=...`).
+     * Riesgo: Los tokens pasados por URL pueden quedar en logs de servidores 
+	 * intermedios/proxies. Es un compromiso aceptable para WS, pero se debe 
+	 * asegurar que el log de acceso no registre la query string completa en
+	 *  entornos de producción.
+	 * 
      * Maneja la conexión entrante (Handshake)
-	 * Sin await: Fíjate que handleConnection no es async. 
+	 * Sin await: Notese que handleConnection no es async. 
 	 * Los WebSockets funcionan por eventos (on('message'), 
 	 * on('close')). No bloqueamos el hilo esperando.
 	 **/

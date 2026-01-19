@@ -15,7 +15,7 @@ export namespace MatchTypes {
 	export type RejectMatchParams = Static<typeof MatchSchemas.RejectMatchParams>;
 	export type CancelMatchParams = Static<typeof MatchSchemas.CancelMatchParams>;
 	export type CancelMatchResponse = Static<typeof MatchSchemas.CancelMatchResponse>;
-
+	export type LeaveQueueResponse = Static<typeof MatchSchemas.LeaveQueueResponseSchema>;
 	export type JoinQueueResponse = 
 		| { outcome: 'match_found'; match: Match }   // Devuelve la partida completa si se creó
 		| { outcome: 'added_to_queue' };             // Solo avisa que estás esperando

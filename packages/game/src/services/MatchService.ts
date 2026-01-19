@@ -1,14 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { MatchRepository } from '../repositories/MatchRepository.js';
 import { MatchMapper } from '../mappers/MatchMapper.js';
+// CORRECCIÓN: Usamos Redis desde utils o inyección, pero mantengo tu import actual
+// si te funciona, aunque idealmente deberíamos usar Utils.createRedisClient como en Subscriber.
+// Por ahora, asumimos que redisClient viene de app.js como tenías, o mejor,
+// inyéctalo o usa el singleton de Shared si refactorizamos.
+// Para no romperte nada ahora, asumo que redisClient funciona.
 import { redisClient } from '../app.js'; 
-import { MatchTypes, MatchSchemas, SharedErrors } from '@transcendence/shared';
+import { MatchTypes, MatchSchemas, SharedErrors, GameMode } from '@transcendence/shared';
 
 
 /**
  * MatchService
  * Gestiona la lógica de negocio para la creación y orquestación de partidas.
- * Actúa como nexo entre la volatilidad de Redis (Matchmaking) y la persistencia de SQL (Historial).
  */
 export class MatchService {
     private matchRepo: MatchRepository;
@@ -21,11 +25,14 @@ export class MatchService {
 	/**
      * joinPublicQueue
      * 
-     * 
-     * 
+     * Mecanismo: Cola FIFO utilizando Redis Sorted Sets (`match:queue:public`).
+	 * Atomicidad: Se utiliza `ZPOPMIN` para obtener usuarios de las colas de 
+	 * forma atómica, evitando condiciones de carrera donde dos usuarios podrían
+	 *  ser emparejados incorrectamente.
+     * Acepta 'gameMode' para separar las colas.
      * 
      */
-	async joinPublicQueue(userId: string): Promise<MatchTypes.JoinQueueResponse> {
+	async joinPublicQueue(userId: string, gameMode: GameMode): Promise<MatchTypes.JoinQueueResponse> {
 
 		// GUARD: Validación crítica de infraestructura
         if (!redisClient) {
@@ -36,17 +43,18 @@ export class MatchService {
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
 		if (activeMatch) throw new SharedErrors.ConflictError('User already has an active match');
 
-		const QUEUE_KEY = 'match:queue:public';
+		const QUEUE_KEY = `match:queue:${gameMode}`;
 		const TICKET_TIMESTAMP = Date.now();
 
+		console.log(`🔍 User ${userId} joining queue: ${QUEUE_KEY}`);
+
 		// 2. Intentar sacar al usuario más antiguo (ZPOPMIN es atómico)
-		// Devuelve [userId, score, userId, score...] pero como pedimos 1, devuelve [id, score]
 		const result = await redisClient.zpopmin(QUEUE_KEY, 1);
 
 		// Parsear resultado de Redis (puede venir null o array vacío dependiendo del driver)
 		const opponentId = (result && result.length > 0) ? result[0] : null;
 
-		// CASO A: Encontramos oponente
+		// CASO A: Encontramos oponente (y es un user diferente al que solicita partida)
 		if (opponentId && opponentId !== userId) {
 			
 			// Creamos la partida (El servicio es dueño del ID)
@@ -60,24 +68,33 @@ export class MatchService {
 				winner_id: null,
 				created_at: Date.now(),
 				finished_at: null,
-				game_mode: 'classic',
+				game_mode: gameMode,
 				target_score: 11
 			};
 
 			// Persistencia Bubble-Up
 			await this.matchRepo.create(newMatch);
 
-			// Notificar match...
-			
-			return { 
-				outcome: 'match_found', 
-				match: MatchMapper.toDomain(newMatch) 
-			};
+			// Notificar que se encontró partida
+            // IMPORTANTE: Avisamos a AMBOS (el que estaba esperando y el que llegó)   
+            // Hidratamos para devolver respuesta bonita
+            const matchDomain = await this.hydrateMatchPlayers(MatchMapper.toDomain(newMatch));
+
+            // Publicamos evento para que el Socket del oponente se entere
+            await redisClient.publish('game_events', JSON.stringify({
+            	type: 'match.found', // Nuevo evento sugerido
+                targetUserId: opponentId,
+                payload: matchDomain
+            }));
+
+            return { 
+                outcome: 'match_found', 
+                match: matchDomain 
+            };
 		
 		} else {
-			// CASO B: Nadie esperando. Nos metemos a la cola con nuestro TICKET.
-			
-			// Edge case: Si nos sacamos a nosotros mismos (race condition rara), nos ignoramos
+			// CASO B: Nadie esperando. A la cola.
+			// Si nos sacamos a nosotros mismos, nos ignoramos
 			if (opponentId === userId) {
 			// log warning
 			}
@@ -91,17 +108,33 @@ export class MatchService {
 		}
 	}
 
+	//OJO CON ESTE METODO ??? 
+	// //Hay que poner un timeout aqui, en el Service o en el frontend (si 
+	// pasados 2 minutos de la peticion de partida publica no ha cancelado
+	//  o jugado contra el Bot, manda un request HTTP de cancelacion hacia aqui.)
+
 	/**
-	 * Método extra necesario para tu gestión de Timeouts/Cancelación
-	 * Esto permite al usuario decir "me cansé de esperar, sácame".
+	 * leavePublicQueue
+	 *Busca al usuario en TODAS las colas posibles y lo elimina.
 	 */
 	async leavePublicQueue(userId: string): Promise<void> {
+		//Guard
 		if (!redisClient) return;
+		const client = redisClient;
 
-		const QUEUE_KEY = 'match:queue:public';
-		// ZREM es O(1) en complejidad. Con Listas esto era O(N).
-		await redisClient.zrem(QUEUE_KEY, userId);
-	}
+		console.log(`🗑️ User ${userId} removing from queues`);
+
+		// Iteramos por todos los modos posibles para asegurar limpieza total
+        // Object.values(GameMode) nos da ['classic', 'speed', 'retro']
+        const modes = Object.values(GameMode);
+        
+        const promises = modes.map(mode => {
+            const key = `match:queue:${mode}`;
+            return client.zrem(key, userId);
+        });
+
+        await Promise.all(promises);
+    }
 	
 	
 	/**
@@ -164,7 +197,7 @@ export class MatchService {
         } catch (error) {
             console.error(`🔥 [Critical] Fallo post-creación. ROLLBACK.`, error);
             
-            // ROLLBACK: Borramos la partida física si falló la notificación
+            // ROLLBACK/REVIERTE ESTADO: Borramos la partida física si falló la notificación
             await this.matchRepo.delete(newMatch.id);
             throw new SharedErrors.ServiceError('redis','Error iniciando partida privada.');
         }

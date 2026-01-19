@@ -224,8 +224,11 @@ export class GameService {
                 ball.x = player2.x - r - 1;
         }
 
+		//================OJO=============
         const WIN_SCORE = 6; //OJO esto seria mejor manejarlo desde constants. Creo.
-
+		// No puede ignorar el target_score de la DB. Seria mejor
+		// usar session.targetScore obtenido de la partida en DB
+		
         // 3. PUNTUACION
         if (ball.x < 0) {
             session.gameState.player2.score++;
