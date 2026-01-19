@@ -139,35 +139,10 @@ export function buildApp(): FastifyInstance {
 	app.register(gameRoutes, { prefix: '/api' });
 	
 	// 6. Manejador de Errores Global
-	app.setErrorHandler((error, request, reply) => {
-		request.log.error({
-			err: error,
-			url: request.url,
-			method: request.method
-		});
-		
-		const typedError = error as FastifyError;
-		
-		if ('validation' in typedError && typedError.validation) {
-			return reply.status(400).send({
-				error: 'Ostras! Error de validación',
-				message: typedError.message,
-				details: typedError.validation
-			})
-		}
-		
-		if (typedError.statusCode) {
-			return reply.status(typedError.statusCode).send({
-				error: typedError.name,
-				message: typedError.message
-			})
-		}
-		
-		return reply.status(500).send({
-			error: 'Internal server error',
-			message: GameEnv.NODE_ENV() === 'production'
-			? 'Algo salió mal'
-			: (error as FastifyError).message
+		app.setNotFoundHandler((request, reply) => {
+		return reply.status(404).send({
+			error: 'Not found',
+			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
 	

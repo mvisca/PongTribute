@@ -29,13 +29,22 @@ export class FriendshipService {
 		const { friendId } = data;
 
 		if (initiatorId === friendId)
-			throw new SharedErrors.ValidationError('No puedes crear amistad contigo mismo', 'friendId');
+			throw new SharedErrors.ValidationError('No puedes crear amistad contigo mismo', 'friendId', {
+				initiatorId,
+				friendId,
+				operation: 'createFriendship'
+			});
 
 		const [sortedUserId, sortedFriendId] = this.sortIds(initiatorId, friendId);
 		const existing = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 
 		if (existing)
-			throw new SharedErrors.ConflictError('La amistad ya existe', 'friendship');
+			throw new SharedErrors.ConflictError('La amistad ya existe', 'friendship', {
+				initiatorId,
+				friendId,
+				operation: 'createFriendship',
+				existingStatus: existing.status
+			});
 
 		return await this.friendshipRepo.create({
 			initiatorId,
@@ -54,15 +63,29 @@ export class FriendshipService {
 		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 
 		if (!friendship)
-			throw new SharedErrors.NotFoundError('No existe la solicitud de amistad', 'friendship');
+			throw new SharedErrors.NotFoundError('No existe la solicitud de amistad', 'friendship', {
+				currentUserId,
+				friendId,
+				operation: 'updateFriendshipStatus'
+			});
 
 		if (friendship.status !== FRIENDSHIP_STATUS.PENDING)
-			throw new SharedErrors.ConflictError('La amistad no está pendiente', 'friendship');
+			throw new SharedErrors.ConflictError('La amistad no está pendiente', 'friendship', {
+				currentUserId,
+				friendId,
+				operation: 'updateFriendshipStatus',
+				currentStatus: friendship.status
+			});
 
 		if (friendship.initiatorId === currentUserId)
 			throw new SharedErrors.ValidationError(
 				'El solicitante no puede decidir su propia solicitud',
-				'friendship'
+				'friendship',
+				{
+					currentUserId,
+					initiatorId: friendship.initiatorId,
+					operation: 'updateFriendshipStatus'
+				}
 			);
 
 		const status: FriendshipTypes.FriendshipDecisionStatus = accepted
@@ -87,7 +110,12 @@ export class FriendshipService {
 
 		if (status) {
 			if (!this.isFriendshipStatus(status))
-				throw new SharedErrors.ValidationError('Estado de amistad inválido', 'status');
+				throw new SharedErrors.ValidationError('Estado de amistad inválido', 'status', {
+					userId,
+					attemptedStatus: status,
+					operation: 'listFriendships',
+					validStatuses: Object.values(FRIENDSHIP_STATUS)
+				});
 			return await this.friendshipRepo.findByUserAndStatus(userId, status);
 		}
 

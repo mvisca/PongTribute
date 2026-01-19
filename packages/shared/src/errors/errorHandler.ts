@@ -4,12 +4,26 @@ import { AppError } from './AppError.js';
 /** Handler centralizado de errores */
 export function handleError(error: unknown, reply: FastifyReply): void {
 	const request = reply.request;
+	let context = {};
+
+	if (error instanceof AppError && error.context) {
+		context = error.context;
+	}
 
 	console.error({
-		error: error instanceof Error ? error.message : error,
-		path: request.url,
-		userId: request.user?.id,
-		requestId: request.id
+		timestamp: new Date().toISOString(),
+		error: error instanceof Error ? {
+			message: error.message,
+			stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+			...(error instanceof AppError ? { type: error.constructor.name } : {}),
+		} : error,
+		request: {
+			method: request.method,
+			url: request.url,
+			id: request.id,
+			userId: request.user?.id
+		},
+		context
 	})
 
 	// Error de la aplicación, conocido y tipado
@@ -46,7 +60,7 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 	}
 	
 	// Error no conocido
-	console.error('Error no controlado:', error);
+	console.error('Error no controlado (ya loggeado):', error);
 	reply.code(500).send({
 		error: 'IntenralServerError',
 		message: 'Error interno del servidor'

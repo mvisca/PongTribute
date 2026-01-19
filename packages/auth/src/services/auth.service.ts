@@ -10,6 +10,7 @@ import {
 	UserTypes,
 	RedisCache,
 	SharedErrors,
+	ImageUploadRequest,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
 import { redisClient } from '../app.js';
@@ -172,7 +173,13 @@ export class AuthService {
 		);
 		
 		if (!response.ok) {
-			throw new Error(`Fallo al almacenar refresh token: ${response.status}`);
+			throw new SharedErrors.ServiceError('user', 'Fallo al almacenar refresh token', {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/tokens`,
+				method: 'POST',
+				status: response.status,
+				statusText: response.statusText,
+				userId
+			});
 		}
 		
 		// devuelve refresh token sin hashear
@@ -197,10 +204,19 @@ export class AuthService {
 		);
 
 		if (verified.status === 404)
-			throw new SharedErrors.UnauthorizedError('Token inválido o expirado');
+			throw new SharedErrors.UnauthorizedError('Token inválido o expirado', {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/tokens/verify`,
+				method: 'POST',
+				status: 404
+			});
 
 		if (!verified.ok)
-			throw new Error('Fallo conectando con User Service');
+			throw new SharedErrors.ServiceError('user', 'Fallo conectando con User Service al verificar refresh token', {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/tokens/verify`,
+				method: 'POST',
+				status: verified.status,
+				statusText: verified.statusText
+			});
 		// DUDA en algun caso hago estas dos comprabaciones anidadas, cual es mejor, esta lo parece
 
 		return await verified.json() as AuthTypes.RefreshTokenRecord;
@@ -225,14 +241,25 @@ export class AuthService {
 		// Casos de error mapeados a SharedErrors
 		if (response.status === 401 || response.status === 403) {
 			throw new SharedErrors.UnauthorizedError(
-				`Autenticación de servicio falló al borrar tokens`
+				`Autenticación de servicio falló al borrar tokens`,
+				{
+					endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/tokens/user/${userId}`,
+					method: 'DELETE',
+					status: response.status,
+					userId
+				}
 			);
 		}
 		
 		const errorBody = await response.text().catch(() => 'Response sin body');
-		throw new Error(
-			`Error en User Service borrando tokens (${response.status} ${response.statusText}). Body: ${errorBody}`
-		);
+		throw new SharedErrors.ServiceError('user', `Error en User Service borrando tokens`, {
+			endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/tokens/user/${userId}`,
+			method: 'DELETE',
+			status: response.status,
+			statusText: response.statusText,
+			errorBody,
+			userId
+		});
 	}
 
 		// ELIMINAR UN REFRESH TOKEN EN PARTICULAR
@@ -264,14 +291,25 @@ export class AuthService {
 
 		if (response.status === 401 || response.status === 403) {
 			throw new SharedErrors.UnauthorizedError(
-				'Autenticación de servicio falló al realizar logout'
+				'Autenticación de servicio falló al realizar logout',
+				{
+					endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+					method: 'PUT',
+					status: response.status,
+					userId
+				}
 			);
 		}
 
-		const errorBody = await response.text().catch(() => 'Response sin body'); // DUDA Explicar este caso, no se usa errorBody?
-		throw new Error(
-			`Error en User Service haciendo logout (${response.status} ${response.statusText}). Body: ${errorBody}`
-		)
+		const errorBody = await response.text().catch(() => 'Response sin body');
+		throw new SharedErrors.ServiceError('user', `Error en User Service haciendo logout`, {
+			endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+			method: 'PUT',
+			status: response.status,
+			statusText: response.statusText,
+			errorBody,
+			userId
+		})
 	}
 
 	// 2FA SETUP
@@ -292,7 +330,10 @@ export class AuthService {
 		const payload = jwt.verify(token, AuthEnv.JWT_SECRET());
 		
 		if (typeof payload === 'string' || payload.purpose !== AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION)
-			throw new SharedErrors.UnauthorizedError('Token provisional inválido');
+			throw new SharedErrors.UnauthorizedError('Token provisional inválido', {
+				purpose: typeof payload !== 'string' ? payload.purpose : undefined,
+				expectedPurpose: AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION
+			});
 		
 		return payload as AuthTypes.ProvisionalTokenPayload;
 	}
@@ -352,7 +393,14 @@ export class AuthService {
 				errorData,
 				requestBody: { has2FAEnabled: has2FAEnabled, totpSecret, backupCodeHash }
 			});
-			throw new Error(`Fallo actualizando 2FA: ${response.status} - ${JSON.stringify(errorData)}`);
+			throw new SharedErrors.ServiceError('user', `Fallo actualizando 2FA`, {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/2fa-status`,
+				method: 'PATCH',
+				status: response.status,
+				errorData,
+				userId,
+				has2FAEnabled
+			});
 		}
 	}
 	
@@ -368,9 +416,14 @@ export class AuthService {
 		});
 		
 		if (!response.ok) {
-			throw new Error(
-				`Fallo al actualizar estado online del usuario: ${response.status} ${response.statusText}`
-			);
+			throw new SharedErrors.ServiceError('user', `Fallo al actualizar estado online del usuario`, {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/online-status`,
+				method: 'PATCH',
+				status: response.status,
+				statusText: response.statusText,
+				userId,
+				isOnline
+			});
 		}
 	}
 	
@@ -398,6 +451,9 @@ export class AuthService {
 		oldAvatarUrl?: string
 	): Promise<string> {
 		try {
+
+			const payload = { base64: base64Image, ...(oldAvatarUrl && { old_avatar: oldAvatarUrl }) };
+
 			const response = await fetch(
 				`${AuthEnv.IMAGE_SERVICE_URL()}/internal/upload`,
 				{
@@ -416,7 +472,13 @@ export class AuthService {
 			if (!response.ok) {
 				const error = await response.json();
 				const errorMessage = error ? error : "No hay mensaje de error";
-				throw new Error(`Image service error: ${errorMessage || response.statusText}`);
+				throw new SharedErrors.ServiceError('image', `Fallo subiendo avatar a Cloudinary`, {
+					endpoint: `${AuthEnv.IMAGE_SERVICE_URL()}/internal/upload`,
+					method: 'POST',
+					status: response.status,
+					statusText: response.statusText,
+					errorMessage: errorMessage || response.statusText
+				});
 			}
 			
 			const data = await response.json() as { url: string }; // DUDA Mejorar tipado
@@ -446,6 +508,7 @@ export class AuthService {
 			avatarUrl = await this.uploadAvatarToCloudinary(avatar);
 		}
 		
+		// Crear usuario en User Service
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
 			{
@@ -471,11 +534,25 @@ export class AuthService {
 				const error = errorData as any;
 				throw new SharedErrors.ConflictError(
 					error.message || 'Email/Username ya existe',
-					error.field || 'email/username'
+					error.field || 'email/username',
+					{
+						endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users`,
+						method: 'POST',
+						status: 409,
+						attemptedUsername: username,
+						attemptedEmail: email
+					}
 				);
 			}
 			
-			throw new Error(`User creation failed: ${response.status}`)
+			throw new SharedErrors.ServiceError('user', `Fallo creando usuario`, {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users`,
+				method: 'POST',
+				status: response.status,
+				errorData,
+				attemptedUsername: username,
+				attemptedEmail: email
+			})
 		}
 		
 		// Login automático
@@ -490,12 +567,20 @@ export class AuthService {
 	async login(email: string, password: string): Promise<AuthTypes.LoginResponse> {
 		const user = await this.fetchUserByEmail(email);
 		if (!user) {
-			throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
+			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
+				operation: 'login',
+				reason: 'userNotFound',
+				attemptedEmail: email
+			});
 		}
 		
 		const valid = await this.verifyPassword(password, user.passwordHash);
 		if (!valid) {
-			throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
+			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
+				operation: 'login',
+				reason: 'invalidPassword',
+				userId: user.id
+			});
 		}
 		
 		// Intercepción si tiene 2fa enabled
@@ -540,7 +625,13 @@ export class AuthService {
 		if (user.has2FAEnabled !== tokenRecord.is2FAVerified) {
 			await this.deleteRefreshTokensById(user.id);
 			throw new SharedErrors.UnauthorizedError(
-				'Configuración de seguridad modificada. Inicia sesión nuevamente'
+				'Configuración de seguridad modificada. Inicia sesión nuevamente',
+				{
+					userId: user.id,
+					operation: 'refreshAccessToken',
+					userHas2FA: user.has2FAEnabled,
+					tokenHas2FA: tokenRecord.is2FAVerified
+				}
 			);
 		}
 
@@ -571,7 +662,10 @@ export class AuthService {
 		const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET());
 		
 		if (typeof payload === 'string' || payload.purpose !== AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION) {
-			throw new SharedErrors.UnauthorizedError('Token inválido');
+			throw new SharedErrors.UnauthorizedError('Token inválido', {
+				purpose: typeof payload !== 'string' ? payload.purpose : undefined,
+				expectedPurpose: AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION
+			});
 		}
 		
 		const provisionalPayload = payload as AuthTypes.ProvisionalTokenPayload;
@@ -582,14 +676,21 @@ export class AuthService {
 		
 		// Verificar que 2FA esté habilitado
 		if (!user.has2FAEnabled || !user.totpSecret) {
-			throw new SharedErrors.UnauthorizedError('2FA no está habilitado para este usuario');
+			throw new SharedErrors.UnauthorizedError('2FA no está habilitado para este usuario', {
+				userId,
+				has2FAEnabled: user.has2FAEnabled,
+				hasTotpSecret: !!user.totpSecret
+			});
 		}
 		
 		// Veerificar código totp
 		const verified = this.verify2FATotpCode(user.totpSecret, totpCode);
 		
 		if (!verified) {
-			throw new SharedErrors.UnauthorizedError('Codigo 2FA inválido');
+			throw new SharedErrors.UnauthorizedError('Codigo 2FA inválido', {
+				userId,
+				operation: 'verify2FAWithToken'
+			});
 		}
 		
 		// actualizar tokens de refresh, estado online y generar access token
@@ -606,7 +707,10 @@ export class AuthService {
 		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
 		
 		if (!isPasswordValid) {
-			throw new Error(`Password actual incorrecta`);
+			throw new SharedErrors.UnauthorizedError(`Password actual incorrecta`, {
+				userId,
+				operation: 'changePassword'
+			});
 		}
 		
 		const newPasswordHash = await bcrypt.hash(newPassword, 10);
@@ -624,7 +728,13 @@ export class AuthService {
 		);
 		
 		if (!updateResponse.ok) {
-			throw new SharedErrors.InternalError(`Fallo al actualizar password: ${updateResponse.status}`); // DUDA es error correcto
+			throw new SharedErrors.ServiceError('user', `Fallo al actualizar password`, {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${user.id}/password`,
+				method: 'PUT',
+				status: updateResponse.status,
+				statusText: updateResponse.statusText,
+				userId: user.id
+			});
 		}
 	}
 	
@@ -637,7 +747,10 @@ export class AuthService {
 		const user = await this.fetchUserById(userId);
 		
 		if (user.has2FAEnabled) {
-			throw new SharedErrors.ConflictError('2FA ya está activado', 'has2FAEnabled');
+			throw new SharedErrors.ConflictError('2FA ya está activado', 'has2FAEnabled', {
+				userId,
+				operation: 'enable2FA'
+			});
 		}
 		
 		// PASO 1 generar totp secret con speakeasy
@@ -690,7 +803,10 @@ export class AuthService {
 
 		// Si falta en cache inválido o expirado
 		if (!setupData)
-			throw new SharedErrors.UnauthorizedError('SetupToken es inválido o expirado');
+			throw new SharedErrors.UnauthorizedError('SetupToken es inválido o expirado', {
+				operation: 'verify2FASetup',
+				tokenExpired: true
+			});
 		
 		// Verificar límite de intentos
 		const MAX_ATTEMPTS = AuthConstants.SETUP_MAX_ATTEMPTS;
@@ -700,7 +816,12 @@ export class AuthService {
 		if (attempts > MAX_ATTEMPTS) {
 			await this.setupCache.delete(setupToken);
 			throw new SharedErrors.UnauthorizedError(
-				`Demasiados intentos fallidos. Solicita un nuevo código QR.`
+				`Demasiados intentos fallidos. Solicita un nuevo código QR.`,
+				{
+					operation: 'verify2FASetup',
+					attempts,
+					maxAttempts: MAX_ATTEMPTS
+				}
 			);
 		}
 		
@@ -714,7 +835,12 @@ export class AuthService {
 			await this.setupCache.set(setupToken, setupData, AuthConstants.SETUP_TOKEN_TTL);
 
 			const remaining = MAX_ATTEMPTS - attempts;
-			throw new SharedErrors.UnauthorizedError(`Código 2FA inválido. ${remaining} intentos restantes de ${MAX_ATTEMPTS}`);
+			throw new SharedErrors.UnauthorizedError(`Código 2FA inválido. ${remaining} intentos restantes de ${MAX_ATTEMPTS}`, {
+				operation: 'verify2FASetup',
+				attempts,
+				maxAttempts: MAX_ATTEMPTS,
+				remaining
+			});
 		}
 		
 		// Activar 2FA en user service
@@ -747,7 +873,10 @@ export class AuthService {
 		const valid = await this.verifyPassword(password, user.passwordHash);
 		
 		if (!valid) {
-			throw new SharedErrors.UnauthorizedError('Credenciales inválidas');
+			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
+				userId,
+				operation: 'disable2FA'
+			});
 		}
 		
 		await this.update2FAStatus(
@@ -769,12 +898,20 @@ export class AuthService {
 		const user = await this.fetchUserById(userId);
 		
 		if (!user.has2FAEnabled || !user.backupCodeHash)
-			throw new SharedErrors.UnauthorizedError('2FA no está habilitado');
+			throw new SharedErrors.UnauthorizedError('2FA no está habilitado', {
+				userId,
+				has2FAEnabled: user.has2FAEnabled,
+				hasBackupCode: !!user.backupCodeHash,
+				operation: 'verifyBackupCode'
+			});
 		
 		const isValid = await bcrypt.compare(backupCode, user.backupCodeHash);
 		
 		if (!isValid)
-			throw new SharedErrors.UnauthorizedError('Código de recuperación inválido');
+			throw new SharedErrors.UnauthorizedError('Código de recuperación inválido', {
+				userId,
+				operation: 'verifyBackupCode'
+			});
 		
 		// Desactivar 2FA
 		await this.update2FAStatus(userId, false);

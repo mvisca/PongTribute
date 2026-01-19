@@ -3,9 +3,11 @@
 export abstract class AppError extends Error {
     abstract readonly statusCode: number;
     abstract readonly isOperational: boolean;
+	public readonly context?: Record<string, unknown>;
     
-    constructor(message: string) {
+    constructor(message: string, context?: Record<string, unknown>) {
         super(message);
+		this.context = context;
         Object.setPrototypeOf(this, new.target.prototype);
         Error.captureStackTrace(this);
     }
@@ -18,8 +20,8 @@ export class ValidationError extends AppError {
     readonly statusCode = 400;
     readonly isOperational = true;
     
-    constructor(message: string, public readonly field?: string) {
-        super(message);
+    constructor(message: string, public readonly field?: string, context?: Record<string, unknown>) {
+        super(message, context);
     }
     
     toJSON() {
@@ -35,6 +37,10 @@ export class UnauthorizedError extends AppError {
     readonly statusCode = 401;
     readonly isOperational = true;
     
+	constructor(message: string, context?: Record<string, unknown>) {
+		super(message, context);
+	}
+
     toJSON() {
         return {
             error: 'UnauthorizedError',
@@ -47,6 +53,10 @@ export class ForbiddenError extends AppError {
     readonly statusCode = 403;
     readonly isOperational = true;
     
+	constructor(message: string, context?: Record<string, unknown>) {
+		super(message, context);
+	}
+
     toJSON() {
         return {
             error: 'ForbiddenError',
@@ -59,8 +69,8 @@ export class NotFoundError extends AppError {
     readonly statusCode = 404;
     readonly isOperational = true;
     
-    constructor(message: string, public readonly resource?: string) {
-        super(message);
+    constructor(message: string, public readonly resource?: string, context?: Record<string, unknown>) {
+        super(message, context);
     }
     
     toJSON() {
@@ -76,8 +86,8 @@ export class ConflictError extends AppError {
     readonly statusCode = 409;
     readonly isOperational = true;
     
-    constructor(message: string, public readonly field?: string) {
-        super(message);
+    constructor(message: string, public readonly field?: string, context?: Record<string, unknown>) {
+        super(message, context);
     }
     
     toJSON() {
@@ -93,8 +103,8 @@ export class InternalError extends AppError {
     readonly statusCode = 500;
     readonly isOperational = false;
     
-    constructor(message: string = 'Error interno del servidor') {
-        super(message);
+    constructor(message: string = 'Error interno del servidor', context?: Record<string, unknown>) {
+        super(message, context);
     }
     
     toJSON() {
@@ -110,8 +120,8 @@ export class ServiceError extends AppError {
     readonly statusCode = 503;
     readonly isOperational = true;
     
-    constructor(public readonly service: string, message: string) {
-        super(message);
+    constructor(public readonly service: string, message: string, context?: Record<string, unknown>) {
+        super(message, context);
     }
     
     toJSON() {

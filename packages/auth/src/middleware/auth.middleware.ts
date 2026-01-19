@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Value } from '@sinclair/typebox/value';
 import { UserTypes, AuthSchemas, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { AuthEnv } from "../config.js";
+import { authRoutes } from "src/routes/auth.Routes.js";
 
 /**
  * Obtiene el lastLogoutAt de un usuario desde el User Service
@@ -24,9 +25,22 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 	if (!response.ok) {
 		if (response.status === 404) {
 			// Usuario no encontrado = token inválido
-			throw new SharedErrors.NotFoundError('Usuario no encontrado');
+			throw new SharedErrors.NotFoundError('Usuario no encontrado', 'user', {
+				userId,
+				endpoint: `${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+				method: 'GET',
+				status: 404,
+				operation: 'fetchLastLogoutAt'
+			});
 		}
-		throw new SharedErrors.InternalError(`Error obteniendo lastLogoutAt: ${response.status}`);
+		throw new SharedErrors.ServiceError('user', `Error obteniendo lastLogoutAt`, {
+			userId,
+			endpoint: `${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+			method: 'GET',
+			status: response.status,
+			statusText: response.statusText,
+			operation: 'fetchLastLogoutAt'
+		});
 	}
 
 	const data = await response.json() as { lastLogoutAt: number };
@@ -44,7 +58,12 @@ export namespace AuthMiddleware {
 		
 		// Verificar que exista y sea válidos
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
-			throw new SharedErrors.UnauthorizedError('Authorization header faltante o inválido');
+			throw new SharedErrors.UnauthorizedError('Authorization header faltante o inválido', {
+				hasBearerPrefix: authHeader?.startsWith('Bearer '),
+				headerPresent: !!authHeader,
+				operation: 'validateJWT',
+				requestId: request.id
+			});
 		}
 		
 		// Extraer el token
@@ -59,7 +78,12 @@ export namespace AuthMiddleware {
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			console.log('== Schema completo:', isValid);
 			if (!isValid) 
-				throw new SharedErrors.UnauthorizedError('Estructura de token inválida');
+				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
+					schemaValidation: isValid,
+					operation: 'validateJWT',
+					payloadKeys: Object.keys(payload),
+					requestId: request.id
+				});
 
 			// TypeScript ahora infiere payload como AccessTokenPayload
 			const tokenIssuedAt = payload.iat!;
@@ -73,7 +97,13 @@ export namespace AuthMiddleware {
 			const lastLogoutAtSeconds = Math.floor(lastLogoutAt / 1000);
 
 			if (tokenIssuedAt < lastLogoutAtSeconds) {
-				throw new SharedErrors.UnauthorizedError('Token invalidado por logout');
+				throw new SharedErrors.UnauthorizedError('Token invalidado por logout', {
+					userId,
+					tokenIssuedAt,
+					lastLogoutAt: lastLogoutAtSeconds,
+					operation: 'validateJWT',
+					requestId: request.id
+				});
 			}
 
 			request.user = payload;
@@ -91,13 +121,22 @@ export namespace AuthMiddleware {
 
 		try {
 			if (!request.user) {
-				throw new SharedErrors.UnauthorizedError('Usuario  no autenticado');
+				throw new SharedErrors.UnauthorizedError('Usuario  no autenticado', {
+					operation: 'verifyOwnership',
+					requestId: reply.request.id,
+					userPresent: false
+				});
 			}
 			
 			const { id } = request.params as UserTypes.UserIdParams;
 			
 			if (id !== request.user.id) {
-				throw new SharedErrors.UnauthorizedError('No tienes permiso para acceder a este recurso'); // DUDA es 403 0 401? falta un shared error para manejarlo??
+				throw new SharedErrors.UnauthorizedError('No tienes permiso para acceder a este recurso', {
+					operation: 'verifyOwnership',
+					requestId: reply.request.id,
+					userIdFromAuth: request.user.id,
+					userIdFromParams: id
+				});
 			}
 		} catch (err) {
 			return SharedErrors.handleError(err, reply);

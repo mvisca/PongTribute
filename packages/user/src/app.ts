@@ -29,12 +29,12 @@ export function buildApp(): FastifyInstance {
 	
 	/** 1. Crear instancia app */
 	const app = Fastify(UserEnv.getFastifyConfig());
-
+	
 	/** 1.1 Inicializar UserService e inyectarlo en middleware */
 	const userService = new UserService();
 	AuthMiddleware.setUserService(userService);
 	console.log('UserService inyectado en AuthMiddleware');
-
+	
 	/** 2. Plugins de seguridad */
 	app.register(helmet, {
 		contentSecurityPolicy: false,
@@ -53,14 +53,14 @@ export function buildApp(): FastifyInstance {
 			],
 			components: {
 				securitySchemes: {
-				  bearerAuth: {
-					type: 'http',
-					scheme: 'bearer',
-					bearerFormat: 'JWT'
-				  }
+					bearerAuth: {
+						type: 'http',
+						scheme: 'bearer',
+						bearerFormat: 'JWT'
+					}
 				}
-			  },
-			  security: [{ bearerAuth: [] }], // aplica por defecto a todas las rutas
+			},
+			security: [{ bearerAuth: [] }], // aplica por defecto a todas las rutas
 			tags: [
 				{ name: 'User', description: 'Gestión de usuarios' },
 				{ name: 'Token', description: 'Gestión de refresh tokens' },
@@ -76,7 +76,7 @@ export function buildApp(): FastifyInstance {
 	});
 	
 	/** 2. Plugins de documentacion con UI interactiva */
-		/** 2. Plugins de documentacion con UI interactiva */
+	/** 2. Plugins de documentacion con UI interactiva */
 	const swaggerThemeCSS = readFileSync(
 		join(__dirname, '../../shared/src/styles/', 'swagger-custom.css'),
 		'utf-8'
@@ -132,48 +132,22 @@ export function buildApp(): FastifyInstance {
 	/** Registrar todas las rutas del servicio */
 	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal'});
 	console.log('REG TOKEN PROTECTED ROUTES');
-
+	
 	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
 	console.log('REG USER INTERNAL ROUTES');
-
+	
 	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
 	console.log('REG USER PUBLIC ROUTES');
-
+	
 	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
 	console.log('REG USER PROTECTED ROUTES');
-
+	
 	
 	/** Manejo global de errores. Captura cualquier error no manejado */
-	// TOO Centralizar manejo de errores
-	app.setErrorHandler((error, request, reply) => {
-		request.log.error({
-			err: error,
-			url: request.url,
-			method: request.method
-		});
-		
-		const typedError = error as FastifyError;
-
-		if ('validation' in typedError && typedError.validation) {
-			return reply.status(400).send({
-				error: 'Ostras! Error de validación',
-				message: typedError.message,
-				details: typedError.validation
-			})
-		}
-		
-		if (typedError.statusCode) {
-			return reply.status(typedError.statusCode).send({
-				error: typedError.name,
-				message: typedError.message
-			})
-		}
-		
-		return reply.status(500).send({
-			error: 'Internal server error',
-			message: UserEnv.NODE_ENV() === 'production'
-			? 'Algo salió mal'
-			: (error as FastifyError).message
+	app.setNotFoundHandler((request, reply) => {
+		return reply.status(404).send({
+			error: 'Not found',
+			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
 	
