@@ -1,8 +1,11 @@
 import { buildApp } from './app.js';
 import { GatewayEnv } from './config.js';
 
+let appRef: ReturnType<typeof buildApp> | null = null;
+
 async function start() {
 	const app = buildApp();
+	appRef = app;
 
 	try {
 		await app.listen({ port: GatewayEnv.PORT, host: GatewayEnv.HOST });
@@ -12,11 +15,27 @@ async function start() {
 		app.log.error(err);
 		process.exit(1);
 	}
-	  
 }
 
-process.on('SIGINT', () => process.exit(0));
-process.on('SIGTERM', () => process.exit(0));
+async function shutdown(signal: string) {
+	if (!appRef) {
+		process.exit(0);
+		return;
+	}
+
+	try {
+		appRef.log.info({ signal }, 'Gateway shutting down...');
+		await appRef.close();
+	} catch (err) {
+		// Don't hang the process on shutdown failures.
+		console.error('Gateway shutdown error:', err);
+	} finally {
+		process.exit(0);
+	}
+}
+
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 start();
 
