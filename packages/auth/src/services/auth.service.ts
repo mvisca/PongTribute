@@ -431,15 +431,22 @@ export class AuthService {
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;
 		
-		// Validar base64
-		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-		if (!base64Regex.test(avatar)) return false;
+		// Validar formato y extraer base64
+		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
+		const match = avatar.match(base64Regex);
+		if (!match) return false;
 		
-		// Validar tamaño
-		const base64Data = avatar.split(',')[1];
-		if (!base64Data) return false;
+		const [, mimeType, base64Data] = match;
 		
-		const sizeInBytes = (base64Data.length * 3) / 4; // Aproximación base64
+		// Validar que base64 sea válido
+		try {
+			Buffer.from(base64Data, 'base64');
+		} catch (e) {
+			return false;  // Base64 inválido
+		}
+		
+		// Validar tamaño (exacto, no aproximado)
+		const sizeInBytes = Buffer.from(base64Data, 'base64').length;
 		const maxSizeBytes = 10 * 1024 * 1024; // 10MB
 		
 		return sizeInBytes <= maxSizeBytes;
@@ -451,8 +458,10 @@ export class AuthService {
 		oldAvatarUrl?: string
 	): Promise<string> {
 		try {
-
-			const payload = { base64: base64Image, ...(oldAvatarUrl && { old_avatar: oldAvatarUrl }) };
+			const payload = {
+				base64: base64Image,
+				...(oldAvatarUrl && { old_avatar: oldAvatarUrl })
+			};
 
 			const response = await fetch(
 				`${AuthEnv.IMAGE_SERVICE_URL()}/internal/upload`,
@@ -462,31 +471,73 @@ export class AuthService {
 						'Content-Type': 'application/json',
 						'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 					},
-					body: JSON.stringify({
-						base64: base64Image,
-						...( oldAvatarUrl && { old_avatar: oldAvatarUrl })
-					})
+					body: JSON.stringify(payload)
 				}
-			)  // DUDA Tipar retorno
+			);
 			
 			if (!response.ok) {
-				const error = await response.json();
-				const errorMessage = error ? error : "No hay mensaje de error";
+				const error = await response.json().catch(() => ({ message: 'Unknown error' })) as any;
+				const errorMessage = error?.message || error?.error || 'No hay mensaje de error';
 				throw new SharedErrors.ServiceError('image', `Fallo subiendo avatar a Cloudinary`, {
 					endpoint: `${AuthEnv.IMAGE_SERVICE_URL()}/internal/upload`,
 					method: 'POST',
 					status: response.status,
 					statusText: response.statusText,
-					errorMessage: errorMessage || response.statusText
+					errorMessage
 				});
 			}
 			
-			const data = await response.json() as { url: string }; // DUDA Mejorar tipado
+			const data = await response.json() as { url: string };
+			
+			// Validar que URL sea válida
+			if (!data.url || typeof data.url !== 'string') {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL inválida',
+					'url',
+					{
+						received: typeof data.url,
+						expected: 'string',
+						operation: 'uploadAvatarToCloudinary'
+					}
+				);
+			}
+			
+			// Validar que sea URL válida
+			try {
+				new URL(data.url);
+			} catch (e) {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL inválida',
+					'url',
+					{
+						receivedUrl: data.url,
+						domain: data.url?.split('/')[2],
+						operation: 'uploadAvatarToCloudinary',
+						error: e instanceof Error ? e.message : 'Invalid URL'
+					}
+				);
+			}
+			
 			return data.url;
 		} catch (err) {
+			if (err instanceof SharedErrors.AppError) throw err;  // Re-throw validation errors
 			console.error('Fallo subiendo avatar: ', err);
-			// Fallback a default avatar
+			// Fallback a default avatar (similar a user.service)
 			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
+		}
+	}
+
+	/** Upload de avatar con fallback a avatar anterior o default */
+	private async uploadAvatarWithFallback(
+		base64Image: string,
+		oldAvatarUrl?: string
+	): Promise<string> {
+		try {
+			return await this.uploadAvatarToCloudinary(base64Image, oldAvatarUrl);
+		} catch (err) {
+			console.error('Fallo uploadAvatarToCloudinary, usando fallback: ', err);
+			// Mantener avatar anterior si existe, sino default
+			return oldAvatarUrl || AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
 	}
 	
@@ -504,8 +555,19 @@ export class AuthService {
 		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		
 		// Si existe avatar, validarlo y subirlo a cloudinary
-		if (avatar && this.validateAvatar(avatar)) {
-			avatarUrl = await this.uploadAvatarToCloudinary(avatar);
+		if (avatar) {
+			if (!this.validateAvatar(avatar)) {
+				throw new SharedErrors.ValidationError(
+					'Avatar inválido',
+					'avatar',
+					{
+						operation: 'register',
+						receivedFormat: avatar.substring(0, 50),
+						expectedFormat: 'base64 data:image/...'
+					}
+				);
+			}
+			avatarUrl = await this.uploadAvatarWithFallback(avatar);
 		}
 		
 		// Crear usuario en User Service

@@ -13,15 +13,22 @@ export class UserService {
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;
 
-		// Validar base64
-		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-		if (!base64Regex.test(avatar)) return false;
+		// Validar formato y extraer base64
+		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
+		const match = avatar.match(base64Regex);
+		if (!match) return false;
+		
+		const [, mimeType, base64Data] = match;
+		
+		// Validar que base64 sea válido
+		try {
+			Buffer.from(base64Data, 'base64');
+		} catch (e) {
+			return false;  // Base64 inválido
+		}
 
-		// Validar tamaño
-		const base64Data = avatar.split(',')[1];
-		if (!base64Data) return false;
-
-		const sizeInBytes = (base64Data.length * 3) / 4; // Aproximación base64
+		// Validar tamaño (exacto, no aproximado)
+		const sizeInBytes = Buffer.from(base64Data, 'base64').length;
 		const maxSizeBytes = 10 * 1024 * 1024; // 10MB
 
 		return sizeInBytes <= maxSizeBytes;
@@ -49,19 +56,65 @@ export class UserService {
 			);
 
 			if (!response.ok) {
-				const error = await response.json() as { message: string }; // TODO tipar adecuadamente
+				const error = await response.json().catch(() => ({ message: 'Unknown error' })) as any;
+				const errorMessage = error?.message || error?.error || response.statusText;
 				throw new SharedErrors.ServiceError('image', `Fallo subiendo avatar a Cloudinary`, {
 					endpoint: `${UserEnv.IMAGE_SERVICE_URL()}/internal/upload`,
 					method: 'POST',
 					status: response.status,
 					statusText: response.statusText,
-					errorMessage: error?.message || response.statusText
+					errorMessage
 				});
 			}
 
 			const data = await response.json() as { url: string };
+			
+			// Validar que URL sea válida
+			if (!data.url || typeof data.url !== 'string') {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL inválida',
+					'url',
+					{ 
+						received: typeof data.url, 
+						expected: 'string',
+						operation: 'uploadAvatarToCloudinary'
+					}
+				);
+			}
+			
+			// Validar que sea URL válida
+			try {
+				new URL(data.url);
+			} catch (e) {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL con formato inválido',
+					'url',
+					{ 
+						receivedUrl: data.url, 
+						operation: 'uploadAvatarToCloudinary',
+						error: (e as Error).message
+					}
+				);
+			}
+
+			// Validar que sea de Cloudinary
+			if (!data.url.startsWith('https://res.cloudinary.com/')) {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL no de Cloudinary',
+					'url',
+					{ 
+						receivedUrl: data.url, 
+						operation: 'uploadAvatarToCloudinary',
+						expectedDomain: 'https://res.cloudinary.com/'
+					}
+				);
+			}
+
 			return data.url;
 		} catch (err) {
+			if (err instanceof SharedErrors.ValidationError || err instanceof SharedErrors.ServiceError || err instanceof SharedErrors.ConflictError || err instanceof SharedErrors.NotFoundError) {
+				throw err;
+			}
 			console.error('Fallo subiendo avatar: ', err);
 			// Mantener avatar actual si falla (diferente de Auth Service)
 			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR();

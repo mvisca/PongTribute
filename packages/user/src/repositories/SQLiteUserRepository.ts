@@ -27,7 +27,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			avatar: data.avatar || UserEnv.CLOUDINARY_DEFAULT_AVATAR(),
+			avatar: Utils.UserNormalizer.avatar(data.avatar) || UserEnv.CLOUDINARY_DEFAULT_AVATAR(),
 			passwordHash: data.passwordHash,
 			isOnline: false,
 			isDeleted: false,
@@ -70,8 +70,10 @@ export class SQLiteUserRepository implements IUserRepository {
 		if (data.email)
 			updateData.email = Utils.UserNormalizer.email(data.email) || undefined;
 
-		if (data.avatar)
-			updateData.avatar = Utils.UserNormalizer.avatar(data.avatar) || undefined;
+		if (data.avatar) {
+			const normalizedAvatar = Utils.UserNormalizer.avatar(data.avatar);
+			updateData.avatar = normalizedAvatar || UserEnv.CLOUDINARY_DEFAULT_AVATAR();
+		}
 		
 		// Validar que haya campos con valores válidos para actualizar
 		if (Object.values(updateData).filter(v => v !== undefined).length === 0)
