@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { TestConstants, AuthTypes, UserTypes, SharedEnv } from '../index.js';
+import { TestConstants, AuthTypes, UserTypes, SharedEnv, AuthConstants } from '../index.js';
 
 export namespace TestUtils {
 
@@ -265,7 +265,7 @@ export namespace TestUtils {
 			console.log(`=== Configurando Test User: ${key} ===`);
 			const userLoged = await setupUser(key, options);
 			
-			if (!userLoged) {
+			if (!userLoged || !('token' in userLoged)) {
 				throw new Error(`Fallo al inicializar usuario de test ${key}`);
 			}
 			

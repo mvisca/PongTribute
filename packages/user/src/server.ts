@@ -46,10 +46,9 @@ async function start() {
 
 async function gracefulShutdown(signal: string) {
 	console.log(`\n${signal} recibido. Iniciando Graceful Shutdown`);
-
+	
 	if (redisClient) {
 		try {
-			// @ts-ignore
 			await redisClient.quit();
 			console.log('USER: Redis desconectado');
 		} catch (err) {

@@ -14,18 +14,6 @@ const __dirname = dirname(__filename);
 // Será compartida por todas las llamadas a getDatabase()
 let db: Database.Database | null = null;
 
-process.on('SIGINT', () => {
-	console.log('SIGINT: Closing Database');
-	closeDatabase();
-	db = null;
-});
-
-process.on('SIGTERM', () => {
-	console.log('SIGTERM: Closing Database');
-	closeDatabase();
-	db = null;
-}); // DUDA revisar implementacion de señales, consitente en pattern y servicios, esta implementacion está ok o repetida, ver capas
-
 function resolveDbPath(): { path: string } {
 	// Permitir override en entorno de test para bases en memoria o URIs compartidas
 	if (process.env.NODE_ENV === 'test' && process.env.USER_SERVICE_DB_FULL_PATH) {
@@ -71,6 +59,7 @@ export function getDatabase(): Database.Database {
 			);
 	
 			db.exec(tablesSQL);
+			
 		} catch(err) {
 			console.error('Error incializando DB: ', err);
 			// Tip de debug: imprimimos la ruta que intentó usar
@@ -78,8 +67,6 @@ export function getDatabase(): Database.Database {
 			process.exit(1);
 		}
 		
-		
-
 		console.log('DB inicializada: ', UserEnv.USER_SERVICE_DB_FULL_PATH(), '\n[ ', __filename, ' ]');
 	}
 	// Si ya existe el Singleton lo retorna directamente
