@@ -46,7 +46,7 @@ export function buildApp(): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${GameEnv.PORT}` }
+				{ url: `http://localhost:${GameEnv.PORT()}` }
 			],
 			components: {
 				securitySchemes: {
@@ -165,7 +165,7 @@ export function buildApp(): FastifyInstance {
 		
 		return reply.status(500).send({
 			error: 'Internal server error',
-			message: GameEnv.NODE_ENV === 'production'
+			message: GameEnv.NODE_ENV() === 'production'
 			? 'Algo salió mal'
 			: (error as FastifyError).message
 		});

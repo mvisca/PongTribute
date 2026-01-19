@@ -1,4 +1,3 @@
-import { Token } from 'node_modules/@sinclair/typebox/build/esm/parser/runtime/index.mjs';
 import { buildApp, UserEnv, redisClient, closeDatabase } from './index.js';
 import { TokenService } from './index.js';
 
@@ -6,39 +5,40 @@ let app: ReturnType<typeof buildApp> | null = null;
 
 async function start() {
 	try {
-		app = buildApp();
-	} catch (err) {
-		console.log('Error al lanzar:', err);
-		process.exit(1);
-	}
+		// Inicializar config
+		UserEnv.init();
 
-	try {
+		// Construir app
+		app = buildApp();
+
+		// Arrancar el servidor
 		await app.listen({
-			port: UserEnv.PORT,
-			host: UserEnv.HOST
+			port: UserEnv.PORT(),
+			host: UserEnv.HOST()
 		});
-        
+
 		console.log(`App log level: ${app.log.level}`);
-        
-		app.log.info(`Servicio user listening en ${UserEnv.HOST}:${UserEnv.PORT}`);
-		app.log.info(`Environment: ${UserEnv.NODE_ENV}`);
-		app.log.info(`Database: ${UserEnv.USER_SERVICE_DB_FULL_PATH}`);
-        
+
+		app.log.info(`Servicio user listening en ${UserEnv.HOST()}:${UserEnv.PORT()}`);
+		app.log.info(`Environment: ${UserEnv.NODE_ENV()}`);
+		app.log.info(`Database: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
+
 		// Limpieza de tabla 'refresh_tokens' para development y production
-		if (UserEnv.NODE_ENV !== 'test') {
+		if (UserEnv.NODE_ENV() !== 'test') {
 			const tokenService = new TokenService();
 			setInterval(async () => {
 				try {
 					await tokenService.cleanExpired();
 					console.info(`[${Date.now()}] Expired refresh tokens cleaned`);
-                    
+
 				} catch(err) {
 					console.error(err, 'Error durante la limpieza de refresh tokens expirados');
 				}
 			}, 1000 * 60 * 60);
 		}
 	} catch (err) {
-		console.error(err);
+		console.log(`ERROR:`, err instanceof Error ? err.message : err);
+		console.log('Verifica .env y si no existe ejecuta: "cp .env.example .env"');
 		await gracefulShutdown('STARTUP_ERROR');
 		process.exit(1);
 	}

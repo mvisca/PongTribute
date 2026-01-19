@@ -34,12 +34,12 @@ export class UserService {
 	): Promise<string> {
 		try {
 			const response = await fetch(
-				`${UserEnv.IMAGE_SERVICE_URL}/internal/upload`,
+				`${UserEnv.IMAGE_SERVICE_URL()}/internal/upload`,
 				{
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-Service-Secret': UserEnv.SERVICE_SECRET
+						'X-Service-Secret': UserEnv.SERVICE_SECRET()
 					},
 					body: JSON.stringify({
 						base64: base64Image,
@@ -58,7 +58,7 @@ export class UserService {
 		} catch (err) {
 			console.error('Fallo subiendo avatar: ', err);
 			// Mantener avatar actual si falla (diferente de Auth Service)
-			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR;
+			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
 	}
 
@@ -76,7 +76,7 @@ export class UserService {
 			throw new SharedErrors.ConflictError('El username ya está en uso', 'username');
 
 		const { password, ...rest } = data;
-		const passwordHash = await bcrypt.hash(password, UserEnv.BCRYPT_ROUNDS);
+		const passwordHash = await bcrypt.hash(password, UserEnv.BCRYPT_ROUNDS());
 
 		const userId = Utils.generateUserId();
 		const fullData = {

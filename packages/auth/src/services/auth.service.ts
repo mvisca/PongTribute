@@ -43,8 +43,8 @@ export class AuthService {
 	/** Fetch user con email desde user service */
 	private async fetchUserByEmail(email: string): Promise<UserTypes.UserInternal | null> {
 		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-email/${email}`,
-			{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET } }
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users/by-email/${email}`,
+			{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET() } }
 		)
 		
 		if (!response.ok) {
@@ -57,8 +57,8 @@ export class AuthService {
 	/** Fetch user con id desde user service */
 	private async fetchUserById(userId: string): Promise<UserTypes.UserInternal> {
 		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/by-id/${userId}`,
-			{ headers: {'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`} }
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users/by-id/${userId}`,
+			{ headers: {'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`} }
 		);
 		
 		if (!response.ok) {
@@ -76,7 +76,7 @@ export class AuthService {
 		has2FAEnabled: boolean = false
 	): Promise<AuthTypes.LoginSuccessResponse> {
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
-		if (AuthEnv.UNIQUE_SESSION === true) {
+		if (AuthEnv.UNIQUE_SESSION() === true) {
 			await this.deleteRefreshTokensById(user.id);
 		}
 		
@@ -107,7 +107,7 @@ export class AuthService {
 			is2FAVerified: user.is2FAVerified // DUDA debería ser el argumento???  o el miembro de user...?
 		};
 
-		const accessToken = this.generateJWT(userPayload, is2FAVerified, AuthEnv.TOKEN_EXPIRY);
+		const accessToken = this.generateJWT(userPayload, is2FAVerified, AuthEnv.TOKEN_EXPIRY());
 		const refreshToken = await this.createAndStoreRefreshToken(user.id, is2FAVerified);
 
 		return { token: accessToken, refreshToken: refreshToken, user: userPayload };
@@ -128,7 +128,7 @@ export class AuthService {
 				...userPayload,
 				is2FAVerified
 			},
-			AuthEnv.JWT_SECRET,
+			AuthEnv.JWT_SECRET(),
 			{ expiresIn: expiry } as SignOptions
 		);
 	}
@@ -151,16 +151,16 @@ export class AuthService {
 		
 		//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
 		// calcula expiración usando REFRESH_TOKEN_EXPIRY (formato: "7d", "24h", etc.)
-		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY as any));
+		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY() as any));
 		
 		// almacenar record refresh token
 		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/tokens`,
+			`${AuthEnv.USER_SERVICE_URL()}/internal/tokens`,
 			{
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
+					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
 				},
 				body: JSON.stringify({
 					userId,
@@ -185,11 +185,11 @@ export class AuthService {
 	private async verifyRefreshToken(refreshTokenHash: string): Promise<AuthTypes.RefreshTokenRecord> {
 		
 		const verified = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/tokens/verify`,
+			`${AuthEnv.USER_SERVICE_URL()}/internal/tokens/verify`,
 			{
 				method: 'POST',
 				headers: { 
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET(),
 					'Content-Type': 'application/json' 
 				},
 				body: JSON.stringify({ tokenHash: refreshTokenHash })
@@ -210,10 +210,10 @@ export class AuthService {
 	
 	/** Elimina todos los refresh token del usuario */
 	private async deleteRefreshTokensById(userId: string): Promise<void> {
-		const response = await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/tokens/user/${userId}`, {
+		const response = await fetch(`${AuthEnv.USER_SERVICE_URL()}/internal/tokens/user/${userId}`, {
 			method: 'DELETE',
 			headers: {
-				'X-Service-Secret': AuthEnv.SERVICE_SECRET
+				'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 			},
 			signal: AbortSignal.timeout(5000) // DUDA explicarlo, hace falta en otros endpoints? por qué se usa aqui?
 		});
@@ -245,11 +245,11 @@ export class AuthService {
 		const body = { lastLogoutAt: new Date().toISOString() };
 		
 		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
 			{
 				method: 'PUT',
 				headers: {
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET(),
 					'Content-Type': 'application/json'
 				 },
 				body: JSON.stringify(body)
@@ -289,7 +289,7 @@ export class AuthService {
 	
 	/** Verificay parsea provisional token */
 	private verifyProvisionalToken(token: string) {
-		const payload = jwt.verify(token, AuthEnv.JWT_SECRET);
+		const payload = jwt.verify(token, AuthEnv.JWT_SECRET());
 		
 		if (typeof payload === 'string' || payload.purpose !== AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION)
 			throw new SharedErrors.UnauthorizedError('Token provisional inválido');
@@ -334,12 +334,12 @@ export class AuthService {
 			body.backupCodeHash = backupCodeHash;
 
 		const response = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/2fa-status`,
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/2fa-status`,
 			{
 				method: 'PATCH',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 				},
 				body: JSON.stringify(body)
 			}
@@ -358,11 +358,11 @@ export class AuthService {
 	
 	/** Set user online/offline status */
 	private async setUserIsOnline(userId: string, isOnline: boolean): Promise<void> {
-		const response = await fetch(`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/online-status`, {
+		const response = await fetch(`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/online-status`, {
 			method: 'PATCH',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Service-Secret': AuthEnv.SERVICE_SECRET
+				'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 			},
 			body: JSON.stringify({ isOnline })
 		});
@@ -399,12 +399,12 @@ export class AuthService {
 	): Promise<string> {
 		try {
 			const response = await fetch(
-				`${AuthEnv.IMAGE_SERVICE_URL}/internal/upload`,
+				`${AuthEnv.IMAGE_SERVICE_URL()}/internal/upload`,
 				{
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'X-Service-Secret': AuthEnv.SERVICE_SECRET
+						'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 					},
 					body: JSON.stringify({
 						base64: base64Image,
@@ -424,7 +424,7 @@ export class AuthService {
 		} catch (err) {
 			console.error('Fallo subiendo avatar: ', err);
 			// Fallback a default avatar
-			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR;
+			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
 	}
 	
@@ -439,7 +439,7 @@ export class AuthService {
 		avatar?: string
 	): Promise<AuthTypes.LoginResponse> {
 		
-		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR;
+		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		
 		// Si existe avatar, validarlo y subirlo a cloudinary
 		if (avatar && this.validateAvatar(avatar)) {
@@ -447,12 +447,12 @@ export class AuthService {
 		}
 		
 		const createUserRes = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users`,
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
 			{
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET
+					'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 				},
 				body: JSON.stringify({
 					username,
@@ -507,7 +507,7 @@ export class AuthService {
 					purpose: AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION,
 					iat: Math.floor(Date.now() / 1000)
 				},
-				AuthEnv.JWT_SECRET,
+				AuthEnv.JWT_SECRET(),
 				{ expiresIn: AuthConstants.PROVISIONAL_TOKEN_LIFETIME }
 			);
 			
@@ -567,7 +567,7 @@ export class AuthService {
 	/** Completa el proceso de login con 2FA utilizando el provisionalToken */
 	async verify2FAWithToken(provisionalToken: string, totpCode: string): Promise<AuthTypes.LoginResponse> {
 		// Verificar token provisional con user payload
-		const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET);
+		const payload = jwt.verify(provisionalToken, AuthEnv.JWT_SECRET());
 		
 		if (typeof payload === 'string' || payload.purpose !== AuthConstants.TOKEN_PURPOSE_2FA_VERIFICATION) {
 			throw new SharedErrors.UnauthorizedError('Token inválido');
@@ -611,12 +611,12 @@ export class AuthService {
 		const newPasswordHash = await bcrypt.hash(newPassword, 10);
 		
 		const updateResponse = await fetch(
-			`${AuthEnv.USER_SERVICE_URL}/internal/users/${user.id}/password`,
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${user.id}/password`,
 			{
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
-					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET}`
+					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
 				},
 				body: JSON.stringify({newPasswordHash})
 			}

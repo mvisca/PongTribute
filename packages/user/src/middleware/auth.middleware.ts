@@ -31,7 +31,7 @@ export namespace AuthMiddleware {
 		
 		try {
 			// Verificar el access token con jwt_secret
-			const payload = jwt.verify(token, UserEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
+			const payload = jwt.verify(token, UserEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 			
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			if (!isValid) 

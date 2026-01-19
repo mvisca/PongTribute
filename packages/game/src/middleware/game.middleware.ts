@@ -30,8 +30,8 @@ export class GameMiddleware {
 			// CORRECCIÓN: Usar GameEnv en lugar de process.env directo
             // GameEnv asegura que el .env se cargó y aplica valores por defecto si es necesario
             //const secret = process.env.JWT_SECRET;
-			const secret = GameEnv.JWT_SECRET; // DUDA esto ya se validó en config.ts de game al crear GameEnv? es redundante?
-			
+			const secret = GameEnv.JWT_SECRET(); // DUDA esto ya se validó en config.ts de game al crear GameEnv? es redundante?
+
             // 4. Verificamos la firma criptográfica
             // TypeScript inferirá que decoded es JWTPayload gracias al import
             const decoded = jwt.verify(token, secret) as AuthTypes.AccessTokenPayload;

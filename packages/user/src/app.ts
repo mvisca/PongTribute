@@ -49,7 +49,7 @@ export function buildApp(): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${UserEnv.PORT}`} // DUDA como se comporta esto en produccion? Se rompe? Habría que hacerl odierente?
+				{ url: `http://localhost:${UserEnv.PORT()}`} // DUDA como se comporta esto en produccion? Se rompe? Habría que hacerl odierente?
 			],
 			components: {
 				securitySchemes: {
@@ -170,7 +170,7 @@ export function buildApp(): FastifyInstance {
 		
 		return reply.status(500).send({
 			error: 'Internal server error',
-			message: UserEnv.NODE_ENV === 'production'
+			message: UserEnv.NODE_ENV() === 'production'
 			? 'Algo salió mal'
 			: (error as FastifyError).message
 		});

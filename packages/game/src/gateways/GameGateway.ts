@@ -64,9 +64,9 @@ export class GameGateway {
 			// Verificamos el token manualmente usando el Secreto Compartido.
 			//Si el token esta caducado, es falso o la firma no coincide con JWT_SECRET,
 			//lanzara una exception y cerrará la conexion.
-            const payload = jwt.verify(token, GameEnv.JWT_SECRET) as { 
-                id: string, 
-                username: string 
+            const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as {
+                id: string,
+                username: string
             };
 
 			const userId = payload.id;

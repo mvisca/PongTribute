@@ -2,21 +2,27 @@ import { FastifyInstance } from 'fastify';
 import { buildApp, redisClient } from './app.js';
 import { AuthEnv } from './config.js';
 
-let app: FastifyInstance |null = null;
+let app: FastifyInstance | null = null;
 
 async function start() {
 	try {
+		// Inicializar config
+		AuthEnv.init();
+		
+		// Construir app
 		app = buildApp();
-	} catch (err) {
-		console.log('Error al lanzar:', err);
-		process.exit(1);
-	}
 
-	try {
-		await app.listen({ port: AuthEnv.PORT, host: AuthEnv.HOST });
-		console.log(`Auth service activo en puerto ${AuthEnv.PORT}`);
+		// Arrancar el servidor
+		await app.listen({
+			port: AuthEnv.PORT(),
+			host: AuthEnv.HOST()
+		});
+
+		console.log(`Auth en ${AuthEnv.HOST()}:${AuthEnv.PORT}`);
+
 	} catch (err) {
-		app.log.error(err);
+		console.log(`ERROR:`, err instanceof Error ? err.message : err);
+		console.log('Verifica .env y si no existe ejecuta: "cp .env.example .env"');
 		process.exit(1);
 	}
 }

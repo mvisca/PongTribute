@@ -27,7 +27,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
-			avatar: data.avatar || UserEnv.CLOUDINARY_DEFAULT_AVATAR,
+			avatar: data.avatar || UserEnv.CLOUDINARY_DEFAULT_AVATAR(),
 			passwordHash: data.passwordHash,
 			isOnline: false,
 			isDeleted: false,

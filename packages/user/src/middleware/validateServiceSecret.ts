@@ -11,8 +11,8 @@ export async function validateServiceSecret(
 	reply: FastifyReply
 ) {
 	const providedSecret = request.headers['x-service-secret'];
-	
-	if (!providedSecret || providedSecret !== UserEnv.SERVICE_SECRET) {
+
+	if (!providedSecret || providedSecret !== UserEnv.SERVICE_SECRET()) {
 		return reply.status(403).send({
 			error: 'Forbidden',
 			message: 'Invalid or missing service secret'

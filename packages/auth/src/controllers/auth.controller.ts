@@ -48,7 +48,7 @@ export class AuthController {
 
 			return reply.code(200).send(result);
 		} catch(err) {
-			this.errorHandler(err, request, reply); // Este es el manejador de fastify o el propio
+			SharedErrors.handleError(err, reply);
 		} //DUDA hay que refinar el manejo centralizado de errores
 	}
 
@@ -64,7 +64,7 @@ export class AuthController {
 			return reply.code(204).send();
 			
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -84,7 +84,7 @@ export class AuthController {
 			return reply.code(200).send(result);
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -101,7 +101,7 @@ export class AuthController {
 			return reply.code(200).send(result);
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -122,7 +122,7 @@ export class AuthController {
 			return reply.code(200).send(result);
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -138,7 +138,7 @@ export class AuthController {
 			return reply.code(200).send(tokens);
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -156,7 +156,7 @@ export class AuthController {
 			return reply.code(200).send(tokens);
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -182,7 +182,7 @@ export class AuthController {
 			return reply.code(201).send(result);
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -204,7 +204,7 @@ export class AuthController {
 			return reply.code(204).send();
 
 		} catch(err) {
-			this.errorHandler(err, request, reply);
+			SharedErrors.handleError(err, reply);
 		}
 	}
 

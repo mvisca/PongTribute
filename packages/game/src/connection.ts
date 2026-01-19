@@ -13,7 +13,7 @@ let db: Database.Database | null = null;
 
 export function getDatabase(): Database.Database {
 	if (!db) {
-		const dbPath = GameEnv.serverConfig.dbPath;
+		const dbPath = GameEnv.GAME_SERVICE_DB_FULL_PATH();
 
 		// Asegurar directorio de la DB
 		const dbDir = path.dirname(dbPath);

@@ -51,60 +51,80 @@ export namespace UserEnv {
 	}
 
 	// =====================================================
-	// INICIALIZAR
+	// ESTADO PRIVADO
 	// =====================================================
 
-	const sharedEnv = SharedEnv.build();
+	let _config: ReturnType<typeof SharedEnv.build> | null = null;
 
 	// =====================================================
-	// EXPORTS PÚBLICOS - VALORES
+	// INICIALIZAR - llamar en server.ts dentro de try-catch
 	// =====================================================
 
-	export const PORT: number = sharedEnv.USER_SERVICE_PORT;
-	export const HOST: string = sharedEnv.USER_SERVICE_HOST;
+	export function init(): void {
+		if (_config)
+			return;
+		_config = SharedEnv.build(); // puede lanzar error hacia server.ts
+	}
 
-	export const NODE_ENV: string = sharedEnv.NODE_ENV;
-	export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
-
-	export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
-	export const IMAGE_SERVICE_URL: string = sharedEnv.IMAGE_SERVICE_URL;
-	export const USER_SERVICE_DB_FULL_PATH = sharedEnv.USER_SERVICE_DB_FULL_PATH;
-
-	export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
-	export const BCRYPT_ROUNDS: number = sharedEnv.BCRYPT_ROUNDS;
-
-	export const CLOUDINARY_URL: string = sharedEnv.CLOUDINARY_URL;
-	export const CLOUDINARY_API_KEY: string = sharedEnv.CLOUDINARY_API_KEY;
-	export const CLOUDINARY_API_SECRET: string = sharedEnv.CLOUDINARY_API_SECRET;
-	export const CLOUDINARY_CLOUD_NAME: string = sharedEnv.CLOUDINARY_CLOUD_NAME;
-	export const CLOUDINARY_DEFAULT_AVATAR: string = sharedEnv.CLOUDINARY_DEFAULT_AVATAR;
-
-	export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
-	export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
-	export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
-	export const REDIS_DB: number = sharedEnv.REDIS_DB;
+	// Validación interna de que se ha llamado init()
+	function cnf() {
+		if (!_config)
+			throw new Error('UserEnv.init() no llamado');
+		return _config;
+	}
 
 	// =====================================================
-	// EXPORTS PÚBLICOS - OBJETOS
+	// GETTERS
 	// =====================================================
 
-	export const serverConfig: ServiceConfig = {
-		port: PORT,
-		host: HOST,
-		nodeEnv: NODE_ENV as ServiceConfig['nodeEnv'],
-		logLevel: LOG_LEVEL as ServiceConfig['logLevel'],
-		dbPath: USER_SERVICE_DB_FULL_PATH
-	};
+	export function NODE_ENV(): string { return cnf().NODE_ENV; }
+
+	export function PORT(): number { return cnf().USER_SERVICE_PORT; }
+	export function HOST(): string { return cnf().USER_SERVICE_HOST; }
+
+	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
+
+	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
+	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
+	export function USER_SERVICE_DB_FULL_PATH(): string { return cnf().USER_SERVICE_DB_FULL_PATH; }
+
+	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
+	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
+
+	export function CLOUDINARY_URL(): string { return cnf().CLOUDINARY_URL; }
+	export function CLOUDINARY_API_KEY(): string { return cnf().CLOUDINARY_API_KEY; }
+	export function CLOUDINARY_API_SECRET(): string { return cnf().CLOUDINARY_API_SECRET; }
+	export function CLOUDINARY_CLOUD_NAME(): string { return cnf().CLOUDINARY_CLOUD_NAME; }
+	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
+
+	export function REDIS_HOST(): string { return cnf().REDIS_HOST; }
+	export function REDIS_PORT(): number { return cnf().REDIS_PORT; }
+	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
+	export function REDIS_DB(): number { return cnf().REDIS_DB; }
 
 	// =====================================================
-	// EXPORTS PÚBLICOS - FUNCIONES
+	// EXPORTS - FUNCIONES HELPER
 	// =====================================================
+
+	export function serverConfig(): ServiceConfig {
+		const configValue = cnf();
+
+		return {
+			port: configValue.USER_SERVICE_PORT,
+			host: configValue.USER_SERVICE_HOST,
+			nodeEnv: configValue.NODE_ENV as ServiceConfig['nodeEnv'],
+			logLevel: configValue.LOG_LEVEL as ServiceConfig['logLevel'],
+			dbPath: configValue.USER_SERVICE_DB_FULL_PATH
+		};
+	}
 
 	export function getFastifyConfig(): FastifyConfig {
+		const configValue = cnf();
+
 		return {
 			logger: {
-				level: serverConfig.logLevel,
-				...(serverConfig.nodeEnv === 'development' && {
+				level: configValue.LOG_LEVEL,
+				...(configValue.NODE_ENV === 'development' && {
 					transport: {
 						target: 'pino-pretty',
 						options: {
@@ -126,20 +146,22 @@ export namespace UserEnv {
 	}
 
 	export function getRedisConfig(): RedisConfig {
-		const config: RedisConfig = {
-			host: REDIS_HOST,
-			port: REDIS_PORT,
-			password: REDIS_PASSWORD,
-			db: REDIS_DB,
+		const configValue = cnf();
+
+		const redisConfig: RedisConfig = {
+			host: configValue.REDIS_HOST,
+			port: configValue.REDIS_PORT,
+			password: configValue.REDIS_PASSWORD,
+			db: configValue.REDIS_DB,
 			maxRetriesPerRequest: 3,
 			connectTimeout: 10000,
 			lazyConnect: false,
 			enableReadyCheck: true
 		};
 
-		if (!validateRedisConfig(config))
+		if (!validateRedisConfig(redisConfig))
 			throw new Error('Configuración de Redis inválida');
 
-		return config;
+		return redisConfig;
 	}
 }

@@ -1,145 +1,167 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { SharedEnv, RedisConfig, validateRedisConfig, findEnvFile } from '@transcendence/shared';
+
+// =====================================================
+// CARGA DE ENTORNO
+// =====================================================
 
 // Recrear __dirname en ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import {
-	SharedEnv,
-	findEnvFile,
-	RedisConfig,
-	validateRedisConfig } from '@transcendence/shared';
+// Cargar .env explícitamente antes de build()
+const envPath = findEnvFile(__dirname);
+if (envPath) {
+	dotenv.config({ path: envPath });
+} else {
+	dotenv.config();
+}
+
+
+export namespace AuthEnv {
 	
-	// Cargar .env explícitamente antes de build()
-	const envPath = findEnvFile(__dirname);
-	if (envPath) {
-		dotenv.config({ path: envPath });
-	} else {
-		dotenv.config();
-	}
 	// =====================================================
 	// TIPOS
 	// =====================================================
-	
-	export namespace AuthEnv {
-		export interface ServiceConfig {
-			port: number;
-			host: string;
-			nodeEnv: 'development' | 'production' | 'test';
-			logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
-		}
-		
-		export interface FastifyConfig {
-			logger: {
-				level: string;
-				transport?: {
-					target: string;
-					options: {
-						colorize: boolean;
-						translateTime: string;
-						ignore: string;
-					};
-				};
-			} | boolean;
-			ajv?: {
-				customOptions?: {
-					removeAdditional?: boolean | 'all' | 'failing';
-					coerceTypes?: boolean;
-					useDefaults?: boolean;
+	export interface ServiceConfig {
+		port: number;
+		host: string;
+		nodeEnv: 'development' | 'production' | 'test';
+		logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+	}
+
+	export interface FastifyConfig {
+		logger: {
+			level: string;
+			transport?: {
+				target: string;
+				options: {
+					colorize: boolean;
+					translateTime: string;
+					ignore: string;
 				};
 			};
+		} | boolean;
+		ajv?: {
+			customOptions?: {
+				removeAdditional?: boolean | 'all' | 'failing';
+				coerceTypes?: boolean;
+				useDefaults?: boolean;
+			};
+		};
+	}
+
+	// =====================================================
+	// ESTADO PRIVADO
+	// =====================================================
+
+	let _config: ReturnType<typeof SharedEnv.build> | null = null
+
+	// =====================================================
+	// INICIALIZAR - llamar en server.ts dentro de try-catch
+	// =====================================================
+	
+	export function init():void {
+		if (_config)
+			return;
+		_config = SharedEnv.build(); // puede lanzar error hacia server.ts
+	}
+
+	// Validación internan de que se ha llamado init()
+	function cnf() {
+		if (!_config) 
+			throw new Error('AuthEnv.init() no llamado');
+		return _config;
+	}
+
+	// =====================================================
+	// GETTERS
+	// =====================================================
+
+	export function NODE_ENV(): string { return cnf().NODE_ENV; }
+	
+	export function PORT(): number { return cnf().AUTH_SERVICE_PORT; }
+	export function HOST(): string { return cnf().AUTH_SERVICE_HOST; }
+	
+	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
+	
+	export function UNIQUE_SESSION(): boolean { return cnf().UNIQUE_SESSION; }
+	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
+	export function TOKEN_EXPIRY(): number { return cnf().TOKEN_EXPIRY; }
+	export function REFRESH_TOKEN_EXPIRY(): string { return cnf().REFRESH_TOKEN_EXPIRY; }
+	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
+	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
+	
+	export function REDIS_HOST(): string { return cnf().REDIS_HOST; }
+	export function REDIS_PORT(): number { return cnf().REDIS_PORT; }
+	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
+	export function REDIS_DB(): number { return cnf().REDIS_DB; }
+	
+	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
+	export function AUTH_SERVICE_URL(): string { return cnf().AUTH_SERVICE_URL; }
+	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
+	
+	// =====================================================
+	// EXPORTS - FUNCIONES HELPER
+	// =====================================================
+	
+	export function serverConfig(): ServiceConfig {
+		const configValut = cnf();
+
+		return {
+			port: configValut.AUTH_SERVICE_PORT,
+			host: configValut.AUTH_SERVICE_HOST,
+			nodeEnv: configValut.NODE_ENV as ServiceConfig['nodeEnv'],
+			logLevel: configValut.LOG_LEVEL as ServiceConfig['logLevel'],
 		}
-		
-		// =====================================================
-		// INICIALIZAR
-		// =====================================================
-		
-		const sharedEnv = SharedEnv.build();
-		
-		// =====================================================
-		// EXPORTS PÚBLICOS - VALORES
-		// =====================================================
+	};
+	
+	export function getFastifyConfig(): FastifyConfig {
+		const configValut = cnf();
 
-		export const NODE_ENV: string = sharedEnv.NODE_ENV;
-		
-		export const PORT: number = sharedEnv.AUTH_SERVICE_PORT;
-		export const HOST: string = sharedEnv.AUTH_SERVICE_HOST;
-		
-		export const LOG_LEVEL: string = sharedEnv.LOG_LEVEL;
-		
-		export const UNIQUE_SESSION: boolean = sharedEnv.UNIQUE_SESSION;
-		export const JWT_SECRET: string = sharedEnv.JWT_SECRET;
-		export const TOKEN_EXPIRY: number = sharedEnv.TOKEN_EXPIRY;
-		export const REFRESH_TOKEN_EXPIRY: string = sharedEnv.REFRESH_TOKEN_EXPIRY;
-		export const SERVICE_SECRET: string = sharedEnv.SERVICE_SECRET;
-		export const CLOUDINARY_DEFAULT_AVATAR: string = sharedEnv.CLOUDINARY_DEFAULT_AVATAR;
+		return {
+			logger: {
+				level: configValut.LOG_LEVEL,
+				...(configValut.NODE_ENV === 'development' && {
+					transport: {
+						target: 'pino-pretty',
+						options: {
+							colorize: true,
+							translateTime: 'HH:MM:ss Z',
+							ignore: 'pid,hostname'
+						}
+					}
+				})
+			},
+			ajv: {
+				customOptions: {
+					removeAdditional: false,
+					coerceTypes: true,
+					useDefaults: true
+				}
+			}
+		};
+	}
+	
+	export function getRedisConfig(): RedisConfig {
+		const configValut = cnf();
 
-		export const REDIS_HOST: string = sharedEnv.REDIS_HOST;
-		export const REDIS_PORT: number = sharedEnv.REDIS_PORT;
-		export const REDIS_PASSWORD: string = sharedEnv.REDIS_PASSWORD;
-		export const REDIS_DB: number = sharedEnv.REDIS_DB;
-
-		export const USER_SERVICE_URL: string = sharedEnv.USER_SERVICE_URL;
-		export const AUTH_SERVICE_URL: string = sharedEnv.AUTH_SERVICE_URL;
-		export const IMAGE_SERVICE_URL: string = sharedEnv.IMAGE_SERVICE_URL;
-		
-		// =====================================================
-		// EXPORTS PÚBLICOS - OBJETOS
-		// =====================================================
-		
-		export const serverConfig: ServiceConfig = {
-			port: PORT,
-			host: HOST,
-			nodeEnv: NODE_ENV as ServiceConfig['nodeEnv'],
-			logLevel: LOG_LEVEL as ServiceConfig['logLevel'],
+		const redisConfig = {
+			host: configValut.REDIS_HOST,
+			port: configValut.REDIS_PORT,
+			password: configValut.REDIS_PASSWORD,
+			db: configValut.REDIS_DB,
+			maxRetriesPerRequest: 3,
+			connectTimeout: 10000,
+			lazyConnect: false,
+			enableReadyCheck: true
 		};
 		
-		// =====================================================
-		// EXPORTS PÚBLICOS - FUNCIONES DE OBJETOS CONFIG
-		// =====================================================
+		if (!validateRedisConfig(redisConfig))
+			throw new Error('Configuración de Redis inválida');
 		
-		export function getFastifyConfig(): FastifyConfig {
-			return {
-				logger: {
-					level: serverConfig.logLevel,
-					...(serverConfig.nodeEnv === 'development' && {
-						transport: {
-							target: 'pino-pretty',
-							options: {
-								colorize: true,
-								translateTime: 'HH:MM:ss Z',
-								ignore: 'pid,hostname'
-							}
-						}
-					})
-				},
-				ajv: {
-					customOptions: {
-						removeAdditional: false,
-						coerceTypes: true,
-						useDefaults: true
-					}
-				}
-			};
-		}
-		
-		export function getRedisConfig(): RedisConfig {
-			const config = {
-				host: REDIS_HOST,
-				port: REDIS_PORT,
-				password: REDIS_PASSWORD,
-				db: REDIS_DB,
-				maxRetriesPerRequest: 3,
-				connectTimeout: 10000,
-				lazyConnect: false,
-				enableReadyCheck: true
-			};
-			
-			if (!validateRedisConfig(config))
-				throw new Error('Configuración de Redis inválida');
-			
-			return config;
-		}
+		return redisConfig;
 	}
+}

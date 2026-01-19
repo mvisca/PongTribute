@@ -50,3 +50,8 @@ Revisar comentarios // DUDA
 User nuevo. JWT payload con is2FAValidated true, no debería
 
 ratelimit en endpoint de refreshAccessToken
+
+Agregar Endpoint /auth/refresh
+
+Image - revisar flujo de update / edición de imágen
+

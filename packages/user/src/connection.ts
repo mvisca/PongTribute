@@ -35,7 +35,7 @@ function resolveDbPath(): { path: string } {
 	}
 
 	return {
-		path: UserEnv.USER_SERVICE_DB_FULL_PATH
+		path: UserEnv.USER_SERVICE_DB_FULL_PATH()
 	};
 }
 
@@ -74,13 +74,13 @@ export function getDatabase(): Database.Database {
 		} catch(err) {
 			console.error('Error incializando DB: ', err);
 			// Tip de debug: imprimimos la ruta que intentó usar
-            console.error('Ruta intentada:', UserEnv.USER_SERVICE_DB_FULL_PATH);
+            console.error('Ruta intentada:', UserEnv.USER_SERVICE_DB_FULL_PATH());
 			process.exit(1);
 		}
 		
 		
 
-		console.log('DB inicializada: ', UserEnv.USER_SERVICE_DB_FULL_PATH, '\n[ ', __filename, ' ]');
+		console.log('DB inicializada: ', UserEnv.USER_SERVICE_DB_FULL_PATH(), '\n[ ', __filename, ' ]');
 	}
 	// Si ya existe el Singleton lo retorna directamente
 	return db;
