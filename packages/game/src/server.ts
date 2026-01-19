@@ -27,7 +27,6 @@ async function start() {
 		console.log(`ERROR:`, err instanceof Error ? err.message : err);
 		console.log('Verifica .env y si no existe ejecuta: "cp .env.example .env"');
 		await gracefulShutdown('STARTUP_ERROR');
-		process.exit(1);
 	}
 }
 

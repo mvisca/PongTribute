@@ -49,7 +49,7 @@ export function buildApp(): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${UserEnv.PORT()}`} // DUDA como se comporta esto en produccion? Se rompe? Habría que hacerl odierente?
+				{ url: `http://localhost:${UserEnv.PORT()}`}
 			],
 			components: {
 				securitySchemes: {

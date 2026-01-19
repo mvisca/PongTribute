@@ -35,7 +35,7 @@ export class UserService {
 	}
 
 	/** Upload de imagen llamando a Image Service */
-	private async uploadAvatarToCloudinary( // DUDA no lo está haciendo AUTH Service
+	private async uploadAvatarToCloudinary(
 		base64Image: string,
 		oldAvatarUrl?: string
 	): Promise<string> {
@@ -51,7 +51,8 @@ export class UserService {
 					body: JSON.stringify({
 						base64: base64Image,
 						...( oldAvatarUrl && { old_avatar: oldAvatarUrl })
-					})
+					}),
+					signal: AbortSignal.timeout(5000)
 				}
 			);
 

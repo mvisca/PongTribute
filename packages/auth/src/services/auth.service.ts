@@ -45,7 +45,10 @@ export class AuthService {
 	private async fetchUserByEmail(email: string): Promise<UserTypes.UserInternal | null> {
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users/by-email/${email}`,
-			{ headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET() } }
+			{ 
+				headers:{ 'X-Service-Secret': AuthEnv.SERVICE_SECRET() },
+				signal: AbortSignal.timeout(5000)
+			}
 		)
 		
 		if (!response.ok) {
@@ -59,7 +62,10 @@ export class AuthService {
 	private async fetchUserById(userId: string): Promise<UserTypes.UserInternal> {
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users/by-id/${userId}`,
-			{ headers: {'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`} }
+			{ 
+				headers: {'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`},
+				signal: AbortSignal.timeout(5000)
+			}
 		);
 		
 		if (!response.ok) {
@@ -74,7 +80,7 @@ export class AuthService {
 	/** Completa el proceso de login generando tokens y seteando el usuario online */
 	private async completeLogin(
 		user: UserTypes.UserInternal,
-		has2FAEnabled: boolean = false
+		is2FAVerified: boolean = false
 	): Promise<AuthTypes.LoginSuccessResponse> {
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION() === true) {
@@ -85,7 +91,7 @@ export class AuthService {
 		await this.setUserIsOnline(user.id, true);
 		
 		// Crear user payload y par tokens
-		return this.generateTokenPair(user, has2FAEnabled); // por que true el is2FAVerified? debería provenir del llamador del método, puede ser con o sin...
+		return this.generateTokenPair(user, is2FAVerified);
 	}
 	
 	// VERIFICA PASSWORD
@@ -105,7 +111,7 @@ export class AuthService {
 			username: user.username,
 			email: user.email,
 			has2FAEnabled: user.has2FAEnabled,
-			is2FAVerified: user.is2FAVerified // DUDA debería ser el argumento???  o el miembro de user...?
+			is2FAVerified: is2FAVerified
 		};
 
 		const accessToken = this.generateJWT(userPayload, is2FAVerified, AuthEnv.TOKEN_EXPIRY());
@@ -168,7 +174,8 @@ export class AuthService {
 					tokenHash,
 					expiresAt,
 					is2FAVerified
-				})
+				}),
+				signal: AbortSignal.timeout(5000)
 			}
 		);
 		
@@ -199,7 +206,8 @@ export class AuthService {
 					'X-Service-Secret': AuthEnv.SERVICE_SECRET(),
 					'Content-Type': 'application/json' 
 				},
-				body: JSON.stringify({ tokenHash: refreshTokenHash }) // Este parámetro está ok así?
+				body: JSON.stringify({ tokenHash: refreshTokenHash }),
+				signal: AbortSignal.timeout(5000)
 			}
 		);
 
@@ -217,7 +225,6 @@ export class AuthService {
 				status: verified.status,
 				statusText: verified.statusText
 			});
-		// DUDA en algun caso hago estas dos comprabaciones anidadas, cual es mejor, esta lo parece
 
 		return await verified.json() as AuthTypes.RefreshTokenRecord;
 	}
@@ -231,7 +238,7 @@ export class AuthService {
 			headers: {
 				'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 			},
-			signal: AbortSignal.timeout(5000) // DUDA explicarlo, hace falta en otros endpoints? por qué se usa aqui?
+			signal: AbortSignal.timeout(5000)
 		});
 		
 		// Casos exitosos, se silencia Not Found para evitar enumeracion de sesiones
@@ -279,7 +286,8 @@ export class AuthService {
 					'X-Service-Secret': AuthEnv.SERVICE_SECRET(),
 					'Content-Type': 'application/json'
 				 },
-				body: JSON.stringify(body)
+				body: JSON.stringify(body),
+				signal: AbortSignal.timeout(5000)
 			}
 		);
 
@@ -382,7 +390,8 @@ export class AuthService {
 					'Content-Type': 'application/json',
 					'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 				},
-				body: JSON.stringify(body)
+				body: JSON.stringify(body),
+				signal: AbortSignal.timeout(5000)
 			}
 		);
 		
@@ -412,7 +421,8 @@ export class AuthService {
 				'Content-Type': 'application/json',
 				'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 			},
-			body: JSON.stringify({ isOnline })
+			body: JSON.stringify({ isOnline }),
+			signal: AbortSignal.timeout(5000)
 		});
 		
 		if (!response.ok) {
@@ -471,7 +481,8 @@ export class AuthService {
 						'Content-Type': 'application/json',
 						'X-Service-Secret': AuthEnv.SERVICE_SECRET()
 					},
-					body: JSON.stringify(payload)
+					body: JSON.stringify(payload),
+					signal: AbortSignal.timeout(5000)
 				}
 			);
 			
@@ -584,7 +595,8 @@ export class AuthService {
 					email,
 					avatar: avatarUrl,
 					password
-				})
+				}),
+				signal: AbortSignal.timeout(5000)
 			}
 		);
 		
@@ -785,7 +797,8 @@ export class AuthService {
 					'Content-Type': 'application/json',
 					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
 				},
-				body: JSON.stringify({newPasswordHash})
+				body: JSON.stringify({newPasswordHash}),
+				signal: AbortSignal.timeout(5000)
 			}
 		);
 		

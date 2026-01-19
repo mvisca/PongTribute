@@ -25,7 +25,6 @@ async function start() {
 		console.log(`ERROR:`, err instanceof Error ? err.message : err);
 		console.log('Verifica .env y si no existe ejecuta: "cp .env.example .env"');
 		await gracefulShutdown('STARTUP ERROR');
-		process.exit(1); // DUDA esta línea no tiene sentido porque ya se cierra todo en gracefull shutdown. debería gracefull shutdown devolver la aejecucion a su llamador??
 	}
 }
 
