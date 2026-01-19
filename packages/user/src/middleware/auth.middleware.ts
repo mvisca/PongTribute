@@ -26,7 +26,7 @@ export namespace AuthMiddleware {
 		}
 		
 		// Extraer eltoken
-		const token = authHeader.substring(7);
+		const token = authHeader.replace('Bearer ', '');
 		//	console.log(`Token extraido: ${token}`);
 		
 		try {

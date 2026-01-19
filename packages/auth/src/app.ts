@@ -6,7 +6,7 @@ import swaggerUI from '@fastify/swagger-ui';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { Utils } from "@transcendence/shared";
+import { SharedErrors, Utils } from "@transcendence/shared";
 import { authRoutes, AuthEnv } from './index.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -126,14 +126,11 @@ export function buildApp(): FastifyInstance {
 	app.register(authRoutes, { prefix: '/api' });
 	
 	/** Manejo global de errores. Captura cualquier error no manejado */
-	app.setErrorHandler((error, request, reply) => { // TODO Usar gestión global centrilizada de errores en App.ts de Auth y de User y de Game
-		request.log.error({
-			err: error,
-			url: request.url,
-			method: request.method
-		});
-		
-		if ((error as FastifyError).validation) {
+	app.setErrorHandler((error, request, reply) => {		
+		SharedErrors.handleError(error, reply);
+	});
+
+/*		if ((error as FastifyError).validation) {
 			return reply.status(400).send({
 				error: 'Ostras! Error de validación',
 				message: (error as FastifyError).message,
@@ -155,8 +152,9 @@ export function buildApp(): FastifyInstance {
 			message: AuthEnv.NODE_ENV() === 'production'
 			? 'Algo salió mal'
 			: (error as FastifyError).message
-		});
+		}); 
 	});
+	*/
 	
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({

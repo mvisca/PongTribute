@@ -144,6 +144,7 @@ export function buildApp(): FastifyInstance {
 
 	
 	/** Manejo global de errores. Captura cualquier error no manejado */
+	// TOO Centralizar manejo de errores
 	app.setErrorHandler((error, request, reply) => {
 		request.log.error({
 			err: error,

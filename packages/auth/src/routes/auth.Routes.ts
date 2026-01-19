@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { AuthSchemas } from "@transcendence/shared";
-import { AuthController, AuthMiddleware, AuthService } from "../index.js";
+import { AuthController, AuthMiddleware } from "../index.js";
 
 
 export const authRoutes: FastifyPluginAsync = async (app) => {
@@ -85,4 +85,4 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.updatePassword.bind(controller)
 	});
 
-} // DUDA separar rutas publicas y privadas en ficheros
+}

@@ -48,7 +48,7 @@ export namespace AuthMiddleware {
 		}
 		
 		// Extraer el token
-		const token = authHeader.substring(7);
+		const token = authHeader.replace('Bearer ', '');
 		//	console.log(`Token extraido: ${token}`);
 		
 		try {

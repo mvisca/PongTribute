@@ -18,6 +18,7 @@ export class FriendshipController {
 		return payload;
 	}
 
+	// TODO mirar la forma en que se manejan los errores, no es consistente con la centralizada
 	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
 		if (err instanceof SharedErrors.ConflictError) {
 			reply.code(409).send({ error: 'Conflict', message: err.message, field: err.field });
