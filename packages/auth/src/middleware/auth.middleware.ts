@@ -15,7 +15,7 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 		{
 			method: 'GET',
 			headers: {
-				'X-Service-Secret': AuthEnv.SERVICE_SECRET,
+				'X-Service-Secret': AuthEnv.SERVICE_SECRET(),
 				'Content-Type': 'application/json'
 			}
 		}
@@ -53,7 +53,7 @@ export namespace AuthMiddleware {
 		
 		try {
 			// Verificar el access token con el jwt_secret
-			const payload = jwt.verify(token, AuthEnv.JWT_SECRET) as AuthTypes.AccessTokenPayload;
+			const payload = jwt.verify(token, AuthEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 
 			// Validación completa
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);

@@ -44,7 +44,7 @@ export function buildApp(): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${AuthEnv.PORT}`}
+				{ url: `http://localhost:${AuthEnv.PORT()}`}
 			],
 			components: {
 				securitySchemes: {
@@ -152,7 +152,7 @@ export function buildApp(): FastifyInstance {
 		
 		return reply.status(500).send({
 			error: 'Internal server error',
-			message: AuthEnv.NODE_ENV === 'production'
+			message: AuthEnv.NODE_ENV() === 'production'
 			? 'Algo salió mal'
 			: (error as FastifyError).message
 		});

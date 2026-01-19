@@ -446,7 +446,7 @@ export class AuthService {
 			avatarUrl = await this.uploadAvatarToCloudinary(avatar);
 		}
 		
-		const createUserRes = await fetch(
+		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
 			{
 				method: 'POST',
@@ -464,17 +464,18 @@ export class AuthService {
 		);
 		
 		// Manejo de errores
-		if (!createUserRes.ok) {
-			const errorData = await createUserRes.json();
+		if (!response.ok) {
+			const errorData = await response.json();
 			
-			if (createUserRes.status === 409 && SharedErrors.isConflictError(errorData)) {
+			if (response.status === 409) {
+				const error = errorData as any;
 				throw new SharedErrors.ConflictError(
-					errorData.message,
-					errorData.field
+					error.message || 'Email/Username ya existe',
+					error.field || 'email/username'
 				);
 			}
 			
-			throw new Error(`User creation failed: ${createUserRes.status}`)
+			throw new Error(`User creation failed: ${response.status}`)
 		}
 		
 		// Login automático
