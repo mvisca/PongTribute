@@ -11,7 +11,12 @@ export class TokenService {
 
 	async createToken(data: AuthTypes.RefreshTokenData): Promise<AuthTypes.RefreshTokenRecord> {
 		if (new Date(data.expiresAt).getTime() < Date.now())
-			throw new Error(`Fecha de expiración inválida`);
+			throw new SharedErrors.ValidationError(`Fecha de expiración inválida`, 'expiresAt', {
+				provided: data.expiresAt,
+				now: new Date().toISOString(),
+				operation: 'createToken',
+				userId: data.userId
+			});
 
 		return await this.tokenRepo.createToken(data);
 	}
@@ -20,7 +25,11 @@ export class TokenService {
 		const token = await this.tokenRepo.findByTokenHash(tokenHashObj.tokenHash);
 
 		if (!token) {
-			throw new SharedErrors.UnauthorizedError('No autorizado');
+			throw new SharedErrors.UnauthorizedError('No autorizado', {
+				operation: 'verifyToken',
+				tokenNotFound: true,
+				hashedToken: tokenHashObj.tokenHash.substring(0, 10) + '...'
+			});
 		}
 
 		return token;

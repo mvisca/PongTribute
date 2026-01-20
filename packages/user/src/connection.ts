@@ -33,6 +33,7 @@ export function getDatabase(): Database.Database {
 		// Con esto se activa ON DELETE CASCADE
 		db.pragma('foreign_keys = ON');
 		
+		db.pragma('busy_timeout = 5000');
 		// Lee archivos SQL con tablas e indexes en formato utf-8
 		// Se separan tablas de codigo, más mantenible
 		// Idempotencia = CREATE TABLE IF NOT EXISTS

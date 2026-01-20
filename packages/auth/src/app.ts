@@ -129,32 +129,6 @@ export function buildApp(): FastifyInstance {
 	app.setErrorHandler((error, request, reply) => {		
 		SharedErrors.handleError(error, reply);
 	});
-
-/*		if ((error as FastifyError).validation) {
-			return reply.status(400).send({
-				error: 'Ostras! Error de validación',
-				message: (error as FastifyError).message,
-				details: (error as FastifyError).validation
-			})
-		}
-		
-		const statusCode = (error as FastifyError).statusCode; 
-		// TODO arreglar este apanyo causado por type asertion para resolver conflicto de tipo Fastify Error
-		if (statusCode) {
-			return reply.status(statusCode).send({
-				error: (error as FastifyError).name,
-				message: (error as FastifyError).message
-			})
-		}
-		
-		return reply.status(500).send({
-			error: 'Internal server error',
-			message: AuthEnv.NODE_ENV() === 'production'
-			? 'Algo salió mal'
-			: (error as FastifyError).message
-		}); 
-	});
-	*/
 	
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({

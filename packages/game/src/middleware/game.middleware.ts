@@ -23,7 +23,12 @@ export class GameMiddleware {
             // 1. Verificamos que venga el header
             if (!authHeader || !authHeader.startsWith('Bearer ')) {
                 console.error("🔥 Authorization token faltante");
-				throw new SharedErrors.UnauthorizedError('Authorizarion token faltante')
+				throw new SharedErrors.UnauthorizedError('Authorizarion token faltante', {
+					hasBearerPrefix: authHeader?.startsWith('Bearer '),
+					headerPresent: !!authHeader,
+					operation: 'validateJWT',
+					service: 'game'
+				})
             }
 
             // 2. Limpiamos el prefijo 'Bearer '
@@ -47,7 +52,11 @@ export class GameMiddleware {
 			// Incorporar aquí toda la validación de LastLogoutAt...
         } catch (error) {
             console.error("⚠️ Token inválido en Game:", error);
-			throw new SharedErrors.UnauthorizedError('Invalid token');
+			throw new SharedErrors.UnauthorizedError('Invalid token', {
+				operation: 'validateJWT',
+				service: 'game',
+				errorType: error instanceof Error ? error.constructor.name : typeof error
+			});
         }
     }
 }

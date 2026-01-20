@@ -13,22 +13,29 @@ export class UserService {
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;
 
-		// Validar base64
-		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-		if (!base64Regex.test(avatar)) return false;
+		// Validar formato y extraer base64
+		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
+		const match = avatar.match(base64Regex);
+		if (!match) return false;
+		
+		const [, mimeType, base64Data] = match;
+		
+		// Validar que base64 sea válido
+		try {
+			Buffer.from(base64Data, 'base64');
+		} catch (e) {
+			return false;  // Base64 inválido
+		}
 
-		// Validar tamaño
-		const base64Data = avatar.split(',')[1];
-		if (!base64Data) return false;
-
-		const sizeInBytes = (base64Data.length * 3) / 4; // Aproximación base64
+		// Validar tamaño (exacto, no aproximado)
+		const sizeInBytes = Buffer.from(base64Data, 'base64').length;
 		const maxSizeBytes = 10 * 1024 * 1024; // 10MB
 
 		return sizeInBytes <= maxSizeBytes;
 	}
 
 	/** Upload de imagen llamando a Image Service */
-	private async uploadAvatarToCloudinary( // DUDA no lo está haciendo AUTH Service
+	private async uploadAvatarToCloudinary(
 		base64Image: string,
 		oldAvatarUrl?: string
 	): Promise<string> {
@@ -44,18 +51,71 @@ export class UserService {
 					body: JSON.stringify({
 						base64: base64Image,
 						...( oldAvatarUrl && { old_avatar: oldAvatarUrl })
-					})
+					}),
+					signal: AbortSignal.timeout(5000)
 				}
 			);
 
 			if (!response.ok) {
-				const error = await response.json() as { message: string }; // TODO tipar adecuadamente
-				throw new Error(`Image service error: ${error?.message || response.statusText}`);
+				const error = await response.json().catch(() => ({ message: 'Unknown error' })) as any;
+				const errorMessage = error?.message || error?.error || response.statusText;
+				throw new SharedErrors.ServiceError('image', `Fallo subiendo avatar a Cloudinary`, {
+					endpoint: `${UserEnv.IMAGE_SERVICE_URL()}/internal/upload`,
+					method: 'POST',
+					status: response.status,
+					statusText: response.statusText,
+					errorMessage
+				});
 			}
 
 			const data = await response.json() as { url: string };
+			
+			// Validar que URL sea válida
+			if (!data.url || typeof data.url !== 'string') {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL inválida',
+					'url',
+					{ 
+						received: typeof data.url, 
+						expected: 'string',
+						operation: 'uploadAvatarToCloudinary'
+					}
+				);
+			}
+			
+			// Validar que sea URL válida
+			try {
+				new URL(data.url);
+			} catch (e) {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL con formato inválido',
+					'url',
+					{ 
+						receivedUrl: data.url, 
+						operation: 'uploadAvatarToCloudinary',
+						error: (e as Error).message
+					}
+				);
+			}
+
+			// Validar que sea de Cloudinary
+			if (!data.url.startsWith('https://res.cloudinary.com/')) {
+				throw new SharedErrors.ValidationError(
+					'Image Service retornó URL no de Cloudinary',
+					'url',
+					{ 
+						receivedUrl: data.url, 
+						operation: 'uploadAvatarToCloudinary',
+						expectedDomain: 'https://res.cloudinary.com/'
+					}
+				);
+			}
+
 			return data.url;
 		} catch (err) {
+			if (err instanceof SharedErrors.ValidationError || err instanceof SharedErrors.ServiceError || err instanceof SharedErrors.ConflictError || err instanceof SharedErrors.NotFoundError) {
+				throw err;
+			}
 			console.error('Fallo subiendo avatar: ', err);
 			// Mantener avatar actual si falla (diferente de Auth Service)
 			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR();
@@ -70,10 +130,16 @@ export class UserService {
 		]);
 
 		if (emailTaken)
-			throw new SharedErrors.ConflictError('El email ya está en uso', 'email');
+			throw new SharedErrors.ConflictError('El email ya está en uso', 'email', {
+				operation: 'createUser',
+				attemptedEmail: data.email
+			});
 
 		if (usernameTaken)
-			throw new SharedErrors.ConflictError('El username ya está en uso', 'username');
+			throw new SharedErrors.ConflictError('El username ya está en uso', 'username', {
+				operation: 'createUser',
+				attemptedUsername: data.username
+			});
 
 		const { password, ...rest } = data;
 		const passwordHash = await bcrypt.hash(password, UserEnv.BCRYPT_ROUNDS());
@@ -95,7 +161,11 @@ export class UserService {
 
 		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('El usuario no existe', 'user');
+			throw new SharedErrors.NotFoundError('El usuario no existe', 'user', {
+				userId: id,
+				operation: 'updateUser',
+				isDeleted: user?.isDeleted
+			});
 
 		// Si hay avatar nuevo en formato base64, procesarlo
 		if (data.avatar && data.avatar.startsWith('data:image/')) {
@@ -114,14 +184,22 @@ export class UserService {
 		if (data.email && data.email !== user.email) {
 			const isEmailTaken = await this.userRepo.isEmailTaken(data.email);
 			if (isEmailTaken)
-				throw new SharedErrors.ConflictError('El email ya está en uso', 'email');
+				throw new SharedErrors.ConflictError('El email ya está en uso', 'email', {
+					operation: 'updateUser',
+					userId: id,
+					attemptedEmail: data.email
+				});
 		}
 
 		// DUDA es esta condicion suficiente para que el user pueda modificar el uso de mayusculas en su propio nombre
 		if (data.username && data.username.toLowerCase() !== user.username.toLowerCase()) {
 			const isUsernameTaken = await this.userRepo.isUsernameTaken(data.username);
 			if (isUsernameTaken)
-				throw new SharedErrors.ConflictError('El username ya está en uso', 'username');
+				throw new SharedErrors.ConflictError('El username ya está en uso', 'username', {
+					operation: 'updateUser',
+					userId: id,
+					attemptedUsername: data.username
+				});
 		}
 
 		return await this.userRepo.update(id, data);
@@ -164,24 +242,40 @@ export class UserService {
 	async findUserById(id: string): Promise<UserTypes.UserPublic> {
 		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				userId: id,
+				operation: 'findUserById',
+				notFound: !user,
+				isDeleted: user?.isDeleted
+			});
 		return UserMapper.internalToResponse(user);
 	}
 
 	async findUserByUsername(username: string): Promise<UserTypes.UserPublic> {
 		const user = await this.userRepo.findUserByUsername(username);
 		if (!user)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				attemptedUsername: username,
+				operation: 'findUserByUsername'
+			});
 		const userComplete = await this.userRepo.findUserByIdInternal(user.id);
 		if (!userComplete || userComplete.isDeleted)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				userId: user.id,
+				operation: 'findUserByUsername',
+				isDeleted: userComplete?.isDeleted
+			});
 		return user;
 	}
 
 	async findUserByEmail(email: string): Promise<UserTypes.UserPublic> {
 		const user = await this.userRepo.findUserByEmailInternal(email);
 		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				attemptedEmail: email,
+				operation: 'findUserByEmail',
+				isDeleted: user?.isDeleted
+			});
 
 		const publicUser = UserMapper.internalToResponse(user);
 		return publicUser;
@@ -190,7 +284,10 @@ export class UserService {
 	async getLastLogoutAt(userId: string): Promise<number> {
 		const response = await this.userRepo.getLastLogoutAt(userId);
 		if (response === null)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				userId,
+				operation: 'getLastLogoutAt'
+			});
 
 		return response;
 	}
@@ -206,14 +303,22 @@ export class UserService {
 	async findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal> {
 		const user = await this.userRepo.findUserByEmailInternal(email);
 		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				attemptedEmail: email,
+				operation: 'findUserByEmailInternal',
+				isDeleted: user?.isDeleted
+			});
 		return user;
 	}
 
 	async findUserByIdInternal(id: string): Promise<UserTypes.UserInternal> {
 		const user = await this.userRepo.findUserByIdInternal(id);
 		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('User not found', 'user');
+			throw new SharedErrors.NotFoundError('User not found', 'user', {
+				userId: id,
+				operation: 'findUserByIdInternal',
+				isDeleted: user?.isDeleted
+			});
 		return user;
 	}
 }

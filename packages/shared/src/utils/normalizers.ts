@@ -30,9 +30,29 @@ export class UserNormalizer {
 	}
 	
 	/**
-	* Normaliza el avatar, solo trim
+	* Normaliza el avatar y valida URL
 	*/
-	static avatar(avatar: string): string {
-		return avatar.trim();
+	static avatar(value?: string | null): string | undefined {
+		if (!value) return undefined;
+		if (typeof value !== 'string') return undefined;
+
+		const trimmed = value.trim();
+		if (trimmed === '') return undefined;
+
+		// Validar que sea URL válida
+		try {
+			new URL(trimmed);
+		} catch {
+			console.warn(`[UserNormalizer] Avatar URL inválida: ${trimmed}`);
+			return undefined;
+		}
+
+		// Validar que sea de Cloudinary
+		if (!trimmed.startsWith('https://res.cloudinary.com/')) {
+			console.warn(`[UserNormalizer] Avatar URL no es de Cloudinary: ${trimmed}`);
+			return undefined;
+		}
+
+		return trimmed;
 	}
 }
