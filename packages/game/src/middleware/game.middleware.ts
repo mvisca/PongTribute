@@ -1,6 +1,9 @@
 // /* EXPLICACIÓN:
-// 1. import { JWT_SECRET } from "../config.js": Importamos el secreto desde la config local que acabamos de crear.
-// 2. request.user = payload: Inyectamos los datos del usuario en la request (necesario declarar el tipo en Fastify o usar any temporalmente si no tienes types definition).
+// 1. import { JWT_SECRET } from "../config.js": Importamos el secreto
+//  desde la config local que acabamos de crear.
+// 2. request.user = payload: Inyectamos los datos del usuario en la 
+// request (necesario declarar el tipo en Fastify o usar any 
+// temporalmente si no tienes types definition).
 // */
 
 import { FastifyRequest, FastifyReply } from 'fastify';

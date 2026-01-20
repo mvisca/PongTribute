@@ -181,10 +181,10 @@ export class GameService {
                 return;
             }
             
-            if (session.gameState.status === 'PAUSED') {
-                 this.broadcastState(session);
-                 return;
-            }
+//            if (session.gameState.status === 'PAUSED') {
+//                 this.broadcastState(session);
+//                 return;
+//            }
 
             this.updatePhysics(session);
 
@@ -224,8 +224,11 @@ export class GameService {
                 ball.x = player2.x - r - 1;
         }
 
+		//================OJO=============
         const WIN_SCORE = 6; //OJO esto seria mejor manejarlo desde constants. Creo.
-
+		// No puede ignorar el target_score de la DB. Seria mejor
+		// usar session.targetScore obtenido de la partida en DB
+		
         // 3. PUNTUACION
         if (ball.x < 0) {
             session.gameState.player2.score++;
@@ -338,6 +341,10 @@ export class GameService {
             return;
         }
 
+		//VALIDACION DE INPUTS. SEGURIDAD.
+		// Si el userId no coincide con ninguno de los jugadores
+		//  de la sesión, aborto la ejecución silenciosamente.
+
         // Si ya tenemos los IDs en la sesión, NO hace falta ir a DB.
         // Optimizamos usando la caché de sesión.
         let playerPaddle = null;
@@ -359,12 +366,13 @@ export class GameService {
             case 'MOVE_DOWN':
                 playerPaddle.y = Math.min(height - paddleHeight, playerPaddle.y + GAME_CONSTANTS.PADDLE_SPEED);
                 break;
-            case 'PAUSE_TOGGLE':
-                this.togglePause(session);
-                break;
+            //case 'PAUSE_TOGGLE':
+            //    this.togglePause(session);
+            //    break;
         }
     }
 
+/*
     private togglePause(session: GameSession) {
         if (session.gameState.status === 'PLAYING') {
             session.gameState.status = 'PAUSED';
@@ -372,4 +380,6 @@ export class GameService {
             session.gameState.status = 'PLAYING';
         }
     }
+*/
+	
 }

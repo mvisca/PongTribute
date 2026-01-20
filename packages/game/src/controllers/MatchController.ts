@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MatchService } from '../services/MatchService.js';
 // Importamos el Schema (Valor) Y el Tipo
-import { MatchSchemas, AuthTypes, MatchTypes } from '@transcendence/shared';
+import { MatchSchemas, AuthTypes, MatchTypes, SharedErrors, GameMode } from '@transcendence/shared';
 
 
 /**
@@ -16,45 +16,42 @@ export class MatchController {
 
 	// INYECCIÓN DE DEPENDENCIA: Recibimos el servicio ya montado.
 	// Recibimos la instancia del servicio desde gameRoutes.
-    // Esto permite que el Controller sea agnóstico de cómo se construye el servicio.
-    constructor(matchService: MatchService) {
-        this.matchService = matchService;
-    }
+	// Esto permite que el Controller sea agnóstico de cómo se construye el servicio.
+	constructor(matchService: MatchService) {
+		this.matchService = matchService;
+	}
 
 	// ========================================================================
-    // MÉTODO CREATE MATCH (Discrimina entre partida 'private' o 'public')
-    // ========================================================================
+	// MÉTODO CREATE MATCH (Discrimina entre partida 'private' o 'public')
+	// ========================================================================
 	/**
-     * createMatch
-     * Orquesta la creación de partidas o la unión a colas de espera.
-     * * Flujo de decisión:
-     * 1. Si es PUBLIC: Llama a joinPublicQueue (Redis/Memoria).
-     * 2. Si es PRIVATE: Llama a createPrivateMatch (Base de Datos).
-     */
+	 * createMatch
+	 * Orquesta la creación de partidas (privada) o la unión a colas de espera (publica).
+	 * * Flujo de decisión:
+	 * 1. Si es PUBLIC: Llama a joinPublicQueue (Redis/Memoria).
+	 * 2. Si es PRIVATE: Llama a createPrivateMatch (Base de Datos).
+	 */
 	async createMatch(
-		//Usamos Generics aquí para que request.body ya tenga el tipo correcto
-        // sin necesidad de hacer 'as ...' dentro.
-        request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
-        reply: FastifyReply
+		request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
+		reply: FastifyReply
 	) {
 		console.log("\n--- NEW REQUEST (SECURE) ---");
-		console.log("👉 🎮 [Controller] 1. Entrando en createMatch");
+		console.log("[Controller] 1. Entrando en createMatch");
 
 		// 1. AUTENTICACIÓN
         // El casting es seguro porque el middleware 'validateJWT' ya se ejecutó.
 		const user = request.user as AuthTypes.AccessTokenPayload;
-		console.log(`👉 🎮 [Controller] User Authenticated: ${user.id}`);
+		console.log(`[Controller] User Authenticated: ${user.id}`);
 		
 		// 2. EXTRACCION DE DATOS
-		const { matchType, opponentId } = request.body;
+		const { matchType, opponentId, gameMode } = request.body;
 
-		// 3. VALIDACIÓN DE ENTRADA (Validación de Negocio Superficial)
-        // Verificamos coherencia básica antes de molestar al servicio.
+		// 3. VALIDACIÓN DE ENTRADA (Verifica coherencia basica)
 		if (matchType === 'private' && !opponentId) {
-			console.log("❌ 🎮 [Controller] Error: Private match sin opponentId");
-			return reply.status(400).send({ 
-				error: 'Bad Request', 
-				message: 'Private match requires an opponentId' 
+			console.log("❌ [Controller] Error: Private match sin opponentId");
+			return reply.status(400).send({
+				error: 'Bad Request',
+				message: 'Private match requires an opponentId'
 			});
 		}
 
@@ -64,17 +61,18 @@ export class MatchController {
 
 			if (matchType === 'public') {
 				// RAMA PÚBLICA: Gestión de Colas (Matchmaking)
-				console.log("👉 🎮 [Controller] 4. Llamando a Service.joinPublicQueue...");
-				result = await this.matchService.joinPublicQueue(user.id);
+				console.log("[Controller] 4. Llamando a Service.joinPublicQueue...");
+				// El Schema asegura que gameMode es un string válido del Enum
+				result = await this.matchService.joinPublicQueue(user.id, gameMode as GameMode);
 			} else {
 				// RAMA PRIVADA: Creación Directa (Desafío)
-				console.log("👉 🎮 [Controller] 4. Llamando a Service.createPrivateMatch...");
+				console.log("[Controller] 4. Llamando a Service.createPrivateMatch...");
 				// El opponentId! es seguro aquí por la validación del paso 3
 				result = await this.matchService.createPrivateMatch(user.id, opponentId!);
 			}
 			
 			// 5. RESPUESTA EXITOSA
-			console.log("👉 🎮 [Controller] 5. Respuesta recibida del servicio:", JSON.stringify(result).substring(0, 50) + "...");
+			console.log("[Controller] 5. Respuesta recibida del servicio:", JSON.stringify(result).substring(0, 50) + "...");
 
 			// Distinguimos códigos HTTP según lo que pasó:
 			if ('outcome' in result) {
@@ -95,118 +93,21 @@ export class MatchController {
 			return reply.status(500).send({ error: 'Unexpected state' });
 
 		} catch (error) {
-			// 6. MANEJO DE ERRORES DE NEGOCIO
-			// Transformamos errores de lógica (throw Error) en respuestas HTTP coherentes.
-			// Convertir excepciones de código (throw new Error) en códigos HTTP (400, 404, 500)
-			//  es responsabilidad EXCLUSIVA del controlador. El Servicio nunca debe retornar un 
-			// HTTP status, solo datos o errores.
-			console.error("❌ 🎮 [Controller] Error capturado:", error);
-
-			if (error instanceof Error) {
-				// 400 Bad Request: Errores imputables al usuario (ej: retarse a sí mismo)
-				if (error.message.includes('ti mismo')) {
-					return reply.status(400).send({
-						error: 'Bad Request',
-						message: error.message
-					});
-				}
-				// 404 Error: Usuario no encontrado (Not Found) - Útil para cuando consultamos User Service
-				if (error.message.includes('not found')) {
-					return reply.status(404).send({
-						error: 'Not Found',
-						message: error.message
-					});
-				}
-			}
-
-			// 500 Internal Server Error: Algo se rompió en el servidor
-			return reply.status(500).send({
-				error: 'Internal Server Error',
-				message: 'An internal error occurred processing the match'
-			});
+			SharedErrors.handleError(error, reply);
 		}
 	}
 
 
 	// ========================================================================
-    // MÉTODO ACCEPT MATCH
+	// MÉTODO ACCEPT MATCH
 	// ========================================================================
 	
-    async acceptMatch(
+	async acceptMatch(
 		//Le dice a Fastify (y a TypeScript) que req.params tendrá la forma { id: string } definida en Shared
-        req: FastifyRequest<{ Params: MatchTypes.AcceptMatchParams }>, 
-        reply: FastifyReply
-    ) {
-        console.log("👉 🎮 [Controller] Entrando en acceptMatch");
-
-        // 1. EXTRAE DATOS Y VALIDA JWT 
-		// Extrae matchId de req.params
-		const { id } = req.params;
-		// Extrae userId de req.user
-        const user = req.user as AuthTypes.AccessTokenPayload;
-
-        console.log(`User ${user.id} attempting to accept match ${id}`);
-        
-		try {
-
-            // 2. Llama a MatchService para VALIDAR si existe, si es 'pending', 
-			// si soy el invitado y entonces lo pone en 'active'
-            const match = await this.matchService.acceptMatch(user.id, id);
-
-            // 3. Respuesta Exitosa
-			// Devolvemos el objeto Match actualizado (status: 'active')
-			// El frontend usara esto para redirigir a la pantalla de juego
-            return reply.status(200).send(match);
-
-        } catch (error) {
-            // 4. Manejo de Errores (Error Mapping)
-            // Convertimos las excepciones del dominio en códigos HTTP estándar
-            console.error("❌ 🎮 [Controller] Error en acceptMatch:", error);
-
-            if (error instanceof Error) {
-                // 404 Not Found: El ID de partida no existe
-                if (error.message.includes('not found')) {
-                    return reply.status(404).send({ 
-                        error: 'Not Found', 
-                        message: error.message 
-                    });
-                }
-
-                // 403 Forbidden: Soy un usuario cotilla intentando aceptar una partida ajena
-                if (error.message.includes('not the invited player')) {
-                    return reply.status(403).send({ 
-                        error: 'Forbidden', 
-                        message: error.message 
-                    });
-                }
-
-                // 400 Bad Request: La partida ya empezó o terminó
-                if (error.message.includes('not pending')) {
-                    return reply.status(400).send({ 
-                        error: 'Bad Request', 
-                        message: error.message 
-                    });
-                }
-            }
-
-            // 500 Internal Server Error: Fallo de DB o código inesperado
-            return reply.status(500).send({ 
-                error: 'Internal Server Error', 
-                message: 'Could not accept match' 
-            });
-        }
-	}
-	
-	// ========================================================================
-    // MÉTODO REJECT MATCH
-	// ========================================================================
-	
-    async rejectMatch(
-		//Le dice a Fastify (y a TypeScript) que req.params tendrá la forma { id: string } definida en Shared
-        req: FastifyRequest<{ Params: MatchTypes.RejectMatchParams }>, 
-        reply: FastifyReply
-    ) {
-        console.log("👉 🎮 [Controller] Entrando en rejectMatch");
+		req: FastifyRequest<{ Params: MatchTypes.AcceptMatchParams }>,
+		reply: FastifyReply
+	) {
+		console.log("[Controller] Entrando en acceptMatch");
 
 		// 1. EXTRAE DATOS Y VALIDA JWT 
 		// Extrae matchId de req.params
@@ -214,56 +115,187 @@ export class MatchController {
 		// Extrae userId de req.user
         const user = req.user as AuthTypes.AccessTokenPayload;
 
-        console.log(`User ${user.id} attempting to reject match ${id}`);
+		console.log(`User ${user.id} attempting to accept match ${id}`);
         
 		try {
 
-            // 2. Llama a MatchService para VALIDAR si existe, si es 'pending', 
+			// 2. Llama a MatchService para VALIDAR si existe, si es 'pending', 
 			// si soy el invitado y entonces lo pone en 'active'
-            const match = await this.matchService.rejectMatch(user.id, id);
+			const match = await this.matchService.acceptMatch(user.id, id);
 
-            // 3. Respuesta Exitosa
+			// 3. Respuesta Exitosa
+			// Devolvemos el objeto Match actualizado (status: 'active')
+			// El frontend usara esto para redirigir a la pantalla de juego
+			return reply.status(200).send(match);
+
+		} catch (error) {
+			// 4. Manejo de Errores (Error Mapping)
+			// Convertimos las excepciones del dominio en códigos HTTP estándar
+			console.error("❌ [Controller] Error en acceptMatch:", error);
+
+			if (error instanceof Error) {
+				// 404 Not Found: El ID de partida no existe
+				if (error.message.includes('not found')) {
+					return reply.status(404).send({
+						error: 'Not Found',
+						message: error.message
+					});
+				}
+
+				// 403 Forbidden: Soy un usuario cotilla intentando aceptar una partida ajena
+				if (error.message.includes('not the invited player')) {
+					return reply.status(403).send({
+						error: 'Forbidden',
+						message: error.message
+					});
+				}
+
+				// 400 Bad Request: La partida ya empezó o terminó
+				if (error.message.includes('not pending')) {
+					return reply.status(400).send({
+						error: 'Bad Request',
+						message: error.message
+					});
+				}
+			}
+
+			// 500 Internal Server Error: Fallo de DB o código inesperado
+			return reply.status(500).send({
+				error: 'Internal Server Error',
+				message: 'Could not accept match'
+			});
+		}
+	}
+	
+	// ========================================================================
+	// MÉTODO REJECT MATCH
+	// ========================================================================
+	
+	//Rechaza invitacion a partida privada
+	async rejectMatch(
+		//Le dice a Fastify (y a TypeScript) que req.params tendrá la forma { id: string } definida en Shared
+		req: FastifyRequest<{ Params: MatchTypes.RejectMatchParams }>,
+		reply: FastifyReply
+	) {
+		console.log("[Controller] Entrando en rejectMatch");
+
+		// 1. EXTRAE DATOS Y VALIDA JWT 
+		// Extrae matchId de req.params
+		const { id } = req.params;
+		// Extrae userId de req.user
+		const user = req.user as AuthTypes.AccessTokenPayload;
+
+		console.log(`User ${user.id} attempting to reject match ${id}`);
+        
+		try {
+
+			// 2. Llama a MatchService para VALIDAR si existe, si es 'pending', 
+			// si soy el invitado y entonces lo pone en 'active'
+			const match = await this.matchService.rejectMatch(user.id, id);
+
+			// 3. Respuesta Exitosa
 			// Devolvemos el objeto Match actualizado (status: 'reject')
 			// El frontend usara esto para devolvernos a la pantalla principal
-            return reply.status(200).send(match);
+			return reply.status(200).send(match);
 
-        } catch (error) {
-            // 4. Manejo de Errores (Error Mapping)
-            // Convertimos las excepciones del dominio en códigos HTTP estándar
-            console.error("❌ 🎮 [Controller] Error en rejectMatch:", error);
+		} catch (error) {
+			// 4. Manejo de Errores (Error Mapping)
+			// Convertimos las excepciones del dominio en códigos HTTP estándar
+			console.error("❌ [Controller] Error en rejectMatch:", error);
 
-            if (error instanceof Error) {
-                // 404 Not Found: El ID de partida no existe
-                if (error.message.includes('not found')) {
-                    return reply.status(404).send({ 
-                        error: 'Not Found', 
-                        message: error.message 
-                    });
-                }
+			if (error instanceof Error) {
+				// 404 Not Found: El ID de partida no existe
+				if (error.message.includes('not found')) {
+					return reply.status(404).send({
+						error: 'Not Found',
+						message: error.message
+					});
+				}
 
-                // 403 Forbidden: Soy un usuario cotilla intentando rechazar una partida ajena
-                if (error.message.includes('not the invited player')) {
-                    return reply.status(403).send({ 
-                        error: 'Forbidden', 
-                        message: error.message 
-                    });
-                }
+				// 403 Forbidden: Soy un usuario cotilla intentando rechazar una partida ajena
+				if (error.message.includes('not the invited player')) {
+					return reply.status(403).send({
+						error: 'Forbidden',
+						message: error.message
+					});
+				}
 
-                // 400 Bad Request: La partida ya empezó o terminó
-                if (error.message.includes('not pending')) {
-                    return reply.status(400).send({ 
-                        error: 'Bad Request', 
-                        message: error.message 
-                    });
-                }
-            }
+				// 400 Bad Request: La partida ya empezó o terminó
+				if (error.message.includes('not pending')) {
+					return reply.status(400).send({
+						error: 'Bad Request',
+						message: error.message
+					});
+				}
+			}
 
-            // 500 Internal Server Error: Fallo de DB o código inesperado
-            return reply.status(500).send({ 
-                error: 'Internal Server Error', 
-                message: 'Could not reject match' 
-            });
+			// 500 Internal Server Error: Fallo de DB o código inesperado
+			return reply.status(500).send({
+				error: 'Internal Server Error',
+				message: 'Could not reject match'
+			});
+		}
+	}
+	
+	/**
+     * cancelMatch
+     * Permite al creador cancelar una invitación pendiente.
+     */
+    async cancelMatch(
+        req: FastifyRequest<{ Params: MatchTypes.CancelMatchParams }>,
+        reply: FastifyReply
+    ) {
+        const userId = req.user?.id;
+        const matchId = req.params.id;
+
+        if (!userId) {
+            return reply.status(401).send({ message: 'Unauthorized' });
         }
+
+        // Delegamos al servicio (que ya tiene la lógica de guards)
+        await this.matchService.cancelPrivateMatch(userId, matchId);
+
+		
+        // Retornamos estructura definida en Schema
+        const response: MatchTypes.CancelMatchResponse = {
+            success: true,
+            message: 'Invitation cancelled successfully'
+        };
+
+        return reply.status(200).send(response);
     }
 
+    /**
+     * leaveQueue
+     * Saca al usuario autenticado de la cola de espera pública (Redis).
+     */
+    public leaveQueue = async (
+        req: FastifyRequest, // No necesitamos Generics de Params aquí, porque no hay variables dinamicas en la URL
+        reply: FastifyReply
+    ) => {
+        console.log("[Controller] Entrando en leaveQueue");
+
+        // 1. AUTENTICACIÓN
+        const user = req.user as AuthTypes.AccessTokenPayload;
+        console.log(`User ${user.id} leaving public queue`);
+
+        try {
+            // 2. LLAMADA AL SERVICIO
+            // Solo pasamos el userId. El servicio sabe en qué key de Redis buscar.
+            await this.matchService.leavePublicQueue(user.id);
+
+            // 3. RESPUESTA EXITOSA
+			// Construimos la respuesta EXACTA que pide el LeaveQueueResponseSchema.
+			// Retorna objeto plano JSON. Fastify lo serializa y valida contra el 
+			// Schema que esta en la ruta.
+            return reply.status(200).send({
+                success: true,
+                message: 'Successfully removed from queue'
+            });
+
+        } catch (error) {
+            console.error("❌ [Controller] Error in leaveQueue:", error);
+            SharedErrors.handleError(error, reply);
+        }
+    }
 }

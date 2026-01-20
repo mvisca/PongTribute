@@ -126,7 +126,7 @@ export function buildApp(): FastifyInstance {
 	// 4. Health Check (Vital para Docker/K8s)
 	app.get('/health', async (request, reply) => {
 		return {
-			status: 'LA APP FUCNIONA OK!',
+			status: 'LA APP FUNCIONA OK!',
 			service: 'GAME SERVICE',
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime()

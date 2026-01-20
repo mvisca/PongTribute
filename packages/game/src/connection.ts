@@ -23,19 +23,21 @@ export function getDatabase(): Database.Database {
 		}
 
 		console.log(`🔌 Conectando a Game DB en: ${dbPath}`);
-		db = new Database(dbPath);
-		// Establece el mode WAL (+velocidad, solo bloquea 'escritura' vs 'escritura')
+
+		// En el constructor añado un Timeout de 5000 ms para evitar concurrencia
+		db = new Database(dbPath, {
+			timeout: 5000 // Espera hasta 5 seg para lanzar el error, si la DB esta ocupada.
+		});
+		// Optimizaciones para alto rendimiento
 		db.pragma('journal_mode = WAL');
 		// Foreing keys está off por defecto
 		// Con esto se activa ON DELETE CASCADE
 		db.pragma('foreign_keys = ON');
+		db.pragma('cache_size = -2000'); //aumenta el cache de SQLite parar reducir acceso al disco
+		db.pragma('busy_timeout = 5000'); // timeout para operar dentro de la tabla 
+		db.pragma('synchronous = NORMAL');
 
-		// TODO: para evitar problemas de bloqueo cuando haya alta concurrencia
-		// configurar un tiempo de espera (busy_timeout) para que la 
-		// aplicación "espere" unos milisegundos a que se libere el bloqueo
-		//  antes de fallar. Con 5000 ms es suficiente para que las escrituras
-		//  se pongan en cola y se ejecuten secuencialmente sin lanzar errores.
-
+		// Carga de esquemas
 		const schemasDir = path.join(__dirname, 'schemas');
 
 		if (fs.existsSync(schemasDir)) {
