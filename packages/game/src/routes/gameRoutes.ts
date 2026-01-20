@@ -28,7 +28,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     const controller = new MatchController(matchService);
     const gateway = new GameGateway(gameService);   // Inyectamos Servicio game en Gateway
 
-	// === NUEVO: INICIALIZAR SUSCRIPCIÓN REDIS ===
+	// === INICIALIZAR SUSCRIPCIÓN REDIS ===
     // Le pasamos el matchService para que pueda usarlo
     const eventSubscriber = new MatchEventSubscriber(matchService);
     await eventSubscriber.connect();

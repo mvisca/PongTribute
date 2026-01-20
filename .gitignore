@@ -151,3 +151,5 @@ status*.txt
 
 # Contracts generados
 packages/shared/contracts/*.json
+
+AUDIT*
