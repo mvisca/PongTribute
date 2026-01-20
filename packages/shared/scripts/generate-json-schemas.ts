@@ -5,7 +5,6 @@ import {
 	ImageUploadRequestSchema,
 	ImageDeleteRequestSchema,
 	ImageUploadResponseSchema } from '../src/index.js';
-import { Value } from '@sinclair/typebox/value';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,11 +13,10 @@ const OUTPUT_DIR = join(__dirname, '..', 'contracts');
 
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-// DUDA Placeholder, actualizar cuando exista image.schema.ts // VERIFICAR ESTADO DE ESTO 
 const schemas = {
-	'image-upload-request.json': Value.Create(ImageUploadRequestSchema),
-	'image-delete-request.json': Value.Create(ImageDeleteRequestSchema),
-	'image-upload-response.json': Value.Create((ImageUploadResponseSchema))
+	'image-upload-request.json': ImageUploadRequestSchema,
+	'image-delete-request.json': ImageDeleteRequestSchema,
+	'image-upload-response.json': ImageUploadResponseSchema
 };
 
 for (const [filename, schema] of Object.entries(schemas)) {

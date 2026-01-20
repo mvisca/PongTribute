@@ -8,9 +8,10 @@
 		".": "./dist/index.js"
 	},
 	"scripts": {
+		"prebuild": "tsx scripts/generate-json-schemas.ts",
 		"build": "tsc",
 		"build:schemas": "tsx scripts/generate-json-schemas.ts",
-		"test": "echo \"Aun no hay tests\""
+		"postbuild": "echo 'OK - Shared compilado y contratos generados'"
 	},
 	"devDependencies": {
 		"@types/bcryptjs": "3.0.0",
