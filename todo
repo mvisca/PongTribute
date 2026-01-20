@@ -55,3 +55,39 @@ Agregar Endpoint /auth/refresh
 
 Image - revisar flujo de update / edición de imágen
 
+
+
+PASO 2: Protección Redis (45 min)
+typescript// MatchService - Envolver TODOS los publish en try-catch
+try {
+  await redisClient.publish('game_events', JSON.stringify({...}));
+} catch (err) {
+  console.error('[MatchService] Redis publish falló:', err);
+  // NO crashear, seguir ejecución
+}
+PASO 3: Validaciones de Negocio Pendientes (1-2 horas)
+MatchService.createPrivateMatch():
+typescript// ANTES de crear match privado:
+
+// 1. Verificar amistad
+const areFriends = await this.verifyFriendship(userId, opponentId);
+if (!areFriends) {
+  throw new Error('Can only challenge friends');
+}
+
+// 2. Verificar que opponent NO está en match activo
+const opponentActiveMatch = await this.matchRepo.findActiveMatchByUserId(opponentId);
+if (opponentActiveMatch) {
+  throw new Error('Opponent is already in a match');
+}
+PASO 4: Cleanup Job para Redis Queue (1 hora)
+typescript// packages/game/src/jobs/queueCleanup.ts
+setInterval(async () => {
+  const keys = await redisClient.keys('match:queue:user:*');
+  for (const key of keys) {
+    const ttl = await redisClient.ttl(key);
+    if (ttl === -1) { // Key sin expiración
+      await redisClient.del(key);
+    }
+  }
+}, 300000); // Cada 5 minutos

@@ -10,7 +10,6 @@ import {
 	UserTypes,
 	RedisCache,
 	SharedErrors,
-	ImageUploadRequest,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
 import { redisClient } from '../app.js';

@@ -1,7 +1,11 @@
 import { fileURLToPath } from 'url';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { ImageUploadRequest, ImageDeleteRequest } from '../src/index.js';
+import {
+	ImageUploadRequestSchema,
+	ImageDeleteRequestSchema,
+	ImageUploadResponseSchema } from '../src/index.js';
+import { Value } from '@sinclair/typebox/value';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,8 +16,9 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 
 // DUDA Placeholder, actualizar cuando exista image.schema.ts // VERIFICAR ESTADO DE ESTO 
 const schemas = {
-	'image-upload-request.json': ImageUploadRequest,
-	'image-delete-request.json': ImageDeleteRequest
+	'image-upload-request.json': Value.Create(ImageUploadRequestSchema),
+	'image-delete-request.json': Value.Create(ImageDeleteRequestSchema),
+	'image-upload-response.json': Value.Create((ImageUploadResponseSchema))
 };
 
 for (const [filename, schema] of Object.entries(schemas)) {
