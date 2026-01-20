@@ -27,7 +27,7 @@ const AvatarField = Type.Optional(
 const PasswordField = Type.String({
 	minLength: 8,
 	maxLength: 32,
-	pattern: '^(?=.*[a-z])(?=.*\\d).*$',
+	pattern: '^(?=.*[a-z])(?=.*\\d)[^\\s]+$',
 });
 
 const UuidField = Type.String({

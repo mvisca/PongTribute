@@ -84,5 +84,5 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		schema: AuthSchemas.UpdatePasswordBodySchema,
 		handler: controller.updatePassword.bind(controller)
 	});
-
+	
 }

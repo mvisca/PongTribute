@@ -99,7 +99,10 @@ export namespace AuthEnv {
 	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
 	export function REDIS_DB(): number { return cnf().REDIS_DB; }
 	
-	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
+	export function USER_SERVICE_URL(): string {
+		console.log("ESTA ES USER SERVIE URL" + cnf().USER_SERVICE_URL);
+		return cnf().USER_SERVICE_URL;
+	} // DEBUGGING
 	export function AUTH_SERVICE_URL(): string { return cnf().AUTH_SERVICE_URL; }
 	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
 	

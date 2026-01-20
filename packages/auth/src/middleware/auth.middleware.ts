@@ -12,7 +12,7 @@ import { authRoutes } from "src/routes/auth.Routes.js";
  */
 const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 	const response = await fetch(
-		`${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+		`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
 		{
 			method: 'GET',
 			headers: {
@@ -27,7 +27,7 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 			// Usuario no encontrado = token inválido
 			throw new SharedErrors.NotFoundError('Usuario no encontrado', 'user', {
 				userId,
-				endpoint: `${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
 				method: 'GET',
 				status: 404,
 				operation: 'fetchLastLogoutAt'
@@ -35,7 +35,7 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 		}
 		throw new SharedErrors.ServiceError('user', `Error obteniendo lastLogoutAt`, {
 			userId,
-			endpoint: `${AuthEnv.USER_SERVICE_URL}/internal/users/${userId}/logout`,
+			endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
 			method: 'GET',
 			status: response.status,
 			statusText: response.statusText,

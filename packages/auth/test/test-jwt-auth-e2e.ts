@@ -60,7 +60,7 @@ async function loginTests(): Promise<void> {
 		
 		const userId = userLoged.user.id;
 		const response = await TestUtils.fetchWithAuth<UserTypes.UserPublic>(
-			`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
+			`${AuthEnv.USER_SERVICE_URL()}/api/users/${userId}`,
 			userLoged.token
 		);
 		results.push(test(key, 'GET by Id', 200, response.status));
@@ -76,7 +76,7 @@ async function loginTests(): Promise<void> {
 		
 		const userId = userLoged.user.id;
 		const response = await TestUtils.fetchWithAuth<UserTypes.UserPublic>(
-			`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
+			`${AuthEnv.USER_SERVICE_URL()}/api/users/${userId}`,
 			userLoged.token,
 			{
 				method: 'PUT',
@@ -146,7 +146,7 @@ async function loginTests(): Promise<void> {
 		
 		const userId = userLoged.user.id;
 		const response = await TestUtils.fetchWithAuth<void>(
-			`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}/anonymize`,
+			`${AuthEnv.USER_SERVICE_URL()}/api/users/${userId}/anonymize`,
 			userLoged.token,
 			{ method: 'PUT' }
 		);
@@ -156,7 +156,7 @@ async function loginTests(): Promise<void> {
 		if (key === 'user1') {
 			console.log('\nDELETE /api/users/:id (user1 - token válido)');
 			const delResponse = await TestUtils.fetchWithAuth<void>(
-				`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
+				`${AuthEnv.USER_SERVICE_URL()}/api/users/${userId}`,
 				userLoged.token,
 				{ method: 'DELETE' }
 			);
@@ -177,7 +177,7 @@ async function loginTests(): Promise<void> {
 		if (key === 'user2') {
 			console.log('\n🚫 DELETE /api/users/:id (user2 - token inválido)');
 			const delResponse = await TestUtils.fetchWithAuth<void>(
-				`${AuthEnv.USER_SERVICE_URL}/api/users/${userId}`,
+				`${AuthEnv.USER_SERVICE_URL()}/api/users/${userId}`,
 				`${userLoged.token}WRONG`,
 				{ method: 'DELETE' }
 			);
