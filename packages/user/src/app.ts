@@ -151,13 +151,6 @@ export function buildApp(): FastifyInstance {
 		});
 	});
 	
-	app.setNotFoundHandler((request, reply) => {
-		return reply.status(404).send({
-			error: 'Not found',
-			message: `Route ${request.method} ${request.url} no encontrada`,
-		});
-	});
-	
 	console.log('Returning App: USER');
 	return app;
 }
