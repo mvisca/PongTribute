@@ -139,13 +139,6 @@ export function buildApp(): FastifyInstance {
 	app.register(gameRoutes, { prefix: '/api' });
 	
 	// 6. Manejador de Errores Global
-		app.setNotFoundHandler((request, reply) => {
-		return reply.status(404).send({
-			error: 'Not found',
-			message: `Route ${request.method} ${request.url} no encontrada`,
-		});
-	});
-	
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
 			error: 'Not found',

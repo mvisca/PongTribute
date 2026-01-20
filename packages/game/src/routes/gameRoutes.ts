@@ -62,7 +62,8 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 		// 1. Guard: Solo usuarios logueados pueden estar en cola
 		preHandler: [GameMiddleware.validateJWT],
 		schema: {
-			tags: ['Match'],
+			tags: ['Game'],
+			description: 'Cancela la espera a una partida publica',
 			// Vinculo el Schema de Respuesta que cree en Shared
 			response: {
 				200: MatchSchemas.LeaveQueueResponseSchema
