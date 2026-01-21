@@ -39,26 +39,7 @@ const DEFAULTS = {
   LOG_LEVEL: 'info',
 
   UPSTREAM_TIMEOUT_MS: 10_000,
-  BODY_LIMIT: 10 * 1024 * 1024, // 10MB
-
-  // =========================
-  // WebSocket hardening
-  // =========================
-  // Coma-separated list. If empty, we fallback to CORS_ORIGIN.
-  WS_ALLOWED_ORIGINS: '',
-  // Max concurrent WS connections (global and per IP)
-  WS_MAX_CONNECTIONS: 500,
-  WS_MAX_CONNECTIONS_PER_IP: 50,
-  // If upstream doesn't OPEN within this time, we fail the client connection.
-  WS_UPSTREAM_OPEN_TIMEOUT_MS: 5_000,
-  // Buffer messages client->upstream until upstream is OPEN (up to limits below)
-  WS_MAX_BUFFERED_MESSAGES: 200,
-  WS_MAX_BUFFERED_BYTES: 256 * 1024, // 256KB
-  // Heartbeat (ping/pong)
-  WS_PING_INTERVAL_MS: 15_000,
-  WS_PONG_TIMEOUT_MS: 10_000,
-  // Backpressure: close if bufferedAmount grows too much
-  WS_MAX_BUFFERED_AMOUNT_BYTES: 2 * 1024 * 1024 // 2MB
+  BODY_LIMIT: 10 * 1024 * 1024 // 10MB
 } as const;
 
 /**
@@ -102,24 +83,7 @@ export const GatewayEnv = {
   LOG_LEVEL: process.env.LOG_LEVEL || DEFAULTS.LOG_LEVEL,
 
   UPSTREAM_TIMEOUT_MS: numberFromEnv('GATEWAY_TIMEOUT_MS', DEFAULTS.UPSTREAM_TIMEOUT_MS),
-  BODY_LIMIT: numberFromEnv('GATEWAY_BODY_LIMIT', DEFAULTS.BODY_LIMIT),
-
-  // WebSocket hardening
-  WS_ALLOWED_ORIGINS: stringFromEnv('GATEWAY_WS_ALLOWED_ORIGINS', DEFAULTS.WS_ALLOWED_ORIGINS),
-  WS_MAX_CONNECTIONS: numberFromEnv('GATEWAY_WS_MAX_CONNECTIONS', DEFAULTS.WS_MAX_CONNECTIONS),
-  WS_MAX_CONNECTIONS_PER_IP: numberFromEnv('GATEWAY_WS_MAX_CONNECTIONS_PER_IP', DEFAULTS.WS_MAX_CONNECTIONS_PER_IP),
-  WS_UPSTREAM_OPEN_TIMEOUT_MS: numberFromEnv(
-    'GATEWAY_WS_UPSTREAM_OPEN_TIMEOUT_MS',
-    DEFAULTS.WS_UPSTREAM_OPEN_TIMEOUT_MS
-  ),
-  WS_MAX_BUFFERED_MESSAGES: numberFromEnv('GATEWAY_WS_MAX_BUFFERED_MESSAGES', DEFAULTS.WS_MAX_BUFFERED_MESSAGES),
-  WS_MAX_BUFFERED_BYTES: numberFromEnv('GATEWAY_WS_MAX_BUFFERED_BYTES', DEFAULTS.WS_MAX_BUFFERED_BYTES),
-  WS_PING_INTERVAL_MS: numberFromEnv('GATEWAY_WS_PING_INTERVAL_MS', DEFAULTS.WS_PING_INTERVAL_MS),
-  WS_PONG_TIMEOUT_MS: numberFromEnv('GATEWAY_WS_PONG_TIMEOUT_MS', DEFAULTS.WS_PONG_TIMEOUT_MS),
-  WS_MAX_BUFFERED_AMOUNT_BYTES: numberFromEnv(
-    'GATEWAY_WS_MAX_BUFFERED_AMOUNT_BYTES',
-    DEFAULTS.WS_MAX_BUFFERED_AMOUNT_BYTES
-  )
+  BODY_LIMIT: numberFromEnv('GATEWAY_BODY_LIMIT', DEFAULTS.BODY_LIMIT)
 } as const;
 
 /**

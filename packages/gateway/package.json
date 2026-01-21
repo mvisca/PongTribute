@@ -5,24 +5,20 @@
   "main": "./dist/server.js",
   "scripts": {
     "start:dev": "tsx watch src/server.ts",
-    "build": "tsc -b",
+    "build": "tsc",
     "start": "node dist/server.js",
-    "test:ws": "tsx test/test-ws-gateway.ts",
-    "test": "pnpm test:ws"
+    "test": "node -e \"console.log('gateway: no tests')\""
   },
   "dependencies": {
     "@fastify/cors": "10.0.1",
     "@fastify/swagger": "9.4.2",
     "@fastify/swagger-ui": "5.2.3",
-    "@fastify/websocket": "^11.2.0",
     "@transcendence/shared": "workspace:*",
     "dotenv": "17.2.3",
-    "fastify": "5.6.2",
-    "ws": "^8.18.3"
+    "fastify": "5.6.2"
   },
   "devDependencies": {
     "@types/node": "24.7.2",
-    "@types/ws": "^8.18.1",
     "pino-pretty": "13.1.2",
     "tsx": "4.20.6",
     "typescript": "5.9.3"

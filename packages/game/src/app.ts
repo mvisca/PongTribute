@@ -78,6 +78,7 @@ export function buildApp(): FastifyInstance {
 	});*/
 
 	const swaggerThemeCSS = readFileSync(
+		// En runtime compilado, __dirname apunta a dist/, por eso subimos 2 niveles hasta /packages
 		join(__dirname, '../../shared/src/styles/', 'swagger-custom.css'),
 		'utf-8'
 	);

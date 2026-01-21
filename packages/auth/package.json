@@ -5,7 +5,7 @@
 	"scripts": {
 		"start:dev": "tsx watch src/server.ts",
 		"build": "tsc",
-		"start": "node dist/server.js",
+		"start": "node dist/src/server.js",
 		"test:login": "tsx ./test/test-login-service.ts",
 		"test:login-api": "tsx ./test/test-login-api.ts",
 		"test:jwt-api": "tsx ./test/test-jwt-auth-e2e.ts"
