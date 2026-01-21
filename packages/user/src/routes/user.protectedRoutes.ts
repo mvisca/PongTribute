@@ -65,19 +65,16 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 
 	app.get('/friendships', {
-		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: FriendshipSchemas.ListFriendshipsSchema,
 		handler: friendshipController.listFriendships.bind(friendshipController)
 	});
 
 	app.post('/friendships', {
-		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: FriendshipSchemas.CreateFriendshipSchema,
 		handler: friendshipController.createFriendship.bind(friendshipController)
 	});
 
 	app.patch('/friendships/:friendId', {
-		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: FriendshipSchemas.UpdateFriendshipSchema,
 		handler: friendshipController.updateFriendship.bind(friendshipController)
 	});
