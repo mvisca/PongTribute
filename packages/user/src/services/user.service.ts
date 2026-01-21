@@ -167,16 +167,23 @@ export class UserService {
 				isDeleted: user?.isDeleted
 			});
 
-		// Si hay avatar nuevo en formato base64, procesarlo
-		if (data.avatar && data.avatar.startsWith('data:image/')) {
-			if (this.validateAvatar(data.avatar)) {
-				// Subir nuevo avatar (uploadAvatarToCloudinary maneja el fallback)
-				data.avatar = await this.uploadAvatarToCloudinary(
-					data.avatar,
-					user.avatar  // Se pasa para eliminación si upload exitoso
-				);
+		if (data.avatar !== undefined) {
+			
+			if (data.avatar === '') {
+				// Si es string vacío, borrar
+				delete data.avatar;
+			
+			} else if (data.avatar.startsWith('data:image/')) {
+				// Es base64, validar formato
+				if (this.validateAvatar(data.avatar)) {
+					// Base64 válido, subir a Cloudinary
+					data.avatar = await this.uploadAvatarToCloudinary(data.avatar, user.avatar);
+				} else {
+					// Inválido, borrar
+					delete data.avatar;
+				}
 			} else {
-				// Avatar inválido - mantener el actual
+				// Es undefined, borrar
 				delete data.avatar;
 			}
 		}
@@ -191,7 +198,6 @@ export class UserService {
 				});
 		}
 
-		// DUDA es esta condicion suficiente para que el user pueda modificar el uso de mayusculas en su propio nombre
 		if (data.username && data.username.toLowerCase() !== user.username.toLowerCase()) {
 			const isUsernameTaken = await this.userRepo.isUsernameTaken(data.username);
 			if (isUsernameTaken)

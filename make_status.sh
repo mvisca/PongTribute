@@ -36,7 +36,6 @@ EXCLUDE_FILES=(
     ".DS_Store"
     "tsconfig.tsbuildinfo"
     "*.md"
-	"*.sh"
 )
 
 # Extensiones de archivos permitidas (para inclusión)
@@ -53,6 +52,7 @@ ALLOWED_EXTENSIONS=(
     "*.scss"
     "*.html"
     "*.sh"
+    "*.rb"
     "*.prisma"
     "*.env.example"
     ".gitignore"

@@ -72,6 +72,7 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 	// ============================================================================
 	// UPDATE LAST LOGOUT AT
 	// ============================================================================
+
 	app.put('/users/:id/logout', { 
 		schema: AuthSchemas.UpdateLastLogoutAtSchema,
 		handler: controller.updateLastLogoutAt.bind(controller)

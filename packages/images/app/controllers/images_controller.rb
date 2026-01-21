@@ -9,10 +9,10 @@ class ImagesController < ApplicationController
 
     result = CloudinaryService.upload_avatar(base64, old_avatar)
 
-    render json: { url: result }, status: ok
+    render json: { url: result }, status: :ok
 
   rescue => err
-    render json: { error: err.message }
+    render json: { error: err.message }, status: :internal_server_error
   end
   
   def delete

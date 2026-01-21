@@ -28,7 +28,8 @@ const PasswordHashField = Type.String({
 
 const AvatarField = Type.Optional(Type.String({
 	minLength: 1,
-	maxLength: 1024 * 1024 * 10 // max 10MB
+	maxLength: 13_300_000, // max 10MB
+	pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
 }));
 
 const UuidField = Type.String({

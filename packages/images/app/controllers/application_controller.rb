@@ -7,7 +7,7 @@ class ApplicationController < ActionController::API
 		secret = request.headers['X-Service-Secret']
 
 		unless secret == ENV['SERVICE_SECRET']
-			render json: { error: 'Unauthorized' }, status: unauthorized
+			render json: { error: 'Unauthorized' }, status: :unauthorized
 		
 		end
 	end
