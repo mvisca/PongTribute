@@ -1,4 +1,4 @@
-import Fastify, { FastifyError, FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import type { Redis } from 'ioredis';
 import swagger from '@fastify/swagger';

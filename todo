@@ -91,3 +91,6 @@ setInterval(async () => {
     }
   }
 }, 300000); // Cada 5 minutos
+
+
+rate limiting en puntos critisos, pendiente
