@@ -1,3 +1,5 @@
+// SUBSCRIPCION DEL SERVICIO GAME A LOS EVENTOS REDIS
+
 import { Redis } from 'ioredis';
 import { MatchService } from '../services/MatchService.js';
 import { REDIS_CHANNELS, REDIS_EVENTS, Utils } from '@transcendence/shared';
@@ -42,11 +44,12 @@ export class MatchEventSubscriber {
         }
     }
 
+	//OJO: de momento solo escucha un evento. REVISAR MAS ADELANTE
     private handleMessage(message: string) {
         try {
             const event = JSON.parse(message);
 
-            // Filtramos: Solo nos interesa cuando un usuario se desconecta
+            // Filtramos: Solo escucha desconexiones para limpiar colas
             if (event.type === REDIS_EVENTS.USER_DISCONNECTED && event.userId) {
                 console.log(`⚡ [MatchEventSubscriber] Disconnect detected for User: ${event.userId}`);
                 

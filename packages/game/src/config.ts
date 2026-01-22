@@ -95,6 +95,8 @@ export namespace GameEnv {
 	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
 	export function REDIS_DB(): number { return cnf().REDIS_DB; }
 
+	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
+
 	// =====================================================
 	// EXPORTS - FUNCIONES HELPER
 	// =====================================================

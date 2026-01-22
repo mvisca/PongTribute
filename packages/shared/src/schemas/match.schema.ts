@@ -17,7 +17,8 @@ export namespace MatchSchemas {
         Type.Literal("pending"),
         Type.Literal("active"),
 		Type.Literal("finished"),
-		Type.Literal("rejected")
+		Type.Literal("rejected"),
+		Type.Literal("expired")
     ]);
 
 	

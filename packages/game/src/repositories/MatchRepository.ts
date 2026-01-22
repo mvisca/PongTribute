@@ -64,6 +64,29 @@ export class MatchRepository {
     }
 
 	/**
+	 * Actualiza a 'expired' una partida privada 'pending' que no se aprobó ni rechazó..
+	 * La llama un cron si alcanza el timeout de 60 seg
+	 * @param thresholdTimestamp
+	 */
+	async expirePendingMatches(thresholdTimestamp: number): Promise<void> {
+		const stmt = this.db.prepare(`
+        	UPDATE matches
+			SET status = 'expired'
+			WHERE status = 'pending'
+			AND created_at < ?
+		`);
+		// Ejecutamos pasando el valor para sustituir el '?'
+		const info = stmt.run(thresholdTimestamp);
+
+		// Opcional: Loguea cuántas filas se afectaron para control
+		if (info.changes > 0) {
+			console.log(`[MatchRepo] Han expirado ${info.changes} invitaciones privadas.`);
+		}
+    }
+
+
+
+	/**
      * finishMatch
      * Cierra la partida con resultados finales.
      */

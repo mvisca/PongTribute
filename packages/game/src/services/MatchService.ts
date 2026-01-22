@@ -8,7 +8,7 @@ import { MatchMapper } from '../mappers/MatchMapper.js';
 // Para no romperte nada ahora, asumo que redisClient funciona.
 import { redisClient } from '../app.js'; 
 import { MatchTypes, MatchSchemas, SharedErrors, GameMode } from '@transcendence/shared';
-
+import { MatchConstants } from '@transcendence/shared';
 
 /**
  * MatchService
@@ -34,12 +34,12 @@ export class MatchService {
      */
 	async joinPublicQueue(userId: string, gameMode: GameMode): Promise<MatchTypes.JoinQueueResponse> {
 
-		// GUARD: Validación crítica de infraestructura
+		// Guard: Redis disponible?
         if (!redisClient) {
             throw new SharedErrors.ServiceError('redis', 'Redis client not available');
 		}
 		
-		// 1. Validaciones previas (igual que antes)
+		// Guard: Usuario no en partida activa?
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
 		if (activeMatch) throw new SharedErrors.ConflictError('User already has an active match');
 
@@ -48,16 +48,14 @@ export class MatchService {
 
 		console.log(`🔍 User ${userId} joining queue: ${QUEUE_KEY}`);
 
-		// 2. Intentar sacar al usuario más antiguo (ZPOPMIN es atómico)
+		// Intento sacar de la cola al usuario más antiguo (ZPOPMIN es atómico)
 		const result = await redisClient.zpopmin(QUEUE_KEY, 1);
-
-		// Parsear resultado de Redis (puede venir null o array vacío dependiendo del driver)
 		const opponentId = (result && result.length > 0) ? result[0] : null;
 
-		// CASO A: Encontramos oponente (y es un user diferente al que solicita partida)
+		// El encontrado no soy yo mismo?
 		if (opponentId && opponentId !== userId) {
 			
-			// Creamos la partida (El servicio es dueño del ID)
+			// CASO A: MATCH ENCONTRADO -> Crear partida 'active'
 			const newMatch: MatchTypes.MatchRow = {
 				id: randomUUID(),
 				status: 'active',
@@ -75,8 +73,8 @@ export class MatchService {
 			// Persistencia Bubble-Up
 			await this.matchRepo.create(newMatch);
 
-			// Notificar que se encontró partida
-            // IMPORTANTE: Avisamos a AMBOS (el que estaba esperando y el que llegó)   
+			// =============OJO: refinar codigo para que notifique sin enviar el matchid aun
+			// Notificar al oponente vía Redis Pub/Sub (match_found vs username mio)
             // Hidratamos para devolver respuesta bonita
             const matchDomain = await this.hydrateMatchPlayers(MatchMapper.toDomain(newMatch));
 
@@ -87,13 +85,10 @@ export class MatchService {
                 payload: matchDomain
             }));
 
-            return { 
-                outcome: 'match_found', 
-                match: matchDomain 
-            };
+            return { outcome: 'match_found', match: matchDomain };
 		
 		} else {
-			// CASO B: Nadie esperando. A la cola.
+			// CASO B: Nadie esperando. Añadir a la cola.
 			// Si nos sacamos a nosotros mismos, nos ignoramos
 			if (opponentId === userId) {
 			// log warning
@@ -108,10 +103,46 @@ export class MatchService {
 		}
 	}
 
-	//OJO CON ESTE METODO ??? 
-	// //Hay que poner un timeout aqui, en el Service o en el frontend (si 
-	// pasados 2 minutos de la peticion de partida publica no ha cancelado
-	//  o jugado contra el Bot, manda un request HTTP de cancelacion hacia aqui.)
+	/**
+     * Elimina usuarios que llevan más de 90 seg esperando en cola y les avisa.
+     * Cron Job: Se debe ejecutar cada 10 segundos desde server.ts
+     */
+	async pruneQueues(): Promise<void> {
+        if (!redisClient) return;
+
+		//=====TODO: Revisar porque no ve esta constante (shared/src/constants/match.constants)
+		const timeoutMs = MatchConstants.QUEUE_TIMEOUT_MS;
+		//const timeoutMs = 90000; // 2 minutos
+        const limit = Date.now() - timeoutMs;
+
+        for (const mode of Object.values(GameMode)) {
+            const queueKey = `match:queue:${mode}`;
+
+            // 1. FETCH: Obtenemos candidatos
+            const expiredUserIds = await redisClient.zrangebyscore(queueKey, '-inf', limit);
+
+            // 2. PROCESS: Iteramos uno a uno para evitar Race Conditions
+            for (const userId of expiredUserIds) {
+                // Intentamos borrar. ZREM devuelve el número de elementos borrados.
+                // Si devuelve 1, fuimos nosotros. Si devuelve 0, alguien lo sacó antes (match).
+                const removedCount = await redisClient.zrem(queueKey, userId);
+
+                if (removedCount > 0) {
+                    console.log(`⏱️ Timeout user ${userId} from ${mode}`);
+                    
+                    // Solo notificamos si confirmamos el borrado, para evitar confundir al cliente.
+                    await redisClient.publish('game_events', JSON.stringify({
+                        type: 'match.queue_timeout',
+                        targetUserId: userId,
+                        payload: {
+                            reason: 'Time limit exceeded. Please try again.'
+                        }
+                    }));
+                }
+            }
+        }
+    }
+
 
 	/**
 	 * leavePublicQueue
@@ -124,15 +155,15 @@ export class MatchService {
 
 		console.log(`🗑️ User ${userId} removing from queues`);
 
-		// Iteramos por todos los modos posibles para asegurar limpieza total
         // Object.values(GameMode) nos da ['classic', 'speed', 'retro']
         const modes = Object.values(GameMode);
         
         const promises = modes.map(mode => {
-            const key = `match:queue:${mode}`;
+			const key = `match:queue:${mode}`;
             return client.zrem(key, userId);
         });
-
+		
+		// Limpia en todos los modes para asegurar la limpieza.
         await Promise.all(promises);
     }
 	
@@ -156,7 +187,7 @@ export class MatchService {
             throw new SharedErrors.ConflictError('No puedes desafiarte a ti mismo');
         }
 
-        const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
+		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
         if (activeMatch) throw new SharedErrors.ConflictError('You are already in an active match');
         
         const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
@@ -203,9 +234,11 @@ export class MatchService {
         }
     }
 
+
 	// ========================================================================
     // MÉTODOS PRIVADOS (HELPERS)
     // ========================================================================
+
 
     /**
      * hydrateMatchPlayers
@@ -321,6 +354,20 @@ export class MatchService {
             throw new SharedErrors.ServiceError('game', 'Error rejecting match.');
 		}
     }
+
+	/**
+	 * Limpia partidas privadas que estan en 'pending' mas 
+	 * de 60 seg y las pone como 'expired' en DB. El invitado no
+	 * las rechazo ni acepto. 
+	 **/
+	async prunePrivateInvites(): Promise<void> {
+        const now = Date.now();
+        const threshold = now - MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS;
+        
+        this.matchRepo.expirePendingMatches(threshold);
+        // Opcional: Podría loguear "Limpieza de privadas ejecutada" si quiero depurar.
+    }
+
 
 	/**
      * cancelPrivateMatch

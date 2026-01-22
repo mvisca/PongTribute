@@ -1,0 +1,6 @@
+En este directorio se alojara el servicio "comunications".
+Su mision sera:
+Mantener los sockets ligeros con cada uno de los clientes que se logueen.
+Mantener una lista/mapa en tiempo real de todos los clientes conectados.
+Estar suscrito a eventos de Game y otros servicios.
+Enviarar los mensajes de los eventos (via websocket) a los clientes correspondientes.

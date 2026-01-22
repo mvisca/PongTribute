@@ -9,7 +9,7 @@
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS matches (
     id TEXT PRIMARY KEY,
-    status TEXT NOT NULL CHECK(status IN ('pending', 'active', 'finished', 'rejected')) DEFAULT 'pending',
+    status TEXT NOT NULL CHECK(status IN ('pending', 'active', 'finished', 'rejected', 'expired')) DEFAULT 'pending',
     
     -- JUGADOR 1 (Host) - Fusionamos datos de match_players aquí
     player1_id TEXT NOT NULL,
