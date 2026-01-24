@@ -562,11 +562,11 @@ export class AuthService {
 		password: string,
 		avatar?: string
 	): Promise<AuthTypes.LoginResponse> {
-		
+
 		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
-		
+
 		// Si existe avatar, validarlo y subirlo a cloudinary
-		if (avatar) {
+		if (avatar && avatar.trim() !== "") {
 			if (!this.validateAvatar(avatar)) {
 				throw new SharedErrors.ValidationError(
 					'Avatar inválido',
@@ -580,7 +580,7 @@ export class AuthService {
 			}
 			avatarUrl = await this.uploadAvatarWithFallback(avatar);
 		}
-		
+
 		// Crear usuario en User Service
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
@@ -619,6 +619,21 @@ export class AuthService {
 				);
 			}
 			
+			if (response.status === 400) {
+				const error = errorData as any;
+				throw new SharedErrors.ValidationError(
+					error.message || 'Datos de usaurio inválidos',
+					error.field || 'unknown',
+					{
+						endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users`,
+						method: 'POST',
+						status: 400,
+						attemptedUsername: username,
+						attemptedEmail: email
+					}
+				);
+			}
+
 			throw new SharedErrors.ServiceError('user', `Fallo creando usuario`, {
 				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users`,
 				method: 'POST',

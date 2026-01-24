@@ -14,14 +14,20 @@ const EmailField = Type.String({
 	format: 'email',
 });
 
-const AvatarField = Type.Optional(
-	Type.Union([
-		Type.String({ maxLength: 0 }), // Allow empty string
+const AvatarFieldBase64 = Type.Optional(
 		Type.String({
-			maxLength: 1024 * 1024 * 10, // max 10MB
+			minLength: 1,
+			maxLength: 13_300_000, // max 10MB
 			pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
 		})
-	])
+);
+
+const AvatarFieldUrl = Type.Optional(
+	Type.String({
+		format: 'uri',
+		pattern: '^https://res\\.cloudinary\\.com/',
+		maxLength: 500
+	})
 );
 
 const PasswordField = Type.String({
@@ -297,19 +303,19 @@ export namespace AuthSchemas {
 			404: NotFoundResponse
 		}
 	};
-	
+
 	// ========================================================================
 	// CREATE USER - Body y Schemas
 	// ========================================================================
-	
+
 	/** Body de POST /api/auth/register */
 	export const RegisterBody = Type.Object({
 		username: UsernameField,
 		email: EmailField,
 		password: PasswordField,
-		avatar: AvatarField
+		avatar: AvatarFieldBase64
 	});
-	
+
 	/** Schema completo de POST /api/auth/register */
 	export const RegisterBodySchema = {
 		tags: ['Auth'],
@@ -323,13 +329,13 @@ export namespace AuthSchemas {
 	// ========================================================================
 	// UPDATE PASSWORD
 	// ========================================================================
-	
+
 	/** Body de POST /auth/:id/update-password */
 	export const UpdatePasswordBody = Type.Object({
 		oldPassword: PasswordField,
 		newPassword: PasswordField
 	});
-	
+
 	/** Schema completo de POST /auth/:id/update-password */
 	export const UpdatePasswordBodySchema = {
 		tags: ['Auth'],
