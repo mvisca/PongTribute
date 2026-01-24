@@ -69,7 +69,7 @@ export class RedisCache<T> {
 	/** Elimina todas las keys con el prefix de esta instancia */
 	async clear(): Promise<number> {
 		if (!this.prefix) {
-			throw new Error('No se puede limppiar cache sin prefix (safety check)');
+			throw new Error('No se puede limpiar cache sin prefix (safety check)');
 		}
 
 		const keys = await this.client.keys(`${this.prefix}*`);

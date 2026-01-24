@@ -42,6 +42,8 @@ const DateTimeField = Type.String({
 	format: 'date-time'
 });
 
+const SecondsField = Type.Integer();
+
 const TotpSecretField = Type.String({
 	minLength: 16,
 	maxLength: 64,
@@ -129,7 +131,7 @@ export namespace UserSchemas {
 		avatar: AvatarField,
 		isOnline: Type.Boolean(),
 		has2FAEnabled: Type.Boolean(),
-		lastLogoutAt: DateTimeField,
+		lastLogoutAt: SecondsField,
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});
@@ -151,7 +153,7 @@ export namespace UserSchemas {
 		is2FAVerified: BooleanField,
 		totpSecret: Type.Optional(TotpSecretField),
 		backupCodeHash: Type.Optional(BackupCodeHashField),
-		lastLogoutAt: DateTimeField,
+		lastLogoutAt: SecondsField,
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});

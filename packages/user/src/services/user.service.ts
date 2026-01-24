@@ -229,7 +229,7 @@ export class UserService {
 		return await this.userRepo.updatePassword(id, newPasswordHash);
 	}
 
-	async updateLastLogoutAt(id: string, lastLogoutAt: string): Promise<void> {
+	async updateLastLogoutAt(id: string, lastLogoutAt: number): Promise<void> {
 		await this.userRepo.updateLastLogoutAt(id, lastLogoutAt);
 	}
 

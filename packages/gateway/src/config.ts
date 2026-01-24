@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyServerOptions } from 'fastify';
-import { findEnvFile } from '@transcendence/shared';
+import { findEnvFile, SharedErrors } from '@transcendence/shared';
 
 /**
  * Load environment variables
@@ -11,11 +11,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const envPath = findEnvFile(__dirname);
-if (envPath) {
-  dotenv.config({ path: envPath });
+if (!envPath) {
+	throw new SharedErrors.ServiceError(
+		'gateway', 
+		`CRITICAL: .env file not found`,
+		{ 'context': 'context' }
+	);
 } else {
   dotenv.config();
 }
+// TODO revisar carga del modulo en el import (top-level)
 
 /**
  * Defaults

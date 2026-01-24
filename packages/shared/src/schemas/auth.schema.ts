@@ -36,6 +36,8 @@ const UuidField = Type.String({
 
 const BooleanField = Type.Boolean();
 
+const SecondsField = Type.Integer();
+
 const SetupTokenField = Type.String({
 	minLength: 64,
 	maxLength: 64,
@@ -167,7 +169,7 @@ export namespace AuthSchemas {
 	}
 
 	export const LastLogoutAtBody = Type.Object({
-		lastLogoutAt: Type.String({ format: 'date-time' })
+		lastLogoutAt: SecondsField
 	});
 
 	export const UpdateLastLogoutAtSchema = {

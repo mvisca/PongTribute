@@ -87,6 +87,8 @@ export namespace GameEnv {
 	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
 	export function GAME_SERVICE_DB_FULL_PATH(): string { return cnf().GAME_SERVICE_DB_FULL_PATH; }
 
+	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
+
 	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
 	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
 
@@ -130,9 +132,9 @@ export namespace GameEnv {
 			},
 			ajv: {
 				customOptions: {
-					removeAdditional: false,
-					coerceTypes: true,
-					useDefaults: true
+					removeAdditional: 'all',
+					coerceTypes: false,
+					useDefaults: true // TODO propagar esta configuracion a Auth y User
 				}
 			}
 		};

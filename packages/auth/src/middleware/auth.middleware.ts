@@ -3,13 +3,12 @@ import jwt from 'jsonwebtoken';
 import { Value } from '@sinclair/typebox/value';
 import { UserTypes, AuthSchemas, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { AuthEnv } from "../config.js";
-import { authRoutes } from "src/routes/auth.Routes.js";
 
 /**
- * Obtiene el lastLogoutAt de un usuario desde el User Service
- * @returns timestamp en milisegundos
- * @throws UnauthorizedError si el usuario no existe (404)
- */
+* Obtiene el lastLogoutAt de un usuario desde el User Service
+* @returns timestamp en milisegundos
+* @throws UnauthorizedError si el usuario no existe (404)
+*/
 const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 	const response = await fetch(
 		`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
@@ -21,7 +20,7 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 			}
 		}
 	);
-
+	
 	if (!response.ok) {
 		if (response.status === 404) {
 			// Usuario no encontrado = token inválido
@@ -42,13 +41,13 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 			operation: 'fetchLastLogoutAt'
 		});
 	}
-
+	
 	const data = await response.json() as { lastLogoutAt: number };
 	return data.lastLogoutAt;
 };
 
 export namespace AuthMiddleware {
-
+	
 	export const validateJWT = async (
 		request: FastifyRequest,
 		reply: FastifyReply
@@ -62,6 +61,7 @@ export namespace AuthMiddleware {
 				hasBearerPrefix: authHeader?.startsWith('Bearer '),
 				headerPresent: !!authHeader,
 				operation: 'validateJWT',
+				service: 'auth',
 				requestId: request.id
 			});
 		}
@@ -73,39 +73,37 @@ export namespace AuthMiddleware {
 		try {
 			// Verificar el access token con el jwt_secret
 			const payload = jwt.verify(token, AuthEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
-
+			
 			// Validación completa
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			console.log('== Schema completo:', isValid);
 			if (!isValid) 
 				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
-					schemaValidation: isValid,
+				schemaValidation: isValid,
+				operation: 'validateJWT',
+				payloadKeys: Object.keys(payload),
+				requestId: request.id
+			});
+			
+			// TypeScript ahora infiere payload como AccessTokenPayload
+			const tokenIssuedAt = payload.iat!;
+			const userId = payload.id;
+			
+			// Validar lastLogoutAt
+			// Si el usuario no existe, fetchLastLogoutAt lanzará UnauthorizedError
+			const lastLogoutAt = await fetchLastLogoutAt(userId);
+			
+			if (tokenIssuedAt < lastLogoutAt) {
+				throw new SharedErrors.UnauthorizedError('Token invalidado por logout', {
+					userId,
+					tokenIssuedAt,
+					lastLogoutAt,
 					operation: 'validateJWT',
 					payloadKeys: Object.keys(payload),
 					requestId: request.id
 				});
-
-			// TypeScript ahora infiere payload como AccessTokenPayload
-			const tokenIssuedAt = payload.iat!;
-			const userId = payload.id;
-
-			// Validar lastLogoutAt
-			// Si el usuario no existe, fetchLastLogoutAt lanzará UnauthorizedError
-			const lastLogoutAt = await fetchLastLogoutAt(userId);
-
-			// Convertir lastLogoutAt de milisegundos a segundos para comparar con iat
-			const lastLogoutAtSeconds = Math.floor(lastLogoutAt / 1000);
-
-			if (tokenIssuedAt < lastLogoutAtSeconds) {
-				throw new SharedErrors.UnauthorizedError('Token invalidado por logout', {
-					userId,
-					tokenIssuedAt,
-					lastLogoutAt: lastLogoutAtSeconds,
-					operation: 'validateJWT',
-					requestId: request.id
-				});
 			}
-
+			
 			request.user = payload;
 		} catch (err) {
 			return SharedErrors.handleError(err, reply);
@@ -113,12 +111,12 @@ export namespace AuthMiddleware {
 		
 		console.log('JWT válido @ AuthMiddleware @ Auth');
 	}
-
+	
 	export const verifyOwnership = async (
 		request: FastifyRequest, // usar tipo de schema params id
 		reply: FastifyReply
 	): Promise<void> => {
-
+		
 		try {
 			if (!request.user) {
 				throw new SharedErrors.UnauthorizedError('Usuario  no autenticado', {

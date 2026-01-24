@@ -276,7 +276,7 @@ export class AuthService {
 	
 	/** Actualiza el lastLogoutAt del usuario con timestamp generado por el servicio Auth que también generar el timestamp del JWT */
 	private async updateLastLogoutAt(userId: string) { // DUDA Tipar retorno
-		const body = { lastLogoutAt: new Date().toISOString() };
+		const body = { lastLogoutAt: Math.floor(Date.now() / 1000)  };
 		
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,

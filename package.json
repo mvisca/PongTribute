@@ -10,24 +10,20 @@
 	},
 	"scripts": {
 		"preinstall": "npx only-allow pnpm",
-		
 		"build": "pnpm build:contracts && tsc --build && pnpm --filter '@transcendence/frontend' build",
 		"build:api": "pnpm build:contracts && pnpm --filter '!@transcendence/frontend' --filter '@transcendence/*' build",
 		"build:contracts": "pnpm --filter @transcendence/shared build:schemas",
 		"clean": "pnpm -r exec rm -rf dist && tsc --build --clean",
-		
 		"docker:up": "pnpm build:contracts && docker compose up -d",
 		"docker:build": "pnpm build:contracts && docker compose up --build",
 		"docker:down": "docker compose down",
 		"docker:clean": "docker compose down -v",
 		"docker:logs": "docker compose logs -f",
-		
 		"redis": "docker compose up -d redis",
 		"redis:stop": "docker compose stop redis",
 		"redis:logs": "docker compose logs -f redis",
 		"redis:cli": "docker exec -it ft_transcendence_redis redis-cli",
 		"redis:flush": "docker exec -it ft_transcendence_redis redis-cli FLUSHALL",
-		
 		"dev": "pnpm docker:up && sleep 2 && pnpm start:dev",
 		"start:dev": "pnpm --parallel --filter '@transcendence/*' start:dev",
 		"start:dev-gateway": "pnpm --filter '@transcendence/gateway' start:dev",
@@ -39,7 +35,6 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@types/ioredis": "5.0.0",
 		"@types/node": "24.7.2",
 		"typescript": "5.9.3"
 	},

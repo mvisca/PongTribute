@@ -37,7 +37,7 @@ export interface IUserRepository {
     ): Promise<UserTypes.UserPublic>;
     
 	/** Actualizar lastLogoutAt para caducar tokens de acceso*/
-	updateLastLogoutAt(userId: string, lastLogoutAt: string): Promise<void>;
+	updateLastLogoutAt(userId: string, lastLogoutAt: number): Promise<void>;
 
     // ========================================================================
     // QUERIES - Retornan null si no encuentran

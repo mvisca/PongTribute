@@ -140,6 +140,7 @@ export namespace AuthEnv {
 			},
 			ajv: {
 				customOptions: {
+					
 					removeAdditional: false,
 					coerceTypes: true,
 					useDefaults: true

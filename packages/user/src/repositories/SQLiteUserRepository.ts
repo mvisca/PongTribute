@@ -22,6 +22,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	*/
 	async create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic> {
 		const now = new Date().toISOString();
+		const nowSeconds = Math.floor(Date.now() / 1000);
 		
 		const newUser: UserTypes.UserInternal = {
 			id: data.id,
@@ -35,7 +36,7 @@ export class SQLiteUserRepository implements IUserRepository {
 			is2FAVerified: false,
 			totpSecret: undefined,
 			createdAt: now,
-			lastLogoutAt: now,
+			lastLogoutAt: nowSeconds,
 			updatedAt: now
 		};
 		
@@ -250,7 +251,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	}
 
 	/** Actualizar lastLogoutAt para caducar tokens de acceso*/
-	async updateLastLogoutAt(userId: string, lastLogoutAt: string): Promise<void> {
+	async updateLastLogoutAt(userId: string, lastLogoutAt: number): Promise<void> {
 		const last_logout_at = new Date(lastLogoutAt).getTime();
 		const now = Date.now();
 
