@@ -70,7 +70,8 @@ services:
       env_file:
         - .env
       volumes:
-        - user-db:/var/lib/app/db
+        #- user-db:/var/lib/app/db
+        - ./packages/user/db:/app/packages/user/db
       expose:
         - "3001"
       healthcheck:
@@ -94,7 +95,8 @@ services:
       env_file:
         - .env
       volumes:
-        - game-db:/var/lib/app/db
+        #- game-db:/var/lib/app/db
+        - ./packages/game/db:/app/packages/game/db
       expose:
         - "3003"
       healthcheck:

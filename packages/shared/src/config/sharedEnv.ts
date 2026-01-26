@@ -238,10 +238,10 @@ export namespace SharedEnv {
 				const __filename = fileURLToPath(import.meta.url);
 				const __dirname = path.dirname(__filename);
 				
-				return path.resolve(__dirname, '../../../../db-data');
+				return path.resolve(__dirname, '../../../../');
 			}
 			console.log('PRODUCTION environment: cargando...');
-			return '/var/lib/app/db'; // path fijo para contenedor
+			return '/app'; // path fijo para contenedor
 		};
 		
 		function safeDbDir(envPath: string, baseDir: string) {
