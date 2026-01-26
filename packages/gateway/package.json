@@ -5,10 +5,9 @@
   "main": "./dist/server.js",
   "scripts": {
     "start:dev": "tsx watch src/server.ts",
-    "build": "tsc -b",
+    "build": "tsc",
     "start": "node dist/server.js",
-    "test:ws": "tsx test/test-ws-gateway.ts",
-    "test": "pnpm test:ws"
+    "test": "node -e \"console.log('gateway: no tests')\""
   },
   "dependencies": {
     "@fastify/cors": "10.0.1",

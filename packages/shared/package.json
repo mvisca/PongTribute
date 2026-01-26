@@ -5,7 +5,10 @@
 	"type": "module",
 	"packageManager": "pnpm@10.19.0",
 	"exports": {
-		".": "./dist/index.js"
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
 	},
 	"scripts": {
 		"prebuild": "tsx scripts/generate-json-schemas.ts",

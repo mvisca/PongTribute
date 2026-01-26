@@ -52,6 +52,39 @@ Resumen detallado de todos los módulos disponibles:
 3. Consulta [technical-specs.md](./technical-specs.md) para las especificaciones técnicas
 4. Explora [modules-overview.md](./modules-overview.md) para elegir módulos
 
+## 🐳 Docker (arranque con un solo comando)
+
+### Requisitos
+- Docker + Docker Compose
+
+### Variables de entorno
+Este repo usa un `.env` **local** (ignorado por Git). Para generar uno:
+
+```bash
+cp env.docker.example .env
+```
+
+Luego reemplaza los placeholders `REPLACE_WITH_REAL_VALUE_FROM_ENV_OLD` por tus valores reales (por ejemplo desde `.env_old`).
+
+### Levantar todo
+
+```bash
+docker compose up --build -d
+```
+
+### URLs útiles
+- **App (frontend + HTTPS)**: `https://localhost/`
+- **Swagger (Gateway agregador)**: `https://localhost/docs`
+- **OpenAPI JSON (agregador)**:
+  - `https://localhost/docs/auth.json`
+  - `https://localhost/docs/user.json`
+  - `https://localhost/docs/game.json`
+- **WebSocket (Nginx -> Game)**: `wss://localhost/api/game/ws?matchId=<uuid>&token=<jwt>`
+
+### Nota sobre el certificado
+En dev, el contenedor `nginx` genera un certificado **self‑signed** si no existe uno en `packages/nginx/certs/`.
+El navegador mostrará “No es seguro”; acepta la excepción para `https://localhost`.
+
 ### Antes de elegir módulos:
 ⚠️ **IMPORTANTE**: Lee todo el subject antes de elegir módulos. Algunos módulos pueden depender de otros o entrar en conflicto.
 

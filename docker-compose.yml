@@ -2,8 +2,7 @@ services:
     redis:
       image: redis:7-alpine
       container_name: ft_transcendence_redis
-      ports:
-        - "${REDIS_PORT}:6379"
+      # Redis no necesita exponerse públicamente; se usa dentro de la red docker
       volumes:
         - redis-data:/data
       command: ["redis-server", "--appendonly", "yes", "--save", "300", "1"]
@@ -12,24 +11,114 @@ services:
         interval: 5s
         timeout: 3s
         retries: 5
+      networks:
+        - transcendence
     
+    gateway:
+      build:
+        context: .
+        dockerfile: ./packages/gateway/Dockerfile
+      container_name: ft_transcendence_gateway
+      env_file:
+        - .env
+      expose:
+        - "3000"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:3000/health > /dev/null || exit 1"]
+        interval: 10s
+        timeout: 3s
+        retries: 10
+      depends_on:
+        auth:
+          condition: service_healthy
+        user:
+          condition: service_healthy
+        game:
+          condition: service_healthy
+      networks:
+        - transcendence
+
+    auth:
+      build:
+        context: .
+        dockerfile: ./packages/auth/Dockerfile
+      container_name: ft_transcendence_auth
+      env_file:
+        - .env
+      expose:
+        - "3002"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:3002/health > /dev/null || exit 1"]
+        interval: 10s
+        timeout: 3s
+        retries: 10
+      depends_on:
+        redis:
+          condition: service_healthy
+        images:
+          condition: service_healthy
+      networks:
+        - transcendence
+
+    user:
+      build:
+        context: .
+        dockerfile: ./packages/user/Dockerfile
+      container_name: ft_transcendence_user
+      env_file:
+        - .env
+      volumes:
+        - user-db:/var/lib/app/db
+      expose:
+        - "3001"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:3001/health > /dev/null || exit 1"]
+        interval: 10s
+        timeout: 3s
+        retries: 10
+      depends_on:
+        redis:
+          condition: service_healthy
+        images:
+          condition: service_healthy
+      networks:
+        - transcendence
+
+    game:
+      build:
+        context: .
+        dockerfile: ./packages/game/Dockerfile
+      container_name: ft_transcendence_game
+      env_file:
+        - .env
+      volumes:
+        - game-db:/var/lib/app/db
+      expose:
+        - "3003"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://localhost:3003/health > /dev/null || exit 1"]
+        interval: 10s
+        timeout: 3s
+        retries: 10
+      depends_on:
+        redis:
+          condition: service_healthy
+      networks:
+        - transcendence
+
     images:
       build:
         context: ./packages/images
         dockerfile: Dockerfile
       container_name: ft_transcendence_images
-      ports:
-        - "3004:3004"
-      environment:
-        PORT: "3004"
-        CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-        CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-        CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
-        SERVICE_SECRET: ${SERVICE_SECRET}
-        RAILS_ENV: "production"
-        RAILS_LOG_TO_STDOUT: "true"
+      expose:
+        - "3004"
       env_file:
         - .env
+      environment:
+        PORT: "3004"
+        RAILS_ENV: "production"
+        RAILS_LOG_TO_STDOUT: "true"
       volumes:
         - ./packages/shared/contracts:/app/contracts:ro
       deploy:
@@ -51,8 +140,31 @@ services:
         redis:
           condition: service_healthy
 
+    nginx:
+      build:
+        context: .
+        dockerfile: ./packages/nginx/Dockerfile
+      container_name: ft_transcendence_nginx
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        # Certs persistentes para dev (autogenerados si no existen)
+        - ./packages/nginx/certs:/etc/nginx/certs
+      depends_on:
+        gateway:
+          condition: service_healthy
+        game:
+          condition: service_healthy
+      networks:
+        - transcendence
+
 volumes:
   redis-data:
+    driver: local
+  user-db:
+    driver: local
+  game-db:
     driver: local
 
 networks:

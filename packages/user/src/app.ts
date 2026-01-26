@@ -78,7 +78,8 @@ export function buildApp(): FastifyInstance {
 	/** 2. Plugins de documentacion con UI interactiva */
 	/** 2. Plugins de documentacion con UI interactiva */
 	const swaggerThemeCSS = readFileSync(
-		join(__dirname, '../../shared/src/styles/', 'swagger-custom.css'),
+		// En runtime compilado, __dirname apunta a dist/src, por eso subimos 3 niveles hasta /packages
+		join(__dirname, '../../../shared/src/styles/', 'swagger-custom.css'),
 		'utf-8'
 	);
 	

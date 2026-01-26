@@ -1,6 +1,6 @@
 import { AuthTypes, SharedErrors } from "@transcendence/shared";
-import { ITokenRepository } from "src/repositories/ITokenRepository.js";
-import { SQLiteTokenRepository } from "src/repositories/SQLiteTokenRepository.js";
+import { ITokenRepository } from "../repositories/ITokenRepository.js";
+import { SQLiteTokenRepository } from "../repositories/SQLiteTokenRepository.js";
 
 export class TokenService {
 	private tokenRepo: ITokenRepository;

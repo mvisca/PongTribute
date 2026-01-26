@@ -316,9 +316,8 @@ export namespace SharedEnv {
 			CLOUDINARY_API_SECRET: envOr(process.env.CLOUDINARY_API_SECRET, DEFAULTS.CLOUDINARY_API_SECRET, 'CLOUDINARY_API_SECRET'),
 
 			// GAME SERVICE
-			/*
 			GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL, 'GAME_SERVICE_URL'),
-			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_URL'),
+			GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_PORT'),
 			GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST, 'GAME_SERVICE_HOST'),
 			GAME_SERVICE_DB_FILENAME: envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME'),
 			GAME_SERVICE_DB_PATH: envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
@@ -327,22 +326,6 @@ export namespace SharedEnv {
 				envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
 				getBaseDir()
 			),
-			*/
-			// GAME SERVICE
-            GAME_SERVICE_URL: envOr(process.env.GAME_SERVICE_URL, DEFAULTS.GAME_SERVICE_URL, 'GAME_SERVICE_URL'),
-            GAME_SERVICE_PORT: envOr(process.env.GAME_SERVICE_PORT, DEFAULTS.GAME_SERVICE_PORT, 'GAME_SERVICE_URL'),
-            GAME_SERVICE_HOST: envOr(process.env.GAME_SERVICE_HOST, DEFAULTS.GAME_SERVICE_HOST, 'GAME_SERVICE_HOST'),
-            GAME_SERVICE_DB_FILENAME: envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME'),
-            GAME_SERVICE_DB_PATH: envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
-            
-            // --- CAMBIO AQUÍ --- para colocar db-data dentro del Servicio Game
-            // Usamos path.resolve manual para apuntar dentro de packages/game/db-data
-            // Ignoramos safeFullPath porque esa funcion fuerza a usar la carpeta root
-            GAME_SERVICE_DB_FULL_PATH: path.resolve(
-                path.dirname(fileURLToPath(import.meta.url)), // Estoy en shared/src/config
-                '../../../../packages/game/db-data',          // Subo a root y bajo a game
-                envOr(process.env.GAME_SERVICE_DB_FILENAME, DEFAULTS.GAME_SERVICE_DB_FILENAME, 'GAME_SERVICE_DB_FILENAME')
-            ),
 
 
 
@@ -388,6 +371,7 @@ export namespace SharedEnv {
 		validatePort(config.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT');
 		validatePort(config.IMAGE_SERVICE_PORT, 'IMAGE_SERVICE_PORT');
 		validatePort(config.USER_SERVICE_PORT, 'USER_SERVICE_PORT');
+		validatePort(config.GAME_SERVICE_PORT, 'GAME_SERVICE_PORT');
 		validatePort(config.FRONTEND_PORT, 'FRONTEND_PORT');
 		validatePort(config.REDIS_PORT, 'REDIS_PORT');
 		
@@ -395,6 +379,7 @@ export namespace SharedEnv {
 		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
 		validateRequired(config.IMAGE_SERVICE_URL, 'IMAGE_SERVICE_URL');
 		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
+		validateRequired(config.GAME_SERVICE_URL, 'GAME_SERVICE_URL');
 		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
 		
 		validateRequired(config.CLOUDINARY_DEFAULT_AVATAR, 'CLOUDINARY_DEFAULT_AVATAR');
