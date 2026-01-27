@@ -72,7 +72,7 @@ services:
         - .env
       volumes:
         #- user-db:/var/lib/app/db
-        - ./packages/user/db:/app/packages/user/db
+        - ${USER_SERVICE_DB_PATH}:/app/packages/user/db
       expose:
         - "3001"
       healthcheck:
@@ -97,7 +97,7 @@ services:
         - .env
       volumes:
         #- game-db:/var/lib/app/db
-        - ./packages/game/db:/app/packages/game/db
+        - ${GAME_SERVICE_DB_PATH}:/app/packages/game/db
       expose:
         - "3003"
       healthcheck:
