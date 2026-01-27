@@ -2,6 +2,7 @@ services:
     redis:
       image: redis:7-alpine
       container_name: ft_transcendence_redis
+      restart: always
       # Redis no necesita exponerse públicamente; se usa dentro de la red docker
       volumes:
         - redis-data:/data
@@ -20,6 +21,7 @@ services:
         context: .
         dockerfile: ./packages/gateway/Dockerfile
       container_name: ft_transcendence_gateway
+      restart: always
       env_file:
         - .env
       #expose:
@@ -46,6 +48,7 @@ services:
         context: .
         dockerfile: ./packages/auth/Dockerfile
       container_name: ft_transcendence_auth
+      restart: always
       env_file:
         - .env
       expose:
@@ -68,6 +71,7 @@ services:
         context: .
         dockerfile: ./packages/user/Dockerfile
       container_name: ft_transcendence_user
+      restart: always
       env_file:
         - .env
       volumes:
@@ -93,6 +97,7 @@ services:
         context: .
         dockerfile: ./packages/game/Dockerfile
       container_name: ft_transcendence_game
+      restart: always
       env_file:
         - .env
       volumes:
@@ -116,6 +121,7 @@ services:
         context: ./packages/images
         dockerfile: Dockerfile
       container_name: ft_transcendence_images
+      restart: always
       expose:
         - "3004"
       env_file:
@@ -150,6 +156,7 @@ services:
         context: .
         dockerfile: ./packages/nginx/Dockerfile
       container_name: ft_transcendence_nginx
+      restart: always
       ports:
         - "80:80"
         - "443:443"

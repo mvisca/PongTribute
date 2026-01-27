@@ -124,13 +124,35 @@ export function buildApp(): FastifyInstance {
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	});
 	
-	// 4. Health Check (Vital para Docker/K8s)
+	// 4. Health Check mejorado: verifica Redis
 	app.get('/health', async (request, reply) => {
+		const checks: Record<string, { status: string; error?: string }> = {};
+		let allHealthy = true;
+
+		// Verificar Redis
+		if (redisClient) {
+			try {
+				const redisStatus = await redisClient.ping();
+				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
+				if (redisStatus !== 'PONG') allHealthy = false;
+			} catch (error: any) {
+				checks.redis = { status: 'unreachable', error: error.message };
+				allHealthy = false;
+			}
+		} else {
+			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
+			allHealthy = false;
+		}
+
+		const statusCode = allHealthy ? 200 : 503;
+		reply.status(statusCode);
+
 		return {
-			status: 'LA APP FUNCIONA OK!',
+			status: allHealthy ? 'ok' : 'degraded',
 			service: 'GAME SERVICE',
 			timestamp: new Date().toISOString(),
-			uptime: process.uptime()
+			uptime: process.uptime(),
+			dependencies: checks
 		};
 	});
 	
