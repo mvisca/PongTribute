@@ -154,4 +154,15 @@ status*.txt
 # Contracts generados
 packages/shared/contracts/*.json
 
+# TLS/SSL Certificates (NUNCA subir certificados al repositorio)
+*.crt
+*.key
+*.pem
+*.cert
+*.csr
+packages/nginx/certs/*.crt
+packages/nginx/certs/*.key
+packages/nginx/certs/*.pem
+!packages/nginx/certs/.gitkeep
+
 AUDIT*
