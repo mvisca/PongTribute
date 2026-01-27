@@ -90,7 +90,7 @@ export class GameMiddleware {
 			const tokenIssuedAt = payload.iat!;
 			const userId = payload.id!;
 			
-			const lastLogoutAt = await this.fetchLastLogoutAt(userId);
+			const lastLogoutAt = await GameMiddleware.fetchLastLogoutAt(userId);
 			
 			if (tokenIssuedAt < lastLogoutAt) {
 				throw new SharedErrors.UnauthorizedError('Token invalidado por logout', {
@@ -99,16 +99,13 @@ export class GameMiddleware {
 					lastLogoutAt,
 					operation: 'validateJWT',
 					payloadKeys: Object.keys(payload),
-					resquestId: request.id
-
+					requestId: request.id
 				});	
 			}
 
 			// 4. Inyectamos el usuario en la request
 			// (Si shared se compiló bien, esto NO dará error)
 			request.user = payload;
-			
-			// Incorporar aquí toda la validación de LastLogoutAt...
 		} catch (error) {
 			console.error("⚠️ Token inválido en Game:", error);
 			throw new SharedErrors.UnauthorizedError('Invalid token', {
