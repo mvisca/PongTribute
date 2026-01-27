@@ -54,7 +54,8 @@ export class GameMiddleware {
 		const data = await response.json() as { lastLogoutAt: number };
 		return data.lastLogoutAt;
 	};
-	
+
+
 	static async validateJWT(request: FastifyRequest, reply: FastifyReply) {
 		const authHeader = request.headers.authorization;
 		
