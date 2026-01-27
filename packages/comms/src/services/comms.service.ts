@@ -1,8 +1,8 @@
-import { WebSocket } from "http";
 import { Redis } from 'ioredis';
 import jwt from 'jsonwebtoken';
-import { CommsEnv } from '../config.js';
+import { WebSocket } from "http";
 import type { FastifyRequest } from "fastify";
+import { CommsEnv } from '../config.js';
 import { EVENT_HANDLERS } from './events/index.js';
 
 // ============================================================================
