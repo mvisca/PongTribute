@@ -11,6 +11,8 @@ export default function App() {
   const [page, setPage] = useState<Page>("login");
   const [user, setUser] = useState<User | null>(null);
 
+  const [token, setToken] = useState<string | null>(null);
+
   return (
     <>
       {page === "login" && (
