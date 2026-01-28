@@ -112,6 +112,20 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
         handler: controller.cancelMatch.bind(controller)
     });
 
+	// ========================================================================
+    // RUTA HTTP QUE OBTIENE EL HISTORIAL DE PARTIDAS DE UN USER (REST)
+    // ========================================================================
+    /**
+     * GET /matches/history/userId
+     * Obtiene un array de partidas de un usuario
+     */
+	app.get<MatchSchemas.GetMatchHistoryReq>(
+    '/matches/history/:userId',
+    {
+        preHandler: [GameMiddleware.validateJWT],
+        schema: MatchSchemas.GetMatchHistorySchema,
+        handler: controller.getMatchHistory.bind(controller)
+    });
 
 	// ========================================================================
     // RUTAS WEBSOCKET: CONEXIÓN REAL-TIME

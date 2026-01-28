@@ -51,11 +51,6 @@ export namespace MatchSchemas {
         winnerId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
         createdAt: Type.String({ format: 'date-time' }),
 		finishedAt: Type.Optional(Type.String({ format: 'date-time' })),
-		// gameMode: Type.Union([
-        //     Type.Literal('classic'),
-        //     Type.Literal('speed'),
-        //     Type.Literal('retro')
-		// ]),
 		gameMode: Type.Enum(GameMode),
         targetScore: Type.Number()
     });
@@ -71,11 +66,6 @@ export namespace MatchSchemas {
 	export const CreateMatchBody = Type.Object({
 		matchType: MatchType,
 		opponentId: Type.Optional(Type.String({ format: 'uuid' })), // Si null -> Matchmaking público
-		// gameMode: Type.Optional(Type.Union([
-		// 	Type.Literal('classic'),
-		// 	Type.Literal('speed'),
-		// 	Type.Literal('retro')
-		// ], { default: 'classic' })),
 		gameMode: Type.Optional(Type.Enum(GameMode, { default: GameMode.CLASSIC })),
 		targetScore: Type.Optional(Type.Number({ minimum: 1, maximum: 21, default: 11 })),
     });
@@ -174,7 +164,25 @@ export namespace MatchSchemas {
 		message: Type.String(),
 		success: Type.Boolean()
 	});
+	
+	// Esquema para los parámetros de la URL y Query String para obtener el History de partidas
+	export const GetMatchHistorySchema = {
+		description: 'Obtiene el historial de partidas de un usuario',
+		params: Type.Object({
+			userId: Type.String({ format: 'uuid' })
+		}),
+		querystring: Type.Object({
+			// Solo permitimos offset para paginar (página 1, 2, 3...)
+			offset: Type.Optional(Type.Number({ default: 0, minimum: 0 }))
+		}),
+		response: {
+			200: Type.Array(Match)
+		}
+	};
 
-
+	export type GetMatchHistoryReq = {
+		Params: Static<typeof GetMatchHistorySchema.params>;
+		Querystring: Static<typeof GetMatchHistorySchema.querystring>;
+	};
 
 }

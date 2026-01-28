@@ -105,14 +105,12 @@ export class MatchService {
 
 	/**
      * Elimina usuarios que llevan más de 90 seg esperando en cola y les avisa.
-     * Cron Job: Se debe ejecutar cada 10 segundos desde server.ts
+     * Cron Job: Se ejecuta cada 10 segundos desde server.ts
      */
 	async pruneQueues(): Promise<void> {
-        if (!redisClient) return;
-
-		//=====TODO: Revisar porque no ve esta constante (shared/src/constants/match.constants)
+		if (!redisClient) return;
+		
 		const timeoutMs = MatchConstants.QUEUE_TIMEOUT_MS;
-		//const timeoutMs = 90000; // 2 minutos
         const limit = Date.now() - timeoutMs;
 
         for (const mode of Object.values(GameMode)) {
@@ -233,6 +231,26 @@ export class MatchService {
             throw new SharedErrors.ServiceError('redis','Error iniciando partida privada.');
         }
     }
+
+	async getMatchHistory(
+		userId: string,
+		offset: number = 0): Promise<MatchTypes.Match[]> {
+		
+		const limit = 20;
+
+		const rows = await this.matchRepo.findByUserId(userId, limit, offset);
+
+		// Si no hay filas, devolvemos array vacío inmediatamente
+		if (rows.length === 0) return [];
+		
+		const matches = rows.map(row => MatchMapper.toDomain(row));
+		
+		// Hidratar en paralelo
+		return Promise.all(matches.map(m => this.hydrateMatchPlayers(m)));
+	}
+
+
+
 
 
 	// ========================================================================

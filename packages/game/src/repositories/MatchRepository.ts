@@ -148,6 +148,25 @@ export class MatchRepository {
         const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
         const row = stmt.get(id);
         return row ? (row as MatchTypes.MatchRow) : null;
+	}
+	
+	/**
+     * findByUserId
+     * Busca partidas terminadas donde user sea el Player1 o el Player2.
+     * RETORNO: un Array de objetos (MatchRow[]).
+     */
+    // El retorno es MatchRow[], nunca null (si no hay, es array vacío)
+    async findByUserId(userId: string, limit: number, offset: number): Promise<MatchTypes.MatchRow[]> {
+        const stmt = this.db.prepare(`
+            SELECT * FROM matches
+            WHERE (player1_id = ? OR player2_id = ?)
+            AND status = 'finished'
+            ORDER BY finished_at DESC
+            LIMIT ? OFFSET ?
+        `);
+        
+        // Usa .all() para devolver lista.
+        return stmt.all(userId, userId, limit, offset) as MatchTypes.MatchRow[];
     }
 }
 	
