@@ -14,7 +14,7 @@ export interface UserLoginEvent extends BaseEvent {
 
 export interface UserLogoutEvent extends BaseEvent {
 	type: 'user:logout';
-	userId: 'string';
+	userId: string;
 	payload: UserEventPayload;
 }
 
