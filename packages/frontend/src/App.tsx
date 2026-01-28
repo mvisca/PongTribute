@@ -10,21 +10,26 @@ type Page = "login" | "register" | "forgot" | "home";
 export default function App() {
   const [page, setPage] = useState<Page>("login");
   const [user, setUser] = useState<User | null>(null);
-
   const [token, setToken] = useState<string | null>(null);
 
   return (
     <>
-      {page === "login" && (
-        <Login
-          onLoginSuccess={(username) => {
-            setUser({ username } as any); // 👈 simulamos login
-            setPage("home");
-          }}
-          onRegister={() => setPage("register")}
-          onForgot={() => setPage("forgot")}
-        />
-      )}
+      {page === "login" && 
+      (
+       <Login
+          onLoginSuccess=
+          {
+            (user, token) => 
+           {
+              setUser(user);
+             setToken(token);
+             setPage("home");
+           }
+          }
+          ...
+          />
+      )
+      }
 
       {page === "register" && (
         <Register onBack={() => setPage("login")} />
@@ -34,15 +39,18 @@ export default function App() {
         <ForgotPassword onBack={() => setPage("login")} />
       )}
 
-      {page === "home" && user && (
-        <Home
-          user={user}
-          onLogout={() => {
-            setUser(null);
-            setPage("login");
-          }}
-        />
-      )}
+      {page === "home" && user && token && (
+      <Home
+        user={user}
+        token={token}
+        onLogoutSuccess={() => {
+         setUser(null);
+         setToken(null);
+          setPage("login");
+       }}
+      />
+    )}
+
     </>
   );
 }

@@ -3,7 +3,7 @@ import { login } from "../api/authApi";
 import { User } from "../types/User";
 
 type Props = {
-  onLoginSuccess: (user: User) => void;
+  onLoginSuccess: (user: User, token: string) => void;
   onRegister: () => void;
   onForgot: () => void;
 };
@@ -29,7 +29,7 @@ async function handleLogin()
   try 
   {
     const data = await login(email, password);
-    onLoginSuccess(data.user);
+    onLoginSuccess(data.user, data.token);
   } 
   catch (err: any) 
   {

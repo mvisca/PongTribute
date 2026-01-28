@@ -17,6 +17,19 @@ export async function login(email: string, password: string) {
   return response.json();
 }
 
+export async function logout(token: string): Promise<void> {
+  const res = await fetch(`${AUTH_BASE_URL}/logout`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    throw new Error("Logout failed");
+  }
+}
+
 export async function register(
   username: string,
   email: string,
