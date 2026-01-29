@@ -56,12 +56,23 @@ export class MatchService {
 		if (opponentId && opponentId !== userId) {
 			
 			// CASO A: MATCH ENCONTRADO -> Crear partida 'active'
+			// 1. Obtener Nombres Reales (S2S Fetch)
+			//Justo en el momento en que ocurre el "Match Found", hacemos 
+			// un fetch rápido en paralelo de los nombres de ambos 
+			// jugadores usando el helper fetchUserProfile.
+            const [p1Data, p2Data] = await Promise.all([
+                this.fetchUserProfile(opponentId), // El de la cola (Player 1)
+                this.fetchUserProfile(userId)      // Yo (Player 2)
+			]);
+			// Creamos la partida con los datos completos
 			const newMatch: MatchTypes.MatchRow = {
 				id: randomUUID(),
 				status: 'active',
 				player1_id: opponentId, // El que tenía el ticket más viejo va primero
+				player1_username: p1Data.username,
 				player1_score: 0,
 				player2_id: userId,     // Nosotros llegamos ahora
+				player2_username: p2Data.username,
 				player2_score: 0,
 				winner_id: null,
 				created_at: Date.now(),
@@ -74,13 +85,13 @@ export class MatchService {
 			await this.matchRepo.create(newMatch);
 
 			// =============OJO: refinar codigo para que notifique sin enviar el matchid aun
+			// Mapeo
+            const matchDomain = MatchMapper.toDomain(newMatch);
+			
 			// Notificar al oponente vía Redis Pub/Sub (match_found vs username mio)
-            // Hidratamos para devolver respuesta bonita
-            const matchDomain = await this.hydrateMatchPlayers(MatchMapper.toDomain(newMatch));
-
             // Publicamos evento para que el Socket del oponente se entere
             await redisClient.publish('game_events', JSON.stringify({
-            	type: 'match.found', // Nuevo evento sugerido
+            	type: 'match.found',
                 targetUserId: opponentId,
                 payload: matchDomain
             }));
@@ -91,7 +102,7 @@ export class MatchService {
 			// CASO B: Nadie esperando. Añadir a la cola.
 			// Si nos sacamos a nosotros mismos, nos ignoramos
 			if (opponentId === userId) {
-			// log warning
+			// Log warning: te sacaste a ti mismo de la cola (raro pero posible)
 			}
 
 			// ZADD: Añade al set. 
@@ -165,7 +176,33 @@ export class MatchService {
         await Promise.all(promises);
     }
 	
-	
+	/**
+     * Helper para obtener el username del servicio USER vía HTTP interna.
+     * Docker DNS resuelve 'user' a la IP del contenedor.
+     */
+	/** ===========YA NO LO USO====================
+    private async getUsernameInternal(userId: string): Promise<string> {
+        try {
+            // URL interna del servicio User (puerto 3000 por defecto en tu monorepo)
+			// OJO: Ajusta el puerto si tu servicio user corre en otro (ej: 3001)
+			// Docker DNS: "user" es el nombre del servicio en docker-compose
+            const response = await fetch(`http://user:3000/api/users/${userId}`);
+            
+            if (!response.ok) {
+                console.error(`❌ Failed to fetch username for ${userId}: ${response.statusText}`);
+                return "Unknown"; // Fallback para no romper la partida
+            }
+
+            const data = await response.json() as { username: string };
+            return data.username;
+
+        } catch (error) {
+            console.error('❌ Error fetching internal username for ${userId}', error);
+            return "Unknown"; // Fallback de seguridad
+        }
+	}
+	*/
+
 	/**
      * createPrivateMatch
      * Crea una partida directamente entre dos usuarios conocidos.
@@ -191,13 +228,26 @@ export class MatchService {
         const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
         if (activeMatchOpponent) throw new SharedErrors.ConflictError('Opponent is already in an active match');
         
-        // 2. Construcción de la Entidad (El Servicio decide ID y Estado)
+		// ---------------------------------------------------------
+        // 2. Obtener Nombres (Pre-Fetch)
+        // ---------------------------------------------------------
+        // Necesitamos los nombres ANTES de crear la fila en SQL.
+        // Usamos Promise.all para que sea paralelo y rápido (los 2 players).
+        const [p1Data, p2Data] = await Promise.all([
+            this.fetchUserProfile(userId),
+            this.fetchUserProfile(opponentId)
+        ]);
+
+
+        // 3. Construcción de la Entidad (El Servicio decide ID y Estado)
         const newMatch: MatchTypes.MatchRow = {
             id: randomUUID(),           // ID generado en lógica de negocio
             status: 'pending',          // Nace pendiente de aceptación
-            player1_id: userId,
+			player1_id: userId,
+			player1_username: p1Data.username, // <--- Usamos el dato del objeto
             player1_score: 0,
-            player2_id: opponentId,
+			player2_id: opponentId,
+			player2_username: p2Data.username, // <--- Usamos el dato del objeto
             player2_score: 0,
             winner_id: null,
             created_at: Date.now(),
@@ -206,15 +256,14 @@ export class MatchService {
             target_score: config?.targetScore || 11
         };
 
-        // 3. Persistencia (Bubble Up de errores SQL)
+        // 4. Persistencia (Bubble Up de errores SQL)
         await this.matchRepo.create(newMatch); // Usamos el create genérico
 
         try {
-            // 4. Mapeo e Hidratación
+            // 5. Mapeo
             let matchDomain = MatchMapper.toDomain(newMatch);
-            matchDomain = await this.hydrateMatchPlayers(matchDomain);
                 
-            // 5. Notificar invitación
+            // 6. Notificar invitación
             await redisClient.publish('game_events', JSON.stringify({
                 type: 'match.invite',
                 targetUserId: opponentId,
@@ -245,8 +294,10 @@ export class MatchService {
 		
 		const matches = rows.map(row => MatchMapper.toDomain(row));
 		
-		// Hidratar en paralelo
-		return Promise.all(matches.map(m => this.hydrateMatchPlayers(m)));
+		// Mapeo directo (Memory only)
+        // Como 'row' ya tiene player1_username y player2_username, 
+        // MatchMapper.toDomain los rellena automáticamente.
+        return rows.map(row => MatchMapper.toDomain(row));
 	}
 
 
@@ -254,32 +305,19 @@ export class MatchService {
 
 
 	// ========================================================================
-    // MÉTODOS PRIVADOS (HELPERS)
+    // MÉTODOS HELPERS
     // ========================================================================
 
-
-    /**
-     * hydrateMatchPlayers
-     * Rellena los usernames de los jugadores consultando al User Service.
-     * Usa Promise.all para hacer las peticiones en paralelo (Performance).
+	/**
+     * handleUsernameChange
+     * Coordina la actualización masiva de nombres en el historial
+     * cuando un usuario actualiza su perfil.
      */
-    private async hydrateMatchPlayers(match: MatchTypes.Match): Promise<MatchTypes.Match> {
-        console.log("👉 ⚙️ [Service] Hidratando nombres...");
-        
-        // Ejecutamos las peticiones HTTP simultáneamente
-        const [p1Data, p2Data] = await Promise.all([
-            this.fetchUserProfile(match.player1.userId),
-            match.player2 ? this.fetchUserProfile(match.player2.userId) : Promise.resolve({ username: 'Waiting...' })
-        ]);
+    async handleUsernameChange(userId: string, newUsername: string): Promise<void> {
+        console.log(`🔄 [MatchService] Syncing username for User ${userId} -> ${newUsername}`);
+        await this.matchRepo.updateUsernames(userId, newUsername);
+    }
 
-        // Asignamos los resultados
-        match.player1.username = p1Data.username;
-        if (match.player2) {
-            match.player2.username = p2Data.username;
-        }
-        return match;
-	}
-	
 	/**
      * acceptMatch
      * Confirma una partida privada, cambia su estado y notifica.
@@ -302,15 +340,12 @@ export class MatchService {
         await this.matchRepo.updateStatus(matchId, 'active');
 
 		try {
-			// 4. Hidratación y Mapeo
+			// 4. Mapeo
 			// Convertimos el Row crudo a Objeto de Dominio
-			let matchDomain = MatchMapper.toDomain(matchRow);
+			const matchDomain = MatchMapper.toDomain(matchRow);
 			
 			// Forzamos el estado a 'active' en el objeto en memoria porque toDomain usa el dato viejo
 			matchDomain.status = 'active';
-			
-			// Rellenamos los nombres de usuario (S2S)
-			matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
 			// 5. Notificar inicio de partida (Redis)
 			await redisClient.publish('game_events', JSON.stringify({
@@ -331,7 +366,7 @@ export class MatchService {
 	}
 	
 	/**
-     * rejecttMatch
+     * rejectMatch
      * Rechaza una partida privada, cambia su estado y notifica.
      */
 	async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
@@ -351,12 +386,10 @@ export class MatchService {
 
 		try {
 
-			// 4. Hidratación y Mapeo
+			// 4. Mapeo
 			// Convertimos el Row crudo a Objeto de Dominio
-			let matchDomain = MatchMapper.toDomain(matchRow);
-			
+			const matchDomain = MatchMapper.toDomain(matchRow);
 			matchDomain.status = 'rejected'; // Actualizacion manual en memoria
-			matchDomain = await this.hydrateMatchPlayers(matchDomain);
 
 			// 5. Notificar rechazo (Redis)
 			await redisClient.publish('game_events', JSON.stringify({

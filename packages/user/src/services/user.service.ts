@@ -1,6 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { UserTypes, Utils, SharedErrors, AuthTypes } from '@transcendence/shared';
 import { IUserRepository, SQLiteUserRepository, UserEnv, UserMapper } from '../index.js';
+import { redisClient } from '../app.js'; 
+import { redisConstants } from '@transcendence/shared';
+   
 
 export class UserService {
 	private userRepo: IUserRepository;
@@ -167,6 +170,8 @@ export class UserService {
 				isDeleted: user?.isDeleted
 			});
 
+		const oldUsername = user.username;
+
 		if (data.avatar !== undefined) {
 			
 			if (data.avatar === '') {
@@ -208,7 +213,28 @@ export class UserService {
 				});
 		}
 
-		return await this.userRepo.update(id, data);
+		const updatedUser = await this.userRepo.update(id, data);
+
+		if (updatedUser.username !== oldUsername) {
+            if (redisClient) {
+                console.log(`📣 [UserService] Username changed: ${oldUsername} -> ${updatedUser.username}`);
+                
+                const eventPayload = {
+                    type: redisConstants.REDIS_EVENTS.USER_PROFILE_UPDATED,
+                    payload: {
+                        userId: id,
+                        username: updatedUser.username
+                    }
+                };
+
+                // Publicar al canal de eventos
+                redisClient.publish(redisConstants.REDIS_CHANNELS.EVENTS, JSON.stringify(eventPayload))
+                    .catch(err => console.error('❌ Error publicando evento Redis:', err));
+            } else {
+                console.warn('⚠️ [UserService] Redis client not available. Event not sent.');
+            }
+        }
+        return updatedUser;
 	}
 
 	async update2FAStatus( // TODO actualizar llamado en user.controller

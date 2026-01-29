@@ -29,11 +29,13 @@ export class MatchRepository {
         // SQL Directo. Sin try-catch. Si falla (Unique constraint, etc), explota hacia arriba.
         const stmt = this.db.prepare(`
             INSERT INTO matches (
-                id, status, player1_id, player1_score, player2_id, player2_score, 
-                winner_id, created_at, finished_at, game_mode, target_score
+                id, status, player1_id, player1_username, player1_score, 
+				player2_id, player2_username, player2_score, winner_id, 
+				created_at, finished_at, game_mode, target_score
             ) VALUES (
-                @id, @status, @player1_id, @player1_score, @player2_id, @player2_score,
-                @winner_id, @created_at, @finished_at, @game_mode, @target_score
+                @id, @status, @player1_id, @player1_username, @player1_score,
+				 @player2_id, @player2_username, @player2_score, @winner_id, 
+				 @created_at, @finished_at, @game_mode, @target_score
             )
         `);
         
@@ -84,7 +86,23 @@ export class MatchRepository {
 		}
     }
 
+	/**
+     * updateUsernames
+     * Actualiza los nombres desnormalizados cuando un usuario cambia su profile.
+     */
+    async updateUsernames(userId: string, newUsername: string): Promise<void> {
+        // 1. Preparar las sentencias
+        const updateP1 = this.db.prepare(`
+            UPDATE matches SET player1_username = ? WHERE player1_id = ?
+        `);
+        const updateP2 = this.db.prepare(`
+            UPDATE matches SET player2_username = ? WHERE player2_id = ?
+        `);
 
+        // 2. Ejecutar (Better-sqlite3 usa .run() para UPDATES)
+        updateP1.run(newUsername, userId);
+        updateP2.run(newUsername, userId);
+    }
 
 	/**
      * finishMatch

@@ -29,11 +29,13 @@ export namespace MatchTypes {
         status: MatchStatus;         // 'pending' | 'active' | 'finished' | 'rejected'
         
         // Player 1
-        player1_id: string;
+		player1_id: string;
+		player1_username: string;
         player1_score: number;
         
         // Player 2 (Puede ser NULL si está esperando rival)
-        player2_id: string | null;
+		player2_id: string | null;
+		player2_username: string | null,
         player2_score: number | null;
         
         winner_id: string | null;

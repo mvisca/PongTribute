@@ -6,3 +6,5 @@ export * from './test/index.js';
 export * from './types/index.js';
 export * from './test/index.js';
 export * from './utils/index.js';
+export * from './constants/redis.constants.js';
+

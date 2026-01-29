@@ -13,10 +13,12 @@ CREATE TABLE IF NOT EXISTS matches (
     
     -- JUGADOR 1 (Host) - Fusionamos datos de match_players aquí
     player1_id TEXT NOT NULL,
+	player1_username TEXT NOT NULL,
     player1_score INTEGER DEFAULT 0,
     
     -- JUGADOR 2 (Rival) - Fusionamos datos de match_players aquí
     player2_id TEXT, -- Puede ser NULL si es matchmaking esperando rival
+	player2_username TEXT, --Puede ser NULL al inicio
     player2_score INTEGER DEFAULT 0,
     
     winner_id TEXT,
