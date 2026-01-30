@@ -1,8 +1,16 @@
-
-export type User = {
-  id?: number;
+export type User = 
+{
+  id: string;
   username: string;
   email: string;
-  status: "online" | "offline";
-  gamesPlayed: number;
+  has2FAEnabled: boolean;
 };
+
+// export type User = 
+//{
+//   id?: number;
+//   username: string;
+//   email: string;
+//   status: "online" | "offline";
+//   gamesPlayed: number;
+// };

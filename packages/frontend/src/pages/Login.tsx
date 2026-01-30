@@ -1,30 +1,43 @@
 import { useState } from "react";
+import { login } from "../api/authApi";
+import { User } from "../types/User";
 
 type Props = {
-  onLoginSuccess: (username: string) => void;
+  onLoginSuccess: (user: User, token: string) => void;
   onRegister: () => void;
   onForgot: () => void;
 };
+
 
 export default function Login({
   onLoginSuccess,
   onRegister,
   onForgot,
 }: Props) {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleLogin() {
-    if (!username || !password) {
-      setError("Username and password are required");
-      return;
-    }
-
-    // Login falso (por ahora)
-    setError("");
-    onLoginSuccess(username);
+async function handleLogin() 
+{
+  if (!email || !password) 
+  {
+    setError("Email and password are required");
+    return;
   }
+
+  try 
+  {
+    const data = await login(email, password);
+    onLoginSuccess(data.user, data.token);
+  } 
+  catch (err: any) 
+  {
+    setError(err?.message || "Login failed");
+  }
+
+}
+
 
   return (
     <div className="min-h-screen bg-purple-900 flex items-center justify-center">
@@ -39,15 +52,19 @@ export default function Login({
           </div>
         )}
 
-        <input
-          className="input"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-            setError("");
-          }}
-        />
+       <input
+        className="input"
+        placeholder="Email"
+        value={email}
+        onChange=
+        {
+          (e) => 
+          {
+           setEmail(e.target.value);
+           setError("");
+          }
+        }
+/>
 
         <input
           type="password"
