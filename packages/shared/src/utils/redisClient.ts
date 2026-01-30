@@ -6,31 +6,41 @@ import {
 	REDIS_DEFAULTS,
 	defaultRetryStrategy } from './../config/index.js';
 
-/** Crear instancia de clietne Redis con configuracion validada */
-export function createRedisClient(config: RedisConfig): Redis {
+// packages/shared/src/utils/redis.utils.ts
 
-	if (!validateRedisConfig(config))
-		throw new Error('Configuración de Redis inválida');
+/** Crear instancia de cliente Redis con configuración validada */
+// 1: Aceptamos Partial<RedisConfig> para permitir sobrescribir solo lo necesario
+export function createRedisClient(config: Partial<RedisConfig>): Redis {
 
-	const finalConfig: RedisOptions = {
-		...REDIS_DEFAULTS,
-		...config,
-		retryStrategy: config.retryStrategy || defaultRetryStrategy,
-	};
-	
-	const client = new Redis(finalConfig);
+    // 1. Mezclamos los defaults con la config parcial del usuario
+    const finalConfig: RedisOptions = {
+        ...REDIS_DEFAULTS,
+        ...config,
+        retryStrategy: config.retryStrategy || defaultRetryStrategy,
+    };
+    
+    // 2: Validamos el objeto FINAL (que ya tiene los defaults), no el parcial
+    // Hacemos cast a RedisConfig porque ya debería estar completo tras el merge
+    if (!validateRedisConfig(finalConfig as RedisConfig))
+        throw new Error('Configuración de Redis inválida tras aplicar defaults');
 
-	client.on('connect', () => {
-		console.log(`Redis conectado a ${finalConfig.host}:${finalConfig.port}`);
-	});
+    const client = new Redis(finalConfig);
 
-	client.on('ready', () => {
-		console.log(`Redis listo para recibir comandos`);
-	});
+    client.on('connect', () => {
+        console.log(`[Redis] Conectado a ${finalConfig.host}:${finalConfig.port}`);
+    });
 
-	client.on('close', () => {
-		console.log(`Redis conexión cerrada`);
-	});
+    client.on('ready', () => {
+        console.log(`[Redis] Listo para recibir comandos`);
+    });
 
-	return client;
+    client.on('close', () => {
+        console.log(`[Redis] Conexión cerrada`);
+    });
+    
+    client.on('error', (err) => {
+        console.error(`[Redis] Error:`, err);
+    });
+
+    return client;
 }
