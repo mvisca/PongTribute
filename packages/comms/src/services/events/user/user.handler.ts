@@ -2,19 +2,23 @@ import { EventHandler, BaseEvent } from "../base.handler.js";
 import { UserEvent, UserLoginEvent, UserLogoutEvent } from './user.events.js';
 import { CommsService } from '../../comms.service.js';
 import { CommsEnv } from "src/config.js";
+import { REDIS_CHANNELS } from '@transcendence/shared';
 
 export class UserEventHandler implements EventHandler {
-	channels = ['user:login', 'user:logout'];
+	channels = [
+		REDIS_CHANNELS.USER_LOGIN,
+		REDIS_CHANNELS.USER_LOGOUT	
+	];
 
 	async handle(event: BaseEvent, commsService: CommsService): Promise<void> {
 		const userEvent = event as UserEvent;
 
 		switch (userEvent.type) {
-			case 'user:login':
+			case REDIS_CHANNELS.USER_LOGIN:
 				await this.handleLogin(userEvent as UserLoginEvent, commsService);
 				break;
 
-			case 'user:logout':
+			case REDIS_CHANNELS.USER_LOGOUT:
 				await this.handleLogout(userEvent as UserLogoutEvent, commsService);
 				break;
 		}
@@ -32,7 +36,7 @@ export class UserEventHandler implements EventHandler {
 			
 			if (friends.length > 0) {
 				comms.broadcastToUsers(friends, {
-					type: 'friend:online',
+					type: REDIS_CHANNELS.FRIEND_ONLINE,
 					payload: {
 						userId: event.userId,
 						username: event.payload.username,
@@ -62,7 +66,7 @@ export class UserEventHandler implements EventHandler {
 			if (friends.length > 0) {
 
 				comms.broadcastToUsers(friends, {
-					type: 'friend:offline',
+					type: REDIS_CHANNELS.FRIEND_OFFLINE,
 					payload: {
 						userId: event.userId,
 						username: event.payload.username,

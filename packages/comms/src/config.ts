@@ -1,147 +1,157 @@
+// packages/comms/src/config.ts
+
 import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { findEnvFile } from '@transcendence/shared';
+import { findEnvFile, RedisConfig, validateRedisConfig } from '@transcendence/shared';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const envPath = findEnvFile(__dirname);
 if (envPath) {
-	dotenv.config({ path: envPath });
+  dotenv.config({ path: envPath });
 } else {
-	dotenv.config();
+  dotenv.config();
 }
 
 // ============================================================================
-// DEFAULTS
-// ============================================================================
-
-const DEFAULTS = {
-	COMMS_PORT: 3005,
-	COMMS_HOST: '0.0.0.0',
-	
-	REDIS_HOST: 'localhost',
-	REDIS_PORT: 6379,
-	
-	USER_SERVICE_URL: 'http://localhost:3001',
-	
-	NODE_ENV: 'development',
-	LOG_LEVEL: 'info',
-	
-	WS_PING_INTERVAL_MS: 30_000,
-	WS_PONG_TIMEOUT_MS: 10_000,
-	WS_MAX_CONNECTIONS: 1000,
-	WS_MAX_CONNECTIONS_PER_USER: 3
-} as const;
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function numberFromEnv(name: string, fallback: number): number {
-	const raw = process.env[name];
-	if (!raw) return fallback;
-	
-	const parsed = Number(raw);
-	if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-	
-	return parsed;
-}
-
-function stringFromEnv(name: string, fallback: string): string {
-	const raw = process.env[name];
-	if (raw === undefined || raw === null) return fallback;
-	return String(raw);
-}
-
-function requiredStringFromEnv(name: string): string {
-	const value = process.env[name];
-	if (!value) {
-		throw new Error(`${name} is required`);
-	}
-	return value;
-}
-
-// ============================================================================
-// CONFIG BUILDER
-// ============================================================================
-
-interface CommsConfig {
-	COMMS_PORT: number;
-	COMMS_HOST: string;
-	REDIS_HOST: string;
-	REDIS_PORT: number;
-	USER_SERVICE_URL: string;
-	JWT_SECRET: string;
-	SERVICE_SECRET: string;
-	NODE_ENV: string;
-	LOG_LEVEL: string;
-	WS_PING_INTERVAL_MS: number;
-	WS_PONG_TIMEOUT_MS: number;
-	WS_MAX_CONNECTIONS: number;
-	WS_MAX_CONNECTIONS_PER_USER: number;
-}
-
-function buildConfig(): CommsConfig {
-	return {
-		COMMS_PORT: numberFromEnv('COMMS_PORT', DEFAULTS.COMMS_PORT),
-		COMMS_HOST: stringFromEnv('COMMS_HOST', DEFAULTS.COMMS_HOST),
-		
-		REDIS_HOST: stringFromEnv('REDIS_HOST', DEFAULTS.REDIS_HOST),
-		REDIS_PORT: numberFromEnv('REDIS_PORT', DEFAULTS.REDIS_PORT),
-		
-		USER_SERVICE_URL: stringFromEnv('USER_SERVICE_URL', DEFAULTS.USER_SERVICE_URL),
-		
-		JWT_SECRET: requiredStringFromEnv('JWT_SECRET'),
-		SERVICE_SECRET: requiredStringFromEnv('SERVICE_SECRET'),
-		
-		NODE_ENV: stringFromEnv('NODE_ENV', DEFAULTS.NODE_ENV),
-		LOG_LEVEL: stringFromEnv('LOG_LEVEL', DEFAULTS.LOG_LEVEL),
-		
-		WS_PING_INTERVAL_MS: numberFromEnv('COMMS_WS_PING_INTERVAL_MS', DEFAULTS.WS_PING_INTERVAL_MS),
-		WS_PONG_TIMEOUT_MS: numberFromEnv('COMMS_WS_PONG_TIMEOUT_MS', DEFAULTS.WS_PONG_TIMEOUT_MS),
-		WS_MAX_CONNECTIONS: numberFromEnv('COMMS_WS_MAX_CONNECTIONS', DEFAULTS.WS_MAX_CONNECTIONS),
-		WS_MAX_CONNECTIONS_PER_USER: numberFromEnv('COMMS_WS_MAX_CONNECTIONS_PER_USER', DEFAULTS.WS_MAX_CONNECTIONS_PER_USER)
-	};
-}
-
-// ============================================================================
-// PUBLIC NAMESPACE WITH GETTERS
+// TYPES
 // ============================================================================
 
 export namespace CommsEnv {
-	let _config: CommsConfig | null = null;
-	
-	export function init(): void {
-		if (_config) return;
-		_config = buildConfig();
-	}
-	
-	function cnf(): CommsConfig {
-		if (!_config) {
-			throw new Error('CommsEnv.init() no llamado');
-		}
-		return _config;
-	}
-	
-	// Getters
-	export function PORT(): number { return cnf().COMMS_PORT; }
-	export function HOST(): string { return cnf().COMMS_HOST; }
-	
-	export function REDIS_HOST(): string { return cnf().REDIS_HOST; }
-	export function REDIS_PORT(): number { return cnf().REDIS_PORT; }
-	
-	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
-	
-	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
-	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
-	
-	export function NODE_ENV(): string { return cnf().NODE_ENV; }
-	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
-	
-	export function WS_PING_INTERVAL_MS(): number { return cnf().WS_PING_INTERVAL_MS; }
-	export function WS_PONG_TIMEOUT_MS(): number { return cnf().WS_PONG_TIMEOUT_MS; }
-	export function WS_MAX_CONNECTIONS(): number { return cnf().WS_MAX_CONNECTIONS; }
-	export function WS_MAX_CONNECTIONS_PER_USER(): number { return cnf().WS_MAX_CONNECTIONS_PER_USER; }
+  export interface ServiceConfig {
+    port: number;
+    host: string;
+    nodeEnv: 'development' | 'production' | 'test';
+    logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
+    
+    redisHost: string;
+    redisPort: number;
+    redisPassword?: string;
+    
+    userServiceUrl: string;
+    jwtSecret: string;
+    serviceSecret: string;
+    
+    wsPingIntervalMs: number;
+    wsPongTimeoutMs: number;
+    wsMaxConnections: number;
+    wsMaxConnectionsPerUser: number;
+  }
+  
+  export interface FastifyConfig {
+    logger: {
+      level: string;
+      transport?: {
+        target: string;
+        options: {
+          colorize: boolean;
+          translateTime: string;
+          ignore: string;
+        };
+      };
+    } | boolean;
+  }
+}
+
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+let config: CommsEnv.ServiceConfig | null = null;
+
+function cnf(): CommsEnv.ServiceConfig {
+  if (!config) {
+    throw new Error('[CommsEnv] Config no inicializada. Llama a CommsEnv.init() primero.');
+  }
+  return config;
+}
+
+export namespace CommsEnv {
+  
+  // Inicializar configuración
+  export function init(): void {
+    config = {
+      port: parseInt(process.env.COMMS_PORT || '3005', 10),
+      host: process.env.COMMS_HOST || '0.0.0.0',
+      nodeEnv: (process.env.NODE_ENV as any) || 'development',
+      logLevel: (process.env.LOG_LEVEL as any) || 'info',
+      
+      redisHost: process.env.REDIS_HOST || 'localhost',
+      redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
+      redisPassword: process.env.REDIS_PASSWORD,
+      
+      userServiceUrl: process.env.USER_SERVICE_URL || 'http://localhost:3001',
+      jwtSecret: process.env.JWT_SECRET || '',
+      serviceSecret: process.env.SERVICE_SECRET || '',
+      
+      wsPingIntervalMs: parseInt(process.env.WS_PING_INTERVAL_MS || '30000', 10),
+      wsPongTimeoutMs: parseInt(process.env.WS_PONG_TIMEOUT_MS || '5000', 10),
+      wsMaxConnections: parseInt(process.env.WS_MAX_CONNECTIONS || '10000', 10),
+      wsMaxConnectionsPerUser: parseInt(process.env.WS_MAX_CONNECTIONS_PER_USER || '5', 10),
+    };
+    
+    console.log('[CommsEnv] Configuración cargada');
+  }
+  
+  // Getters
+  export function PORT(): number { return cnf().port; }
+  export function HOST(): string { return cnf().host; }
+  export function NODE_ENV(): string { return cnf().nodeEnv; }
+  export function LOG_LEVEL(): string { return cnf().logLevel; }
+  
+  export function REDIS_HOST(): string { return cnf().redisHost; }
+  export function REDIS_PORT(): number { return cnf().redisPort; }
+  export function REDIS_PASSWORD(): string | undefined { return cnf().redisPassword; }
+  
+  export function USER_SERVICE_URL(): string { return cnf().userServiceUrl; }
+  export function JWT_SECRET(): string { return cnf().jwtSecret; }
+  export function SERVICE_SECRET(): string { return cnf().serviceSecret; }
+  
+  export function WS_PING_INTERVAL_MS(): number { return cnf().wsPingIntervalMs; }
+  export function WS_PONG_TIMEOUT_MS(): number { return cnf().wsPongTimeoutMs; }
+  export function WS_MAX_CONNECTIONS(): number { return cnf().wsMaxConnections; }
+  export function WS_MAX_CONNECTIONS_PER_USER(): number { return cnf().wsMaxConnectionsPerUser; }
+  
+  // Config de Redis (pattern de otros servicios)
+  export function getRedisConfig(): RedisConfig {
+    const redisConfig: RedisConfig = {
+      host: REDIS_HOST(),
+      port: REDIS_PORT(),
+      password: REDIS_PASSWORD() || '',
+      db: parseInt(process.env.REDIS_DB || '0', 10),
+      connectTimeout: 10000,
+      enableReadyCheck: true,
+      lazyConnect: true,
+      retryStrategy: (times) => Math.min(times * 50, 2000),
+      maxRetriesPerRequest: 3
+    };
+    
+    validateRedisConfig(redisConfig);
+    return redisConfig;
+  }
+  
+  // Config de Fastify (pattern de otros servicios)
+  export function getFastifyConfig(): CommsEnv.FastifyConfig {
+    const isDev = NODE_ENV() === 'development';
+    
+    return {
+      logger: isDev
+        ? {
+            level: LOG_LEVEL(),
+            transport: {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss',
+                ignore: 'pid,hostname'
+              }
+            }
+          }
+        : {
+            level: LOG_LEVEL()
+          }
+    };
+  }
 }

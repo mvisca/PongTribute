@@ -4,6 +4,7 @@ import { WebSocket } from "ws";
 import type { FastifyRequest } from "fastify";
 import { CommsEnv } from '../config.js';
 import { EVENT_HANDLERS } from './events/index.js';
+import { REDIS_CHANNELS } from '@transcendence/shared';
 
 // ============================================================================
 // TYPES
@@ -15,6 +16,8 @@ interface JWTPayload {
 	email: string;
 }
 
+type WSMessageType = 'ping' | 'pong' | 'message' | 'error';
+
 interface WSMessage {
 	type: string; // TODO reemplazar por tipo union literal que asimile nuevos tipos
 	payload?: unknown;
@@ -22,8 +25,8 @@ interface WSMessage {
 }
 
 interface ExtendedWebSocket extends WebSocket {
-	isAlive?: boolean;
-	userId?: string;
+	isAlive: boolean;
+	userId: string;
 }
 
 // ============================================================================
@@ -36,7 +39,7 @@ export class CommsService {
 	private redisSub: Redis;
 	private heartbeatInterval: NodeJS.Timeout | null = null;
 	private totalConnections = 0;
-	private logger = console; // TODO integrar loger real
+	private logger = console;
 
 	constructor() {
 		this.redis = new Redis({
@@ -47,12 +50,7 @@ export class CommsService {
 			maxRetriesPerRequest: 3
 		}); // TODO comparar instanciación de redis con redisClient de otros servicios
 	
-		this.redisSub = new Redis({
-			host: CommsEnv.REDIS_HOST(),
-			port: CommsEnv.REDIS_PORT(),
-			lazyConnect: true,
-			retryStrategy: (times) => Math.min(times * 50, 2000)
-		});
+		this.redisSub = this.redis.duplicate();
 	}
 
 	// ============================================================================
@@ -77,16 +75,6 @@ export class CommsService {
 		return true;
 	}
 
-	private validateGlobalConnections(): boolean { // TODO no se usa??
-		const max = CommsEnv.WS_MAX_CONNECTIONS();
-
-		if (this.totalConnections >= max) {
-			console.warn(`[Comms] Límite global de conexiones alcanzado`);
-			return false;
-		}
-		return true;
-	}
-
 	// ============================================================================
 	// INICIALIZACIÓN
 	// ============================================================================
@@ -100,8 +88,8 @@ export class CommsService {
 			this.logger.log('[Comms] Redis conectado');
 			
 			// Suscribirse a eventos
-			await this.redisSub.subscribe('user:login', 'user:logout');
-			this.logger.log('[Comms] Suscrito a user:login, user:logout');
+			await this.redisSub.subscribe(REDIS_CHANNELS.USER_LOGIN, REDIS_CHANNELS.USER_LOGOUT);
+			this.logger.log(`[Comms] Suscrito a ${REDIS_CHANNELS.USER_LOGIN}, ${REDIS_CHANNELS.USER_LOGOUT}`);
 			
 			this.redisSub.on('message', (channel, message) => {
 				this.handleRedisMessage(channel, message).catch((err) => {
@@ -187,6 +175,12 @@ export class CommsService {
 
 	// MENSAJES PARA USUARIO ESPECÍFICO
 	
+		// TYPE GUARD PARA sendToUser
+	private isExtendedWebSocket(ws: WebSocket): ws is ExtendedWebSocket {
+		return typeof (ws as any).userId === 'string' &&
+			   typeof (ws as any).isAlive === 'boolean';
+	}
+
 	public sendToUser(
 		userId: string,
 		message: any
@@ -202,10 +196,13 @@ export class CommsService {
 		let sentCount = 0;
 
 		// Se envía a todos los ws del cliente
-		for (const ws of sockets) { // DUDA como habrá solo una sesion, será imposible más de un ws de todos modos
+		for (const ws of sockets) {
+			if (!this.isExtendedWebSocket(ws)) {
+				this.logger.error('Socket sin propiedades extendidas (userId & isAlive');
+			}
+
 			if (ws.readyState === WebSocket.OPEN) {
 				try {
-
 					ws.send(messageStr);
 					sentCount++;
 				} catch (err) {
@@ -228,10 +225,24 @@ export class CommsService {
 	public broadcastToUsers(
 		userIds: string[],
 		message: any
-	): void {
+	): number {
+
+		let successCount = 0;
+		const failures: string[] = [];
+
 		for (const userId of userIds) {
-			this.sendToUser(userId, message);
+			if (this.sendToUser(userId, message)) {
+				successCount++;
+			} else {
+				failures.push(userId);
+			}
 		}
+
+		if (failures.length > 0) {
+			this.logger.warn(`[Comms] Failed to send to users:`, failures);
+		}
+
+		return successCount;
 	}
 
 	public broadcast(message: any, excludedUserId?: string): void {
@@ -255,7 +266,7 @@ export class CommsService {
 
 	// MANEJO DE MENSAJE DE REDIS
 
-	public async handleRedisMessage(
+	private async handleRedisMessage(
 		channel: string,
 		messageStr: string
 	): Promise<void> {
@@ -279,7 +290,7 @@ export class CommsService {
 		}
 	}
 
-	// MANEJO D MENSAJES
+	// MANEJO DE MENSAJES
 
 	private async handleMessage(
 		ws: ExtendedWebSocket,
@@ -296,8 +307,23 @@ export class CommsService {
 					ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
 					break;
 
-				case 'message':
-					// TODO implementar mensajes e2e
+				/* case 'message':
+					const { targetUserId, content } = message.payload as any;
+
+					// Validar
+					if (!targetUserId || !content) {
+						ws.send(JSON.stringify({
+							type: 'error',
+							payload: { message: 'Invalid message' }
+						}));
+						return;
+					}
+
+					this.sendToUser(targetUserId, {
+						type: 'message',
+						payload: { from: userId, content, timestamp: Date.now() }
+					});
+					break; */
 				
 				default:
 					this.logger.warn(`[Comms] Tipo desconocido de evento: ${message.type}`);
@@ -317,7 +343,7 @@ export class CommsService {
 	// ==========================================================================
 	
 	async handleConnection(
-		ws: ExtendedWebSocket,
+		ws: WebSocket,
 		req: FastifyRequest
 	): Promise<void> {
 		try {
@@ -351,33 +377,35 @@ export class CommsService {
 			if (!this.connections.has(userId)) {
 				this.connections.set(userId, new Set());
 			}
-			this.connections.get(userId)!.add(ws);
+			
+			// Castear y asignar antes de guardar
+			const extWs = ws as ExtendedWebSocket; 
+			extWs.isAlive = true;
+			extWs.userId = userId;
+			this.connections.get(userId)!.add(extWs);
 			this.totalConnections++;
 
-			// Marcar como viva
-			ws.isAlive = true;
-			ws.userId = userId;
 
 			this.logger.log(`[Comms] Nuevo cliente conectado: ${userId} (Total: ${this.totalConnections})`);
 
 			// Handlers de eventos
-			ws.on('message', (data) => {
-				this.handleMessage(ws, data.toString()).catch((err) => {
+			extWs.on('message', (data) => {
+				this.handleMessage(extWs, data.toString()).catch((err) => {
 					this.logger.error(`Error procesando mensaje de ${userId}:`, err);
 				});
 			});
 
-			ws.on('pong', () => {
-				ws.isAlive = true;
+			extWs.on('pong', () => {
+				extWs.isAlive = true;
 			});
 
-			ws.on('close', () => {
-				this.handleDisconnect(ws, userId);
+			extWs.on('close', () => {
+				this.handleDisconnect(extWs, userId);
 			});
 
-			ws.on('error', (err) => {
+			extWs.on('error', (err) => {
 				this.logger.error('[Comms] Error en el handleConnection:', err);
-				ws.close(1011, 'Internal server error');
+				extWs.close(1011, 'Internal server error');
 			});
 
 		} catch (err) {
@@ -396,7 +424,7 @@ export class CommsService {
 
 			if (sockets.size === 0) {
 				this.connections.delete(userId);
-				this.logger.log(`[Comms] Usuario desconectaro: ${userId}`);
+				this.logger.log(`[Comms] Usuario desconectado: ${userId}`);
 			} else {
 				this.logger.log(
 					`[Comms] Socket cerrado de ${userId} (Quedan: ${sockets.size})`
@@ -405,7 +433,7 @@ export class CommsService {
 
 			this.logger.log(`[Comms] Total de conexiones activas: ${this.totalConnections}`);
 		} catch(err) {
-
+			this.logger.error(`[Comms] Socket cerrado de ${userId}:`, err);
 		}
 
 	}
