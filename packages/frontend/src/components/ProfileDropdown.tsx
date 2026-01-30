@@ -30,16 +30,16 @@ export function ProfileDropdown({ user, onClose }: Props) {
       <p className="text-sm text-purple-300">{user.email}</p>
 
       {/* Online status */}
-      <div className="flex items-center gap-1 text-xs text-green-400">
-        <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-        Online
+      <div className="flex items-center gap-1 text-xs">
+        <span className={`w-2 h-2 rounded-full ${user.status === "online" ? "bg-green-400" : "bg-gray-500"}`}></span>
+        {user.status ? (user.status === "online" ? "Online" : "Offline") : "Unknown"}
       </div>
     </div>
   </div>
 
   {/* Games played */}
   <p className="mt-2 text-sm">
-    Games played: <span className="font-bold">{user.gamesPlayed}</span>
+    Games played: <span className="font-bold">{user.gamesPlayed ?? 0}</span>
   </p>
 
   <button className="mt-2 text-sm underline hover:text-purple-200">

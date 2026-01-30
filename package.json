@@ -29,7 +29,8 @@
 		"start:dev-gateway": "pnpm --filter '@transcendence/gateway' start:dev",
 		"start:dev-user": "pnpm --filter '@transcendence/user' start:dev",
 		"start:dev-auth": "pnpm --filter '@transcendence/auth' start:dev",
-		"start:dev-game": "pnpm --filter '@transcendence/game' start:dev"
+		"start:dev-game": "pnpm --filter '@transcendence/game' start:dev",
+		"start:dev-comms": "pnpm --filter '@transcendence/comms' start:dev"
 	},
 	"keywords": [],
 	"author": "",

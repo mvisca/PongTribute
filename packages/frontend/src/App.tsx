@@ -14,22 +14,17 @@ export default function App() {
 
   return (
     <>
-      {page === "login" && 
-      (
-       <Login
-          onLoginSuccess=
-          {
-            (user, token) => 
-           {
-              setUser(user);
-             setToken(token);
-             setPage("home");
-           }
-          }
-          ...
-          />
-      )
-      }
+      {page === "login" && (
+        <Login
+          onLoginSuccess={(user, token) => {
+            setUser(user);
+            setToken(token);
+            setPage("home");
+          }}
+          onRegister={() => setPage("register")}
+          onForgot={() => setPage("forgot")}
+        />
+      )}
 
       {page === "register" && (
         <Register onBack={() => setPage("login")} />

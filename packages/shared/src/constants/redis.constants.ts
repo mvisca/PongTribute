@@ -1,5 +1,5 @@
 export namespace redisConstants {
-	
+	 
 	export const REDIS_CHANNELS = {
 		// User events
 		USER_LOGIN: 'user:login',

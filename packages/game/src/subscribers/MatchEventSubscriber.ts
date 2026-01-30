@@ -62,7 +62,7 @@ export class MatchEventSubscriber {
                     break;
 
                 // CASO 2: Actualización de Perfil (NUEVO)
-                case redisConstants.REDIS_EVENTS.USER_PROFILE_UPDATED: // <--- VERIFICA ESTE NOMBRE EN SHARED
+                case redisConstants.REDIS_CHANNELS.USER_PROFILE_UPDATED: // <--- VERIFICA ESTE NOMBRE EN SHARED
                     // Asegúrate de que el payload traiga userId y el nuevo username
                     // Estructura esperada: { type: '...', payload: { userId: '123', username: 'NewName' } }
                     const { userId, username } = event.payload || {}; 

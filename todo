@@ -94,3 +94,5 @@ setInterval(async () => {
 
 
 rate limiting en puntos critisos, pendiente
+
+frontend: añadir `status?: "online" | "offline"` y `gamesPlayed?: number` al tipo `User` y actualizar `ProfileInfo`/`ProfileDropdown` para manejar propiedades opcionales y mostrar valores por defecto. (Ver commit)

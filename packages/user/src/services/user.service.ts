@@ -220,7 +220,7 @@ export class UserService {
                 console.log(`📣 [UserService] Username changed: ${oldUsername} -> ${updatedUser.username}`);
                 
                 const eventPayload = {
-                    type: redisConstants.REDIS_EVENTS.USER_PROFILE_UPDATED,
+                    type: redisConstants.REDIS_CHANNELS.USER_PROFILE_UPDATED,
                     payload: {
                         userId: id,
                         username: updatedUser.username

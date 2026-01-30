@@ -40,6 +40,8 @@ services:
           condition: service_healthy
         game:
           condition: service_healthy
+        comms:
+          condition: service_healthy
       networks:
         - transcendence
 
@@ -107,6 +109,27 @@ services:
         - "3003"
       healthcheck:
         test: ["CMD-SHELL", "curl -fsS http://game:3003/health > /dev/null || exit 1"]
+        interval: 10s
+        timeout: 3s
+        retries: 10
+      depends_on:
+        redis:
+          condition: service_healthy
+      networks:
+        - transcendence
+
+    comms:
+      build:
+        context: .
+        dockerfile: ./packages/comms/Dockerfile
+      container_name: ft_transcendence_comms
+      restart: always
+      env_file:
+        - .env
+      expose:
+        - "3005"
+      healthcheck:
+        test: ["CMD-SHELL", "curl -fsS http://comms:3005/health > /dev/null || exit 1"]
         interval: 10s
         timeout: 3s
         retries: 10

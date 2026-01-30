@@ -12,12 +12,16 @@ export function ProfileInfo({ user }: Props) {
         <div>
           <p className="font-bold">{user.username}</p>
           <p className="text-sm text-purple-300">{user.email}</p>
-          <p className="text-xs text-green-400">{user.status}</p>
+          {user.status ? (
+            <p className={`text-xs ${user.status === "online" ? "text-green-400" : "text-gray-400"}`}>
+              {user.status === "online" ? "Online" : "Offline"}
+            </p>
+          ) : null}
         </div>
       </div>
 
       <p className="mt-2 text-sm">
-        Games played: {user.gamesPlayed}
+        Games played: <span className="font-bold">{user.gamesPlayed ?? 0}</span>
       </p>
 
       <button className="mt-2 text-sm underline">
