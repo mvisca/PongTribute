@@ -42,4 +42,5 @@ CREATE TABLE IF NOT EXISTS matches (
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 CREATE INDEX IF NOT EXISTS idx_matches_p1 ON matches(player1_id);
 CREATE INDEX IF NOT EXISTS idx_matches_p2 ON matches(player2_id);
+CREATE INDEX IF NOT EXISTS idx_matches_finished ON matches(finished_at DESC); -- No estoy seguro ??
 -- CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);

@@ -25,10 +25,9 @@ export class MatchService {
 	/**
      * joinPublicQueue
      * 
-     * Mecanismo: Cola FIFO utilizando Redis Sorted Sets (`match:queue:public`).
+     * Mecanismo: Cola FIFO utilizando Redis Sorted Sets (`match:queue:$gameMode`).
 	 * Atomicidad: Se utiliza `ZPOPMIN` para obtener usuarios de las colas de 
-	 * forma atómica, evitando condiciones de carrera donde dos usuarios podrían
-	 *  ser emparejados incorrectamente.
+	 * forma atómica.
      * Acepta 'gameMode' para separar las colas.
      * 
      */
@@ -71,7 +70,7 @@ export class MatchService {
 				player1_id: opponentId, // El que tenía el ticket más viejo va primero
 				player1_username: p1Data.username,
 				player1_score: 0,
-				player2_id: userId,     // Nosotros llegamos ahora
+				player2_id: userId,     // Yo llego ahora
 				player2_username: p2Data.username,
 				player2_score: 0,
 				winner_id: null,
@@ -85,10 +84,12 @@ export class MatchService {
 			await this.matchRepo.create(newMatch);
 
 			// =============OJO: refinar codigo para que notifique sin enviar el matchid aun
+			// o quizas es mejor que el sleep lo haga el front. ????
+
 			// Mapeo
             const matchDomain = MatchMapper.toDomain(newMatch);
 			
-			// Notificar al oponente vía Redis Pub/Sub (match_found vs username mio)
+			// Notificar al oponente vía Redis Pub/Sub (match_found vs mi_username)
             // Publicamos evento para que el Socket del oponente se entere
             await redisClient.publish('game_events', JSON.stringify({
             	type: 'match.found',
@@ -223,21 +224,20 @@ export class MatchService {
         }
 
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
-        if (activeMatch) throw new SharedErrors.ConflictError('You are already in an active match');
+		if (activeMatch)
+			throw new SharedErrors.ConflictError('You are already in an active match');
         
         const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
-        if (activeMatchOpponent) throw new SharedErrors.ConflictError('Opponent is already in an active match');
+		if (activeMatchOpponent)
+			throw new SharedErrors.ConflictError('Opponent is already in an active match');
         
-		// ---------------------------------------------------------
-        // 2. Obtener Nombres (Pre-Fetch)
-        // ---------------------------------------------------------
+        // 2. Obtener Nombres (Pre-Fetch a User)
         // Necesitamos los nombres ANTES de crear la fila en SQL.
         // Usamos Promise.all para que sea paralelo y rápido (los 2 players).
         const [p1Data, p2Data] = await Promise.all([
             this.fetchUserProfile(userId),
             this.fetchUserProfile(opponentId)
         ]);
-
 
         // 3. Construcción de la Entidad (El Servicio decide ID y Estado)
         const newMatch: MatchTypes.MatchRow = {
