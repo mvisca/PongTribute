@@ -1,7 +1,7 @@
 import { EventHandler, BaseEvent } from "../base.handler.js";
 import { UserEvent, UserLoginEvent, UserLogoutEvent } from './user.events.js';
 import { CommsService } from '../../comms.service.js';
-import { CommsEnv } from "src/config.js";
+import { CommsEnv } from '../../../config.js';
 import { REDIS_CHANNELS } from '@transcendence/shared';
 
 export class UserEventHandler implements EventHandler {
