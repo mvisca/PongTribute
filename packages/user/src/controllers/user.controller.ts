@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { UserTypes, SharedErrors, AuthTypes } from '@transcendence/shared';
-import { UserService } from '../index.js';
+import { UserTypes, SharedErrors, AuthTypes, FRIENDSHIP_STATUS } from '@transcendence/shared';
+import { UserService, FriendshipService } from '../index.js';
 
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
@@ -220,6 +220,18 @@ export class UserController {
 			const { id } = request.params as UserTypes.UserIdParams;
 			const user = await this.userService.findUserByIdInternal(id);
 			return reply.code(200).send(user);
+		} catch (err) {
+			return this.errorHandler(err, request, reply);
+		}
+	}
+
+	async getFriendsInternal(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { id } = request.params as UserTypes.UserIdParams;
+			const friendshipService = new FriendshipService();
+			const friendships = await friendshipService.listFriendships(id, { status: FRIENDSHIP_STATUS.ACCEPTED });
+			const friendsIds = friendships.map(f => (f.userId === id ? f.friendId : f.userId));
+			return reply.code(200).send({ friendsIds });
 		} catch (err) {
 			return this.errorHandler(err, request, reply);
 		}

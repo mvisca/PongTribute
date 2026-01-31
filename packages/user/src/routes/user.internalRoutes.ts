@@ -33,6 +33,12 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.findUserByIdInternal.bind(controller)
 	});
 
+	// Obtener lista de IDs de amigos (interno)
+	app.get('/users/:id/friends', {
+		schema: { tags: ['User'] },
+		handler: controller.getFriendsInternal.bind(controller)
+	});
+
 	// Obtener lastLogoutAt de usuario
 	app.get('/users/:id/logout', {
 		schema: { tags: ['User'] },
