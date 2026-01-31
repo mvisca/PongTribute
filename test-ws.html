@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebSocket Tester</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #2d2d2d;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #61dafb;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #61dafb;
+      padding-bottom: 10px;
+    }
+    .config {
+      margin-bottom: 20px;
+      background: #1e1e1e;
+      padding: 15px;
+      border-radius: 5px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #61dafb;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      background: #3d3d3d;
+      border: 1px solid #555;
+      color: #e0e0e0;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: monospace;
+    }
+    input:focus {
+      outline: none;
+      border-color: #61dafb;
+    }
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      flex: 1;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+    .connect {
+      background: #4caf50;
+      color: white;
+    }
+    .connect:hover { background: #45a049; }
+    .disconnect {
+      background: #f44336;
+      color: white;
+    }
+    .disconnect:hover { background: #da190b; }
+    .ping {
+      background: #2196f3;
+      color: white;
+    }
+    .ping:hover { background: #0b7dda; }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .status {
+      padding: 10px 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .status.disconnected { background: #f44336; }
+    .status.connected { background: #4caf50; }
+    .status.connecting { background: #ff9800; }
+    .messages {
+      background: #1e1e1e;
+      border: 1px solid #555;
+      border-radius: 5px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #2d2d2d;
+      border-left: 3px solid #61dafb;
+      border-radius: 3px;
+    }
+    .message.sent { border-left-color: #4caf50; }
+    .message.received { border-left-color: #2196f3; }
+    .message.error { border-left-color: #f44336; }
+    .timestamp {
+      color: #888;
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    pre {
+      margin: 0;
+      color: #e0e0e0;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔌 WebSocket Tester</h1>
+    
+    <div class="config">
+      <div style="margin-bottom: 15px;">
+        <label for="url">WebSocket URL:</label>
+        <input type="text" id="url" value="ws://localhost/api/ws" 
+               placeholder="ws://localhost/api/ws o wss://ngrok.../api/ws">
+      </div>
+      
+      <div>
+        <label for="token">Token (JWT):</label>
+        <input type="text" id="token" 
+               placeholder="Pega tu token aquí (ej: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...)">
+      </div>
+    </div>
+
+    <div id="status" class="status disconnected">⚫ DESCONECTADO</div>
+
+    <div class="buttons">
+      <button id="connect-btn" class="connect">🔌 Conectar</button>
+      <button id="disconnect-btn" class="disconnect" disabled>🔌 Desconectar</button>
+      <button id="ping-btn" class="ping" disabled>📡 Ping</button>
+    </div>
+
+    <h2 style="color: #61dafb; margin-bottom: 10px;">📨 Mensajes:</h2>
+    <div id="messages" class="messages">
+      <div class="message">
+        <div class="timestamp">Esperando conexión...</div>
+        <pre>Configura la URL y el token arriba, luego haz clic en "Conectar"</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ws = null;
+    const messagesDiv = document.getElementById('messages');
+    const statusDiv = document.getElementById('status');
+    const connectBtn = document.getElementById('connect-btn');
+    const disconnectBtn = document.getElementById('disconnect-btn');
+    const pingBtn = document.getElementById('ping-btn');
+    const urlInput = document.getElementById('url');
+    const tokenInput = document.getElementById('token');
+
+    function addMessage(text, type = 'info', data = null) {
+      const msg = document.createElement('div');
+      msg.className = `message ${type}`;
+      
+      const timestamp = document.createElement('div');
+      timestamp.className = 'timestamp';
+      timestamp.textContent = new Date().toLocaleTimeString();
+      
+      const content = document.createElement('pre');
+      content.textContent = data ? JSON.stringify(data, null, 2) : text;
+      
+      msg.appendChild(timestamp);
+      msg.appendChild(content);
+      messagesDiv.appendChild(msg);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    function updateStatus(status, text) {
+      statusDiv.className = `status ${status}`;
+      statusDiv.textContent = text;
+    }
+
+    function connect() {
+      const url = urlInput.value.trim();
+      const token = tokenInput.value.trim();
+
+      if (!url || !token) {
+        alert('Por favor, completa la URL y el token');
+        return;
+      }
+
+      messagesDiv.innerHTML = '';
+      addMessage('🔌 Conectando...', 'info');
+      updateStatus('connecting', '🟡 CONECTANDO...');
+
+      const wsUrl = `${url}?token=${token}`;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        addMessage('✅ Conexión establecida', 'info');
+        updateStatus('connected', '🟢 CONECTADO');
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
+        pingBtn.disabled = false;
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        addMessage('📨 Mensaje recibido:', 'received', data);
+      };
+
+      ws.onclose = (event) => {
+        addMessage(`🔌 Desconectado - Código: ${event.code}, Razón: ${event.reason || 'N/A'}`, 'info');
+        updateStatus('disconnected', '⚫ DESCONECTADO');
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+        pingBtn.disabled = true;
+      };
+
+      ws.onerror = (error) => {
+        addMessage(`❌ Error de conexión`, 'error');
+        console.error('WebSocket error:', error);
+      };
+    }
+
+    function disconnect() {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+    }
+
+    function sendPing() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const msg = { type: 'ping' };
+        ws.send(JSON.stringify(msg));
+        addMessage('📤 Ping enviado', 'sent', msg);
+      }
+    }
+
+    connectBtn.onclick = connect;
+    disconnectBtn.onclick = disconnect;
+    pingBtn.onclick = sendPing;
+
+    // Enter para conectar
+    tokenInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !connectBtn.disabled) {
+        connect();
+      }
+    });
+  </script>
+</body>
+</html>

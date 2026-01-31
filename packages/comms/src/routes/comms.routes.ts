@@ -16,7 +16,7 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
 	/**
 	 * WebSocket endpoint para comunicaciones en tiempo real
 	 */
-	app.get('/ws', { websocket: true }, (socket, request) => {
+	app.get('/comms/ws', { websocket: true }, (socket, request) => {
 		controller.handleWebSocketConnection(socket, request);
 	});
 }
