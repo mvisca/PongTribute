@@ -149,6 +149,7 @@ export namespace CommsEnv {
   export function getFastifyConfig(): CommsEnv.FastifyConfig {
     const isDev = NODE_ENV() === 'development';
     
+	// Para filtrar health checks de los logs automáticos
 	const reqSerializer = (request: FastifyRequest) => {
 		// Ignorar request '/health'
 		if (request.url === '/health') {
