@@ -148,26 +148,11 @@ export namespace CommsEnv {
   // Config de Fastify (pattern para todos los servicios)
   export function getFastifyConfig(): CommsEnv.FastifyConfig {
     const isDev = NODE_ENV() === 'development';
-    
-	// Para filtrar health checks de los logs automáticos
-	const reqSerializer = (request: FastifyRequest) => {
-		// Ignorar request '/health'
-		if (request.url === '/health') {
-			return undefined;
-		}
-
-		return {
-			method: request.method,
-			url: request.url,
-			headers: request.headers,
-			hostname: request.hostname,
-			remoteAddress: request.ip
-		};
-	};
 
     return {
-    	logger: isDev ? { 
+    	logger: isDev ? 
 		// EN DEVELOPMENT
+		{ 
 			level: LOG_LEVEL(),
 			transport: {
 				target: 'pino-pretty',
@@ -177,15 +162,10 @@ export namespace CommsEnv {
 					ignore: 'pid,hostname'
 				}
 			},
-			serializers: {
-				req: reqSerializer
-			}
-		} : {
+		} :
 		// EN PRODUCTION
+		{
 			level: LOG_LEVEL(),
-			serializers: {
-				req: reqSerializer
-			}
 		},
 		ajv: {
 			customOptions: {

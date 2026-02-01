@@ -39,7 +39,6 @@ export function buildApp(): FastifyInstance {
 	app.register(fastifyWebsocket);
 	
 	// Hooks
-
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
 		if (method === 'HEAD') return;
