@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findEnvFile, RedisConfig, validateRedisConfig } from '@transcendence/shared';
+import type { FastifyRequest } from 'fastify';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,6 +21,7 @@ if (envPath) {
 // ============================================================================
 
 export namespace CommsEnv {
+
   export interface ServiceConfig {
     port: number;
     host: string;
@@ -51,8 +53,19 @@ export namespace CommsEnv {
           ignore: string;
         };
       };
+	  serializers?: {
+		req?: (request: any) => any;
+	  };
     } | boolean;
+	ajv?: {
+		customOptions?: {
+			removeAdditional?: boolean | 'all' | 'failing';
+			coerceTypes?: boolean;
+			useDefaults?: boolean;
+		};
+	};
   }
+
 }
 
 // ============================================================================
@@ -132,26 +145,55 @@ export namespace CommsEnv {
     return redisConfig;
   }
   
-  // Config de Fastify (pattern de otros servicios)
+  // Config de Fastify (pattern para todos los servicios)
   export function getFastifyConfig(): CommsEnv.FastifyConfig {
     const isDev = NODE_ENV() === 'development';
     
+	const reqSerializer = (request: FastifyRequest) => {
+		// Ignorar request '/health'
+		if (request.url === '/health') {
+			return undefined;
+		}
+
+		return {
+			method: request.method,
+			url: request.url,
+			headers: request.headers,
+			hostname: request.hostname,
+			remoteAddress: request.ip
+		};
+	};
+
     return {
-      logger: isDev
-        ? {
-            level: LOG_LEVEL(),
-            transport: {
-              target: 'pino-pretty',
-              options: {
-                colorize: true,
-                translateTime: 'HH:MM:ss',
-                ignore: 'pid,hostname'
-              }
-            }
-          }
-        : {
-            level: LOG_LEVEL()
-          }
-    };
+    	logger: isDev ? { 
+		// EN DEVELOPMENT
+			level: LOG_LEVEL(),
+			transport: {
+				target: 'pino-pretty',
+				options: {
+					colorize: true,
+					translateTime: 'HH:MM:ss Z',
+					ignore: 'pid,hostname'
+				}
+			},
+			serializers: {
+				req: reqSerializer
+			}
+		} : {
+		// EN PRODUCTION
+			level: LOG_LEVEL(),
+			serializers: {
+				req: reqSerializer
+			}
+		},
+		ajv: {
+			customOptions: {
+				removeAdditional: 'all',
+				coerceTypes: false,
+				useDefaults: true
+			}
+		}
+	};
   }
+
 }
