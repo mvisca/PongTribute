@@ -9,13 +9,13 @@ interface UserEventPayload {
 
 export interface UserLoginEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.USER_LOGIN;
-	userId: string;
+	targetUserId: string;
 	payload: UserEventPayload;
 }
 
 export interface UserLogoutEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.USER_LOGOUT;
-	userId: string;
+	targetUserId: string;
 	payload: UserEventPayload;
 }
 
