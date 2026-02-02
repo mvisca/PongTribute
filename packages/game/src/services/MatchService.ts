@@ -9,6 +9,16 @@ import { MatchMapper } from '../mappers/MatchMapper.js';
 import { redisClient } from '../app.js'; 
 import { MatchTypes, MatchSchemas, SharedErrors, GameMode } from '@transcendence/shared';
 import { MatchConstants } from '@transcendence/shared';
+import { REDIS_CHANNELS } from '@transcendence/shared/constants/event.constants.js'; 
+import {
+	MatchFoundEvent,
+	MatchInviteEvent,
+	MatchStartedEvent,
+	MatchRejectedEvent,
+	MatchCancelledEvent,
+	MatchQueueTimeoutEvent
+} from '@transcendence/shared/types/event.types.js';
+
 
 /**
  * MatchService
@@ -91,11 +101,25 @@ export class MatchService {
 			
 			// Notificar al oponente vía Redis Pub/Sub (match_found vs mi_username)
             // Publicamos evento para que el Socket del oponente se entere
-            await redisClient.publish('game_events', JSON.stringify({
-            	type: 'match.found',
-                targetUserId: opponentId,
-                payload: matchDomain
-            }));
+            // await redisClient.publish('game_events', JSON.stringify({
+            // 	type: 'match.found',
+            //     targetUserId: opponentId,
+            //     payload: matchDomain
+			// }));
+			
+			// Defino el evento con tipado estricto. Si falta 'timestamp' o 'payload' está mal, falla.
+			const event: MatchFoundEvent = {
+				type: REDIS_CHANNELS.MATCH_FOUND, // Usa la constante ('match:found')
+				timestamp: Date.now(),
+				source: 'game-service', // Opcional, pero útil para debugar
+				payload: {  // al definir este obj, TypeScrpit busca las variables en el ambito local.
+					matchId: matchDomain.id,     // Mapea los datos de tu dominio
+					playerIds: [opponentId, userId],
+					roomId: matchDomain.id // Creo que NO hace falta ??????????
+				}
+			};
+			// Publicamos en el canal GLOBAL de eventos (definido en shared)
+			await redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
 
             return { outcome: 'match_found', match: matchDomain };
 		
@@ -141,13 +165,24 @@ export class MatchService {
                     console.log(`⏱️ Timeout user ${userId} from ${mode}`);
                     
                     // Solo notificamos si confirmamos el borrado, para evitar confundir al cliente.
-                    await redisClient.publish('game_events', JSON.stringify({
-                        type: 'match.queue_timeout',
-                        targetUserId: userId,
-                        payload: {
-                            reason: 'Time limit exceeded. Please try again.'
-                        }
-                    }));
+                    // await redisClient.publish('game_events', JSON.stringify({
+                    //     type: 'match.queue_timeout',
+                    //     targetUserId: userId,
+                    //     payload: {
+                    //         reason: 'Time limit exceeded. Please try again.'
+                    //     }
+					// }));
+					const event: MatchQueueTimeoutEvent = {
+						type: REDIS_CHANNELS.MATCH_QUEUE_TIMEOUT,
+						timestamp: Date.now(),
+						source: 'game-service',
+						payload: {
+							userId: userId,
+							reason: 'Time limit exceeded. Please try again.'
+						}
+					};
+					// Publicar en canal global
+                    await redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
                 }
             }
         }
@@ -264,11 +299,24 @@ export class MatchService {
             let matchDomain = MatchMapper.toDomain(newMatch);
                 
             // 6. Notificar invitación
-            await redisClient.publish('game_events', JSON.stringify({
-                type: 'match.invite',
-                targetUserId: opponentId,
-                payload: matchDomain
-            }));
+            // await redisClient.publish('game_events', JSON.stringify({
+            //     type: 'match.invite',
+            //     targetUserId: opponentId,
+            //     payload: matchDomain
+			// }));
+			const event: MatchInviteEvent = {
+                type: REDIS_CHANNELS.MATCH_INVITE,
+                timestamp: Date.now(),
+                source: 'game-service',
+                payload: {
+                    matchId: matchDomain.id,
+                    inviterId: userId,
+                    inviteeId: opponentId,
+                    gameMode: config?.gameMode || 'classic'
+                }
+            };
+            
+            await redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
 
             return matchDomain;
 
@@ -347,11 +395,29 @@ export class MatchService {
 			// Forzamos el estado a 'active' en el objeto en memoria porque toDomain usa el dato viejo
 			matchDomain.status = 'active';
 
+			// VALIDACIÓN
+            // Si el mapper nos devuelve player2 undefined, algo grave pasa.
+            if (!matchDomain.player2) {
+                throw new SharedErrors.ServiceError('game', 'Match data corrupted: Player 2 missing');
+			}
+			
 			// 5. Notificar inicio de partida (Redis)
-			await redisClient.publish('game_events', JSON.stringify({
-				type: 'match.started',
-				payload: matchDomain
-			}));
+			// await redisClient.publish('game_events', JSON.stringify({
+			// 	type: 'match.started',
+			// 	payload: matchDomain
+			// }));
+			const event: MatchStartedEvent = {
+                type: REDIS_CHANNELS.MATCH_STARTED,
+                timestamp: Date.now(),
+                source: 'game-service',
+                payload: {
+					matchId: matchDomain.id,
+					// Accedemos a la estructura anidada que definimos en el Mapper
+                    playerIds: [matchDomain.player1.userId, matchDomain.player2.userId] // seguro gracias al if anterior
+                }
+            };
+            
+            await redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
 
 			return matchDomain;
 		} catch (error) {
@@ -392,10 +458,21 @@ export class MatchService {
 			matchDomain.status = 'rejected'; // Actualizacion manual en memoria
 
 			// 5. Notificar rechazo (Redis)
-			await redisClient.publish('game_events', JSON.stringify({
-				type: 'match.rejected',
-				payload: matchDomain
-			}));
+			// await redisClient.publish('game_events', JSON.stringify({
+			// 	type: 'match.rejected',
+			// 	payload: matchDomain
+			// }));
+			const event: MatchRejectedEvent = {
+                type: REDIS_CHANNELS.MATCH_REJECTED,
+                timestamp: Date.now(),
+                source: 'game-service',
+                payload: {
+                    matchId: matchDomain.id,
+                    userId: userId
+                }
+            };
+            
+            await redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
 
 			return matchDomain;
 		} catch (error) {
@@ -433,16 +510,22 @@ export class MatchService {
         // 1. Obtener la partida
         const matchRow = await this.matchRepo.findById(matchId);
 
-        // 2. Guards (Validaciones)
+		// 2. Guards (Validaciones)
         if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
         // Solo se puede cancelar si no ha empezado
         if (matchRow.status !== 'pending') {
-            throw new SharedErrors.ValidationError('Cannot cancel a match that is not pending');
+			throw new SharedErrors.ValidationError('Cannot cancel a match that is not pending');
         }
         // SEGURIDAD: Solo el creador (Player 1) puede cancelar SU invitación
         if (matchRow.player1_id !== userId) {
-            throw new SharedErrors.ForbiddenError('You are not the creator of this match');
+			throw new SharedErrors.ForbiddenError('You are not the creator of this match');
         }
+		
+		// Si es una partida privada "pending", TIENE que haber un player2_id.
+		// Si no lo hay, la base de datos está corrupta o la lógica falló.
+		if (!matchRow.player2_id) {
+			throw new SharedErrors.ValidationError('Cannot cancel a match without an opponent');
+		}
 
         // 3. Borrar de la DB (Hard Delete porque nunca ocurrió)
         // Al borrarla, liberamos a ambos usuarios del bloqueo de "Active Match".
@@ -450,11 +533,24 @@ export class MatchService {
 
         // 4. Notificar al invitado (Player 2)
         // Es importante para que su interfaz se limpie si tenía el popup abierto.
-        await redisClient.publish('game_events', JSON.stringify({
-            type: 'match.cancelled', 
-            targetUserId: matchRow.player2_id, // Avisamos al invitado para que cierre el popup
-            payload: { matchId }
-        }));
+        // await redisClient.publish('game_events', JSON.stringify({
+        //     type: 'match.cancelled',
+        //     targetUserId: matchRow.player2_id, // Avisamos al invitado para que cierre el popup
+        //     payload: { matchId }
+		// }));
+		const event: MatchCancelledEvent = {
+                type: REDIS_CHANNELS.MATCH_CANCELLED,
+                timestamp: Date.now(),
+                source: 'game-service',
+                payload: {
+					matchId: matchId,
+					targetUserId: matchRow.player2_id,
+                    reason: 'The invitation was cancelled by creator'
+                }
+            };
+            
+            await redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+
     }
 
 
