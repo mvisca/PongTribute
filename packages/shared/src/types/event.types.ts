@@ -43,9 +43,17 @@ export interface UserProfileUpdatedEvent extends BaseEvent {
     };
 }
 
+// USER DISCONNECTED
+export interface UserDisconnectedEvent extends BaseEvent {
+    type: typeof REDIS_CHANNELS.USER_DISCONNECTED;
+    targetUserId: string;
+    payload: {
+        userId: string;
+    };
+}
 
 // ---------------------------------------------
-// EVENTOS DE MATCHMAKING (Match Events)
+// EVENTOS DE MATCH (Match Events) servicio game
 // ---------------------------------------------
 
 // MATCH_FOUND
@@ -163,6 +171,7 @@ export type SystemEvent =
     | UserLoginEvent 
     | UserLogoutEvent
 	| UserProfileUpdatedEvent
+	| UserDisconnectedEvent
 	// Match
 	| MatchFoundEvent
 	| MatchQueueTimeoutEvent

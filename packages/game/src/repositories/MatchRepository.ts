@@ -126,22 +126,50 @@ export class MatchRepository {
         }
 	}
 	
-
-	/**
-     * Elimina una partida por su ID.
-     * Se usa si falla la notificación en Redis
-     * para no dejar partidas "zombies" en la base de datos.
-     */
-    async delete(matchId: string): Promise<void> {
-        const stmt = this.db.prepare('DELETE FROM matches WHERE id = ?');
-        stmt.run(matchId);
-        console.log(`🗑️ [Repository] Rollback ejecutado: Partida ${matchId} eliminada.`);
+	
+    /**
+	 * deleteMatch
+	 * Elimina físicamente una partida. 
+	 * Se usa si falla la notificación en Redis
+	 * para no dejar partidas "zombies" en la base de datos.
+	*/
+    async deleteMatch(matchId: string): Promise<void> {
+		const stmt = this.db.prepare('DELETE FROM matches WHERE id = ?');
+        const result = stmt.run(matchId);
+        
+        if (result.changes > 0) {
+			console.log(`🗑️ [Repository] Partida ${matchId} eliminada correctamente.`);
+        } else {
+			console.warn(`⚠️ [Repository] Se intentó borrar partida ${matchId} pero no existía.`);
+        }
     }
-
+		
+	
+	
 	// ========================================================================
     // LECTURA (QUERIES)
 	// ========================================================================
 	
+	/**
+	 * findPendingHostedByUser
+	 * Busca invitaciones privadas creadas por este usuario (Host/Player1)
+	 * que todavía están esperando respuesta (pending).
+	 */
+	async findPendingHostedByUser(userId: string): Promise<MatchTypes.MatchRow[]> {
+		// Asumimos que quien invita siempre es guardado como player1_id
+		const stmt = this.db.prepare(`
+			SELECT * FROM matches
+			WHERE player1_id = ?
+			AND status = 'pending'
+		`);
+
+		// Usamos .all() porque devuelve un array de objetos. 
+		// Si usara get(), solo devolvería la 1ª coincidencia.
+		// con el as le digo que lo que sale de aqui cumple con la interfaz MatchRow
+		return stmt.all(userId) as MatchTypes.MatchRow[];
+	}
+
+
     /**
      * findActiveMatchByUserId
      * Busca si el usuario ya está jugando o esperando.

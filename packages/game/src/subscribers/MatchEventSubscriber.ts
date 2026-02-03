@@ -2,7 +2,7 @@
 
 import { Redis } from 'ioredis';
 import { MatchService } from '../services/MatchService.js';
-import { REDIS_CHANNELS, Utils } from '@transcendence/shared';
+import { REDIS_CHANNELS, SystemEvent, Utils } from '@transcendence/shared';
 // Importamos la Configuración (que es un Namespace)
 import { GameEnv } from '../config.js'; 
 
@@ -45,24 +45,42 @@ export class MatchEventSubscriber {
     }
 
     private handleMessage(message: string) {
-        try {
-			const event = JSON.parse(message);
+		try {
+			// 1. Casteamos a SystemEvent para que TypeScript nos ayude
+			const event = JSON.parse(message) as SystemEvent;
 			
 			// Validación defensiva básica
 			if (!event || !event.type) return;
 
         switch (event.type) {
-                // CASO 1: Desconexión (limpia colas)
-                case REDIS_CHANNELS.USER_DISCONNECTED:
-                    if (event.userId) {
-                        console.log(`⚡ [MatchEventSubscriber] Disconnect: ${event.userId}`);
-                        this.matchService.leavePublicQueue(event.userId)
-                            .catch(err => console.error('❌ Queue cleanup error:', err));
-                    }
-                    break;
+                // CASO 1: Desconexión (limpia colas, cancela pending matches)
+			case REDIS_CHANNELS.USER_DISCONNECTED:
+				// TypeScript sabe que 'event' es UserDisconnectedEvent aquí
+				// Usamos targetUserId que es el estándar definido en BaseEvent
+				const disconnectedId = event.targetUserId;
 
+                if (disconnectedId) {
+                     console.log(`⚡ [MatchEventSubscriber] Handling disconnect for: ${disconnectedId}`);
+                    
+                    // 2. Ejecución Paralela y Resiliente
+	                // Ejecutamos ambas limpiezas. Si una falla, la otra sigue.
+                    Promise.allSettled([
+                        this.matchService.leavePublicQueue(disconnectedId),
+                        this.matchService.cancelPendingMatches(disconnectedId)
+                    ]).then((results) => {
+                        // Log opcional para depuración
+                        results.forEach((result, index) => {
+                            if (result.status === 'rejected') {
+                                console.error(`❌ Cleanup task ${index} failed for ${disconnectedId}:`, result.reason);
+                            }
+                        });
+                    });
+                }
+                break;
+			
+			
                 // CASO 2: Actualización de Perfil (NUEVO)
-                case REDIS_CHANNELS.USER_PROFILE_UPDATED: // <--- VERIFICA ESTE NOMBRE EN SHARED
+                case REDIS_CHANNELS.USER_PROFILE_UPDATED:
                     // Asegúrate de que el payload traiga userId y el nuevo username
                     // Estructura esperada: { type: '...', payload: { userId: '123', username: 'NewName' } }
                     const { userId, username } = event.payload || {}; 
