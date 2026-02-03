@@ -297,5 +297,20 @@ export class MatchController {
             console.error("❌ [Controller] Error in leaveQueue:", error);
             SharedErrors.handleError(error, reply);
         }
+	}
+
+
+    async getMatchHistory(req: FastifyRequest<MatchSchemas.GetMatchHistoryReq>, reply: FastifyReply) {
+        // 1. Extraer Params (userId)
+        const { userId } = req.params;
+        
+        // 2. Extraer Query (offset). Si es undefined, el servicio o schema maneja el default.
+        const { offset } = req.query;
+
+        // 3. Llamar al servicio (si offset viene undefined, enviamos 0 al servicio)
+        const matches = await this.matchService.getMatchHistory(userId, offset ?? 0);
+        
+        // 4. Responder
+        return reply.send(matches);
     }
 }

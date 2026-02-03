@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { SharedErrors, Utils } from "@transcendence/shared";
 import { authRoutes, AuthEnv } from './index.js';
+import { healthRoutes } from './routes/health.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -112,39 +113,8 @@ export function buildApp(): FastifyInstance {
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
 	
-	/** endpoint de health check mejorado: verifica Redis */
-	app.get('/health', async(request, reply) => {
-		const checks: Record<string, { status: string; error?: string }> = {};
-		let allHealthy = true;
-
-		// Verificar Redis
-		if (redisClient) {
-			try {
-				const redisStatus = await redisClient.ping();
-				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
-				if (redisStatus !== 'PONG') allHealthy = false;
-			} catch (error: any) {
-				checks.redis = { status: 'unreachable', error: error.message };
-				allHealthy = false;
-			}
-		} else {
-			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
-			allHealthy = false;
-		}
-
-		const statusCode = allHealthy ? 200 : 503;
-		reply.status(statusCode);
-
-		return {
-			status: allHealthy ? 'ok' : 'degraded',
-			service: 'AUTH SERVICE',
-			timestamp: new Date().toISOString(),
-			uptime: process.uptime(),
-			dependencies: checks
-		};
-	});
-
-	/** Registrar todas las rutas del servicio */	
+	/** Registrar todas las rutas del servicio */
+	app.register(healthRoutes, { redisClient });
 	console.log('REG AUTH PUBLIC ROUTES');
 	app.register(authRoutes, { prefix: '/api' });
 	

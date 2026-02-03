@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { GatewayEnv, getFastifyConfig } from './config.js';
 import { createProxyHandler } from './proxy.js';
 import { createOpenApiHandler } from './openapi.js';
+import { healthRoutes } from './routes/health.routes.js';
 
 function closeWithFallback(ws: WebSocket, code = 1000, reason = 'closing', timeoutMs = 500) {
 	try {
@@ -104,67 +105,10 @@ export function buildApp(): FastifyInstance {
 		);
 		done();
 	});
-	
-	// Health check mejorado: verifica que los servicios upstream estén disponibles
-	app.get('/health', async (request, reply) => {
-		const checks: Record<string, { status: string; error?: string }> = {};
-		let allHealthy = true;
 
-		// Helper para hacer fetch con timeout
-		const fetchWithTimeout = async (url: string, timeoutMs: number) => {
-			const controller = new AbortController();
-			const timeout = setTimeout(() => controller.abort(), timeoutMs);
-			try {
-				const response = await fetch(url, { signal: controller.signal });
-				clearTimeout(timeout);
-				return response;
-			} catch (error) {
-				clearTimeout(timeout);
-				throw error;
-			}
-		};
+	// Registrar health check route
+	app.register(healthRoutes);
 
-		// Verificar AUTH service
-		try {
-			const authResponse = await fetchWithTimeout(`${GatewayEnv.AUTH_SERVICE_URL}/health`, 3000);
-			checks.auth = { status: authResponse.ok ? 'ok' : 'unhealthy' };
-			if (!authResponse.ok) allHealthy = false;
-		} catch (error: any) {
-			checks.auth = { status: 'unreachable', error: error.message };
-			allHealthy = false;
-		}
-
-		// Verificar USER service
-		try {
-			const userResponse = await fetchWithTimeout(`${GatewayEnv.USER_SERVICE_URL}/health`, 3000);
-			checks.user = { status: userResponse.ok ? 'ok' : 'unhealthy' };
-			if (!userResponse.ok) allHealthy = false;
-		} catch (error: any) {
-			checks.user = { status: 'unreachable', error: error.message };
-			allHealthy = false;
-		}
-
-		// Verificar GAME service
-		try {
-			const gameResponse = await fetchWithTimeout(`${GatewayEnv.GAME_SERVICE_URL}/health`, 3000);
-			checks.game = { status: gameResponse.ok ? 'ok' : 'unhealthy' };
-			if (!gameResponse.ok) allHealthy = false;
-		} catch (error: any) {
-			checks.game = { status: 'unreachable', error: error.message };
-			allHealthy = false;
-		}
-
-		const statusCode = allHealthy ? 200 : 503;
-		reply.status(statusCode);
-		
-		return {
-			status: allHealthy ? 'ok' : 'degraded',
-			service: 'gateway',
-			timestamp: new Date().toISOString(),
-			dependencies: checks
-		};
-	});
-	
 	// Swagger UI (aggregator)
 	app.register(swagger, {
 		openapi: {
@@ -434,6 +378,9 @@ export function buildApp(): FastifyInstance {
 	app.all('/api/matches', gameProxy);
 	app.all('/api/matches/*', gameProxy);
 	
+	const commsProxy = proxy(GatewayEnv.COMMS_SERVICE_URL);
+	app.all('/api/comms/*', commsProxy);
+
 	app.setNotFoundHandler((_request: FastifyRequest, reply: FastifyReply) => {
 		reply.status(404).send({
 			error: 'Not Found',

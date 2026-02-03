@@ -12,6 +12,7 @@ import {
 	SharedErrors,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
+import { REDIS_CHANNELS, UserLoginEvent, UserLogoutEvent } from '@transcendence/shared';
 import { redisClient } from '../app.js';
 
 export class AuthService {
@@ -81,6 +82,12 @@ export class AuthService {
 		user: UserTypes.UserInternal,
 		is2FAVerified: boolean = false
 	): Promise<AuthTypes.LoginSuccessResponse> {
+		
+		// Guard: Redis disponible?
+		if (!redisClient) {
+			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
+		}
+		
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION() === true) {
 			await this.deleteRefreshTokensById(user.id);
@@ -89,6 +96,26 @@ export class AuthService {
 		
 		// establecer usuario online
 		await this.setUserIsOnline(user.id, true);
+		
+		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
+		const loginEvent: UserLoginEvent = {
+			type: REDIS_CHANNELS.USER_LOGIN,
+			timestamp: Date.now(),
+			source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+			targetUserId: user.id,
+			payload: {
+				username: user.username,
+				avatar: user.avatar,
+				email: user.email
+			}
+		};
+		
+		// PUBLICACIÓN EN REDIS
+		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
+		redisClient.publish(REDIS_CHANNELS.USER_LOGIN, JSON.stringify(loginEvent))
+		.catch(err => {
+			console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
+		});
 		
 		// Crear user payload y par tokens
 		return this.generateTokenPair(user, is2FAVerified);
@@ -562,9 +589,9 @@ export class AuthService {
 		password: string,
 		avatar?: string
 	): Promise<AuthTypes.LoginResponse> {
-
+		
 		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
-
+		
 		// Si existe avatar, validarlo y subirlo a cloudinary
 		if (avatar && avatar.trim() !== "") {
 			if (!this.validateAvatar(avatar)) {
@@ -580,7 +607,7 @@ export class AuthService {
 			}
 			avatarUrl = await this.uploadAvatarWithFallback(avatar);
 		}
-
+		
 		// Crear usuario en User Service
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
@@ -633,7 +660,7 @@ export class AuthService {
 					}
 				);
 			}
-
+			
 			throw new SharedErrors.ServiceError('user', `Fallo creando usuario`, {
 				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users`,
 				method: 'POST',
@@ -747,7 +774,43 @@ export class AuthService {
 		await this.updateLastLogoutAt(userId);
 		
 		try {
+			
+			const user = await this.fetchUserById(userId);
+			
+			if (!user) {
+				throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
+					operation: 'logout',
+					reason: 'userNotFound',
+					attemptedId: userId
+				});
+			}
+			
+			// Setear user ofline
 			await this.setUserIsOnline(userId, false);
+
+			// Preparar objeto para notificaciones
+			const logoutEvent: UserLogoutEvent = {
+				type: REDIS_CHANNELS.USER_LOGOUT,
+				timestamp: Date.now(),
+				source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+				targetUserId: userId,
+				payload: {
+					lastLogoutAt: user.lastLogoutAt
+				}
+			}
+			
+			// Guard de Redis disponible
+			if (!redisClient) {
+				throw new SharedErrors.ServiceError('redis', 'Redis client not available');
+			}
+
+			// PUBLICACIÓN EN REDIS
+			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
+			redisClient.publish(REDIS_CHANNELS.USER_LOGIN, JSON.stringify(logoutEvent))
+			.catch(err => {
+				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
+			});
+
 		} catch (err) {
 			console.error(`Fallo al actualizar el estado online del usuario: ${userId}`, err);
 		}

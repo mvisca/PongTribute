@@ -13,10 +13,12 @@ CREATE TABLE IF NOT EXISTS matches (
     
     -- JUGADOR 1 (Host) - Fusionamos datos de match_players aquí
     player1_id TEXT NOT NULL,
+	player1_username TEXT NOT NULL,
     player1_score INTEGER DEFAULT 0,
     
     -- JUGADOR 2 (Rival) - Fusionamos datos de match_players aquí
     player2_id TEXT, -- Puede ser NULL si es matchmaking esperando rival
+	player2_username TEXT, --Puede ser NULL al inicio
     player2_score INTEGER DEFAULT 0,
     
     winner_id TEXT,
@@ -40,4 +42,5 @@ CREATE TABLE IF NOT EXISTS matches (
 CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
 CREATE INDEX IF NOT EXISTS idx_matches_p1 ON matches(player1_id);
 CREATE INDEX IF NOT EXISTS idx_matches_p2 ON matches(player2_id);
+CREATE INDEX IF NOT EXISTS idx_matches_finished ON matches(finished_at DESC); -- No estoy seguro ??
 -- CREATE INDEX IF NOT EXISTS idx_matches_tournament ON matches(tournament_id);

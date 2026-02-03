@@ -1,4 +1,6 @@
 //Hace la funcion de un traductor (de datos de sql a respuesta JSON)
+//Mapper es el encargado de convertir lo que sale de la base de 
+// datos al objeto que entiende la lógica de negocio y el frontend.
 import { MatchTypes } from '@transcendence/shared';
 
 export class MatchMapper {
@@ -13,7 +15,7 @@ export class MatchMapper {
         if (row.player2_id) {
             player2Obj = {
                 userId: row.player2_id,
-                username: "Unknown", // El servicio de usuarios hidratara esto después
+                username: row.player2_username ?? "Unknown",
                 score: row.player2_score ?? 0, // Si es null, ponemos 0
                 isWinner: row.winner_id === row.player2_id
             };
@@ -26,7 +28,7 @@ export class MatchMapper {
             
             player1: {
                 userId: row.player1_id,
-                username: "Unknown", // El servicio de usuarios hidratara esto después
+                username: row.player1_username,
                 score: row.player1_score,
                 isWinner: row.winner_id === row.player1_id
             },

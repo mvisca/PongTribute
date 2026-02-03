@@ -36,7 +36,8 @@ export interface GameState {
     player1: PaddleState;
     player2: PaddleState;
     ball: BallState;
-    config: GameConfig;      // Enviamos las medidas para que el front sepa escalar
+	config: GameConfig;      // Enviamos las medidas para que el front sepa escalar
+	targetScore: number;
     status: 'WAITING' | 'PLAYING' | 'PAUSED' | 'FINISHED' | 'ABORTED';
     winnerId?: number;       // ID del usuario ganador (si finished)
 }

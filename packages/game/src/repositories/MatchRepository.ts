@@ -29,11 +29,13 @@ export class MatchRepository {
         // SQL Directo. Sin try-catch. Si falla (Unique constraint, etc), explota hacia arriba.
         const stmt = this.db.prepare(`
             INSERT INTO matches (
-                id, status, player1_id, player1_score, player2_id, player2_score, 
-                winner_id, created_at, finished_at, game_mode, target_score
+                id, status, player1_id, player1_username, player1_score, 
+				player2_id, player2_username, player2_score, winner_id, 
+				created_at, finished_at, game_mode, target_score
             ) VALUES (
-                @id, @status, @player1_id, @player1_score, @player2_id, @player2_score,
-                @winner_id, @created_at, @finished_at, @game_mode, @target_score
+                @id, @status, @player1_id, @player1_username, @player1_score,
+				 @player2_id, @player2_username, @player2_score, @winner_id, 
+				 @created_at, @finished_at, @game_mode, @target_score
             )
         `);
         
@@ -84,7 +86,23 @@ export class MatchRepository {
 		}
     }
 
+	/**
+     * updateUsernames
+     * Actualiza los nombres desnormalizados cuando un usuario cambia su profile.
+     */
+    async updateUsernames(userId: string, newUsername: string): Promise<void> {
+        // 1. Preparar las sentencias
+        const updateP1 = this.db.prepare(`
+            UPDATE matches SET player1_username = ? WHERE player1_id = ?
+        `);
+        const updateP2 = this.db.prepare(`
+            UPDATE matches SET player2_username = ? WHERE player2_id = ?
+        `);
 
+        // 2. Ejecutar (Better-sqlite3 usa .run() para UPDATES)
+        updateP1.run(newUsername, userId);
+        updateP2.run(newUsername, userId);
+    }
 
 	/**
      * finishMatch
@@ -148,6 +166,25 @@ export class MatchRepository {
         const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
         const row = stmt.get(id);
         return row ? (row as MatchTypes.MatchRow) : null;
+	}
+	
+	/**
+     * findByUserId
+     * Busca partidas terminadas donde user sea el Player1 o el Player2.
+     * RETORNO: un Array de objetos (MatchRow[]).
+     */
+    // El retorno es MatchRow[], nunca null (si no hay, es array vacío)
+    async findByUserId(userId: string, limit: number, offset: number): Promise<MatchTypes.MatchRow[]> {
+        const stmt = this.db.prepare(`
+            SELECT * FROM matches
+            WHERE (player1_id = ? OR player2_id = ?)
+            AND status = 'finished'
+            ORDER BY finished_at DESC
+            LIMIT ? OFFSET ?
+        `);
+        
+        // Usa .all() para devolver lista.
+        return stmt.all(userId, userId, limit, offset) as MatchTypes.MatchRow[];
     }
 }
 	

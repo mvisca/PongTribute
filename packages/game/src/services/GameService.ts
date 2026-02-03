@@ -43,6 +43,9 @@ export class GameService {
                 return;
             }
 
+			// Extraemos el score. Si la DB devuelve null (raro), usamos 11 por defecto (fallback)
+			const targetScore = matchFromDb.target_score || 11;
+
             // AHORA SÍ tenemos los datos para crear la sesión correctamente
             session = {
                 matchId: matchId,
@@ -50,7 +53,7 @@ export class GameService {
                 player2Id: String(matchFromDb.player2_id),
                 socketP1: null,
                 socketP2: null,
-                gameState: this.createInitialState(matchId),
+                gameState: this.createInitialState(matchId, targetScore),
                 loopId: null
             };
 
@@ -84,19 +87,20 @@ export class GameService {
     // -------------------------------------------------------------------
     // AUXILIAR: ESTADO INICIAL
     // -------------------------------------------------------------------
-    private createInitialState(matchId: string): GameState {
+    private createInitialState(matchId: string, targetScore: number): GameState {
         const WALL_MARGIN = 10; 
 
         return {
             id: matchId,
             status: 'WAITING',
+			targetScore: targetScore,
             config: {
                 width: GAME_CONSTANTS.COURT_WIDTH,
                 height: GAME_CONSTANTS.COURT_HEIGHT,
                 paddleWidth: GAME_CONSTANTS.PADDLE_WIDTH,
                 paddleHeight: GAME_CONSTANTS.PADDLE_HEIGHT,
                 ballRadius: GAME_CONSTANTS.BALL_SIZE
-            },
+			},
             player1: { 
                 x: WALL_MARGIN, 
                 y: (GAME_CONSTANTS.COURT_HEIGHT / 2) - (GAME_CONSTANTS.PADDLE_HEIGHT / 2), 
@@ -224,22 +228,19 @@ export class GameService {
                 ball.x = player2.x - r - 1;
         }
 
-		//================OJO=============
-        const WIN_SCORE = 6; //OJO esto seria mejor manejarlo desde constants. Creo.
-		// No puede ignorar el target_score de la DB. Seria mejor
-		// usar session.targetScore obtenido de la partida en DB
+		const winScore = session.gameState.targetScore;
 		
         // 3. PUNTUACION
         if (ball.x < 0) {
             session.gameState.player2.score++;
-            if (session.gameState.player2.score >= WIN_SCORE) {
+            if (session.gameState.player2.score >= winScore) {
                 this.endGame(session.matchId, session.player2Id);
                 return; 
             }
             this.resetBall(session);
         } else if (ball.x > session.gameState.config.width) {
             session.gameState.player1.score++;
-            if (session.gameState.player1.score >= WIN_SCORE) {
+            if (session.gameState.player1.score >= winScore) {
                 this.endGame(session.matchId, session.player1Id);
                 return; 
             }
@@ -279,9 +280,7 @@ export class GameService {
         }
         
 		// 2. Actualizar estado y recuperar puntuaciones finales
-		// El as any es un "truco" temporal porque el tipo GameState 
-		// en shared podría no tener actualizado el estado 'FINISHED' todavía.
-        (session.gameState.status as any) = 'FINISHED';
+        (session.gameState.status) = 'FINISHED';
         const p1Score = session.gameState.player1.score;
         const p2Score = session.gameState.player2.score;
 

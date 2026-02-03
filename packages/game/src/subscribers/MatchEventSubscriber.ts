@@ -2,7 +2,7 @@
 
 import { Redis } from 'ioredis';
 import { MatchService } from '../services/MatchService.js';
-import { REDIS_CHANNELS, REDIS_EVENTS, Utils } from '@transcendence/shared';
+import { REDIS_CHANNELS, Utils } from '@transcendence/shared';
 // Importamos la Configuración (que es un Namespace)
 import { GameEnv } from '../config.js'; 
 
@@ -44,18 +44,39 @@ export class MatchEventSubscriber {
         }
     }
 
-	//OJO: de momento solo escucha un evento. REVISAR MAS ADELANTE
     private handleMessage(message: string) {
         try {
-            const event = JSON.parse(message);
+			const event = JSON.parse(message);
+			
+			// Validación defensiva básica
+			if (!event || !event.type) return;
 
-            // Filtramos: Solo escucha desconexiones para limpiar colas
-            if (event.type === REDIS_EVENTS.USER_DISCONNECTED && event.userId) {
-                console.log(`⚡ [MatchEventSubscriber] Disconnect detected for User: ${event.userId}`);
+        switch (event.type) {
+                // CASO 1: Desconexión (limpia colas)
+                case REDIS_CHANNELS.USER_DISCONNECTED:
+                    if (event.userId) {
+                        console.log(`⚡ [MatchEventSubscriber] Disconnect: ${event.userId}`);
+                        this.matchService.leavePublicQueue(event.userId)
+                            .catch(err => console.error('❌ Queue cleanup error:', err));
+                    }
+                    break;
+
+                // CASO 2: Actualización de Perfil (NUEVO)
+                case REDIS_CHANNELS.USER_PROFILE_UPDATED: // <--- VERIFICA ESTE NOMBRE EN SHARED
+                    // Asegúrate de que el payload traiga userId y el nuevo username
+                    // Estructura esperada: { type: '...', payload: { userId: '123', username: 'NewName' } }
+                    const { userId, username } = event.payload || {}; 
+                    
+                    if (userId && username) {
+                        console.log(`📝 [Subscriber] Profile update received for ${userId}`);
+                        this.matchService.handleUsernameChange(userId, username)
+                            .catch(err => console.error('❌ Username sync error:', err));
+                    }
+                    break;
                 
-                // Acción: Limpiar la cola pública
-                this.matchService.leavePublicQueue(event.userId)
-                    .catch(err => console.error('❌ Error auto-leaving queue:', err));
+                default:
+                    // Ignoramos eventos que no nos interesan
+                    break;
             }
 
         } catch (error) {
