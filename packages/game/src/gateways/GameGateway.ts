@@ -5,24 +5,21 @@
 //4. Acepta o rechaza la conexion
 
 // Tipo y clase para el socket de la lib ws
-// La necesitamos para TypeScript conozca los metodos del obj socket (.send(),.on(), close(), ...)
+// La necesitamos para que TypeScript conozca los metodos del obj socket (.send(),.on(), close(), ...)
 import { WebSocket } from 'ws';
-//Contiene el tipo que define como es una peticion HTTP en Fastfy.
-//y empieza siendo una peticion HTTP antes de convertirse en WebSocket
+// Contiene el tipo que define como es una peticion HTTP en Fastfy.
+// Empieza siendo una peticion HTTP antes de convertirse en WebSocket
 import { FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
+import { SOCKET_EVENTS } from '@transcendence/shared';
 
-//Usaremos esta clase para encapsular toda la logica de conexion. Esto
-// nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
+// Clase que encapsula la logica de conexion.
+// Esto nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
 export class GameGateway {
     
     /**
-	 * AQUI ESTAMOS DESNUDOS PORQUE HEMOS SALIDO DEL FLUJO HTTP ESTANDAR
-	 *  DONDE FASTIFY NOS PROTEGE AUTOMATICAMENTE. HEMOS DE IMPEMENTAR
-	 * MANUALMENTE LA SEGURIDAD.
-	 * 
 	 * Al no soportar headers estándar en el handshake inicial del navegador, 
 	 * se implementa validación manual del token vía Query Param (`?token=...`).
      * Riesgo: Los tokens pasados por URL pueden quedar en logs de servidores 
@@ -30,8 +27,6 @@ export class GameGateway {
 	 * asegurar que el log de acceso no registre la query string completa en
 	 *  entornos de producción.
 	 * 
-     * Maneja la conexión entrante (Handshake)
-	 * Sin await: Notese que handleConnection no es async. 
 	 * Los WebSockets funcionan por eventos (on('message'), 
 	 * on('close')). No bloqueamos el hilo esperando.
 	 **/
@@ -57,7 +52,7 @@ export class GameGateway {
         // 3. VALIDACION DE ENTRADA
         if (!matchId || !token) {
 			console.log('⛔ [Gateway] Conexión rechazada: Faltan parámetros');
-			// En protocolo WebSocket, los cierres tiene codigos numericos:
+			// En protocolo WebSocket, los cierres tienen codigos numericos:
 			//  1000: "Normal"
 			//  1008: "Policy Violation". 
             socket.close(1008, 'Missing matchId or token');
@@ -65,7 +60,9 @@ export class GameGateway {
         }
 
 		try {
-			// 4. VALIDACION DE SEGURIDAD (JWT)
+			// 4. VALIDACION DE SEGURIDAD (JWT) MANUAL
+			// Al no soportar headers estándar en el handshake inicial del navegador, 
+			// se implementa validación manual del token vía Query Param (`?token=...`).
 			//Aqui no tenemos Fastify que revise si la configuracion es correcta, ni validaciones
 			//automaticas, ni middleware como en las peticiones HTTP. 
 			//Es vital envolver en un try catch por si falla algo.
@@ -90,34 +87,23 @@ export class GameGateway {
 			// sabe que la conexion es estable y puede dejar de mostrar el spinner de carga 
 			// y mostrar la vista del juego.
             // Vinculamos el socket con la partida (matchId) y el usuario (payload.id)
-            // ========TODO: Aquí es donde en el futuro meteremos al socket en una "Sala"
             this.sendWelcomeMessage(socket, matchId, payload.id);
 
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
 			socket.on('message', async (message: string) => {
-				//console.log(`📩 [Gateway] Mensaje de ${payload.username}: ${message}`);
 				//CONECTAMOS LOS INPUTS DEL CLIENTE.
 				await this.gameService.processInput(matchId, userId, message);
 			});
 
-			// 7. EVENTO: DESCONEXION
-			// Se dispara si pierde internet o cierra la pestanya
+			// 7. EVENTO: DESCONEXION (por perdida de internet o cierre de la pestanya)
             socket.on('close', () => {
                 console.log(`❌ [Gateway] Jugador Desconectado: ${payload.username}`);
-				// =========TODO: No destruir sesión inmediatamente en `handleDisconnect()`
-				// Esperar 20 segundos antes de dar victoria por abandono
-				// Si reconecta en ese tiempo, reasignar socket (pero solo en partidas largas ??).
-				// Si no reconecta: Notificar al otro jugador ("Ganaste por 
-				// abandono de tu rival")se lleva la puntuacion maxima y 
-				// guardar resultado en DB. El servidor cierra la sala y libera la memoria.
-
 			});
-
 
         } catch (err) {
             console.log('⛔ [Gateway] Conexión rechazada: Token inválido');
-            socket.close(1008, 'Invalid Token'); //codigo de desconexion 1008: Policy violation 
+            socket.close(1008, 'Invalid Token');
 			// Martin: no se hacen throw en los catch para que el controller envíe respuestas de fallo al clietne?
 			// No, aqui la conexion HTTP ya no existe mas, termino, ahora es un socket y
 			//para decir error se usa socket.close(codigo de cierre, mensaje). Si haces
@@ -130,7 +116,7 @@ export class GameGateway {
 	//METODO PRIVADO AUXILIAR
     private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string) {
         const welcome = {
-            event: 'JOINED_MATCH', //El "nombre" del evento
+            event: SOCKET_EVENTS.JOINED_MATCH,
             data: {
                 matchId,
                 playerId: userId,

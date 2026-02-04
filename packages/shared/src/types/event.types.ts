@@ -39,7 +39,9 @@ export interface UserProfileUpdatedEvent extends BaseEvent {
     type: typeof REDIS_CHANNELS.USER_PROFILE_UPDATED;
     targetUserId: string;
     payload: {
-        updatedFields: string[];
+		updatedFields: string[]; // OJO con esto. REVISARLO CON MARTIN
+		username?: string;
+		avatar?: string;
     };
 }
 
@@ -117,7 +119,8 @@ export interface MatchCancelledEvent extends BaseEvent {
 	};
 }
 
-
+/*
+ESTOS YA NO SON EVENTOS REDIS SINO DE SOCKET
 // ---------------------------------------------
 // EVENTOS DE JUEGO (Game Events)
 // ---------------------------------------------
@@ -150,7 +153,7 @@ export interface GameEndEvent extends BaseEvent {
 		scores: Record<string, number>; // objeto donde las claves son strings (user IDs) y los valores son números (puntos)
     };
 }
-
+*/
 
 
 
@@ -168,8 +171,8 @@ export interface GameEndEvent extends BaseEvent {
 //  que si el tipo es GAME_START, entonces seguro tienes acceso a payload.gameId.
 export type SystemEvent =
 	// User
-    | UserLoginEvent 
-    | UserLogoutEvent
+	| UserLoginEvent
+	| UserLogoutEvent
 	| UserProfileUpdatedEvent
 	| UserDisconnectedEvent
 	// Match
@@ -178,10 +181,10 @@ export type SystemEvent =
 	| MatchInviteEvent
 	| MatchStartedEvent
 	| MatchRejectedEvent
-	| MatchCancelledEvent
+	| MatchCancelledEvent;
 	// Game
-    | GameStartEvent 
-    | GameEndEvent;
+    //| GameStartEvent 
+    //| GameEndEvent;
 
 
 

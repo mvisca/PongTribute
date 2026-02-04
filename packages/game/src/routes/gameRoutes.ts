@@ -43,7 +43,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // SUSCRIPTORES (Background Tasks)
     // ========================================================================
     // Le pasamos el matchService para que pueda usarlo
-    const eventSubscriber = new MatchEventSubscriber(matchService);
+    const eventSubscriber = new MatchEventSubscriber(matchService, gameService);
     await eventSubscriber.connect();
 
     // ========================================================================
