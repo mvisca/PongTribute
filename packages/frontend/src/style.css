@@ -1,12 +1,71 @@
 @import "tailwindcss";
 .input {
-  @apply w-full mb-3 p-2 rounded bg-purple-700 text-purple-100 placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500;
+  background-color: #12081f;
+  border: 2px solid #6d3bd1;
+  color: #ffffff;
+  padding: 0.6rem;
+  border-radius: 0.4rem;
 }
 
-.btn-primary {
-  @apply w-full bg-purple-600 hover:bg-purple-500 p-2 rounded text-purple-100 transition;
+.input:focus {
+  outline: none;
+  border-color: #00ffff;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
 }
 
+body {
+  background-color: #1a0f2e;
+  font-family: 'Press Start 2P', monospace;
+}
+
+/* Fondo con pixeles decorativos */
+.retro-bg {
+  position: relative;
+  min-height: 100vh;
+  background-color: #1a0f2e;
+  overflow: hidden;
+}
+
+.retro-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(rgba(200, 140, 255, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+}
+
+/* Título retro con degradado */
+.retro-title {
+  background: linear-gradient(90deg, #00ffff, #ff4fd8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  font-size: 2rem;
+  line-height: 1.4;
+  text-shadow:
+    0 0 8px rgba(0, 255, 255, 0.6),
+    0 0 14px rgba(255, 79, 216, 0.5);
+}
+
+/* Botones arcade */
+.arcade-btn {
+  border: 2px solid #ff4fd8;
+  background-color: transparent;
+  color: #ff4fd8;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0 10px rgba(255, 79, 216, 0.6);
+  transition: all 0.2s ease;
+}
+
+.arcade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 12px #00ffff,
+    0 0 24px rgba(0, 255, 255, 0.6);
+}
 
 
 /*base: Carga los estilos basicos de Tailwind, esto incluye CSS reset y html. HAce que la webs se vea consistente

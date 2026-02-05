@@ -5,6 +5,7 @@ packages:
   - packages/auth
   - packages/game
   - packages/gateway
+  - packages/comms
 
 ignoredBuiltDependencies:
   - babylonjs

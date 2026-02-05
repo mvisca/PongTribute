@@ -24,14 +24,17 @@ const DEFAULTS = {
 	GATEWAY_PORT: 3000,
 	GATEWAY_HOST: '0.0.0.0',
 
-	AUTH_SERVICE_URL: 'http://localhost:3002',
+	AUTH_SERVICE_URL: 'http://auth:3002',
 	AUTH_OPENAPI_PATH: '/docs/json',
 
-	USER_SERVICE_URL: 'http://localhost:3001',
+	USER_SERVICE_URL: 'http://user:3001',
 	USER_OPENAPI_PATH: '/docs/json',
 
-	GAME_SERVICE_URL: 'http://localhost:3003',
+	GAME_SERVICE_URL: 'http://game:3003',
 	GAME_OPENAPI_PATH: '/docs/json',
+
+	COMMS_SERVICE_URL: 'http://comms:3005',
+	COMMS_OPENAPI_PATH: 'docs/json',
 
 	CORS_ORIGIN: 'http://localhost:5173',
 
@@ -88,6 +91,9 @@ export const GatewayEnv = {
 	GAME_SERVICE_URL: process.env.GAME_SERVICE_URL || DEFAULTS.GAME_SERVICE_URL,
 	GAME_OPENAPI_PATH: process.env.GAME_OPENAPI_PATH || DEFAULTS.GAME_OPENAPI_PATH,
 
+	COMMS_SERVICE_URL: process.env.COMMS_SERVICE_URL || DEFAULTS.COMMS_SERVICE_URL,
+	COMMS_OPENAPI_PATH: process.env.COMMS_OPENAPI_PATH || DEFAULTS.COMMS_OPENAPI_PATH,
+
 	CORS_ORIGIN: process.env.CORS_ORIGIN || DEFAULTS.CORS_ORIGIN,
 
 	NODE_ENV: process.env.NODE_ENV || DEFAULTS.NODE_ENV,
@@ -126,7 +132,7 @@ export function getFastifyConfig(): FastifyServerOptions {
 						ignore: 'pid,hostname'
 					}
 				}
-			})
+			}),
 		}
 	};
 }

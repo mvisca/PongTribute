@@ -12,7 +12,7 @@ export default defineConfig({
 	// Permite: import { Game } from '@shared';
 
 	server: {
-		port: 3000,
+		port: 5173,
 		strictPort: false,
 		host: true,
 		open: false

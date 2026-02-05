@@ -378,6 +378,9 @@ export function buildApp(): FastifyInstance {
 	app.all('/api/matches', gameProxy);
 	app.all('/api/matches/*', gameProxy);
 	
+	const commsProxy = proxy(GatewayEnv.COMMS_SERVICE_URL);
+	app.all('/api/comms/*', commsProxy);
+
 	app.setNotFoundHandler((_request: FastifyRequest, reply: FastifyReply) => {
 		reply.status(404).send({
 			error: 'Not Found',

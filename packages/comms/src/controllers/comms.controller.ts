@@ -17,36 +17,36 @@ interface HealthCheckResponse {
 }
 
 /**
- * Controller para manejar las peticiones del servicio de comunicaciones
- */
+* Controller para manejar las peticiones del servicio de comunicaciones
+*/
 export class CommsController {
 	private service: CommsService;
 	private redisClient: Redis | null;
-
+	
 	constructor(service: CommsService, redisClient: Redis | null = null) {
 		this.service = service;
 		this.redisClient = redisClient;
 	}
-
+	
 	/**
-	 * Maneja la conexión WebSocket entrante
-	 */
+	* Maneja la conexión WebSocket entrante
+	*/
 	handleWebSocketConnection(socket: WebSocket, request: FastifyRequest): void {
 		if (!this.service) {
 			socket.close(1011, 'Service not available');
 			return;
 		}
-
+		
 		this.service.handleConnection(socket, request);
 	}
-
+	
 	/**
-	 * Maneja el health check del servicio
-	 */
+	* Maneja el health check del servicio
+	*/
 	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
 		const checks: Record<string, HealthCheckDependency> = {};
 		let allHealthy = true;
-
+		
 		// Check Redis connection
 		if (this.redisClient) {
 			try {
@@ -61,10 +61,16 @@ export class CommsController {
 			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
 			allHealthy = false;
 		}
-
+		
 		const statusCode = allHealthy ? 200 : 503;
 		reply.status(statusCode);
-
+		
+		if (allHealthy) {
+			console.log('[COMMS] Health check ok!');
+		} else {
+			console.warn('[COMMS] Health check degraded!', checks);
+		}
+		
 		return {
 			status: allHealthy ? 'ok' : 'degraded',
 			service: 'COMMS',

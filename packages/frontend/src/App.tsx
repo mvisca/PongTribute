@@ -26,6 +26,7 @@ export default function App() {
         />
       )}
 
+
       {page === "register" && (
         <Register onBack={() => setPage("login")} />
       )}

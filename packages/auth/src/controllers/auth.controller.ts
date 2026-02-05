@@ -74,7 +74,7 @@ export class AuthController {
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			const { id } = request.user!; 
+			const { id } = request.user!;
 			await this.authService.logout(id);
 
 			return reply.code(204).send();

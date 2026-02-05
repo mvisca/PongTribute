@@ -1,7 +1,7 @@
 import { EventHandler, BaseEvent } from "../base.handler.js";
 import { UserEvent, UserLoginEvent, UserLogoutEvent } from './user.events.js';
 import { CommsService } from '../../comms.service.js';
-import { CommsEnv } from "src/config.js";
+import { CommsEnv } from '../../../config.js';
 import { REDIS_CHANNELS } from '@transcendence/shared';
 
 export class UserEventHandler implements EventHandler {
@@ -28,17 +28,17 @@ export class UserEventHandler implements EventHandler {
 		event: UserLoginEvent,
 		comms: CommsService
 	): Promise<void> {
-		console.log(`[UserHandler] ${event.userId} online`)
+		console.log(`[UserHandler] ${event.targetUserId} online`)
 
 		try {
 
-			const friends = await this.getUserFriends(event.userId);
+			const friends = await this.getUserFriends(event.targetUserId);
 			
 			if (friends.length > 0) {
 				comms.broadcastToUsers(friends, {
 					type: REDIS_CHANNELS.FRIEND_ONLINE,
 					payload: {
-						userId: event.userId,
+						userId: event.targetUserId,
 						username: event.payload.username,
 						avatar: event.payload.avatar,
 						timestamp: event.timestamp
@@ -58,17 +58,17 @@ export class UserEventHandler implements EventHandler {
 		event: UserEvent,
 		comms: CommsService
 	): Promise<void> {
-		console.log(`[UserHandler] ${event.userId} offline`);
+		console.log(`[UserHandler] ${event.targetUserId} offline`);
 
 		try {
-			const friends = await this.getUserFriends(event.userId);
+			const friends = await this.getUserFriends(event.targetUserId);
 			
-			if (friends.length > 0) {
+			if (friends.length > 0) {event.targetUserId
 
 				comms.broadcastToUsers(friends, {
 					type: REDIS_CHANNELS.FRIEND_OFFLINE,
 					payload: {
-						userId: event.userId,
+						userId: event.targetUserId,
 						username: event.payload.username,
 						avatar: event.payload.avatar,
 						isOnline: event.payload.isOnline,
