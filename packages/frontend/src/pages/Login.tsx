@@ -71,8 +71,7 @@ async function handleLogin()
 
 }
 
-  return
-  (
+  return(
     <div className="retro-bg flex items-center justify-center">
       <div className="bg-purple-800 p-6 rounded-xl w-80 shadow-lg">
        <h1 className="retro-title mb-6">
