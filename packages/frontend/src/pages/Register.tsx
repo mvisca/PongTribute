@@ -12,12 +12,11 @@ export default function Register({ onBack }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function handleRegister() 
-  {
+  async function handleRegister() {
     setError("");
     setSuccess("");
 
-    //Validations
+    // 🔹 Validations
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
@@ -38,14 +37,11 @@ export default function Register({ onBack }: Props) {
       return;
     }
 
-    try 
-    {
+    try {
       await register(username, email, password);
       setSuccess("Account created successfully");
-      setTimeout(onBack, 1000); // vuelve al login
-    } 
-    catch (err: any) 
-    {
+      setTimeout(onBack, 1000);
+    } catch (err: any) {
       setError(err?.message || "Register failed");
     }
   }
@@ -53,6 +49,7 @@ export default function Register({ onBack }: Props) {
   return (
     <div className="retro-bg flex items-center justify-center">
       <div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
+
         <h1 className="text-2xl font-bold text-center mb-4">
           Create Account
         </h1>
@@ -60,6 +57,12 @@ export default function Register({ onBack }: Props) {
         {error && (
           <div className="mb-4 p-2 bg-purple-900 text-purple-200 text-sm text-center rounded">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-2 bg-green-700 text-green-100 text-sm text-center rounded">
+            {success}
           </div>
         )}
 
@@ -94,22 +97,24 @@ export default function Register({ onBack }: Props) {
           }}
         />
 
+        {/* REGISTER BUTTON */}
         <div className="flex justify-center mt-6">
-    <button
-      onClick={handleRegister}
-      className="arcade-btn px-8 py-2 text-sm"
-    >
-      REGISTER
-    </button>
-  </div>
+          <button
+            onClick={handleRegister}
+            className="arcade-btn px-8 py-2 text-sm"
+          >
+            REGISTER
+          </button>
+        </div>
 
-  {/* 🔹 BACK TO LOGIN */}
-  <div className="mt-6 text-right text-sm text-purple-300">
-    <button onClick={onBack} className="hover:underline">
-      ← Back to login
-    </button>
-  </div>
+        {/* BACK TO LOGIN */}
+        <div className="mt-6 text-right text-sm text-purple-300">
+          <button onClick={onBack} className="hover:underline">
+            ← Back to login
+          </button>
+        </div>
 
-</div>
+      </div>
+    </div>
   );
 }
