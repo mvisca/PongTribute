@@ -87,7 +87,7 @@ export namespace MatchConstants {
 	export const MATCH_STATUS = {
 		
 		/**
-		 * Partida creada pero noiniciada\
+		 * Partida creada pero no iniciada\
 		 * Puede no usarse si la partida empieza de inmediato al crearse el match
 		*/
 		PENDING: "pending",

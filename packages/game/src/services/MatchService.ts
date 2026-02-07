@@ -110,7 +110,7 @@ export class MatchService {
 					roomId: matchDomain.id // Creo que NO hace falta ??????????
 				}
 			};
-			// Publicamos en el canal GLOBAL de eventos (definido en shared)
+			// Publicamos en el CANAL UNICO de eventos (definido en shared)
 			await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
 
             return { outcome: 'match_found', match: matchDomain };

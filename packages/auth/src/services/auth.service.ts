@@ -112,7 +112,7 @@ export class AuthService {
 		
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
-		redisClient.publish(REDIS_CHANNELS.USER_LOGIN, JSON.stringify(loginEvent))
+		redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(loginEvent))
 		.catch(err => {
 			console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
 		});
@@ -806,7 +806,7 @@ export class AuthService {
 
 			// PUBLICACIÓN EN REDIS
 			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
-			redisClient.publish(REDIS_CHANNELS.USER_LOGIN, JSON.stringify(logoutEvent))
+			redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(logoutEvent))
 			.catch(err => {
 				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
 			});

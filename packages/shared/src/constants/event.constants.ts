@@ -1,27 +1,30 @@
  // EVENTOS INTERNOS (Backend a Backend vía Redis)
 export const REDIS_CHANNELS = {
 		
-	// Global events
+	// Es el CANAL ÚNICO. Todos publican y escuchan aquí
 	EVENTS: 'transcendence:events',
 
-	// User events
+	// Los TIPOS DE EVENTOS
+	// User
 	USER_LOGIN: 'user:login',
 	USER_LOGOUT: 'user:logout',
 	USER_PROFILE_UPDATED: 'user:profile_updated',
 	USER_DISCONNECTED: 'user:disconnected',
-	// Match (Game) events
+	// Match (Game)
 	MATCH_FOUND: 'match.found',
 	MATCH_QUEUE_TIMEOUT: 'match.queue_timeout',
 	MATCH_INVITE: 'match.invite',
 	MATCH_STARTED: 'match.started',
 	MATCH_REJECTED: 'match.rejected',
 	MATCH_CANCELLED: 'match.cancelled',	
-	// Friendship events
+	// Friendship 
 	FRIEND_REQUEST: 'friend:request',
 	FRIEND_ACCEPT: 'friend:accept',
 	FRIEND_REMOVE: 'friend:remove',
 	FRIEND_ONLINE: 'friend:online',
-	FRIEND_OFFLINE: 'friend:offline'
+	FRIEND_OFFLINE: 'friend:offline',
+	// Game
+	GAME_UPDATE: 'game:update'
 
 } as const;
 

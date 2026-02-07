@@ -41,7 +41,7 @@ function getClientIp(req: FastifyRequest): string {
 	// Prefer forwarded header (common in docker/nginx). Keep it simple + explainable.
 	const xff = normalizeHeaderValue(req.headers['x-forwarded-for']);
 	if (xff) return xff.split(',')[0].trim();
-	return (req.ip || req.socket.remoteAddress || 'unknown').toString();
+	return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // joan: añado ? para evitar el crash si no existe
 }
 
 export function buildApp(): FastifyInstance {

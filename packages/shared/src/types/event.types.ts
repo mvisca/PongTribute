@@ -119,6 +119,31 @@ export interface MatchCancelledEvent extends BaseEvent {
 	};
 }
 
+
+// ---------------------------------------------
+// UNION TYPE FINAL
+// ---------------------------------------------
+// Registro de eventos para que el sistema los reconozca.
+// Al añadirlo al Unión, cuando hagas un switch (event.type) en
+//  el Frontend o en otro servicio, TypeScript sabrá automáticamente
+//  que si el tipo es GAME_START, entonces seguro tienes acceso a payload.gameId.
+export type SystemEvent =
+	// User
+	| UserLoginEvent
+	| UserLogoutEvent
+	| UserProfileUpdatedEvent
+	| UserDisconnectedEvent
+	// Match
+	| MatchFoundEvent
+	| MatchQueueTimeoutEvent
+	| MatchInviteEvent
+	| MatchStartedEvent
+	| MatchRejectedEvent
+	| MatchCancelledEvent;
+
+	
+
+
 /*
 ESTOS YA NO SON EVENTOS REDIS SINO DE SOCKET
 // ---------------------------------------------
@@ -162,29 +187,6 @@ export interface GameEndEvent extends BaseEvent {
 
 
 
-// ---------------------------------------------
-// UNION TYPE FINAL
-// ---------------------------------------------
-// Registro de eventos para que el sistema los reconozca.
-// Al añadirlo al Unión, cuando hagas un switch (event.type) en
-//  el Frontend o en otro servicio, TypeScript sabrá automáticamente
-//  que si el tipo es GAME_START, entonces seguro tienes acceso a payload.gameId.
-export type SystemEvent =
-	// User
-	| UserLoginEvent
-	| UserLogoutEvent
-	| UserProfileUpdatedEvent
-	| UserDisconnectedEvent
-	// Match
-	| MatchFoundEvent
-	| MatchQueueTimeoutEvent
-	| MatchInviteEvent
-	| MatchStartedEvent
-	| MatchRejectedEvent
-	| MatchCancelledEvent;
-	// Game
-    //| GameStartEvent 
-    //| GameEndEvent;
 
 
 
