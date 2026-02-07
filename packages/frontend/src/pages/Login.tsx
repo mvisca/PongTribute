@@ -72,11 +72,13 @@ async function handleLogin()
 }
 
   return(
-    <div className="retro-bg flex items-center justify-center">
-      <div className="bg-purple-800 p-6 rounded-xl w-80 shadow-lg">
-       <h1 className="retro-title mb-6">
-         WELCOME TO <br /> PING-PONG
-          </h1>
+   <div className="retro-bg flex flex-col items-center justify-center">
+    
+    <h1 className="retro-title mb-10">
+      WELCOME TO <br /> PING-PONG
+    </h1>
+
+    <div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
 
         {error && (
           <div className="mb-4 p-2 rounded bg-purple-900 text-purple-200 text-sm text-center">

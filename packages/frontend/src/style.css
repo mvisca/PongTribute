@@ -5,6 +5,8 @@
   color: #ffffff;
   padding: 0.6rem;
   border-radius: 0.4rem;
+  width: 100%;          
+  margin-bottom: 0.75rem;
 }
 
 .input:focus {
@@ -31,8 +33,9 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    radial-gradient(rgba(200, 140, 255, 0.12) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(200,140,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,140,255,0.08) 1px, transparent 1px);
+  background-size: 40px 40px;
   pointer-events: none;
 }
 

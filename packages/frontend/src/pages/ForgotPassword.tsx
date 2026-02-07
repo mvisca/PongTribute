@@ -18,8 +18,8 @@ export default function ForgotPassword({ onBack }: Props) {
   }
 
   return (
-    <div className="min-h-screen bg-purple-900 flex items-center justify-center">
-      <div className="bg-purple-800 p-6 rounded-xl w-80 shadow-lg">
+    <div className="retro-bg flex items-center justify-center">
+     <div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
         <h1 className="text-2xl font-bold text-center mb-4">
           Forgot Password
         </h1>
@@ -37,17 +37,22 @@ export default function ForgotPassword({ onBack }: Props) {
           onChange={(e) => setEmail(e.target.value)}
         />
 
-        <button onClick={handleReset} className="btn-primary">
-          Send Recovery Email
-        </button>
+          <div className="flex justify-center mt-6">
+    <button
+      onClick={handleSendRecovery}
+      className="arcade-btn px-8 py-2 text-sm"
+    >
+      SEND RECOVERY EMAIL
+    </button>
+  </div>
 
-        <button
-          onClick={onBack}
-          className="mt-4 text-sm text-purple-300 hover:underline"
-        >
-          ← Back to Login
-        </button>
-      </div>
-    </div>
+  {/* 🔹 BACK TO LOGIN */}
+  <div className="mt-6 text-right text-sm text-purple-300">
+    <button onClick={onBack} className="hover:underline">
+      ← Back to login
+    </button>
+  </div>
+
+</div>
   );
 }
