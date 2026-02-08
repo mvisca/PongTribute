@@ -17,7 +17,7 @@ export interface IUserRepository {
     update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic>;
     
     /** Actualizar passwordHash - Lanza NotFoundError si no existe */
-    updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic>;
+    updatePassword(id: string, passwordHash: string): Promise<UserTypes.UserPublic>;
     
     /** Eliminar usuario - Lanza NotFoundError si no existe */
     delete(id: string): Promise<void>;

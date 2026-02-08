@@ -877,7 +877,7 @@ export class AuthService {
 			});
 		}
 		
-		const newPasswordHash = await bcrypt.hash(newPassword, 10);
+		const passwordHash = await bcrypt.hash(newPassword, 10);
 		
 		const updateResponse = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${user.id}/password`,
@@ -887,7 +887,7 @@ export class AuthService {
 					'Content-Type': 'application/json',
 					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
 				},
-				body: JSON.stringify({newPasswordHash}),
+				body: JSON.stringify({passwordHash}),
 				signal: AbortSignal.timeout(5000)
 			}
 		);

@@ -89,8 +89,11 @@ export class UserController {
 	async updatePassword(request: FastifyRequest, reply: FastifyReply): Promise <void> {
 		try {
 			const { id } = request.params as UserTypes.UserIdParams;
-			const data = request.body as UserTypes.UpdatePasswordInternalBody;
-			await this.userService.updatePassword(id, data.newPasswordHash);
+
+			const { passwordHash } = request.body as UserTypes.UpdatePasswordInternalBody;
+
+			await this.userService.updatePassword(id, passwordHash);
+
 			return reply.code(204).send();
 		} catch (err) {
 			return this.errorHandler(err, request, reply);

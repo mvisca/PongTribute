@@ -110,12 +110,12 @@ export class SQLiteUserRepository implements IUserRepository {
 		
 		return updated;
 	}
-			
+
 	/** Actualiza la contraseña (hash), lanza NotFoundError si no existe */
-	async updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic> {
+	async updatePassword(id: string, passwordHash: string): Promise<UserTypes.UserPublic> {
 		const result = this.db.prepare(`
 			UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
-		`).run(newPasswordHash, Date.now(), id);
+		`).run(passwordHash, Date.now(), id);
 
 		if (result.changes === 0)
 			throw new SharedErrors.NotFoundError(`No se ha encontrado el usuario: ${id }`, 'user');
