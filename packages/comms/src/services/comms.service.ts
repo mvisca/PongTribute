@@ -259,14 +259,14 @@ export class CommsService {
     // MANEJO DE MENSAJES WS (INPUT 2)
     // ==========================================================================
 
-    private async handleMessage(ws: ExtendedWebSocket, messageStr: string): Promise<void> {
+    private async handleMessage(ws: ExtendedWebSocket, raw: string): Promise<void> {
         try {
-            const message = JSON.parse(messageStr) as WSMessage;
+            const data = JSON.parse(raw) as WSMessage;
             
             // Validar estructura básica
-            if (!message.type) return;
+            if (!data.type) return;
 
-            switch (message.type) {
+            switch (data.type) {
                 case 'ping':
                     ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
                     break;
@@ -301,7 +301,7 @@ export class CommsService {
             } catch(err) {
                 ws.close(1008, 'Token inválido o expirado');
                 return;
-            }
+            } 
 
             const userId = payload.id;
 
@@ -326,8 +326,10 @@ export class CommsService {
             this.logger.log(`[Comms] Cliente conectado: ${userId} (${payload.username})`);
 
             // Event Listeners del Socket
-            extWs.on('message', (data) => this.handleMessage(extWs, data.toString()));
-            
+            extWs.on('message', (data) => {
+				this.handleMessage(extWs, data.toString());
+			});
+
             extWs.on('pong', () => { extWs.isAlive = true; }); // Respuesta al ping del servidor
             
             extWs.on('close', () => this.handleDisconnect(extWs, userId));

@@ -251,19 +251,23 @@ export namespace UserSchemas {
 		}
 	};
 	
-	/**------joan------no lo tengo muy claro
-	* Schema para GET /users/me
-	* No requiere params (el ID viene del JWT)
-	*/
-	export const getMeSchema = {
+	export const getInternalUserByIdSchema = {
 		tags: ['User'],
+		params: UserIdParams,
 		response: {
-			200: UserPublic,
-			401: ErrorResponse,
+			200: UserInternal,
 			404: NotFoundResponse
 		}
-	};
+	}
 	
+	export const getInternalUserByEmailSchema = {
+		tags: ['User'],
+		params: EmailParams,
+		response: {
+			200: UserInternal,
+			404: NotFoundResponse
+		}
+	}
 	
 	// ========================================================================
 	// CHECK SCHEMAS
@@ -339,21 +343,23 @@ export namespace UserSchemas {
 	* Body para PUT /api/users/:id/password
 	*/
 	export const UpdatePasswordInternalBody = Type.Object({
-		newPasswordHash: PasswordHashField
+		passwordHash: PasswordHashField
 	});
-	
+
 	/**
-	* Schema para PUT /api/users/:id/password
-	*/
+	 * Schema para PUT /internal/users/:id/password
+	 */
 	export const updatePasswordInternalSchema = {
 		tags: ['User'],
 		params: UserIdParams,
-		body: UpdatePasswordInternalBody,
-		response: {
-			204: Type.Null(),
+		body: Type.Object({
+			passwordHash: PasswordHashField
+		}),
+		respons: {
+			200:UserInternal,
 			404: NotFoundResponse
 		}
-	};
+	}
 	
 	// ========================================================================
 	// SET ONLINE STATUS SCHEMA

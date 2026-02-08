@@ -251,8 +251,8 @@ export class UserService {
 		);
 	}
 
-	async updatePassword(id: string, newPasswordHash: string): Promise<UserTypes.UserPublic> {
-		return await this.userRepo.updatePassword(id, newPasswordHash);
+	async updatePassword(id: string, passwordHash: string): Promise<UserTypes.UserPublic> {
+		return await this.userRepo.updatePassword(id, passwordHash);
 	}
 
 	async updateLastLogoutAt(id: string, lastLogoutAt: number): Promise<void> {
