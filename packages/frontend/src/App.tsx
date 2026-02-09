@@ -9,8 +9,8 @@ import { LocalGame } from './pages/Game/LocalGame';
 type Page = "login" | "register" | "forgot" | "home" | "local-game";
 
 export default function App() {
-  //const [page, setPage] = useState<Page>("login"); // COMENTADO TEMPORALMENTE PARA TESTEAR EL GAME
-  const [page, setPage] = useState<Page>("local-game");
+  const [page, setPage] = useState<Page>("login");
+  //const [page, setPage] = useState<Page>("local-game"); // PARA TESTEO DEL LOCAL-GAME
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
