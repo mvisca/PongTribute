@@ -76,7 +76,7 @@ let config: CommsEnv.ServiceConfig | null = null;
 
 function cnf(): CommsEnv.ServiceConfig {
   if (!config) {
-    throw new Error('[CommsEnv] Config no inicializada. Llama a CommsEnv.init() primero.');
+    throw new Error('[CommsEnv] Config no inicializada. Llamar a CommsEnv.init() primero.');
   }
   return config;
 }
@@ -95,9 +95,9 @@ export namespace CommsEnv {
       redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
       redisPassword: process.env.REDIS_PASSWORD,
       
-      userServiceUrl: process.env.USER_SERVICE_URL || 'http://localhost:3001',
-      jwtSecret: process.env.JWT_SECRET || '',
+      userServiceUrl: process.env.USER_SERVICE_URL || 'http://localhost:3001', // TODO debería ser el backup como está o terminado en /api ?? los fecth internal no llevan api? o si? es correcto que sea parte de esta variable que ningun otro servicio incorpora como url de servicio?
       serviceSecret: process.env.SERVICE_SECRET || '',
+      jwtSecret: process.env.JWT_SECRET || '',
       
       wsPingIntervalMs: parseInt(process.env.WS_PING_INTERVAL_MS || '30000', 10),
       wsPongTimeoutMs: parseInt(process.env.WS_PONG_TIMEOUT_MS || '5000', 10),
@@ -119,8 +119,8 @@ export namespace CommsEnv {
   export function REDIS_PASSWORD(): string | undefined { return cnf().redisPassword; }
   
   export function USER_SERVICE_URL(): string { return cnf().userServiceUrl; }
-  export function JWT_SECRET(): string { return cnf().jwtSecret; }
   export function SERVICE_SECRET(): string { return cnf().serviceSecret; }
+  export function JWT_SECRET(): string { return cnf().jwtSecret; }
   
   export function WS_PING_INTERVAL_MS(): number { return cnf().wsPingIntervalMs; }
   export function WS_PONG_TIMEOUT_MS(): number { return cnf().wsPongTimeoutMs; }

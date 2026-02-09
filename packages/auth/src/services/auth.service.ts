@@ -302,7 +302,7 @@ export class AuthService {
 	// LOGOUT 
 	
 	/** Actualiza el lastLogoutAt del usuario con timestamp generado por el servicio Auth que también generar el timestamp del JWT */
-	private async updateLastLogoutAt(userId: string) { // DUDA Tipar retorno
+	private async updateLastLogoutAt(userId: string): Promise<void> {
 		const body = { lastLogoutAt: Math.floor(Date.now() / 1000)  };
 		
 		const response = await fetch(
@@ -772,9 +772,12 @@ export class AuthService {
 		
 		await this.deleteRefreshTokensById(userId);
 		await this.updateLastLogoutAt(userId);
-		
+
 		try {
+			// Setear user ofline
+			await this.setUserIsOnline(userId, false);
 			
+			// Recuperar usuario actualizado
 			const user = await this.fetchUserById(userId);
 			
 			if (!user) {
@@ -785,28 +788,26 @@ export class AuthService {
 				});
 			}
 			
-			// Setear user ofline
-			await this.setUserIsOnline(userId, false);
-
-			// Preparar objeto para notificaciones
-			const logoutEvent: UserLogoutEvent = {
-				type: REDIS_CHANNELS.USER_LOGOUT,
-				timestamp: Date.now(),
-				source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
-				targetUserId: userId,
-				payload: {
-					lastLogoutAt: user.lastLogoutAt
-				}
-			}
-			
 			// Guard de Redis disponible
 			if (!redisClient) {
 				throw new SharedErrors.ServiceError('redis', 'Redis client not available');
 			}
 
-			// PUBLICACIÓN EN REDIS
-			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
-			redisClient.publish(REDIS_CHANNELS.USER_LOGIN, JSON.stringify(logoutEvent))
+			// Preparar objeto para notificaciones
+			const logoutEvent: UserLogoutEvent = {
+				type: REDIS_CHANNELS.USER_LOGOUT,
+				targetUserId: userId,
+				source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+				timestamp: Date.now(),
+				payload: {
+					lastLogoutAt: user.lastLogoutAt,
+					avatar: user.avatar,
+					isOnline: false
+				}
+			}
+			
+			// Publicar evento
+			redisClient.publish(REDIS_CHANNELS.USER_LOGOUT, JSON.stringify(logoutEvent))
 			.catch(err => {
 				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
 			});

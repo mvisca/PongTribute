@@ -12,11 +12,14 @@ export interface UserInfoPayload {
 	username: string;
 	avatar?: string;
 	email?: string;
+	// TODO este payload para qué es? si es para JWT debería ser el mismo en todo el proyecto... si es para otra cosa, podría seguir siendo el mismo userPayload siempre?
 }
+// TODO Auditar toda la construccion de tipos y schemas e interfaces de eventos
 
 //---------------------------------------------
 // 3. Eventos Concretos
 //---------------------------------------------
+// TODO quién consume estos interfaces definidos a continuación?
 
 // LOGIN
 export interface UserLoginEvent extends BaseEvent {
@@ -49,161 +52,3 @@ export type SystemEvent =
     | UserLogoutEvent
     | UserProfileUpdatedEvent;
 
-
-
-
-
-
-// import { BaseEvent } from "./index.js";
-// import { UserTypes } from "../index.js";
-
-// export namespace UserEvent {
-// 	/**
-// 	* Evento: Usuario registrado exitosamente
-// 	*/
-// 	class Registered extends BaseEvent {
-// 		constructor(public readonly user: UserTypes.UserPublic) {
-// 			super('user.registered', 'auth-service');
-// 		}
-		
-// 		toJSON(): object {
-// 			return {
-// 				id: this.id,
-// 				eventType: this.eventType,
-// 				timestamp: this.timestamp,
-// 				user: this.user
-// 			};
-// 		}
-// 	}
-	
-// 	/**
-// 	* Evento: Usuario inició sesión
-// 	*/
-// 	class LoggedIn extends BaseEvent {
-// 		constructor(
-// 			public readonly userId: string,
-// 			public readonly alias: string
-// 		) {
-// 			super('user.logged_in', 'auth-service');
-// 		}
-		
-// 		toJSON(): object {
-// 			return {
-// 				id: this.id,
-// 				eventType: this.eventType,
-// 				timestamp: this.timestamp,
-// 				userId: this.userId,
-// 				alias: this.alias
-// 			};
-// 		}
-// 	}
-	
-// 	/**
-// 	* Evento: Usuario cerró sesión
-// 	*/
-// 	class LoggedOut extends BaseEvent {
-// 		constructor(public readonly userId: string) {
-// 			super('user.logged_out', 'auth-service');
-// 		}
-		
-// 		toJSON(): object {
-// 			return {
-// 				id: this.id,
-// 				eventType: this.eventType,
-// 				timestamp: this.timestamp,
-// 				userId: this.userId
-// 			};
-// 		}
-// 	}
-	
-// 	/**
-// 	* Evento: Perfil de usuario actualizado
-// 	*/
-// 	class ProfileUpdated extends BaseEvent {
-// 		constructor(
-// 			public readonly userId: string,
-// 			public readonly updatedFields: string[]
-// 		) {
-// 			super('user.profile_updated', 'user-service');
-// 		}
-		
-// 		toJSON(): object {
-// 			return {
-// 				id: this.id,
-// 				eventType: this.eventType,
-// 				timestamp: this.timestamp,
-// 				userId: this.userId,
-// 				updatedFields: this.updatedFields
-// 			};
-// 		}
-// 	}
-	
-// 	/**
-// 	* Evento: Usuario cambió estado online/offline
-// 	*/
-// 	class StatusChanged extends BaseEvent {
-// 		constructor(
-// 			public readonly userId: string,
-// 			public readonly isOnline: boolean
-// 		) {
-// 			super('user.status_changed', 'user-service');
-// 		}
-		
-// 		toJSON(): object {
-// 			return {
-// 				id: this.id,
-// 				eventType: this.eventType,
-// 				timestamp: this.timestamp,
-// 				userId: this.userId,
-// 				isOnline: this.isOnline
-// 			};
-// 		}
-// 	}
-	
-// 	/**
-// 	* Evento: Usuario eliminado
-// 	*/
-// 	class Deleted extends BaseEvent {
-// 		constructor(public readonly userId: string) {
-// 			super('user.deleted', 'user-service');
-// 		}
-		
-// 		toJSON(): object {
-// 			return {
-// 				id: this.id,
-// 				eventType: this.eventType,
-// 				timestamp: this.timestamp,
-// 				userId: this.userId
-// 			};
-// 		}
-// 	}
-// }
-
-
-
-// import { Utils } from "../index.js";
-
-// export abstract class BaseEvent {
-// 	public readonly id: string;
-// 	public readonly eventType: string;
-// 	public readonly timestamp: number;
-// 	public readonly version: number;
-// 	public readonly source: string;
-	
-// 	constructor(eventType: string, source: string) {
-// 		this.id = Utils.generateEventId();
-// 		this.eventType = eventType;
-// 		this.timestamp = Date.now();
-// 		this.version = 1;
-// 		this.source = source;
-// 	}
-	
-// 	abstract toJSON(): object;
-	
-// 	toString(): string {
-// 		return `[${this.source}] ${this.eventType} (${this.id})`;
-// 	}
-// }
-
-// export { BaseEvent } from './BaseEvent.js';
-// export { UserEvent } from './UserEvents.js';

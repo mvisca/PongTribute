@@ -80,7 +80,7 @@ export namespace AuthMiddleware {
 				const paramId = (request.params as UserTypes.UserIdParams).id;
 				
 				if (paramId !== request.user.id) {
-					throw new SharedErrors.UnauthorizedError('No tienes permiso para acceder a este recurso'); // DUDA forbiden 403 (está lanznado el correcto)
+					throw new SharedErrors.ForbiddenError('No tienes permiso para acceder a este recurso');
 				}
 			} catch (err) {
 				throw SharedErrors.handleError(err, reply);
