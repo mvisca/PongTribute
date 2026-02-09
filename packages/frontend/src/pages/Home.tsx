@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { User } from "../types/User";
 import { ProfileDropdown } from "../components/ProfileDropdown";
-import { logout } from "../api/authApi";
 
 type Props = {
   user: User;
@@ -9,31 +8,21 @@ type Props = {
   onLogoutSuccess: () => void;
 };
 
-export default function Home({ user, token, onLogoutSuccess }: Props) {
+export default function Home({ user, onLogoutSuccess }: Props) {
   const [showProfile, setShowProfile] = useState(false);
 
-  async function handleLogout() {
-    try {
-      await logout(token);
-    } catch (e) {
-      console.error("Logout failed", e);
-    } finally {
-      onLogoutSuccess();
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-purple-900 flex flex-col items-center justify-center text-purple-100 relative">
-      
-      {/* Logout */}
+    <div className="retro-bg min-h-screen flex flex-col items-center justify-center text-purple-100 relative">
+
+      {/* LOGOUT */}
       <button
-        onClick={handleLogout}
-        className="absolute top-4 left-4 bg-purple-600 px-4 py-2 rounded hover:bg-purple-500"
+        onClick={onLogoutSuccess}
+        className="absolute top-4 left-4 arcade-btn px-4 py-2 text-xs"
       >
-        Logout
+        LOGOUT
       </button>
 
-      {/* User info */}
+      {/* PROFILE */}
       <button
         onClick={() => setShowProfile(!showProfile)}
         className="absolute top-4 right-4 bg-purple-800 px-4 py-2 rounded hover:bg-purple-700"
@@ -48,9 +37,25 @@ export default function Home({ user, token, onLogoutSuccess }: Props) {
         />
       )}
 
-      <div className="bg-purple-700 w-[400px] h-[250px] rounded-xl flex items-center justify-center shadow-lg">
-        Ping-Pong Game Area
+      {/* 🎮 GAME AREA */}
+      <div className="arcade-frame mt-16">
+        <div className="arcade-screen">
+          <div className="arcade-menu">
+            <button className="arcade-btn px-10 py-2">
+              PLAY
+            </button>
+
+            <button className="arcade-btn px-6 py-2 text-sm">
+              Play vs Bot
+            </button>
+
+            <button className="arcade-btn px-6 py-2 text-sm">
+              Play with Friends
+            </button>
+          </div>
+        </div>
       </div>
+
     </div>
   );
 }
