@@ -4,49 +4,55 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import { User } from "./types/User";
+import { LocalGame } from './pages/Game/LocalGame';
 
-type Page = "login" | "register" | "forgot" | "home";
+type Page = "login" | "register" | "forgot" | "home" | "local-game";
 
 export default function App() {
-	const [page, setPage] = useState<Page>("login");
-	const [user, setUser] = useState<User | null>(null);
-	const [token, setToken] = useState<string | null>(null);
+  //const [page, setPage] = useState<Page>("login"); // COMENTADO TEMPORALMENTE PARA TESTEAR EL GAME
+  const [page, setPage] = useState<Page>("local-game");
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
 
-	return (
-		<>
-			{page === "login" && (
-				<Login
-					onLoginSuccess={(user, token) => {
-						setUser(user);
-						setToken(token);
-						setPage("home");
-					}}
-					onRegister={() => setPage("register")}
-					onForgot={() => setPage("forgot")}
-				/>
-			)}
+  return (
+    <>
+      {page === "login" && (
+        <Login
+          onLoginSuccess={(user, token) => {
+            setUser(user);
+            setToken(token);
+            setPage("home");
+          }}
+          onRegister={() => setPage("register")}
+          onForgot={() => setPage("forgot")}
+        />
+      )}
 
 
-			{page === "register" && (
-				<Register onBack={() => setPage("login")} />
-			)}
+      {page === "register" && (
+        <Register onBack={() => setPage("login")} />
+      )}
 
-			{page === "forgot" && (
-				<ForgotPassword onBack={() => setPage("login")} />
-			)}
+      {page === "forgot" && (
+        <ForgotPassword onBack={() => setPage("login")} />
+      )}
 
-			{page === "home" && user && token && (
-				<Home
-					user={user}
-					token={token}
-					onLogoutSuccess={() => {
-						setUser(null);
-						setToken(null);
-						setPage("login");
-					}}
-				/>
-			)}
+	  {page === "local-game" && (
+        <LocalGame />
+		  )}
+		  
+      {page === "home" && user && token && (
+      <Home
+        user={user}
+        token={token}
+        onLogoutSuccess={() => {
+         setUser(null);
+         setToken(null);
+          setPage("login");
+       }}
+      />
+    )}
 
-		</>
-	);
+    </>
+  );
 }
