@@ -6,9 +6,13 @@
 
 // packages/shared/src/constants/game.constants.ts
 
+// 1. IMPORTAMOS LA DEFINICIÓN OFICIAL (Para evitar duplicados)
+// Nota: Usamos .js en el import por ser ESM, aunque el archivo sea .ts
+import { GameModeConfig } from '../types/game.types.js';
+
 export const GAME_CONSTANTS = {
   // =========================================
-  // LEGACY (Mantener para compatibilidad con Backend actual)
+  // LEGACY (Compatibilidad con Backend)
   // =========================================
   COURT_WIDTH: 800,
   COURT_HEIGHT: 600,
@@ -18,7 +22,7 @@ export const GAME_CONSTANTS = {
   COUNTDOWN_SECONDS: 3,
 
   // =========================================
-  // NUEVA ARQUITECTURA (Para Local Game y Futuro Backend)
+  // NUEVA ARQUITECTURA (Para Local Game y Backend Pro)
   // =========================================
   CANVAS_WIDTH: 800,
   CANVAS_HEIGHT: 600,
@@ -39,16 +43,7 @@ export const GAME_CONSTANTS = {
   }
 } as const;
 
-// Tipos para configuración de modos (Recuperamos esto también)
-export interface GameModeConfig {
-  paddleSpeed: number;      
-  ballSpeedBase: number;    
-  ballAcceleration: number; 
-  hasInertia: boolean;      
-  friction?: number;        
-}
-
-// Recuperamos la configuración de modos
+// CONFIGURACIÓN DE MODOS (Usando el tipo importado)
 export const GAME_MODES: Record<string, GameModeConfig> = {
   classic: {
     paddleSpeed: 9, ballSpeedBase: 6, ballAcceleration: 0, hasInertia: false
