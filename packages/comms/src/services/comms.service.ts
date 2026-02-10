@@ -246,12 +246,12 @@ export class CommsService {
 			const event = JSON.parse(messageStr) as SystemEvent;
 			
 			if (event.type === REDIS_CHANNELS.USER_LOGOUT) {
-				const sockets = this.connections.get(event.userId); // TODO agregar a event logout el userId
+				const sockets = this.connections.get(event.targetUserId);
 				if (sockets) {
 					sockets.forEach(ws => {
 						ws.close(1008, 'Sesión cerrada por logout');
 					});
-					this.connections.delete(event.userId);
+					this.connections.delete(event.targetUserId);
 				}
 			}
 

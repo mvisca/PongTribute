@@ -21,7 +21,7 @@ export class UserEventHandler implements EventHandler {
 			case REDIS_CHANNELS.USER_LOGOUT:
 				await this.handleLogout(userEvent as UserLogoutEvent, commsService);
 				break;
-		}
+		}targetUserId
 	}
 
 	private async handleLogin(
