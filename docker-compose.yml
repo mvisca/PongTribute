@@ -20,6 +20,23 @@ services:
         - transcendence
 
     # =====================
+    # mailhog (dev SMTP)
+    # =====================
+    mailhog:
+      # `mailhog/mailhog` no es multi-arch y en ARM64 puede fallar con "exec format error".
+      # Mailpit es un reemplazo compatible (multi-arch) manteniendo SMTP 1025 y UI 8025.
+      image: axllent/mailpit:latest
+      container_name: ft_transcendence_mailhog
+      restart: always
+      ports:
+        # UI: http://localhost:8025
+        - "8025:8025"
+        # SMTP
+        - "1025:1025"
+      networks:
+        - transcendence
+
+    # =====================
     # auth
     # =====================
     auth:
