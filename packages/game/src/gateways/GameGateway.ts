@@ -42,7 +42,7 @@ export class GameGateway {
 	constructor(private gameService: GameService) { }
 	
 	//VALIDA PARAMETROS Y SEGURIDAD (JWT)
-	handleConnection(connection: any, req: FastifyRequest): void {
+	async handleConnection(connection: any, req: FastifyRequest): void {
 		// 1. EXTRACCION DEL SOCKET REAL
 		// A veces el obj 'connection' es SocketStream (wrapper que contiene
 		//  el obj real dentro), a veces es WebSocket directo
@@ -83,7 +83,7 @@ export class GameGateway {
 			
 			// USO DEL SERVICIO INYECTADO
 			//METEMOS AL SOCKET EN LA SALA DE JUEGO (map activeMatches<> en GameService)
-			this.gameService.joinMatch(matchId, userId, socket);
+			await this.gameService.joinMatch(matchId, userId, socket);
 
 			// 5. LOGICA DE BIENVENIDA. El servidor dice HOLA el primero.
 			// Aquí es donde confirmamos al cliente que "está dentro" y
