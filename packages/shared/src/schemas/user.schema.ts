@@ -34,14 +34,11 @@ const AvatarFieldBase64 = Type.Optional(
 	})
 );
 
-const AvatarFieldUrl = Type.Optional(
-	Type.String
-	({
+const AvatarFieldUrl = Type.String({
 		format: 'uri',
 		pattern: '^https://res\\.cloudinary\\.com/',
 		maxLength: 500
-	})
-);
+});
 
 const UuidField = Type.String({
 	format: 'uuid'

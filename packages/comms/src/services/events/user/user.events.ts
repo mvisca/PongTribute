@@ -12,11 +12,3 @@ export interface UserLoginEvent extends BaseEvent {
 	targetUserId: string;
 	payload: UserEventPayload;
 }
-
-export interface UserLogoutEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.USER_LOGOUT;
-	targetUserId: string;
-	payload: UserEventPayload;
-}
-
-export type UserEvent = UserLoginEvent | UserLogoutEvent;

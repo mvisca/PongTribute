@@ -10,8 +10,10 @@ export interface BaseEvent {
 // 2. Payloads Reutilizables
 export interface UserInfoPayload {
 	username: string;
-	avatar?: string;
-	email?: string;
+	avatar: string;
+	email: string;
+	lastLogoutAt: number;
+	isOnline: boolean;
 	// TODO este payload para qué es? si es para JWT debería ser el mismo en todo el proyecto... si es para otra cosa, podría seguir siendo el mismo userPayload siempre?
 }
 // TODO Auditar toda la construccion de tipos y schemas e interfaces de eventos
@@ -25,6 +27,8 @@ export interface UserInfoPayload {
 export interface UserLoginEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.USER_LOGIN;
 	targetUserId: string; // ID del usuario que hizo login
+	source: string;
+	timestamp: number;
 	payload: UserInfoPayload;
 }
 
@@ -33,7 +37,11 @@ export interface UserLogoutEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.USER_LOGOUT;
 	targetUserId: string;
 	payload: {
+		username: string;
+		email: string;
+		avatar: string;
 		lastLogoutAt: number;
+		isOnline: boolean;
 	};
 }
 

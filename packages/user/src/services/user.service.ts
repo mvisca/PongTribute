@@ -132,22 +132,24 @@ export class UserService {
 			this.userRepo.isUsernameTaken(data.username)
 		]);
 
-		if (emailTaken)
+		if (emailTaken) {
 			throw new SharedErrors.ConflictError('El email ya está en uso', 'email', {
 				operation: 'createUser',
 				attemptedEmail: data.email
 			});
+		}
 
-		if (usernameTaken)
+		if (usernameTaken) {
 			throw new SharedErrors.ConflictError('El username ya está en uso', 'username', {
 				operation: 'createUser',
 				attemptedUsername: data.username
 			});
+		}
 
 		const { password, ...rest } = data;
 		const passwordHash = await bcrypt.hash(password, UserEnv.BCRYPT_ROUNDS());
-
 		const userId = Utils.generateUserId();
+
 		const fullData = {
 			id: userId,
 			passwordHash,
