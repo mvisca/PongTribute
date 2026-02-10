@@ -319,6 +319,11 @@ export class CommsService {
 				return;
 			}
 			
+			if (this.totalConnections >= CommsEnv.WS_MAX_CONNECTIONS()) {
+				this.logger.error(`[Comms] Máximo número de conexiones alcanzado`);
+				ws.close(1009, 'Conexión cerrada por servidor');
+			}
+
 			// Agrega extensiones a ws
 			const extWs = ws as ExtendedWebSocket;
 			extWs.isAlive = true;
@@ -330,6 +335,7 @@ export class CommsService {
 			}
 			
 			this.connections.get(user.id)!.add(extWs);
+			this.totalConnections++;
 			
 			// Event listeners del socket
 			extWs.on('message', (data) => { this.handleMessage(extWs, data.toString());	});

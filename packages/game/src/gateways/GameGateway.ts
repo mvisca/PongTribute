@@ -42,7 +42,7 @@ export class GameGateway {
 	constructor(private gameService: GameService) { }
 	
 	//VALIDA PARAMETROS Y SEGURIDAD (JWT)
-	async handleConnection(connection: any, req: FastifyRequest): void {
+	async handleConnection(connection: any, req: FastifyRequest): Promise<void> {
 		// 1. EXTRACCION DEL SOCKET REAL
 		// A veces el obj 'connection' es SocketStream (wrapper que contiene
 		//  el obj real dentro), a veces es WebSocket directo
