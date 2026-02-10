@@ -11,33 +11,26 @@ export class FriendshipController {
 		this.friendshipService = new FriendshipService();
 	}
 
-	private buildNotFoundPayload(err: { message: string; field?: string }): Record<string, unknown> {
-		const payload: Record<string, unknown> = { error: 'Not Found', message: err.message };
-		if ('field' in err && typeof err.field === 'string')
-			payload.field = err.field;
-		return payload;
-	}
-
 	// TODO mirar la forma en que se manejan los errores, no es consistente con la centralizada
 	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
-		if (err instanceof SharedErrors.ConflictError) {
-			reply.code(409).send({ error: 'Conflict', message: err.message, field: err.field });
-			return;
-		}
-
 		if (err instanceof SharedErrors.NotFoundError) {
-			reply.code(404).send(this.buildNotFoundPayload(err));
+			reply.code(404).send({error: 'Not Found', message: err.message, resource:err.resource});
 			return;
 		}
-
+		
+		if (err instanceof SharedErrors.ConflictError) {
+			reply.code(409).send({error: 'Conflict', message: err.message, field: err.field});
+			return;
+		}
+		
 		if (err instanceof SharedErrors.ValidationError) {
-			reply.code(403).send({ error: 'Forbidden', message: err.message, field: err.field });
+			reply.code(403).send({error: 'Forbidden', message: err.message, field: err.field});
 			return;
 		}
-
+		
 		request.log.error(err);
 		const message = err instanceof Error ? err.message : 'Unknown Error';
-		reply.code(500).send({ error: 'Internal Server Error', message });
+		reply.code(500).send({error: 'Internal Server Error', message});
 	}
 
 	// ============================================================================

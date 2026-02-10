@@ -267,7 +267,7 @@ export class GameService {
     
     
     // 
-    private endGame(matchId: string, winnerId: string) {
+    private async endGame(matchId: string, winnerId: string) {
         const session = this.activeMatches.get(matchId);
         if (!session) return;
 
@@ -293,7 +293,7 @@ export class GameService {
 		// no se caiga el servidor (loguea el error y continua para cerrar 
 		// la conexion de los clientes limpiamente).
         try {
-            this.matchRepo.finishMatch(
+            await this.matchRepo.finishMatch(
                 matchId, 
                 winnerId, 
                 p1Score, 
