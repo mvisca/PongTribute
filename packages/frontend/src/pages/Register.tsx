@@ -17,8 +17,7 @@ export default function Register({ onBack }: Props) {
     }
 
     setError("");
-    alert("Account created (fake)");
-    onBack();
+    alert("Account created (fake)"); // TODO Aquí llamar a Api Real.
   }
 
   return (

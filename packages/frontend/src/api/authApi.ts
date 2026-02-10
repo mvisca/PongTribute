@@ -1,4 +1,4 @@
-const AUTH_BASE_URL = "http://localhost:3002/api/auth";
+const AUTH_BASE_URL = "http://localhost:3002/api/auth"; // TODO No debe saltarse el Gateway, esto no funcionara en produccion. Implementar con variable de entorno.
 
 export async function login(email: string, password: string) {
   const response = await fetch(`${AUTH_BASE_URL}/login`, {

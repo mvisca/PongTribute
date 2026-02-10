@@ -352,7 +352,7 @@ export namespace UserSchemas {
 		body: Type.Object({
 			passwordHash: PasswordHashField
 		}),
-		respons: {
+		response: {
 			200:UserInternal,
 			404: NotFoundResponse
 		}
