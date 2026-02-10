@@ -171,7 +171,7 @@ export class CommsService {
 	}
 	
 	// ==========================================================================
-	// ENVÍO DE MENSAJES (OUTPUT)
+	// SALUD DEL WEBSOCKET
 	// ==========================================================================
 	
 	// HEARTBEAT (Keep-Alive)
@@ -192,6 +192,10 @@ export class CommsService {
 		}, CommsEnv.WS_PING_INTERVAL_MS());
 	}
 	
+	// ==========================================================================
+	// ENVIO DE MENSAJES
+	// ==========================================================================
+
 	// ENVIAR A UN USUARIO ESPECÍFICO
 	public sendToUser(userId: string, message: any): boolean {
 		const sockets = this.connections.get(userId);
@@ -234,7 +238,21 @@ export class CommsService {
 	}
 
 	// ==========================================================================
-	// MANEJO DE EVENTOS REDIS (INPUT 1)
+	// CIERRE DE CONEXION
+	// ==========================================================================
+
+	public closeUserConnection(userId: string) {
+		const sockets = this.connections.get(userId);
+		if (sockets) {
+			sockets.forEach(ws => {
+				ws.close(1008, 'Sesión cerrada por logout');
+			});
+			this.connections.delete(userId);
+		}
+	}	
+
+	// ==========================================================================
+	// MANEJO DE EVENTOS DE OTROS SERVICIOS (REDIS)
 	// ==========================================================================
 	
 	private async handleRedisMessage(
@@ -244,16 +262,6 @@ export class CommsService {
 		try {
 			// Parse con el tipo SystemEvent definido en shared
 			const event = JSON.parse(messageStr) as SystemEvent;
-			
-			if (event.type === REDIS_CHANNELS.USER_LOGOUT) {
-				const sockets = this.connections.get(event.targetUserId);
-				if (sockets) {
-					sockets.forEach(ws => {
-						ws.close(1008, 'Sesión cerrada por logout');
-					});
-					this.connections.delete(event.targetUserId);
-				}
-			}
 
 			this.logger.log(`[Comms] Evento Redis recibido: ${event.type} (Source: ${event.source})`);
 			

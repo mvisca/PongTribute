@@ -21,7 +21,7 @@ export class UserEventHandler implements EventHandler {
 			case REDIS_CHANNELS.USER_LOGOUT:
 				await this.handleLogout(userEvent as UserLogoutEvent, commsService);
 				break;
-		}targetUserId
+		}
 	}
 
 	private async handleLogin(
@@ -59,12 +59,17 @@ export class UserEventHandler implements EventHandler {
 		comms: CommsService
 	): Promise<void> {
 		console.log(`[UserHandler] ${event.targetUserId} offline`);
+		
+		// Cerrar la conexion
+		comms.closeUserConnection(event.targetUserId);
 
 		try {
+			// Todos los friends
 			const friends = await this.getUserFriends(event.targetUserId);
 			
-			if (friends.length > 0) {event.targetUserId
-
+			// Ha de haber más de cero
+			if (friends.length > 0) {
+				// Mensaje a todos
 				comms.broadcastToUsers(friends, {
 					type: REDIS_CHANNELS.FRIEND_OFFLINE,
 					payload: {
