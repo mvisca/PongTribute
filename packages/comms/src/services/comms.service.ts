@@ -320,7 +320,7 @@ export class CommsService {
 			}
 			
 			if (this.totalConnections >= CommsEnv.WS_MAX_CONNECTIONS()) {
-				this.logger.error(`[Comms] Máximo número de conexiones alcanzado`);
+				this.logger.error(`[Comms] Máximo número de conexiones del servidor alcanzado`);
 				ws.close(1009, 'Conexión cerrada por servidor');
 			}
 
@@ -328,14 +328,20 @@ export class CommsService {
 			const extWs = ws as ExtendedWebSocket;
 			extWs.isAlive = true;
 			extWs.userId = user.id;
-			
+
 			// Registra conexión
 			if (!this.connections.has(user.id)) {
 				this.connections.set(user.id, new Set());
 			}
-			
+
+			if (this.connections.get(user.id)!.size >= CommsEnv.WS_MAX_CONNECTIONS_PER_USER()) {
+				this.logger.error(`[Comms] Máximo número de conexiones del usuario alcanzado`);
+			}
+
 			this.connections.get(user.id)!.add(extWs);
 			this.totalConnections++;
+
+
 			
 			// Event listeners del socket
 			extWs.on('message', (data) => { this.handleMessage(extWs, data.toString());	});

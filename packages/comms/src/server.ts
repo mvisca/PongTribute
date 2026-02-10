@@ -3,6 +3,13 @@ import { buildApp, redisClient, commsService } from './app.js';
 import { CommsEnv } from './config.js';
 import { CommsService } from './services/comms.service.js';
 
+// TODO resolver redis redundante
+/*
+ comms/server.ts crea CommsService duplicado
+Archivo: packages/comms/src/server.ts y packages/comms/src/app.ts
+En app.ts se exporta commsService (inicialmente null). En server.ts se crea un new CommsService() y se asigna a (global as any).commsService. Pero app.ts también crea un redisClient que no se comparte con ese servicio. El resultado es que hay 3 conexiones Redis en comms: una en app.ts (redisClient), y dos dentro de CommsService (redis + redisSub), más la del health check que recibe el redisClient de app.ts. El redisClient de app.ts nunca se cierra en el gracefulShutdown de server.ts (solo se cierra el del service y el de la referencia global).
+Severidad: MEDIO — Conexión Redis huérfana; posible resource leak
+*/
 let app: FastifyInstance | null = null;
 
 async function start() {

@@ -13,6 +13,8 @@ import { FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
+import { AuthTypes, SharedErrors, UserTypes } from '@transcendence/shared';
+import { UserType } from '@fastify/jwt';
 
 //Usaremos esta clase para encapsular toda la logica de conexion. Esto
 // nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
@@ -72,10 +74,33 @@ export class GameGateway {
 			// Verificamos el token manualmente usando el Secreto Compartido.
 			//Si el token esta caducado, es falso o la firma no coincide con JWT_SECRET,
 			//lanzara una exception y cerrará la conexion.
-            const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as {
-                id: string,
-                username: string
-            };
+			const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
+
+			const response = await fetch(
+				`${GameEnv.USER_SERVICE_URL()}/internal/users/by-id/${payload.id}`,
+				{
+					method: 'GET',
+					headers: {
+						'X-Service-Secret': GameEnv.SERVICE_SECRET(),
+						'Content-Type': 'application/json'
+					}
+				}
+			);
+
+			if (!response.ok) {
+				throw new SharedErrors.NotFoundError('Failed to fetch user', 'game', {
+					// TODO fill context con datos útiles
+				});
+			}
+
+			const user = await response.json() as UserTypes.UserPublic;
+			// TODO validar el lastLogoutAt
+
+			if (payload.iat! > user.lastLogoutAt) {
+				throw new SharedErrors.UnauthorizedError('Token caducado', {
+					// TODO fill con datos útiles
+				});
+			}
 
 			const userId = payload.id;
 
