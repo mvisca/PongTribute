@@ -4,7 +4,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import { User } from "./types/User";
-import { LocalGame } from './pages/Game/LocalGame';
+
 
 type Page = "login" | "register" | "forgot" | "home" | "local-game";
 
@@ -36,10 +36,6 @@ export default function App() {
       {page === "forgot" && (
         <ForgotPassword onBack={() => setPage("login")} />
       )}
-
-	  {page === "local-game" && (
-        <LocalGame />
-		  )}
 		  
       {page === "home" && user && token && (
       <Home
