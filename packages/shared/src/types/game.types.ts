@@ -57,5 +57,9 @@ export interface GameState {
 // 4. Inputs del Cliente (Lo que envía el usuario)
 export interface GameInputPayload {
     gameId: string;
-    action: 'MOVE_UP' | 'MOVE_DOWN' | 'STOP' | 'PAUSE_TOGGLE'; 
+	action: 'MOVE_UP' | 'MOVE_DOWN' | 'STOP' | 'PAUSE_TOGGLE';
+	
+	// Opcional porque en online 'classic' lo deduce del socketID.
+    // Obligatorio para lógica 'local'. Ha de saber que pala se movió del 'local'
+    playerSide?: 'left' | 'right';
 }

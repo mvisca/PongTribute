@@ -1,4 +1,5 @@
 // packages/frontend/src/pages/Game/LocalGame.tsx
+/*
 import React, { useEffect, useRef } from 'react';
 //import { GAME_CONSTANTS } from '@transcendence/shared/dist/constants/game.constants'
 import { GAME_CONSTANTS } from '../../../../shared/src/constants/game.constants';
@@ -66,7 +67,7 @@ export const LocalGame = () => {
     <div style={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#222' }}>
       <h1 style={{ color: 'white', marginBottom: '20px' }}>Local Game (1 vs 1)</h1>
       
-      {/* El Canvas usa las constantes de Shared para su tamaño lógico */}
+      {/* El Canvas usa las constantes de Shared para su tamaño lógico */}/*
       <canvas 
         ref={canvasRef}
         width={GAME_CONSTANTS.CANVAS_WIDTH}
@@ -80,3 +81,4 @@ export const LocalGame = () => {
     </div>
   );
 };
+*/

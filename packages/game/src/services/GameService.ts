@@ -4,14 +4,17 @@
 // CUANDO HAY UNA CONEXION O DESCONEXION DE WEBSOCKET
 
 import { WebSocket } from 'ws';
+import { Redis } from 'ioredis';
 import { MatchRepository } from '../repositories/MatchRepository.js';
+
 import {
     GameState,
     GAME_CONSTANTS,
     GAME_MODES,
     SOCKET_EVENTS,
     PaddleState,
-    BallState
+	BallState,
+	GameInputPayload
 } from '@transcendence/shared'; 
 
 interface GameSession {
@@ -21,14 +24,18 @@ interface GameSession {
     socketP1: WebSocket | null;
     socketP2: WebSocket | null;
     gameState: GameState;
-    loopId: NodeJS.Timeout | null;
+	loopId: NodeJS.Timeout | null;
+	isLocal: boolean;
 }
 
 export class GameService {
     private activeMatches: Map<string, GameSession> = new Map();
     private disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
-    constructor(private matchRepo: MatchRepository) {}
+	constructor(
+		private matchRepo: MatchRepository,
+		private redis: Redis
+	) { }
 
     // -------------------------------------------------------------------
     // 1. UNIRSE O RECONECTARSE A PARTIDA
@@ -38,30 +45,53 @@ export class GameService {
         
         // A. CREAR SESIÓN SI NO EXISTE
         if (!session) {
-            const matchFromDb = await this.matchRepo.findById(matchId);
+            let matchData: any = await this.matchRepo.findById(matchId);
+            let isLocalMatch = false;
 
-            if (!matchFromDb || matchFromDb.status === 'finished') {
+            // --- LÓGICA LOCAL START ---
+            // Si no está en DB, buscamos el ticket en Redis
+            if (!matchData) {
+                const localDataString = await this.redis.get(`match:local:${matchId}`);
+                if (localDataString) {
+                    const localMatch = JSON.parse(localDataString);
+                    // Mapeamos el JSON al formato que espera tu lógica
+                    matchData = {
+                        id: localMatch.id,
+                        player1_id: localMatch.player1.userId,
+                        player2_id: localMatch.player2.userId, // 'guest-id'
+                        target_score: localMatch.targetScore,
+                        game_mode: localMatch.gameMode || 'classic',
+                        status: 'active'
+                    };
+                    isLocalMatch = true;
+                    // Consumimos el ticket para limpieza
+                    await this.redis.del(`match:local:${matchId}`);
+                }
+            }
+            // --- LÓGICA LOCAL END ---
+
+            if (!matchData || matchData.status === 'finished') {
                 socket.close(1008, 'Match invalid or finished');
                 return;
             }
 
-            const gameMode = matchFromDb.game_mode || 'classic'; 
-            
             session = {
                 matchId: matchId,
-                player1Id: String(matchFromDb.player1_id),
-                player2Id: String(matchFromDb.player2_id),
+                player1Id: String(matchData.player1_id),
+                player2Id: String(matchData.player2_id),
                 socketP1: null,
                 socketP2: null,
-                // AQUI estaba tu error de argumentos: ahora pasamos los 3
-                gameState: this.createInitialState(matchId, matchFromDb.target_score || 11, gameMode),
-                loopId: null
+                gameState: this.createInitialState(matchId, matchData.target_score || 11, matchData.game_mode),
+                loopId: null,
+                isLocal: isLocalMatch // <--- GUARDAMOS EL ESTADO
             };
 
             this.activeMatches.set(matchId, session);
         }
         
         // B. ASIGNAR SOCKET
+        // En Local, el Player 1 controla todo. El Player 2 es virtual.
+        // Solo asignamos socketP1. socketP2 se queda null (y no pasa nada).
         const isPlayer1 = session.player1Id === userId;
         const isPlayer2 = session.player2Id === userId;
 
@@ -69,20 +99,35 @@ export class GameService {
             socket.close(1008, 'Not a player');
             return;
         }
-
-        if (isPlayer1) session.socketP1 = socket;
-        else session.socketP2 = socket;
-
+		// Asignación de sockets
+        if (isPlayer1) {
+            session.socketP1 = socket;
+            // Si es partida local, asignamos el mismo socket al P2
+            // para que reciba actualizaciones, aunque lógicamente controlas todo tú.
+            if (session.isLocal) {
+                 session.socketP2 = socket; 
+            }
+        } else {
+            session.socketP2 = socket;
+		}
+		
         // C. GESTIÓN DE ESTADO
         if (session.gameState.status === 'PAUSED') {
             this.handleReconnection(session, matchId, isPlayer1);
             socket.send(JSON.stringify({ event: SOCKET_EVENTS.GAME_UPDATE, data: session.gameState }));
         }
-        else if (session.socketP1 && session.socketP2 && session.gameState.status === 'WAITING') {
-            this.startGameLoop(matchId);
+        else if (session.gameState.status === 'WAITING') {
+            // En local arrancamos apenas conecta el P1
+            if (session.isLocal && session.socketP1) {
+                this.startGameLoop(matchId);
+            }
+            // En online esperamos a los dos
+            else if (!session.isLocal && session.socketP1 && session.socketP2) {
+                this.startGameLoop(matchId);
+            }
         }
-    }
-
+	}
+	
     private handleReconnection(session: GameSession, matchId: string, isPlayer1: boolean) {
         const timer = this.disconnectTimeouts.get(matchId);
         if (timer) {
@@ -314,20 +359,34 @@ export class GameService {
     }
 
     // -------------------------------------------------------------------
-    // 6. PROCESAR INPUTS (LÓGICA CORREGIDA)
+    // 6. PROCESAR INPUTS
     // -------------------------------------------------------------------
     public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
         const session = this.activeMatches.get(matchId);
         if (!session || session.gameState.status !== 'PLAYING') return;
 
-        let payload: any;
+        let payload: GameInputPayload;
         try { payload = JSON.parse(message.toString()); } catch { return; }
 
-        const isP1 = session.player1Id === userId;
-        const paddle = isP1 ? session.gameState.player1 : session.gameState.player2;
+		let paddle: PaddleState;
+
+		// --- SELECCIÓN DE PALA ---
+		if (session.isLocal) {
+			// MODO LOCAL: El payload dicta qué pala se mueve ('left' o 'right')
+			// El front enviará playerSide='right' cuando use las flechas
+			if (payload.playerSide === 'right') {
+				paddle = session.gameState.player2;
+			} else {
+				paddle = session.gameState.player1; // Default left/W/S
+			}
+			
+		} else {
+			// MODO ONLINE: El ID del usuario dicta qué pala se mueve (Seguridad)
+            const isP1 = session.player1Id === userId;
+            paddle = isP1 ? session.gameState.player1 : session.gameState.player2;
+		}
+		
         const { config } = session.gameState; // Obtenemos la config de la sesión
-        
-        // CORRECCIÓN: Usamos config.paddleSpeed, NO la constante global
         const speed = config.paddleSpeed; 
 
         if (payload.action === 'STOP') {
@@ -362,20 +421,21 @@ export class GameService {
         }
         
         session.gameState.status = 'FINISHED';
-        session.gameState.winnerId = parseInt(winnerId); 
-
-        if (this.disconnectTimeouts.has(matchId)) {
-            clearTimeout(this.disconnectTimeouts.get(matchId)!);
-            this.disconnectTimeouts.delete(matchId);
-        }
+        // En local, winnerId podría ser 'guest-id', parseInt daría NaN, pero no importa porque no guardamos
         
-        this.matchRepo.finishMatch(
-            matchId, 
-            winnerId, 
-            session.gameState.player1.score, 
-            session.gameState.player2.score, 
-            Date.now()
-        ).catch(e => console.error(e));
+		session.gameState.winnerId = parseInt(winnerId) || 0; // || 0 por si es 'guest-id'
+
+        // --- PROTECCIÓN DB START ---
+        if (!session.isLocal) {
+             this.matchRepo.finishMatch(
+                matchId, 
+                winnerId, 
+                session.gameState.player1.score, 
+                session.gameState.player2.score, 
+                Date.now()
+            ).catch(e => console.error(e));
+        }
+		// --- PROTECCIÓN DB END ---
 
         const endMsg = JSON.stringify({
             event: SOCKET_EVENTS.GAME_OVER,
@@ -405,8 +465,19 @@ export class GameService {
             }
         }));
         
-        this.matchRepo.finishMatch(matchId, winnerId, 0, 0, Date.now()).catch(e => console.error(e));
-        this.activeMatches.delete(matchId);
+        //this.matchRepo.finishMatch(matchId, winnerId, 0, 0, Date.now()).catch(e => console.error(e));
+        
+		// --- PROTECCIÓN DB START ---
+        if (!session.isLocal) {
+             this.matchRepo.finishMatch(
+                matchId, 
+                winnerId, 
+                session.gameState.player1.score, 
+                session.gameState.player2.score, 
+                Date.now()
+            ).catch(e => console.error(e));
+        }
+		this.activeMatches.delete(matchId);
     }
 
     private broadcastState(session: GameSession) {
