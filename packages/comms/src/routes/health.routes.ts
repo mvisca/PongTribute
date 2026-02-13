@@ -1,9 +1,8 @@
 import { FastifyPluginAsync } from "fastify";
-import type { Redis } from "ioredis";
 import { CommsService } from "../services/comms.service.js";
 import { CommsController } from "../controllers/comms.controller.js";
 
-export const healthRoutes: FastifyPluginAsync<{ redisClient: Redis | null }> = async (app, opts) => {
+export const healthRoutes: FastifyPluginAsync = async (app) => {
 	// Obtener la instancia del servicio desde global
 	const service = (global as any).commsService as CommsService;
 
@@ -11,8 +10,8 @@ export const healthRoutes: FastifyPluginAsync<{ redisClient: Redis | null }> = a
 		throw new Error('[HealthRoutes] CommsService not initialized');
 	}
 
-	// Crear el controller con el servicio y Redis client
-	const controller = new CommsController(service, opts.redisClient);
+	// Crear el controller con el servicio y su Redis client
+	const controller = new CommsController(service, service.getRedisClient());
 
 	/**
 	 * Health check endpoint

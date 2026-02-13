@@ -11,10 +11,12 @@ import {
     GameState,
     GAME_CONSTANTS,
     GAME_MODES,
+    GAME_STATUS,
     SOCKET_EVENTS,
     PaddleState,
 	BallState,
-	GameInputPayload
+	GameInputPayload,
+	MatchTypes
 } from '@transcendence/shared'; 
 
 interface GameSession {
@@ -112,11 +114,11 @@ export class GameService {
 		}
 		
         // C. GESTIÓN DE ESTADO
-        if (session.gameState.status === 'PAUSED') {
+        if (session.gameState.status === GAME_STATUS.PLAYING) {
             this.handleReconnection(session, matchId, isPlayer1);
             socket.send(JSON.stringify({ event: SOCKET_EVENTS.GAME_UPDATE, data: session.gameState }));
         }
-        else if (session.gameState.status === 'WAITING') {
+        else if (session.gameState.status === GAME_STATUS.WAITING) {
             // En local arrancamos apenas conecta el P1
             if (session.isLocal && session.socketP1) {
                 this.startGameLoop(matchId);
@@ -146,27 +148,28 @@ export class GameService {
         const targetMatchId = matchId || this.findMatchIdByUserId(userId);
         if (!targetMatchId) return;
 
-        const session = this.activeMatches.get(targetMatchId);
-        if (!session || session.gameState.status === 'FINISHED') return;
+        const session = this.activeMatches.get(targetMatchId) as GameSession;
+        if (!session || session.gameState.status === GAME_STATUS.FINISHED) return;
 
         // Pausar Loop
         if (session.loopId) {
             clearInterval(session.loopId);
             session.loopId = null; 
         }
-        session.gameState.status = 'PAUSED';
+        session.gameState.status = GAME_STATUS.PAUSED;
         
+		// Envia un mensaje al que aún está conectado
         const isPlayer1Gone = session.player1Id === userId;
         const rivalSocket = isPlayer1Gone ? session.socketP2 : session.socketP1;
         
         rivalSocket?.send(JSON.stringify({ 
             event: SOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED, 
-            data: { timeout: 15 } 
+            data: { timeout: GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT / 1000 } 
         }));
         
         const timeoutId = setTimeout(() => {
             this.forfeitMatch(targetMatchId, userId);
-        }, 15000); 
+        }, GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT); 
         
         this.disconnectTimeouts.set(targetMatchId, timeoutId);
     }
@@ -178,18 +181,18 @@ export class GameService {
         const session = this.activeMatches.get(matchId);
         if (!session) return;
 
-        session.gameState.status = 'PLAYING';
+        session.gameState.status = GAME_STATUS.PLAYING;
         if (session.loopId) clearInterval(session.loopId);
 
         session.loopId = setInterval(() => {
             // 1. Si ya no estamos jugando, paramos
-            if (session.gameState.status !== 'PLAYING') return;
+            if (session.gameState.status !== GAME_STATUS.PLAYING) return;
 
-            // 2. Calculamos física (AQUI el estado puede cambiar a 'FINISHED')
+            // 2. Calculamos física (AQUI el estado puede cambiar a FINISHED)
             this.updatePhysics(session);
             
             // 3. Verificamos si terminó (Forzamos el tipo para callar a TS)
-            if ((session.gameState.status as string) === 'FINISHED') return;
+            if ((session.gameState.status as string) === GAME_STATUS.FINISHED) return;
 
             // 4. Si sigue activo, emitimos
             this.broadcastState(session);
@@ -320,7 +323,7 @@ export class GameService {
 
         return {
             id: matchId, 
-            status: 'WAITING',
+            status: GAME_STATUS.WAITING,
             targetScore: targetScore,
             winnerId: undefined,
             config: {
@@ -363,7 +366,7 @@ export class GameService {
     // -------------------------------------------------------------------
     public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
         const session = this.activeMatches.get(matchId);
-        if (!session || session.gameState.status !== 'PLAYING') return;
+        if (!session || session.gameState.status !== GAME_STATUS.PLAYING) return;
 
         let payload: GameInputPayload;
         try { payload = JSON.parse(message.toString()); } catch { return; }
@@ -420,7 +423,7 @@ export class GameService {
             session.loopId = null;
         }
         
-        session.gameState.status = 'FINISHED';
+        session.gameState.status = GAME_STATUS.FINISHED;
         // En local, winnerId podría ser 'guest-id', parseInt daría NaN, pero no importa porque no guardamos
         
 		session.gameState.winnerId = parseInt(winnerId) || 0; // || 0 por si es 'guest-id'

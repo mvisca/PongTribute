@@ -34,14 +34,11 @@ const AvatarFieldBase64 = Type.Optional(
 	})
 );
 
-const AvatarFieldUrl = Type.Optional(
-	Type.String
-	({
+const AvatarFieldUrl = Type.String({
 		format: 'uri',
 		pattern: '^https://res\\.cloudinary\\.com/',
 		maxLength: 500
-	})
-);
+});
 
 const UuidField = Type.String({
 	format: 'uuid'
@@ -268,7 +265,35 @@ export namespace UserSchemas {
 			404: NotFoundResponse
 		}
 	}
-	
+
+	/**
+	* Schema para GET /internal/users/:id/friends
+	*/
+	export const getInternalFriendsSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			200: Type.Object({
+				friendsIds: Type.Array(UuidField)
+			}),
+			404: NotFoundResponse
+		}
+	}
+
+	/**
+	* Schema para GET /internal/users/:id/last-logout
+	*/
+	export const getLastLogoutAtSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			200: Type.Object({
+				lastLogoutAt: SecondsField
+			}),
+			404: NotFoundResponse
+		}
+	}
+
 	// ========================================================================
 	// CHECK SCHEMAS
 	// ========================================================================
@@ -355,7 +380,7 @@ export namespace UserSchemas {
 		body: Type.Object({
 			passwordHash: PasswordHashField
 		}),
-		respons: {
+		response: {
 			200:UserInternal,
 			404: NotFoundResponse
 		}

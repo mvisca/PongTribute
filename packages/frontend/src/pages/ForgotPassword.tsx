@@ -13,7 +13,7 @@ export default function ForgotPassword({ onBack }: Props) {
       setMessage("Email is required");
       return;
     }
-
+	// TODO Aquí llamar a API Real para recuperar password
     setMessage("Recovery email sent (fake)");
   }
 

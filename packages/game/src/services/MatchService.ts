@@ -261,7 +261,7 @@ export class MatchService {
         // 3. Construcción de la Entidad (El Servicio decide ID y Estado)
         const newMatch: MatchTypes.MatchRow = {
             id: randomUUID(),           // ID generado en lógica de negocio
-            status: 'pending',          // Nace pendiente de aceptación
+            status: MatchConstants.MATCH_STATUS.PENDING,          // Nace pendiente de aceptación
 			player1_id: userId,
 			player1_username: p1Data.username, // <--- Usamos el dato del objeto
             player1_score: 0,
@@ -407,7 +407,7 @@ export class MatchService {
 
         // 2. Guards
         if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
-        if (matchRow.status !== 'pending') throw new SharedErrors.ValidationError('Match is not pending');
+        if (matchRow.status !== MatchConstants.MATCH_STATUS.PENDING) throw new SharedErrors.ValidationError('Match is not pending');
         if (matchRow.player2_id !== userId) throw new SharedErrors.ForbiddenError('You are not the invited player');
 
         // 3. Actualizar estado en DB
@@ -419,7 +419,7 @@ export class MatchService {
 			const matchDomain = MatchMapper.toDomain(matchRow);
 			
 			// Forzamos el estado a 'active' en el objeto en memoria porque toDomain usa el dato viejo
-			matchDomain.status = 'active';
+			matchDomain.status = MatchConstants.MATCH_STATUS.ACTIVE;
 
 			// VALIDACIÓN
             // Si el mapper nos devuelve player2 undefined, algo grave pasa.
@@ -447,7 +447,7 @@ export class MatchService {
     
 			// COMPENSACIÓN: Revertir estado si falla la notificación/hidratación
             // Si falló el inicio, devolvemos la invitación a "pendiente" para que puedan reintentar.
-            await this.matchRepo.updateStatus(matchId, 'pending');
+            await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
 
             throw new SharedErrors.ServiceError('game', 'Error al iniciar la partida. Por favor intenta aceptar de nuevo.');
 		}
@@ -466,7 +466,7 @@ export class MatchService {
 
 		// 2. Guards
 		if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
-		if (matchRow.status !== 'pending') throw new SharedErrors.ValidationError('Match is not pending');
+		if (matchRow.status !== MatchConstants.MATCH_STATUS.PENDING) throw new SharedErrors.ValidationError('Match is not pending');
 		if (matchRow.player2_id !== userId) throw new SharedErrors.ForbiddenError('Only the invited player can reject');
 
 		// 3. Actualizar estado en DB
@@ -477,7 +477,7 @@ export class MatchService {
 			// 4. Mapeo
 			// Convertimos el Row crudo a Objeto de Dominio
 			const matchDomain = MatchMapper.toDomain(matchRow);
-			matchDomain.status = 'rejected'; // Actualizacion manual en memoria
+			matchDomain.status = MatchConstants.MATCH_STATUS.REJECTED; // Actualizacion manual en memoria
 
 			// 5. Notificar rechazo (Redis)
 			const event: MatchRejectedEvent = {
@@ -496,7 +496,7 @@ export class MatchService {
 		} catch (error) {
 			console.error(`🔥 [Critical] Fallo post-rechazo.`, error);
 			// En rechazo, el rollback es menos crítico, pero idealmente revertimos
-            await this.matchRepo.updateStatus(matchId, 'pending');
+            await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
             throw new SharedErrors.ServiceError('game', 'Error rejecting match.');
 		}
     }
@@ -565,10 +565,7 @@ export class MatchService {
 	 * las rechazo ni acepto. 
 	 **/
 	async prunePrivateInvites(): Promise<void> {
-        const now = Date.now();
-        const threshold = now - MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS;
-        
-        this.matchRepo.expirePendingMatches(threshold);
+        this.matchRepo.expirePendingMatches();
         // Opcional: Podría loguear "Limpieza de privadas ejecutada" si quiero depurar.
     }
 
@@ -589,7 +586,7 @@ export class MatchService {
 		// 2. Guards (Validaciones)
         if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
         // Solo se puede cancelar si no ha empezado
-        if (matchRow.status !== 'pending') {
+        if (matchRow.status !== MatchConstants.MATCH_STATUS.PENDING) {
 			throw new SharedErrors.ValidationError('Cannot cancel a match that is not pending');
         }
         // SEGURIDAD: Solo el creador (Player 1) puede cancelar SU invitación

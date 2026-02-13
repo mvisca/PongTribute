@@ -5,6 +5,7 @@ import { CommsEnv } from '../../../config.js';
 import { REDIS_CHANNELS } from '@transcendence/shared';
 
 export class UserEventHandler implements EventHandler {
+
 	channels = [
 		REDIS_CHANNELS.USER_LOGIN,
 		REDIS_CHANNELS.USER_LOGOUT	
@@ -59,12 +60,17 @@ export class UserEventHandler implements EventHandler {
 		comms: CommsService
 	): Promise<void> {
 		console.log(`[UserHandler] ${event.targetUserId} offline`);
+		
+		// Cerrar la conexion
+		comms.closeUserConnection(event.targetUserId);
 
 		try {
+			// Todos los friends
 			const friends = await this.getUserFriends(event.targetUserId);
 			
-			if (friends.length > 0) {event.targetUserId
-
+			// Ha de haber más de cero
+			if (friends.length > 0) {
+				// Mensaje a todos
 				comms.broadcastToUsers(friends, {
 					type: REDIS_CHANNELS.FRIEND_OFFLINE,
 					payload: {

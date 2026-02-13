@@ -19,7 +19,7 @@ async function start() {
 		});
 
 		console.log(`App log level: ${app.log.level}`);
-		console.log(`USER Service listo en ${UserEnv.HOST()}:${UserEnv.PORT()}`);
+		console.log(`[USER] Service listo en ${UserEnv.HOST()}:${UserEnv.PORT()}`);
 		console.log(`DB Path: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
 
 		// Limpieza de tabla 'refresh_tokens' para development y production
@@ -48,7 +48,7 @@ async function gracefulShutdown(signal: string) {
 	if (redisClient) {
 		try {
 			await redisClient.quit();
-			console.log('USER: Redis desconectado');
+			console.log('[USER] Redis desconectado');
 		} catch (err) {
 			console.error('Error cerrando Redis', err);
 		}
@@ -57,7 +57,7 @@ async function gracefulShutdown(signal: string) {
 	if (app) {
 		try {
 			await app.close();
-			console.log('USER: Fastify HTTP server cerrado');
+			console.log('[USER] Fastify HTTP server cerrado');
 		} catch (err) {
 			console.error('Error cerrando Fastify', err);
 		}
@@ -65,7 +65,7 @@ async function gracefulShutdown(signal: string) {
 
 	try {
 		closeDatabase();
-		console.log('USER: Base de Datos cerrada');
+		console.log('[USER] Base de Datos cerrada');
 	} catch (err) {
 		console.error('Error cerrando DB', err);
 	}

@@ -100,13 +100,15 @@ export class AuthService {
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
 		const loginEvent: UserLoginEvent = {
 			type: REDIS_CHANNELS.USER_LOGIN,
-			timestamp: Date.now(),
-			source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
 			targetUserId: user.id,
+			source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+			timestamp: Date.now(),
 			payload: {
 				username: user.username,
 				avatar: user.avatar,
-				email: user.email
+				email: user.email,
+				lastLogoutAt: user.lastLogoutAt,
+				isOnline: user.isOnline
 			}
 		};
 		
@@ -302,7 +304,7 @@ export class AuthService {
 	// LOGOUT 
 	
 	/** Actualiza el lastLogoutAt del usuario con timestamp generado por el servicio Auth que también generar el timestamp del JWT */
-	private async updateLastLogoutAt(userId: string) { // DUDA Tipar retorno
+	private async updateLastLogoutAt(userId: string): Promise<void> {
 		const body = { lastLogoutAt: Math.floor(Date.now() / 1000)  };
 		
 		const response = await fetch(
@@ -592,22 +594,11 @@ export class AuthService {
 		
 		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		
-		// Si existe avatar, validarlo y subirlo a cloudinary
-		if (avatar && avatar.trim() !== "") {
-			if (!this.validateAvatar(avatar)) {
-				throw new SharedErrors.ValidationError(
-					'Avatar inválido',
-					'avatar',
-					{
-						operation: 'register',
-						receivedFormat: avatar.substring(0, 50),
-						expectedFormat: 'base64 data:image/...'
-					}
-				);
-			}
+		// Si existe avatar ya ha sido validado por ajv, subirlo a Cloudinary
+		if (avatar) {
 			avatarUrl = await this.uploadAvatarWithFallback(avatar);
 		}
-		
+
 		// Crear usuario en User Service
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
@@ -755,7 +746,7 @@ export class AuthService {
 		if (AuthEnv.UNIQUE_SESSION() === false && AuthEnv.NODE_ENV() === 'development') {
 			console.warn(
 				'⚠️  ROTACIÓN DE REFRESH TOKENS NO IMPLEMENTADA PARA MULTI-SESIÓN.\n' +
-				'Con UNIQUE_SESSION=false, los refreshTokens de todas las sesiones se invalidan.\n' +
+				'Con UNIQUE_SESSION=false, los refreshTokens de todas las sesiones se invalidan el logout.\n' +
 				'Esto protege de vulnerabilidad de reuso de refreshTokens ya usados a costa del UX/UI (sesiones cerradas).\n' +
 				'Soluciones:\n' +
 				'  1. Usar UNIQUE_SESSION=true (recomendado)\n' +
@@ -772,9 +763,9 @@ export class AuthService {
 		
 		await this.deleteRefreshTokensById(userId);
 		await this.updateLastLogoutAt(userId);
-		
+
 		try {
-			
+			// Recuperar usuario actualizado
 			const user = await this.fetchUserById(userId);
 			
 			if (!user) {
@@ -784,18 +775,28 @@ export class AuthService {
 					attemptedId: userId
 				});
 			}
-			
+
 			// Setear user ofline
 			await this.setUserIsOnline(userId, false);
+						
+			// Guard de Redis disponible
+			if (!redisClient) {
+				console.warn('[Auth] Redis no disponible - logout sin notificación');
+				return;
+			}
 
 			// Preparar objeto para notificaciones
 			const logoutEvent: UserLogoutEvent = {
 				type: REDIS_CHANNELS.USER_LOGOUT,
-				timestamp: Date.now(),
-				source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
 				targetUserId: userId,
+				source: 'auth-service',
+				timestamp: Date.now(),
 				payload: {
-					lastLogoutAt: user.lastLogoutAt
+					username: user.username,
+					email: user.email,
+					avatar: user.avatar,
+					lastLogoutAt: user.lastLogoutAt,
+					isOnline: false
 				}
 			}
 			
@@ -808,7 +809,7 @@ export class AuthService {
 			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
 			redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(logoutEvent))
 			.catch(err => {
-				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
+				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGOUT}:`, err);
 			});
 
 		} catch (err) {

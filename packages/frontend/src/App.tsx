@@ -1,3 +1,4 @@
+// TODO Se debe manejar la navegación con URLs reales, ahora se maneja con useState<Page> lo que es problementico (sin boton atras, deep linking). Cambiar par ala evaluacion
 import { useState } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";

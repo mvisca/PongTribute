@@ -1,6 +1,8 @@
 import { BaseEvent } from '../base.handler.js';
 import { REDIS_CHANNELS } from '@transcendence/shared';
 
+export type UserEvent = UserLoginEvent | UserLogoutEvent;
+
 interface UserEventPayload {
 	username: string;
 	avatar: string;
@@ -19,4 +21,3 @@ export interface UserLogoutEvent extends BaseEvent {
 	payload: UserEventPayload;
 }
 
-export type UserEvent = UserLoginEvent | UserLogoutEvent;

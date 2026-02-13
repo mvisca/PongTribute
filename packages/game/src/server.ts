@@ -26,7 +26,7 @@ async function start() {
 			host: GameEnv.HOST()
 		});
 		
-		console.log('App log level: ${app.log.level}');
+		console.log(`App log level: ${app.log.level}`);
 		console.log(`\nGAME Service listo en http://${GameEnv.HOST()}:${GameEnv.PORT()}`);
 		console.log(`DB Path: ${GameEnv.GAME_SERVICE_DB_FULL_PATH()}\n`);
 		

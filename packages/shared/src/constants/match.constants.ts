@@ -102,8 +102,15 @@ export namespace MatchConstants {
 		*/
 		FINISHED: "finished",
 
-		// Partida rechazada por el friend retado
-		REJECTED: "rejected"
+		/**
+		 * Partida rechazada por el friend retado
+		*/
+		REJECTED: "rejected",
+
+		/**
+		 * Partida expirada (timeout de cola)
+		*/
+		EXPIRED: "expired"
 
 	}as const;
 	

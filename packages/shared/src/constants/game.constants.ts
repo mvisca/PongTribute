@@ -40,8 +40,33 @@ export const GAME_CONSTANTS = {
     MIN: 5,
     MAX: 21,
     STEP: 2
-  }
+  },
+  
+  // Timeouts
+  IN_MATCH_DISCONNECTION_TIMEOUT: 15000 // 15 segundos para reconectarse
 } as const;
+
+// ============================================================================
+// GAME STATUS (Runtime - WebSocket Game Loop)
+// ============================================================================
+/**
+ * Estados del juego durante la ejecución en tiempo real.
+ * Diferentes de MATCH_STATUS (que es para persistencia en BD).
+ */
+export const GAME_STATUS = {
+  /** Esperando a que ambos jugadores conecten */
+  WAITING: 'WAITING',
+  /** Partida en curso */
+  PLAYING: 'PLAYING',
+  /** Pausada (desconexión temporal) */
+  PAUSED: 'PAUSED',
+  /** Partida terminada normalmente */
+  FINISHED: 'FINISHED',
+  /** Partida abortada */
+  ABORTED: 'ABORTED'
+} as const;
+
+export type GameStatus = typeof GAME_STATUS[keyof typeof GAME_STATUS];
 
 // CONFIGURACIÓN DE MODOS (Usando el tipo importado)
 export const GAME_MODES: Record<string, GameModeConfig> = {

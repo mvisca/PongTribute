@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { buildApp, redisClient, commsService } from './app.js';
+import { buildApp } from './app.js';
 import { CommsEnv } from './config.js';
 import { CommsService } from './services/comms.service.js';
 
@@ -48,24 +48,14 @@ async function gracefulShutdown(signal: string) {
     }
   }
 
-  // 2. Cerrar CommsService (WS + Redis)
+  // 2. Cerrar CommsService (WS + Redis internos)
   const service = (global as any).commsService as CommsService | undefined;
   if (service) {
     try {
       await service.close();
-      console.log('[Comms] CommsService cerrado');
+      console.log('[Comms] CommsService cerrado (incluyendo Redis)');
     } catch (err) {
       console.error('[Comms] Error cerrando CommsService:', err);
-    }
-  }
-
-  // 3. Cerrar Redis client global
-  if (redisClient) {
-    try {
-      await redisClient.quit();
-      console.log('[Comms] Redis cerrado');
-    } catch (err) {
-      console.error('[Comms] Error cerrando Redis:', err);
     }
   }
 

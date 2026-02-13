@@ -11,9 +11,10 @@ import { WebSocket } from 'ws';
 // Empieza siendo una peticion HTTP antes de convertirse en WebSocket
 import { FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
+import { Value } from '@sinclair/typebox/value';
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
-import { SOCKET_EVENTS } from '@transcendence/shared';
+import { SOCKET_EVENTS, AuthSchemas, AuthTypes } from '@transcendence/shared';
 
 // Clase que encapsula la logica de conexion.
 // Esto nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
@@ -37,7 +38,7 @@ export class GameGateway {
 	constructor(private gameService: GameService) { }
 	
 	//VALIDA PARAMETROS Y SEGURIDAD (JWT)
-	handleConnection(connection: any, req: FastifyRequest): void {
+	async handleConnection(connection: any, req: FastifyRequest): Promise<void> {
 		// 1. EXTRACCION DEL SOCKET REAL
 		// A veces el obj 'connection' es SocketStream (wrapper que contiene
 		//  el obj real dentro), a veces es WebSocket directo
@@ -64,15 +65,46 @@ export class GameGateway {
 			// Al no soportar headers estándar en el handshake inicial del navegador, 
 			// se implementa validación manual del token vía Query Param (`?token=...`).
 			//Aqui no tenemos Fastify que revise si la configuracion es correcta, ni validaciones
-			//automaticas, ni middleware como en las peticiones HTTP. 
+			//automaticas, ni middleware como en las peticiones HTTP.
 			//Es vital envolver en un try catch por si falla algo.
-			// Verificamos el token manualmente usando el Secreto Compartido.
-			//Si el token esta caducado, es falso o la firma no coincide con JWT_SECRET,
-			//lanzara una exception y cerrará la conexion.
-            const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as {
-                id: string,
-                username: string
-            };
+
+			// 4a. Verificar firma JWT
+			const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
+
+			// 4b. Validar estructura del payload con TypeBox (igual que middlewares HTTP)
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			if (!isValid) {
+				console.log('⛔ [Gateway] Token con estructura inválida');
+				socket.close(1008, 'Invalid token structure');
+				return;
+			}
+
+			// 4c. Validar lastLogoutAt contra User Service (endpoint ligero)
+			const response = await fetch(
+				`${GameEnv.USER_SERVICE_URL()}/internal/users/${payload.id}/last-logout`,
+				{
+					method: 'GET',
+					headers: {
+						'X-Service-Secret': GameEnv.SERVICE_SECRET(),
+						'Content-Type': 'application/json'
+					}
+				}
+			);
+
+			if (!response.ok) {
+				console.log('⛔ [Gateway] Fallo validación de usuario');
+				socket.close(1008, 'User validation failed');
+				return;
+			}
+
+			const { lastLogoutAt } = await response.json() as { lastLogoutAt: number };
+
+			// Token es inválido si fue emitido ANTES del logout (revocado)
+			if (payload.iat! < lastLogoutAt) {
+				console.log('⛔ [Gateway] Token revocado (emitido antes del último logout)');
+				socket.close(1008, 'Token revoked');
+				return;
+			}
 
 			const userId = payload.id;
 
@@ -80,7 +112,7 @@ export class GameGateway {
 			
 			// USO DEL SERVICIO INYECTADO
 			//METEMOS AL SOCKET EN LA SALA DE JUEGO (map activeMatches<> en GameService)
-			this.gameService.joinMatch(matchId, userId, socket);
+			await this.gameService.joinMatch(matchId, userId, socket);
 
 			// 5. LOGICA DE BIENVENIDA. El servidor dice HOLA el primero.
 			// Aquí es donde confirmamos al cliente que "está dentro" y
@@ -96,9 +128,15 @@ export class GameGateway {
 				await this.gameService.processInput(matchId, userId, message);
 			});
 
-			// 7. EVENTO: DESCONEXION (por perdida de internet o cierre de la pestanya)
-            socket.on('close', () => {
+			// 7. EVENTO: DESCONEXION
+			// Se dispara si pierde internet o cierra la pestanya
+            socket.on('close', async () => {
                 console.log(`❌ [Gateway] Jugador Desconectado: ${payload.username}`);
+				try {
+					await this.gameService.handleDisconnect(userId, matchId);
+				} catch (err) {
+					console.error(`❌ [Gateway] Error en handleDisconnect:`, err);
+				}
 			});
 
         } catch (err) {

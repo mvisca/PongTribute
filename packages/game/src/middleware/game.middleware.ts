@@ -20,7 +20,7 @@ export class GameMiddleware {
 	
 	private static async fetchLastLogoutAt(userId: string): Promise<number> {
 		const response = await fetch(
-			`${GameEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+			`${GameEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 			{
 				method: 'GET',
 				headers: {
@@ -29,13 +29,13 @@ export class GameMiddleware {
 				}
 			}
 		);
-		
+
 		if (!response.ok) {
 			if (response.status === 404) {
 				// Usuario no encontrado = token inválido
 				throw new SharedErrors.NotFoundError('Usuario no encontrado', 'user', {
 					userId,
-					endpoint: `${GameEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+					endpoint: `${GameEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 					method: 'GET',
 					status: 404,
 					operation: 'fetchLastLogoutAt'
@@ -43,7 +43,7 @@ export class GameMiddleware {
 			}
 			throw new SharedErrors.ServiceError('user', `Error obteniendo lastLogoutAt`, {
 				userId,
-				endpoint: `${GameEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+				endpoint: `${GameEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 				method: 'GET',
 				status: response.status,
 				statusText: response.statusText,

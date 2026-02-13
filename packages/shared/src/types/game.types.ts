@@ -1,5 +1,7 @@
 // packages/shared/src/types/game.types.ts
 
+import type { GameStatus } from '../constants/game.constants.js';
+
 // Definición de Tipos para la Configuración del Modo
 export interface GameModeConfig {
   paddleSpeed: number;      // Píxeles por frame
@@ -50,7 +52,7 @@ export interface GameState {
 	// Unimos dimensiones + reglas de modo para que el front tenga TODO el contexto
     config: GameConfig & GameModeConfig;
 	targetScore: number;
-    status: 'WAITING' | 'PLAYING' | 'PAUSED' | 'FINISHED' | 'ABORTED';
+    status: GameStatus;
     winnerId?: number;       // ID del usuario ganador (si finished)
 }
 

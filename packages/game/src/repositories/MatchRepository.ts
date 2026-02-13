@@ -1,6 +1,6 @@
 //Este archivo es el que comunica directamente con la BD
 
-import { MatchTypes, SharedErrors } from '@transcendence/shared';
+import { MatchTypes, SharedErrors, MatchConstants } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
 
 /**
@@ -68,17 +68,17 @@ export class MatchRepository {
 	/**
 	 * Actualiza a 'expired' una partida privada 'pending' que no se aprobó ni rechazó..
 	 * La llama un cron si alcanza el timeout de 60 seg
-	 * @param thresholdTimestamp
 	 */
-	async expirePendingMatches(thresholdTimestamp: number): Promise<void> {
+	async expirePendingMatches(): Promise<void> {
+		const thresholdTimestamp = Date.now() - MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS;
 		const stmt = this.db.prepare(`
         	UPDATE matches
-			SET status = 'expired'
-			WHERE status = 'pending'
+			SET status = ?
+			WHERE status = ?
 			AND created_at < ?
 		`);
-		// Ejecutamos pasando el valor para sustituir el '?'
-		const info = stmt.run(thresholdTimestamp);
+		// Ejecutamos pasando el valor para sustituir los '?'
+		const info = stmt.run(MatchConstants.MATCH_STATUS.EXPIRED, MatchConstants.MATCH_STATUS.PENDING, thresholdTimestamp);
 
 		// Opcional: Loguea cuántas filas se afectaron para control
 		if (info.changes > 0) {
@@ -111,7 +111,7 @@ export class MatchRepository {
     async finishMatch(id: string, winnerId: string, p1Score: number, p2Score: number, finishedAt: number): Promise<void> {
         const stmt = this.db.prepare(`
             UPDATE matches
-            SET status = 'finished', 
+            SET status = ?, 
                 winner_id = ?, 
                 player1_score = ?, 
                 player2_score = ?, 
@@ -119,7 +119,7 @@ export class MatchRepository {
             WHERE id = ?
         `);
 
-        const result = stmt.run(winnerId, p1Score, p2Score, finishedAt, id);
+        const result = stmt.run(MatchConstants.MATCH_STATUS.FINISHED, winnerId, p1Score, p2Score, finishedAt, id);
 
         if (result.changes === 0) {
             throw new SharedErrors.NotFoundError(`Match with ID ${id} not found to finish.`);
@@ -160,13 +160,13 @@ export class MatchRepository {
 		const stmt = this.db.prepare(`
 			SELECT * FROM matches
 			WHERE player1_id = ?
-			AND status = 'pending'
+			AND status = ?
 		`);
 
 		// Usamos .all() porque devuelve un array de objetos. 
 		// Si usara get(), solo devolvería la 1ª coincidencia.
 		// con el as le digo que lo que sale de aqui cumple con la interfaz MatchRow
-		return stmt.all(userId) as MatchTypes.MatchRow[];
+		return stmt.all(userId, MatchConstants.MATCH_STATUS.PENDING) as MatchTypes.MatchRow[];
 	}
 
 
@@ -178,11 +178,11 @@ export class MatchRepository {
         const stmt = this.db.prepare(`
             SELECT * FROM matches
             WHERE (player1_id = ? OR player2_id = ?)
-            AND status IN ('active', 'pending')
+            AND status IN (?, ?)
             LIMIT 1
         `);
         
-        const row = stmt.get(userId, userId);
+        const row = stmt.get(userId, userId, MatchConstants.MATCH_STATUS.ACTIVE, MatchConstants.MATCH_STATUS.PENDING);
         return row ? (row as MatchTypes.MatchRow) : null;
     }
 
@@ -206,13 +206,13 @@ export class MatchRepository {
         const stmt = this.db.prepare(`
             SELECT * FROM matches
             WHERE (player1_id = ? OR player2_id = ?)
-            AND status = 'finished'
+            AND status = ?
             ORDER BY finished_at DESC
             LIMIT ? OFFSET ?
         `);
         
         // Usa .all() para devolver lista.
-        return stmt.all(userId, userId, limit, offset) as MatchTypes.MatchRow[];
+        return stmt.all(userId, userId, MatchConstants.MATCH_STATUS.FINISHED, limit, offset) as MatchTypes.MatchRow[];
     }
 }
 	
