@@ -85,34 +85,16 @@ export namespace MatchConstants {
 	 * Estados posibles de una partida
 	*/
 	export const MATCH_STATUS = {
-		
 		/**
 		 * Partida creada pero no iniciada\
 		 * Puede no usarse si la partida empieza de inmediato al crearse el match
 		*/
 		PENDING: "pending",
-		
-		/**
-		 * Partida activa
-		*/
 		ACTIVE: "active",
-		
-		/**
-		 * Partida terminada
-		*/
 		FINISHED: "finished",
-
-		/**
-		 * Partida rechazada por el friend retado
-		*/
 		REJECTED: "rejected",
-
-		/**
-		 * Partida expirada (timeout de cola)
-		*/
 		EXPIRED: "expired"
-
-	}as const;
+	} as const;
 	
 	export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];
 	
