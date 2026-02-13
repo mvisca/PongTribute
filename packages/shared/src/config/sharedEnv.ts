@@ -234,7 +234,7 @@ export namespace SharedEnv {
 		
 		function getBaseDir(): string {
 			if (isDevelopment || isTest) {
-				console.log('DEVELOPMENT envirnoment: cargando...');
+				console.log('DEVELOPMENT environment: cargando...');
 				const __filename = fileURLToPath(import.meta.url);
 				const __dirname = path.dirname(__filename);
 				
@@ -290,7 +290,7 @@ export namespace SharedEnv {
 			return {
 				apiKey: CLOUDINARY_API_KEY,
 				apiSecret: CLOUDINARY_API_SECRET,
-				cloudName: CLOUDINARY_URL
+				cloudName: CLOUDINARY_CLOUD_NAME
 			};
 		}
 		

@@ -46,8 +46,8 @@ export interface PaddleState {
 // 3. Estado completo de la partida
 export interface GameState {
     id: string;              // UUID de la partida (string, no number, por seguridad)
-    player1: PaddleState;
-    player2: PaddleState;
+    paddleLeft: PaddleState;  // Pala izquierda (jugador 1)
+    paddleRight: PaddleState; // Pala derecha (jugador 2)
 	ball: BallState;
 	// Unimos dimensiones + reglas de modo para que el front tenga TODO el contexto
     config: GameConfig & GameModeConfig;

@@ -2,16 +2,20 @@ import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
 import { MatchRepository } from '../repositories/MatchRepository.js';
 import { MatchMapper } from '../mappers/MatchMapper.js';
-import { MatchTypes, MatchSchemas, SharedErrors, GameMode, MatchConstants } from '@transcendence/shared';
-import { REDIS_CHANNELS } from '@transcendence/shared/constants/event.constants.js'; 
 import {
+	MatchTypes,
+	MatchSchemas,
+	SharedErrors,
+	GameMode,
+	MatchConstants,
+	REDIS_CHANNELS,
 	MatchFoundEvent,
 	MatchInviteEvent,
 	MatchStartedEvent,
 	MatchRejectedEvent,
 	MatchCancelledEvent,
 	MatchQueueTimeoutEvent
-} from '@transcendence/shared/types/event.types.js';
+} from '@transcendence/shared';
 
 
 /**
@@ -291,7 +295,7 @@ export class MatchService {
                     matchId: matchDomain.id,
                     inviterId: userId,
                     inviteeId: opponentId,
-                    gameMode: config?.gameMode || 'classic'
+                    gameMode: config?.gameMode || GameMode.CLASSIC
                 }
             };
             
@@ -486,7 +490,8 @@ export class MatchService {
                 source: 'game-service',
                 payload: {
                     matchId: matchDomain.id,
-                    userId: userId
+                    rejectorId: userId,              // El que rechaza (player2)
+                    inviterId: matchDomain.player1.userId   // El creador (player1)
                 }
             };
             
@@ -543,7 +548,8 @@ export class MatchService {
                 source: 'game-service',
                 payload: {
                     matchId: match.id,
-                    targetUserId: targetId,
+                    cancelledById: match.player1_id,  // El creador (cleanup automático)
+                    notifiedUserId: targetId,         // El invitado (player2)
                     reason: 'host_disconnected'
                 }
             };
@@ -612,7 +618,8 @@ export class MatchService {
                 source: 'game-service',
                 payload: {
 					matchId: matchId,
-					targetUserId: matchRow.player2_id,
+					cancelledById: userId,               // El creador que cancela
+					notifiedUserId: matchRow.player2_id, // El invitado
                     reason: 'The invitation was cancelled by creator'
                 }
             };

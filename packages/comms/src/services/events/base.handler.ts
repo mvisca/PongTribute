@@ -1,11 +1,8 @@
 import { CommsService } from '../comms.service.js';
+import type { BaseEvent, EventHandler as SharedEventHandler } from '@transcendence/shared';
 
-export interface BaseEvent {
-	type: string;
-	timestamp: number;
-}
+// Re-exportar tipos de shared para compatibilidad con código existente
+export type { BaseEvent };
 
-export interface EventHandler {
-	channels: string[]; // Los canales Redis que maneja
-	handle(event: BaseEvent, commsService: CommsService): Promise<void>; 
-}
+// Especializar EventHandler con CommsService concreto
+export type EventHandler = SharedEventHandler<CommsService>;

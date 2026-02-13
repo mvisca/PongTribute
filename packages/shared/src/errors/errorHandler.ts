@@ -62,7 +62,7 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 	// Error no conocido
 	console.error('Error no controlado (ya loggeado):', error);
 	reply.code(500).send({
-		error: 'IntenralServerError',
+		error: 'InternalServerError',
 		message: 'Error interno del servidor'
 	});
 }

@@ -45,6 +45,5 @@ export const SOCKET_EVENTS = {
 	
 } as const;
 		
-		
 export type RedisChannelType = typeof REDIS_CHANNELS[keyof typeof REDIS_CHANNELS];
 

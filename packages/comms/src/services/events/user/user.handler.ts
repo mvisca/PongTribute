@@ -1,8 +1,10 @@
 import { EventHandler, BaseEvent } from "../base.handler.js";
-import { UserEvent, UserLoginEvent, UserLogoutEvent } from './user.events.js';
+import { UserLoginEvent, UserLogoutEvent, REDIS_CHANNELS } from '@transcendence/shared';
 import { CommsService } from '../../comms.service.js';
 import { CommsEnv } from '../../../config.js';
-import { REDIS_CHANNELS } from '@transcendence/shared';
+
+// Union type local para el handler
+type UserEvent = UserLoginEvent | UserLogoutEvent;
 
 export class UserEventHandler implements EventHandler {
 

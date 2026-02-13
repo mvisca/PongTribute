@@ -204,15 +204,15 @@ export class GameService {
     // 4. FÍSICA Y LÓGICA DEL JUEGO (dx/dy Corregidos)
     // -------------------------------------------------------------------
     private updatePhysics(session: GameSession) {
-        const { config, ball, player1, player2 } = session.gameState;
+        const { config, ball, paddleLeft, paddleRight } = session.gameState;
 
         // A. Movimiento de Palas (Inercia)
         if (config.hasInertia && config.friction) {
-            [player1, player2].forEach(paddle => {
+            [paddleLeft, paddleRight].forEach(paddle => {
                 if (Math.abs(paddle.dy) > 0.1) {
                     paddle.y += paddle.dy;
                     paddle.dy *= config.friction!;
-                    
+
                     const maxPos = config.height - config.paddleHeight;
                     if (paddle.y < 0) { paddle.y = 0; paddle.dy = 0; }
                     if (paddle.y > maxPos) { paddle.y = maxPos; paddle.dy = 0; }
@@ -223,39 +223,39 @@ export class GameService {
         }
 
         // B. Movimiento de la Bola (USANDO DX/DY)
-        ball.x += ball.dx; 
+        ball.x += ball.dx;
         ball.y += ball.dy;
 
         // C. Rebote Paredes
         if (ball.y - config.ballRadius <= 0 || ball.y + config.ballRadius >= config.height) {
-            ball.dy *= -1; 
+            ball.dy *= -1;
         }
 
         // D. Colisión Palas
-        const paddle = (ball.x < config.width / 2) ? player1 : player2;
+        const paddle = (ball.x < config.width / 2) ? paddleLeft : paddleRight;
         if (this.checkCollision(ball, paddle, config)) {
             this.handlePaddleHit(session.gameState, paddle);
         }
 
         // E. Puntuación
         if (ball.x < 0) {
-            player2.score++;
-            this.checkScoreOrReset(session, 'player2');
+            paddleRight.score++;
+            this.checkScoreOrReset(session, 'paddleRight');
         } else if (ball.x > config.width) {
-            player1.score++;
-            this.checkScoreOrReset(session, 'player1');
+            paddleLeft.score++;
+            this.checkScoreOrReset(session, 'paddleLeft');
         }
     }
 
-    private checkScoreOrReset(session: GameSession, scorer: 'player1' | 'player2') {
-        const { targetScore, player1, player2 } = session.gameState;
-        const currentScore = scorer === 'player1' ? player1.score : player2.score;
+    private checkScoreOrReset(session: GameSession, scorer: 'paddleLeft' | 'paddleRight') {
+        const { targetScore, paddleLeft, paddleRight } = session.gameState;
+        const currentScore = scorer === 'paddleLeft' ? paddleLeft.score : paddleRight.score;
 
         if (currentScore >= targetScore) {
-            const winnerId = scorer === 'player1' ? session.player1Id : session.player2Id;
+            const winnerId = scorer === 'paddleLeft' ? session.player1Id : session.player2Id;
             this.endGame(session.matchId, winnerId);
         } else {
-            this.resetBall(session.gameState, scorer === 'player1' ? 'left' : 'right');
+            this.resetBall(session.gameState, scorer === 'paddleLeft' ? 'left' : 'right');
         }
     }
 
@@ -338,13 +338,13 @@ export class GameService {
                 hasInertia: modeConfig.hasInertia,
                 friction: modeConfig.friction
             },
-            player1: {
+            paddleLeft: {
                 x: fullConfig.WALL_MARGIN,
                 y: midY,
                 score: 0,
                 dy: 0
             },
-            player2: {
+            paddleRight: {
                 x: fullConfig.CANVAS_WIDTH - fullConfig.WALL_MARGIN - fullConfig.PADDLE_WIDTH,
                 y: midY,
                 score: 0,
@@ -378,15 +378,15 @@ export class GameService {
 			// MODO LOCAL: El payload dicta qué pala se mueve ('left' o 'right')
 			// El front enviará playerSide='right' cuando use las flechas
 			if (payload.playerSide === 'right') {
-				paddle = session.gameState.player2;
+				paddle = session.gameState.paddleRight;
 			} else {
-				paddle = session.gameState.player1; // Default left/W/S
+				paddle = session.gameState.paddleLeft; // Default left/W/S
 			}
-			
+
 		} else {
 			// MODO ONLINE: El ID del usuario dicta qué pala se mueve (Seguridad)
             const isP1 = session.player1Id === userId;
-            paddle = isP1 ? session.gameState.player1 : session.gameState.player2;
+            paddle = isP1 ? session.gameState.paddleLeft : session.gameState.paddleRight;
 		}
 		
         const { config } = session.gameState; // Obtenemos la config de la sesión
@@ -431,10 +431,10 @@ export class GameService {
         // --- PROTECCIÓN DB START ---
         if (!session.isLocal) {
              this.matchRepo.finishMatch(
-                matchId, 
-                winnerId, 
-                session.gameState.player1.score, 
-                session.gameState.player2.score, 
+                matchId,
+                winnerId,
+                session.gameState.paddleLeft.score,
+                session.gameState.paddleRight.score,
                 Date.now()
             ).catch(e => console.error(e));
         }
@@ -473,10 +473,10 @@ export class GameService {
 		// --- PROTECCIÓN DB START ---
         if (!session.isLocal) {
              this.matchRepo.finishMatch(
-                matchId, 
-                winnerId, 
-                session.gameState.player1.score, 
-                session.gameState.player2.score, 
+                matchId,
+                winnerId,
+                session.gameState.paddleLeft.score,
+                session.gameState.paddleRight.score,
                 Date.now()
             ).catch(e => console.error(e));
         }

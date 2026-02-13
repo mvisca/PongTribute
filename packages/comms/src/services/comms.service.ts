@@ -8,7 +8,8 @@ import {
 	RedisChannelType,
 	Utils,
 	AuthTypes,
-	CommsTypes
+	CommsTypes,
+	IEventService
 } from '@transcendence/shared';
 
 
@@ -25,7 +26,7 @@ interface ExtendedWebSocket extends WebSocket {
 // COMMS SERVICE
 // ============================================================================
 
-export class CommsService {
+export class CommsService implements IEventService {
 	// Mapa: UserId -> Set de Sockets (Soporte multi-pestaña/dispositivo)
 	private connections: Map<string, Set<ExtendedWebSocket>> = new Map();
 	
@@ -181,7 +182,7 @@ export class CommsService {
 	}
 	
 	// BROADCAST A LISTA DE USUARIOS
-	public broadcastToUsers(userIds: string[], message: any): void {
+	public async broadcastToUsers(userIds: string[], message: any): Promise<void> {
 		userIds.forEach(userId => this.sendToUser(userId, message));
 	}
 	
@@ -204,7 +205,7 @@ export class CommsService {
 	// CIERRE DE CONEXION
 	// ==========================================================================
 	
-	public closeUserConnection(userId: string) {
+	public async closeUserConnection(userId: string): Promise<void> {
 		const sockets = this.connections.get(userId);
 		if (sockets) {
 			sockets.forEach(ws => {

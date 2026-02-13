@@ -1,10 +1,12 @@
 import { REDIS_CHANNELS } from '../constants/event.constants.js';
+import { GameMode } from '../schemas/match.schema.js';
+import type { GameState } from './game.types.js';
 
 // 1. Interfaz Base para todos los eventos
 export interface BaseEvent {
-	type: string;
-	timestamp: number;
-	source?: string;  // Ej: 'auth-service'
+	type: string;		// Qué publica
+	timestamp: number;	// Cuándo publica
+	source?: string;	// Quién publica
 }
 
 // 2. Payloads Reutilizables
@@ -14,14 +16,11 @@ export interface UserInfoPayload {
 	email: string;
 	lastLogoutAt: number;
 	isOnline: boolean;
-	// TODO este payload para qué es? si es para JWT debería ser el mismo en todo el proyecto... si es para otra cosa, podría seguir siendo el mismo userPayload siempre?
 }
-// TODO Auditar toda la construccion de tipos y schemas e interfaces de eventos
 
 //---------------------------------------------
 // EVENTOS DE USER
 //---------------------------------------------
-// TODO quién consume estos interfaces definidos a continuación?
 
 // LOGIN
 export interface UserLoginEvent extends BaseEvent {
@@ -35,34 +34,22 @@ export interface UserLoginEvent extends BaseEvent {
 // LOGOUT
 export interface UserLogoutEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.USER_LOGOUT;
-	targetUserId: string;
-	payload: {
-		username: string;
-		email: string;
-		avatar: string;
-		lastLogoutAt: number;
-		isOnline: boolean;
-	};
+	targetUserId: string; // ID del usuario que hizo logout
+	payload: UserInfoPayload;
 }
 
 // PROFILE UPDATED (Basado en las constants)
 export interface UserProfileUpdatedEvent extends BaseEvent {
     type: typeof REDIS_CHANNELS.USER_PROFILE_UPDATED;
     targetUserId: string;
-    payload: {
-		updatedFields: string[]; // OJO con esto. REVISARLO CON MARTIN
-		username?: string;
-		avatar?: string;
-    };
+    payload: UserInfoPayload;
 }
 
 // USER DISCONNECTED
 export interface UserDisconnectedEvent extends BaseEvent {
     type: typeof REDIS_CHANNELS.USER_DISCONNECTED;
     targetUserId: string;
-    payload: {
-        userId: string;
-    };
+    payload: UserInfoPayload;
 }
 
 // ---------------------------------------------
@@ -96,7 +83,7 @@ export interface MatchInviteEvent extends BaseEvent {
 		matchId: string;
 		inviterId: string;   // Quién invita
 		inviteeId: string;   // A quién invita
-		gameMode: string;
+		gameMode: GameMode;
 	};
 }
 
@@ -107,7 +94,7 @@ export interface MatchStartedEvent extends BaseEvent {
 	payload: {
 		matchId: string;
 		playerIds: string[];
-		//roomId: string;  CREO NO HACE FALTA
+		roomId?: string; // Opcional - puede no ser necesario
 	};
 }
 
@@ -116,7 +103,8 @@ export interface MatchRejectedEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.MATCH_REJECTED;
 	payload: {
 		matchId: string;
-		userId: string; // Quién rechazó
+		rejectorId: string;  // Usuario que rechazó la invitación
+		inviterId: string;   // Usuario que creó la invitación (para notificarle)
 	};
 }
 
@@ -125,11 +113,58 @@ export interface MatchCancelledEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.MATCH_CANCELLED;
 	payload: {
 		matchId: string;
-		targetUserId: string;
+		cancelledById: string;   // Usuario que canceló la partida
+		notifiedUserId: string;  // Usuario a quien notificar la cancelación
 		reason?: string;
 	};
 }
 
+
+//---------------------------------------------
+// EVENTOS DE GAME
+//---------------------------------------------
+
+/**
+ * Payload completo para GameUpdateEvent.
+ * Incluye toda la información necesaria para que consumidores (comms, frontend)
+ * puedan actualizar su estado sin hacer requests adicionales a la base de datos.
+ */
+export interface GameUpdatePayload {
+	// Match info completo (de BD) para evitar requests adicionales
+	match: {
+		id: string;
+		status: 'pending' | 'active' | 'finished' | 'rejected' | 'expired';
+		player1: {
+			userId: string;
+			username: string;
+			score: number;
+			isWinner: boolean;
+		};
+		player2: {
+			userId: string;
+			username: string;
+			score: number;
+			isWinner: boolean;
+		};
+		winnerId: string | null;
+		gameMode: GameMode;
+		targetScore: number;
+		createdAt: string;
+		finishedAt?: string;
+	};
+	// Estado en tiempo real del juego (posiciones, velocidades, scores)
+	gameState: GameState;
+	// Discriminador para que handlers actúen según el tipo de cambio
+	updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
+	// Timestamp del update
+	timestamp: number;
+}
+
+export interface GameUpdateEvent extends BaseEvent {
+	type: typeof REDIS_CHANNELS.GAME_UPDATE;
+	matchId: string;
+	payload: GameUpdatePayload;
+}
 
 // ---------------------------------------------
 // UNION TYPE FINAL
@@ -150,7 +185,9 @@ export type SystemEvent =
 	| MatchInviteEvent
 	| MatchStartedEvent
 	| MatchRejectedEvent
-	| MatchCancelledEvent;
+	| MatchCancelledEvent
+	// Game
+	| GameUpdateEvent;
 
 	
 
