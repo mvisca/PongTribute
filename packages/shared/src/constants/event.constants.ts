@@ -11,7 +11,7 @@ export const REDIS_CHANNELS = {
 	USER_PROFILE_UPDATED: 'user:profile_updated',
 	USER_DISCONNECTED: 'user:disconnected',
 	// Match (Game)
-	MATCH_FOUND: 'match.found',
+	MATCH_FOUND: 'match:found',
 	MATCH_QUEUE_TIMEOUT: 'match.queue_timeout',
 	MATCH_INVITE: 'match.invite',
 	MATCH_STARTED: 'match.started',

@@ -33,7 +33,7 @@ export class RateLimitMiddleware {
 
 				return reply.code(429).send({
 					error: 'Demasiadas solicitudes',
-					message: `Has excedido eel limte de ${this.config.maxRequests} uploads por hora`,
+					message: `Has excedido el limte de ${this.config.maxRequests} uploads por hora`,
 					retryAfter: ttl > 0 ? ttl : Math.floor(this.config.windowMs / 1000)
 				})
 			}

@@ -200,32 +200,6 @@ export class MatchService {
 		// Limpia en todos los modes para asegurar la limpieza.
         await Promise.all(promises);
     }
-	
-	/** ===========YA NO LO USO====================
-     * Helper para obtener el username del servicio USER vía HTTP interna.
-     * Docker DNS resuelve 'user' a la IP del contenedor.
-    
-    private async getUsernameInternal(userId: string): Promise<string> {
-        try {
-            // URL interna del servicio User (puerto 3000 por defecto en tu monorepo)
-			// OJO: Ajusta el puerto si tu servicio user corre en otro (ej: 3001)
-			// Docker DNS: "user" es el nombre del servicio en docker-compose
-            const response = await fetch(`http://user:3000/api/users/${userId}`);
-            
-            if (!response.ok) {
-                console.error(`❌ Failed to fetch username for ${userId}: ${response.statusText}`);
-                return "Unknown"; // Fallback para no romper la partida
-            }
-
-            const data = await response.json() as { username: string };
-            return data.username;
-
-        } catch (error) {
-            console.error('❌ Error fetching internal username for ${userId}', error);
-            return "Unknown"; // Fallback de seguridad
-        }
-	}
-	*/
 
 	/**
      * createPrivateMatch
@@ -336,7 +310,7 @@ export class MatchService {
                 isWinner: false
             },
             player2: {
-                userId: 'guest-id', // ID Ficticio
+                userId: randomUUID(), // Generate unique UUID for guest player
                 username: 'Guest Player', // El front puede sobreescribir esto visualmente
                 score: 0,
                 isWinner: false

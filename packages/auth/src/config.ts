@@ -69,7 +69,7 @@ export namespace AuthEnv {
 		_config = SharedEnv.build(); // puede lanzar error hacia server.ts
 	}
 
-	// Validación internan de que se ha llamado init()
+	// Validación interna de que se ha llamado init()
 	function cnf() {
 		if (!_config) 
 			throw new Error('AuthEnv.init() no llamado');

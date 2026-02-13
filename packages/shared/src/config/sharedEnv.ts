@@ -2,8 +2,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// DUDA es consistente el manejo de variables de entorno / build()?
-
 // ==================================================
 // CARGAR .ENV DESDE RAÍZ
 // ==================================================
@@ -122,7 +120,7 @@ const DEFAULTS: EnvVars = {
 	REDIS_DB: 0,	
 } as const;
 
-export type EnviromentVars = typeof DEFAULTS;
+export type EnvironmentVars = typeof DEFAULTS;
 
 // ==================================================
 // BUILDER
@@ -334,7 +332,7 @@ export namespace SharedEnv {
 			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT, 'USER_SERVICE_PORT'),
 			USER_SERVICE_HOST: envOr(process.env.USER_SERVICE_HOST, DEFAULTS.USER_SERVICE_HOST, 'USER_SERVICE_HOST'),
 			USER_SERVICE_DB_FILENAME: envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME'),
-			USER_SERVICE_DB_PATH: envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_FILENAME'),
+			USER_SERVICE_DB_PATH: envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH'),
 			USER_SERVICE_DB_FULL_PATH: safeFullPath(
 				envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME'),
 				envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH'),

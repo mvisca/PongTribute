@@ -424,9 +424,7 @@ export class GameService {
         }
         
         session.gameState.status = GAME_STATUS.FINISHED;
-        // En local, winnerId podría ser 'guest-id', parseInt daría NaN, pero no importa porque no guardamos
-        
-		session.gameState.winnerId = parseInt(winnerId) || 0; // || 0 por si es 'guest-id'
+        session.gameState.winnerId = winnerId;
 
         // --- PROTECCIÓN DB START ---
         if (!session.isLocal) {

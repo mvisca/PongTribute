@@ -43,7 +43,7 @@ export class CommsService implements IEventService {
 	constructor() {
 		// 1. Configuración base desde variables de entorno
 		const redisConfig = {
-			host: CommsEnv.REDIS_HOST(), // TODO para qué se crean estas variables? es mejor que crear el objeto directamente cuando se necesita?
+			host: CommsEnv.REDIS_HOST(),
 			port: CommsEnv.REDIS_PORT(),
 			lazyConnect: true, // Importante para que no conecte hasta llamar a init()
 		};
@@ -55,10 +55,7 @@ export class CommsService implements IEventService {
 		// 3. Cliente Suscriptor (Escuchar)
 		// Instanciamos uno nuevo usando la factoría para tener también logs en este canal
 		this.redisSub = Utils.createRedisClient(redisConfig);  // TODO no es mejor usar duplicate() ??
-	}
-	
-	// TODO preguntarme cuando hacerlo, pero quiero investigar todo el flujo y arquitectura del servicio redis, sus intancias en servicios. tarea debe quedar fuera del flujo de refactorizacion en base a resolucion de "TODOs".
-	
+	}	
 	
 	// ============================================================================
 	// INICIALIZACIÓN

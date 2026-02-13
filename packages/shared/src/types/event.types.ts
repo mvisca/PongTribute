@@ -26,8 +26,6 @@ export interface UserInfoPayload {
 export interface UserLoginEvent extends BaseEvent {
 	type: typeof REDIS_CHANNELS.USER_LOGIN;
 	targetUserId: string; // ID del usuario que hizo login
-	source: string;
-	timestamp: number;
 	payload: UserInfoPayload;
 }
 

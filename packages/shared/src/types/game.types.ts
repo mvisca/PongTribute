@@ -1,6 +1,7 @@
 // packages/shared/src/types/game.types.ts
 
 import type { GameStatus } from '../constants/game.constants.js';
+import type { UserTypes } from './user.types.js';
 
 // Definición de Tipos para la Configuración del Modo
 export interface GameModeConfig {
@@ -53,7 +54,7 @@ export interface GameState {
     config: GameConfig & GameModeConfig;
 	targetScore: number;
     status: GameStatus;
-    winnerId?: number;       // ID del usuario ganador (si finished)
+    winnerId?: UserTypes.UserId;  // UUID del usuario ganador (si finished)
 }
 
 // 4. Inputs del Cliente (Lo que envía el usuario)
