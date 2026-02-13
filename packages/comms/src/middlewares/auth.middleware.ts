@@ -2,11 +2,11 @@ import { Value } from '@sinclair/typebox/value';
 import { FastifyReply, FastifyRequest } from "fastify";
 import jwt from 'jsonwebtoken';
 import { AuthSchemas, AuthTypes, SharedErrors } from "@transcendence/shared";
-import { CommsEnv } from "src/config.js";
+import { CommsEnv } from "../config.js";
 
 async function fetchLastLogoutAt(userId: string): Promise<number> {
 	const response = await fetch(
-		`${CommsEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+		`${CommsEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 		{
 			method: 'GET',
 			headers: {

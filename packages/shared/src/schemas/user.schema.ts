@@ -265,7 +265,35 @@ export namespace UserSchemas {
 			404: NotFoundResponse
 		}
 	}
-	
+
+	/**
+	* Schema para GET /internal/users/:id/friends
+	*/
+	export const getInternalFriendsSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			200: Type.Object({
+				friendsIds: Type.Array(UuidField)
+			}),
+			404: NotFoundResponse
+		}
+	}
+
+	/**
+	* Schema para GET /internal/users/:id/last-logout
+	*/
+	export const getLastLogoutAtSchema = {
+		tags: ['User'],
+		params: UserIdParams,
+		response: {
+			200: Type.Object({
+				lastLogoutAt: SecondsField
+			}),
+			404: NotFoundResponse
+		}
+	}
+
 	// ========================================================================
 	// CHECK SCHEMAS
 	// ========================================================================

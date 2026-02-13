@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from "fastify";
 import { CommsService } from "../services/comms.service.js";
 import { CommsController } from "../controllers/comms.controller.js";
-import { CommsMiddleware } from "src/middlewares/auth.middleware.js";
+import { CommsMiddleware } from "../middlewares/auth.middleware.js";
 
 export const wsRoutes: FastifyPluginAsync = async (app) => {
 	// Obtener la instancia del servicio desde global

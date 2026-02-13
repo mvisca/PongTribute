@@ -19,7 +19,7 @@ async function start() {
 		});
 
 		console.log(`App log level: ${app.log.level}`);
-		console.log(`USER Service listo en ${AuthEnv.HOST()}:${AuthEnv.PORT()}`);
+		console.log(`[AUTH] Service listo en ${AuthEnv.HOST()}:${AuthEnv.PORT()}`);
 
 	} catch (err) {
 		console.log(`ERROR:`, err instanceof Error ? err.message : err);
@@ -34,18 +34,18 @@ async function gracefulShutdown(signal: string) {
 	if (redisClient) {
 		try {
 			await redisClient.quit();
-			console.log('AUTH: Redis desconectado');
+			console.log('[AUTH]: Redis desconectado');
 		} catch (err) {
-			console.error('AUTH: Error cerrando Redis', err);
+			console.error('[AUTH]: Error cerrando Redis', err);
 		}
 	}
 
 	if (app) {
 		try {
 			await app.close();
-			console.log('AUTH: Fastify HTTP server cerrado')
+			console.log('[AUTH]: Fastify HTTP server cerrado')
 		} catch (err) {
-			console.error('AUTH: Error cerrando Fastify', err);
+			console.error('[AUTH]: Error cerrando Fastify', err);
 		}
 	}
 

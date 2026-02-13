@@ -4,33 +4,19 @@ import { WebSocket } from "ws";
 import type { FastifyRequest } from "fastify";
 import { CommsEnv } from '../config.js';
 import { EVENT_HANDLERS } from './events/index.js';
-import {  // TODO auditar estructura y arquitectura de tipos y schemas para eventos
-	REDIS_CHANNELS, 
+import {
+	REDIS_CHANNELS,
 	SystemEvent,
 	RedisChannelType,
-	Utils, 
-	REDIS_DEFAULTS
+	Utils,
+	AuthTypes,
+	CommsTypes
 } from '@transcendence/shared';
 
 
 // ============================================================================
-// TYPES (Locales para WS, podrían ir a shared si el front los comparte)
+// TYPES (Solo específicos de backend)
 // ============================================================================
-
-interface JWTPayload {
-	id: string;
-	username: string;
-	email: string;
-}
-
-// WS Message Types
-type WSMessageType = 'ping' | 'pong' | 'message' | 'error';
-
-interface WSMessage {
-	type: WSMessageType;
-	payload?: unknown;
-	timestamp?: number;
-}
 
 interface ExtendedWebSocket extends WebSocket {
 	isAlive: boolean;
@@ -111,17 +97,13 @@ export class CommsService {
 			]);
 			this.logger.log('[Comms] Clientes Redis conectados');
 			
-			// Suscribirse a canales definidos en Shared
-			const channelsToSubscribe = [
-				REDIS_CHANNELS.USER_LOGIN,
-				REDIS_CHANNELS.USER_LOGOUT,
-				REDIS_CHANNELS.GAME_UPDATE
-				// Añadir más canales según sea necesario
-				// TODO que está haciendo exactamente el subscribe. como filtra eventos emitidos por redis. resdis no los envia a quien no suscribe o quien no suscribe los ignora.
-			];
-			
+			// Suscribirse solo a canales que tienen handler registrado
+			// Se auto-configura: al añadir un handler al array EVENT_HANDLERS,
+			// automáticamente se suscribe a sus canales
+			const channelsToSubscribe = EVENT_HANDLERS.flatMap(h => h.channels);
+
 			await this.redisSub.subscribe(...channelsToSubscribe);
-			this.logger.log(`[Comms] Suscrito a canales:\n${channelsToSubscribe.join(',\n')}\n`);
+			this.logger.log(`[Comms] Suscrito a ${channelsToSubscribe.length} canales:\n${channelsToSubscribe.join(',\n')}\n`);
 			
 			// Listener de mensajes Redis
 			this.redisSub.on('message', (channel, message) => {
@@ -182,9 +164,11 @@ export class CommsService {
 					// Si ya estaba muerto en el ciclo anterior, eliminar
 					if (ws.isAlive === false) {
 						this.logger.log(`[Comms] Terminando conexión zombie: ${userId}`);
-						return ws.terminate();
+						this.handleDisconnect(ws, userId);
+						ws.terminate();
+						return;
 					}
-					
+
 					ws.isAlive = false; // Marcar como pendiente
 					ws.ping(); // Enviar ping
 				});
@@ -195,7 +179,7 @@ export class CommsService {
 	// ==========================================================================
 	// ENVIO DE MENSAJES
 	// ==========================================================================
-
+	
 	// ENVIAR A UN USUARIO ESPECÍFICO
 	public sendToUser(userId: string, message: any): boolean {
 		const sockets = this.connections.get(userId);
@@ -236,11 +220,11 @@ export class CommsService {
 			});
 		});
 	}
-
+	
 	// ==========================================================================
 	// CIERRE DE CONEXION
 	// ==========================================================================
-
+	
 	public closeUserConnection(userId: string) {
 		const sockets = this.connections.get(userId);
 		if (sockets) {
@@ -250,7 +234,7 @@ export class CommsService {
 			this.connections.delete(userId);
 		}
 	}	
-
+	
 	// ==========================================================================
 	// MANEJO DE EVENTOS DE OTROS SERVICIOS (REDIS)
 	// ==========================================================================
@@ -262,7 +246,7 @@ export class CommsService {
 		try {
 			// Parse con el tipo SystemEvent definido en shared
 			const event = JSON.parse(messageStr) as SystemEvent;
-
+			
 			this.logger.log(`[Comms] Evento Redis recibido: ${event.type} (Source: ${event.source})`);
 			
 			// Buscar el handler adecuado en el array de handlers importado
@@ -286,15 +270,20 @@ export class CommsService {
 	
 	private async handleMessage(ws: ExtendedWebSocket, raw: string): Promise<void> {
 		try {
-			const data = JSON.parse(raw) as WSMessage;
+			const data = JSON.parse(raw) as CommsTypes.WSMessage;
 			
 			// Validar estructura básica
 			if (!data.type) return;
 			
 			switch (data.type) {
-				case 'ping':
-				ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
-				break;
+				case 'ping': {
+					const pongMessage: CommsTypes.PongMessage = {
+						type: 'pong',
+						timestamp: Date.now()
+					};
+					ws.send(JSON.stringify(pongMessage));
+					break;
+				}
 				// Aquí se añadirían más casos (ej: 'game:input')
 				default:
 				// Ignoramos mensajes desconocidos por seguridad
@@ -311,7 +300,7 @@ export class CommsService {
 	
 	async handleConnection(ws: WebSocket, request: FastifyRequest): Promise<void> {
 		try {
-			const user = request.user as JWTPayload;
+			const user = request.user as AuthTypes.AccessTokenPayload;
 			
 			if (!user || !user.id) {
 				this.logger.error(`[Comms] Request sin user después de middleware`);
@@ -321,27 +310,30 @@ export class CommsService {
 			
 			if (this.totalConnections >= CommsEnv.WS_MAX_CONNECTIONS()) {
 				this.logger.error(`[Comms] Máximo número de conexiones del servidor alcanzado`);
-				ws.close(1009, 'Conexión cerrada por servidor');
+				ws.close(1008, 'Server connection limit reached');
+				return;
 			}
-
+			
 			// Agrega extensiones a ws
 			const extWs = ws as ExtendedWebSocket;
 			extWs.isAlive = true;
 			extWs.userId = user.id;
-
+			
 			// Registra conexión
 			if (!this.connections.has(user.id)) {
 				this.connections.set(user.id, new Set());
 			}
-
+			
 			if (this.connections.get(user.id)!.size >= CommsEnv.WS_MAX_CONNECTIONS_PER_USER()) {
 				this.logger.error(`[Comms] Máximo número de conexiones del usuario alcanzado`);
+				ws.close(1008, 'User connection limit reached');
+				return;
 			}
-
+			
 			this.connections.get(user.id)!.add(extWs);
 			this.totalConnections++;
-
-
+			
+			
 			
 			// Event listeners del socket
 			extWs.on('message', (data) => { this.handleMessage(extWs, data.toString());	});
@@ -380,5 +372,10 @@ export class CommsService {
 			activeUsers: this.connections.size,
 			timestamp: new Date().toISOString()
 		};
+	}
+
+	// REDIS CLIENT GETTER (for health checks)
+	public getRedisClient(): Redis {
+		return this.redis;
 	}
 }

@@ -5,6 +5,7 @@ import { CommsEnv } from '../../../config.js';
 import { REDIS_CHANNELS } from '@transcendence/shared';
 
 export class UserEventHandler implements EventHandler {
+
 	channels = [
 		REDIS_CHANNELS.USER_LOGIN,
 		REDIS_CHANNELS.USER_LOGOUT	

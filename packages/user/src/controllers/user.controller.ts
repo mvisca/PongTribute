@@ -9,27 +9,6 @@ export class UserController {
 	constructor() {
 		this.userService = new UserService();
 	}
-	
-	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
-		if (err instanceof SharedErrors.NotFoundError) {
-			reply.code(404).send({error: 'Not Found', message: err.message, resource:err.resource});
-			return;
-		}
-		
-		if (err instanceof SharedErrors.ConflictError) {
-			reply.code(409).send({error: 'Conflict', message: err.message, field: err.field});
-			return;
-		}
-		
-		if (err instanceof SharedErrors.ValidationError) {
-			reply.code(403).send({error: 'Forbidden', message: err.message, field: err.field});
-			return;
-		}
-		
-		request.log.error(err);
-		const message = err instanceof Error ? err.message : 'Unknown Error';
-		reply.code(500).send({error: 'Internal Server Error', message});
-	}
 
 	// ========================================================================
 	// CREATE USER
@@ -40,7 +19,7 @@ export class UserController {
 			const user = await this.userService.createUser(data);
 			return reply.code(201).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -62,7 +41,7 @@ export class UserController {
 			return reply.code(200).send(user);
 			
 		}catch(err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -78,7 +57,7 @@ export class UserController {
 			const user = await this.userService.updateUser(id, data);
 			return reply.code(200).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -96,7 +75,7 @@ export class UserController {
 
 			return reply.code(204).send();
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -112,7 +91,7 @@ export class UserController {
 			await this.userService.updateLastLogoutAt(id, data.lastLogoutAt);
 			return reply.code(204).send();
 		} catch(err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -128,7 +107,7 @@ export class UserController {
 			await this.userService.updateOnlineStatus(id, isOnline);
 			return reply.code(204).send();
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -142,7 +121,7 @@ export class UserController {
 			await this.userService.anonymizeUser(id);
 			return reply.code(204).send();
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -156,7 +135,7 @@ export class UserController {
 			await this.userService.deleteUser(id);			
 			return reply.code(204).send();
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 	
@@ -170,7 +149,7 @@ export class UserController {
 			const user = await this.userService.findUserById(id);
 			return reply.code(200).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 	
@@ -180,7 +159,7 @@ export class UserController {
 			const user = await this.userService.findUserByUsername(username);
 			return reply.code(200).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 	
@@ -190,7 +169,7 @@ export class UserController {
 			const user = await this.userService.findUserByEmail(email);
 			return reply.code(200).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 	
@@ -200,7 +179,7 @@ export class UserController {
 			const lastLogoutAt = await this.userService.getLastLogoutAt(id);
 			return reply.code(200).send({ lastLogoutAt });
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -214,7 +193,7 @@ export class UserController {
 			const user = await this.userService.findUserByEmailInternal(email);
 			return reply.code(200).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 	
@@ -224,7 +203,7 @@ export class UserController {
 			const user = await this.userService.findUserByIdInternal(id);
 			return reply.code(200).send(user);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -236,7 +215,7 @@ export class UserController {
 			const friendsIds = friendships.map(f => (f.userId === id ? f.friendId : f.userId));
 			return reply.code(200).send({ friendsIds });
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -253,7 +232,7 @@ export class UserController {
 				username
 			});
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -266,7 +245,7 @@ export class UserController {
 				email
 			});
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 }

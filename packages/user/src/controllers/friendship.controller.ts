@@ -11,28 +11,6 @@ export class FriendshipController {
 		this.friendshipService = new FriendshipService();
 	}
 
-	// TODO mirar la forma en que se manejan los errores, no es consistente con la centralizada
-	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
-		if (err instanceof SharedErrors.NotFoundError) {
-			reply.code(404).send({error: 'Not Found', message: err.message, resource:err.resource});
-			return;
-		}
-		
-		if (err instanceof SharedErrors.ConflictError) {
-			reply.code(409).send({error: 'Conflict', message: err.message, field: err.field});
-			return;
-		}
-		
-		if (err instanceof SharedErrors.ValidationError) {
-			reply.code(403).send({error: 'Forbidden', message: err.message, field: err.field});
-			return;
-		}
-		
-		request.log.error(err);
-		const message = err instanceof Error ? err.message : 'Unknown Error';
-		reply.code(500).send({error: 'Internal Server Error', message});
-	}
-
 	// ============================================================================
 	// CREATE FRIENDSHIP
 	// ============================================================================
@@ -52,7 +30,7 @@ export class FriendshipController {
 			const friendship = await this.friendshipService.createFriendship(initiatorId, data);
 			return reply.code(201).send(friendship);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -76,7 +54,7 @@ export class FriendshipController {
 			const friendship = await this.friendshipService.updateFriendshipStatus(currentUserId, friendId, accepted);
 			return reply.code(200).send(friendship);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -99,7 +77,7 @@ export class FriendshipController {
 			const friendships = await this.friendshipService.listFriendships(userId, query);
 			return reply.code(200).send(friendships);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 }

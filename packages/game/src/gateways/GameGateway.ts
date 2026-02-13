@@ -11,10 +11,10 @@ import { WebSocket } from 'ws';
 //y empieza siendo una peticion HTTP antes de convertirse en WebSocket
 import { FastifyRequest } from 'fastify';
 import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
+import { Value } from '@sinclair/typebox/value';
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
-import { AuthTypes, SharedErrors, UserTypes } from '@transcendence/shared';
-import { UserType } from '@fastify/jwt';
+import { AuthTypes, AuthSchemas } from '@transcendence/shared';
 
 //Usaremos esta clase para encapsular toda la logica de conexion. Esto
 // nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
@@ -69,15 +69,23 @@ export class GameGateway {
 		try {
 			// 4. VALIDACION DE SEGURIDAD (JWT)
 			//Aqui no tenemos Fastify que revise si la configuracion es correcta, ni validaciones
-			//automaticas, ni middleware como en las peticiones HTTP. 
+			//automaticas, ni middleware como en las peticiones HTTP.
 			//Es vital envolver en un try catch por si falla algo.
-			// Verificamos el token manualmente usando el Secreto Compartido.
-			//Si el token esta caducado, es falso o la firma no coincide con JWT_SECRET,
-			//lanzara una exception y cerrará la conexion.
+
+			// 4a. Verificar firma JWT
 			const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 
+			// 4b. Validar estructura del payload con TypeBox (igual que middlewares HTTP)
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			if (!isValid) {
+				console.log('⛔ [Gateway] Token con estructura inválida');
+				socket.close(1008, 'Invalid token structure');
+				return;
+			}
+
+			// 4c. Validar lastLogoutAt contra User Service (endpoint ligero)
 			const response = await fetch(
-				`${GameEnv.USER_SERVICE_URL()}/internal/users/by-id/${payload.id}`,
+				`${GameEnv.USER_SERVICE_URL()}/internal/users/${payload.id}/last-logout`,
 				{
 					method: 'GET',
 					headers: {
@@ -88,18 +96,18 @@ export class GameGateway {
 			);
 
 			if (!response.ok) {
-				throw new SharedErrors.NotFoundError('Failed to fetch user', 'game', {
-					// TODO fill context con datos útiles
-				});
+				console.log('⛔ [Gateway] Fallo validación de usuario');
+				socket.close(1008, 'User validation failed');
+				return;
 			}
 
-			const user = await response.json() as UserTypes.UserPublic;
-			// TODO validar el lastLogoutAt
+			const { lastLogoutAt } = await response.json() as { lastLogoutAt: number };
 
-			if (payload.iat! > user.lastLogoutAt) {
-				throw new SharedErrors.UnauthorizedError('Token caducado', {
-					// TODO fill con datos útiles
-				});
+			// Token es inválido si fue emitido ANTES del logout (revocado)
+			if (payload.iat! < lastLogoutAt) {
+				console.log('⛔ [Gateway] Token revocado (emitido antes del último logout)');
+				socket.close(1008, 'Token revoked');
+				return;
 			}
 
 			const userId = payload.id;
@@ -128,15 +136,13 @@ export class GameGateway {
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
-            socket.on('close', () => {
+            socket.on('close', async () => {
                 console.log(`❌ [Gateway] Jugador Desconectado: ${payload.username}`);
-				// =========TODO: No destruir sesión inmediatamente en `handleDisconnect()`
-				// Esperar 20 segundos antes de dar victoria por abandono
-				// Si reconecta en ese tiempo, reasignar socket (pero solo en partidas largas ??).
-				// Si no reconecta: Notificar al otro jugador ("Ganaste por 
-				// abandono de tu rival")se lleva la puntuacion maxima y 
-				// guardar resultado en DB. El servidor cierra la sala y libera la memoria.
-
+				try {
+					await this.gameService.handleDisconnect(userId, matchId);
+				} catch (err) {
+					console.error(`❌ [Gateway] Error en handleDisconnect:`, err);
+				}
 			});
 
 
