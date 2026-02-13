@@ -100,6 +100,9 @@ importers:
       '@fastify/websocket':
         specifier: 11.2.0
         version: 11.2.0
+      '@sinclair/typebox':
+        specifier: 0.34.41
+        version: 0.34.41
       '@transcendence/shared':
         specifier: workspace:*
         version: link:../shared
