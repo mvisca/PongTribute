@@ -197,11 +197,10 @@ export class MatchService {
         await Promise.all(promises);
     }
 	
-	/**
+	/** ===========YA NO LO USO====================
      * Helper para obtener el username del servicio USER vía HTTP interna.
      * Docker DNS resuelve 'user' a la IP del contenedor.
-     */
-	/** ===========YA NO LO USO====================
+    
     private async getUsernameInternal(userId: string): Promise<string> {
         try {
             // URL interna del servicio User (puerto 3000 por defecto en tu monorepo)
@@ -309,6 +308,53 @@ export class MatchService {
         }
     }
 
+	/**
+     * createLocalMatch
+     * Crea un "ticket" de partida en Redis. No toca la DB SQL.
+     * TTL: 15 segundos (tiempo suficiente para que el front conecte el WS).
+     */
+    async createLocalMatch(userId: string, config?: Partial<MatchTypes.CreateMatchBody>): Promise<MatchTypes.Match> {
+        
+        // 1. Generar ID y Datos
+        const matchId = randomUUID();
+        const p1Data = await this.fetchUserProfile(userId); // Reutilizamos tu helper
+
+        // 2. Crear Objeto Match (Cumpliendo el Schema, pero sin ID de DB real)
+        const localMatch: MatchTypes.Match = {
+            id: matchId,
+            status: 'active', // Nace activa para que el front entre directo
+            gameMode: config?.gameMode || GameMode.CLASSIC, // O lo que venga en config
+            targetScore: config?.targetScore || 11,
+            player1: {
+                userId: userId,
+                username: p1Data.username,
+                score: 0,
+                isWinner: false
+            },
+            player2: {
+                userId: 'guest-id', // ID Ficticio
+                username: 'Guest Player', // El front puede sobreescribir esto visualmente
+                score: 0,
+                isWinner: false
+            },
+            winnerId: null,
+            createdAt: new Date().toISOString()
+        };
+
+        // 3. Guardar en REDIS (Persistencia Efímera)
+        // Clave: "match:local:{uuid}"
+        const REDIS_KEY = `match:local:${matchId}`;
+        
+        // Serializamos el objeto completo para recuperarlo en GameService
+        // 'EX', 15 -> Expira en 15 segundos
+        await this.redis.set(REDIS_KEY, JSON.stringify(localMatch), 'EX', 15);
+
+        console.log(`✅ [MatchService] Local match ticket created: ${matchId}`);
+
+        return localMatch;
+	}
+	
+	
 	async getMatchHistory(
 		userId: string,
 		offset: number = 0): Promise<MatchTypes.Match[]> {

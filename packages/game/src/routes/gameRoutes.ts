@@ -33,7 +33,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 	const matchService = new MatchService(matchRepo, redisClient);
 
 	// Servicio de Juego (Game Loop / Físicas)
-	const gameService = new GameService(matchRepo);
+	const gameService = new GameService(matchRepo, redisClient);
 
 	// Controladores y Gateways (Capa de Transporte)
     const controller = new MatchController(matchService);

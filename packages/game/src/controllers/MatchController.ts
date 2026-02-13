@@ -64,6 +64,16 @@ export class MatchController {
 				console.log("[Controller] 4. Llamando a Service.joinPublicQueue...");
 				// El Schema asegura que gameMode es un string válido del Enum
 				result = await this.matchService.joinPublicQueue(user.id, gameMode as GameMode);
+
+			} else if (matchType === 'local') { 
+                
+                console.log("[Controller] 4. Creando partida LOCAL (Ephemeral)...");
+                // Pasamos la config opcional (targetScore, etc) si existiera en el body
+                const config = request.body; 
+                result = await this.matchService.createLocalMatch(user.id, config);
+                
+				return reply.status(201).send(result);
+				
 			} else {
 				// RAMA PRIVADA: Creación Directa (Desafío)
 				console.log("[Controller] 4. Llamando a Service.createPrivateMatch...");
