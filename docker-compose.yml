@@ -79,6 +79,12 @@ services:
       build:
         context: .
         dockerfile: ./packages/game/Dockerfile
+      # AÑADE ESTO:
+    #   ports:
+    #     - "3003:3003" 
+    #   environment:
+    #     - PORT=3003
+      # ... resto de envs
       container_name: ft_transcendence_game
       restart: always
       env_file:
@@ -153,8 +159,8 @@ services:
           condition: service_healthy
         game:
           condition: service_healthy
-        comms:
-          condition: service_healthy
+        # comms:
+        #   condition: service_healthy
       networks:
         - transcendence
 

@@ -6,10 +6,12 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
 import { User } from "./types/User";
 
-type Page = "login" | "register" | "forgot" | "home";
+
+type Page = "login" | "register" | "forgot" | "home" | "local-game";
 
 export default function App() {
   const [page, setPage] = useState<Page>("login");
+  //const [page, setPage] = useState<Page>("local-game"); // PARA TESTEO DEL LOCAL-GAME
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -27,6 +29,7 @@ export default function App() {
         />
       )}
 
+
       {page === "register" && (
         <Register onBack={() => setPage("login")} />
       )}
@@ -34,7 +37,7 @@ export default function App() {
       {page === "forgot" && (
         <ForgotPassword onBack={() => setPage("login")} />
       )}
-
+		  
       {page === "home" && user && token && (
       <Home
         user={user}

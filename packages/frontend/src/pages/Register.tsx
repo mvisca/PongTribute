@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { register } from "../api/authApi";
 
 type Props = {
   onBack: () => void;
@@ -9,20 +10,46 @@ export default function Register({ onBack }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  function handleRegister() {
+  async function handleRegister() {
+    setError("");
+    setSuccess("");
+
+    // 🔹 Validations
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
     if (!username || !email || !password) {
       setError("All fields are required");
       return;
     }
 
-    setError("");
-    alert("Account created (fake)"); // TODO Aquí llamar a Api Real.
+    if (!emailRegex.test(email)) {
+      setError("Invalid email format");
+      return;
+    }
+
+    if (!passwordRegex.test(password)) {
+      setError(
+        "Password must be at least 8 characters and include uppercase, lowercase and numbers"
+      );
+      return;
+    }
+
+    try {
+      await register(username, email, password);
+      setSuccess("Account created successfully");
+      setTimeout(onBack, 1000);
+    } catch (err: any) {
+      setError(err?.message || "Register failed");
+    }
   }
 
   return (
-    <div className="min-h-screen bg-purple-900 flex items-center justify-center">
-      <div className="bg-purple-800 p-6 rounded-xl w-80 shadow-lg">
+    <div className="retro-bg flex items-center justify-center">
+      <div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
+
         <h1 className="text-2xl font-bold text-center mb-4">
           Create Account
         </h1>
@@ -30,6 +57,12 @@ export default function Register({ onBack }: Props) {
         {error && (
           <div className="mb-4 p-2 bg-purple-900 text-purple-200 text-sm text-center rounded">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-4 p-2 bg-green-700 text-green-100 text-sm text-center rounded">
+            {success}
           </div>
         )}
 
@@ -64,16 +97,23 @@ export default function Register({ onBack }: Props) {
           }}
         />
 
-        <button onClick={handleRegister} className="btn-primary">
-          Register
-        </button>
+        {/* REGISTER BUTTON */}
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={handleRegister}
+            className="arcade-btn px-8 py-2 text-sm"
+          >
+            REGISTER
+          </button>
+        </div>
 
-        <button
-          onClick={onBack}
-          className="mt-4 text-sm text-purple-300 hover:underline"
-        >
-          ← Back to Login
-        </button>
+        {/* BACK TO LOGIN */}
+        <div className="mt-6 text-right text-sm text-purple-300">
+          <button onClick={onBack} className="hover:underline">
+            ← Back to login
+          </button>
+        </div>
+
       </div>
     </div>
   );

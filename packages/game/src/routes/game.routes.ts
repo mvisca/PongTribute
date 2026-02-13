@@ -3,13 +3,21 @@ import { MatchController } from '../controllers/MatchController.js';
 import { GameGateway } from '../gateways/GameGateway.js';
 import { GameService } from '../services/GameService.js';
 import { MatchRepository } from '../repositories/MatchRepository.js';
-import { MatchSchemas, MatchTypes } from '@transcendence/shared';
+import { MatchSchemas, MatchTypes, Utils } from '@transcendence/shared';
 import { GameMiddleware } from '../middleware/game.middleware.js';
 import { MatchService } from '../services/MatchService.js';
 import { MatchEventSubscriber } from '../subscribers/MatchEventSubscriber.js';
+import { GameEnv } from '../config.js';
 
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
+
+	// ========================================================================
+    // INFRAESTRUCTURA (Redis & DB)
+    // ========================================================================
+    // Creamos la conexión a Redis usando la configuración del entorno.
+    const redisConfig = GameEnv.getRedisConfig();
+    const redisClient = Utils.createRedisClient(redisConfig);
 
 	// ========================================================================
     // INYECCIÓN DE DEPENDENCIAS (COMPOSITION ROOT)
@@ -17,20 +25,25 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // Centralizamos la creación de instancias aquí para facilitar el testing.
 	// Si quisiéramos testear, podríamos pasar Repositorios "Mock" (falsos).
 
+	// Repositorio
 	const matchRepo = new MatchRepository();
-	// Service para la lógica de tiempo real (Game Loop, Física)
-	const gameService = new GameService(matchRepo); // Inyectamos Repo en Servicio
-	// Service para la lógica administrativa (Crear partida en DB, Historial)
-	// Instanciamos el servicio UNA VEZ (Singleton por ámbito)
-    // Este servicio manejará tanto DB (privadas) como Redis (públicas)
-	const matchService = new MatchService(matchRepo);
-	// Inicializamos los manejadores de tráfico (pasamos las instancias a los consumidores)
-    const controller = new MatchController(matchService);
-    const gateway = new GameGateway(gameService);   // Inyectamos Servicio game en Gateway
 
-	// === INICIALIZAR SUSCRIPCIÓN REDIS ===
+	// Servicio de Matchmaking (Lógica de negocio + Redis + SQL)
+    // Inyectamos repo Y redisClient
+	const matchService = new MatchService(matchRepo, redisClient);
+
+	// Servicio de Juego (Game Loop / Físicas)
+	const gameService = new GameService(matchRepo, redisClient);
+
+	// Controladores y Gateways (Capa de Transporte)
+    const controller = new MatchController(matchService);
+	const gateway = new GameGateway(gameService);
+	
+	// ========================================================================
+    // SUSCRIPTORES (Background Tasks)
+    // ========================================================================
     // Le pasamos el matchService para que pueda usarlo
-    const eventSubscriber = new MatchEventSubscriber(matchService);
+    const eventSubscriber = new MatchEventSubscriber(matchService, gameService);
     await eventSubscriber.connect();
 
     // ========================================================================
@@ -74,7 +87,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 	});
 
    // ========================================================================
-    // RUTA HTTP DE ACEPTAR PARTIDA (REST)
+    // RUTA HTTP DE ACEPTAR INVITACION DE PARTIDA (REST)
     // ========================================================================
 	// Permite aceptar la invitacion a una partida (privada)
 	//id:/accept: Los dos puntos indican a Fastify que esa parte de la URL es 
@@ -86,7 +99,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     });
 
 	// ========================================================================
-    // RUTA HTTP DE RECHAZAR PARTIDA (REST)
+    // RUTA HTTP DE RECHAZAR INVITACION PARTIDA (REST)
 	// ========================================================================
 	// Permite rechazar la invitacion a una partida (privada)
 	app.post<{ Params: MatchTypes.RejectMatchParams }>('/matches/:id/reject', {
@@ -96,7 +109,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 	});
 
 	// ========================================================================
-    // RUTA HTTP DE CANCELAR LA INVITACION A PARTIDA (REST)
+    // RUTA HTTP DE CANCELAR LA INVITACION A PARTIDA (REST) Creador
     // ========================================================================
     /**
      * DELETE /matches/:id
@@ -128,7 +141,7 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     });
 
 	// ========================================================================
-    // RUTAS WEBSOCKET: CONEXIÓN REAL-TIME
+    // WEBSOCKETS: CONEXIÓN REAL-TIME
 	// ========================================================================
 
 	/**

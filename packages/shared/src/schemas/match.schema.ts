@@ -24,7 +24,8 @@ export namespace MatchSchemas {
 	
 	export const MatchType = Type.Union([
 		Type.Literal('public'),
-		Type.Literal('private')
+		Type.Literal('private'),
+		Type.Literal('local')
 	]);
 
 

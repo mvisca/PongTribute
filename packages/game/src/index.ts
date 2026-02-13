@@ -4,6 +4,6 @@ export * from './repositories/MatchRepository.js';
 export * from './mappers/MatchMapper.js';
 export * from './services/MatchService.js';
 export * from './controllers/MatchController.js';
-export * from './routes/gameRoutes.js';
+export * from './routes/game.routes.js';
 export * from './gateways/GameGateway.js';
 export * from './app.js';

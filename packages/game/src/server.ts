@@ -1,11 +1,16 @@
-import { buildApp, redisClient } from './app.js';
+import { buildApp, redisClient as appRedisClient } from './app.js';
 import { closeDatabase } from './connection.js';
 import { GameEnv } from './config.js';
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance } from 'fastify'; 
 import { MatchRepository } from './repositories/MatchRepository.js';
 import { MatchService } from './services/MatchService.js';
+// Importamos Utils para crear conexiones y Redis type
+import { Utils } from '@transcendence/shared';
+import { Redis } from 'ioredis';
+
 
 let app: FastifyInstance | null = null;
+let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons
 
 async function start() {
 	try {
@@ -28,9 +33,16 @@ async function start() {
 		// ========================================================================
 		// CRON JOB: PRUNE QUEUES + PRUNE INVITES
 		// ========================================================================
-		// Instanciamos el servicio (necesita el Repo)
+
+		// Creamos dependencias para el Cron
 		const matchRepo = new MatchRepository();
-		const matchService = new MatchService(matchRepo);
+
+		// CREAMOS CONEXIÓN REDIS (Usando la Factory de Shared)
+        const redisConfig = GameEnv.getRedisConfig();
+        cronRedisClient = Utils.createRedisClient(redisConfig);
+
+		// Inyectamos dependencias (CUMPLE LA FIRMA: Repo + Redis)
+        const matchService = new MatchService(matchRepo, cronRedisClient);
 
 		console.log('⏱️ Iniciando Cron Job: Prune Public Queues (cada 10s)');
 		
@@ -45,6 +57,7 @@ async function start() {
 				console.error('❌ Error en Cron PrunePrivateInvites:', err);
 			});
 		}, 10000); // 10 segundos
+		
 		// ========================================================================
 		
 	} catch (err) {
@@ -57,14 +70,25 @@ async function start() {
 async function gracefulShutdown(signal: string) {
 	console.log(`\n${signal} recibido. Iniciando Graceful Shutdown`);
 	
-	if (redisClient) {
+	// Cerramos el Redis de la App
+	if (appRedisClient) {
 		try {
-			await redisClient.quit();
+			await appRedisClient.quit();
 			console.log('USER: Redis desconectado');
 		} catch (err) {
 			console.error('Error cerrando Redis', err);
 		}
 	}
+
+	// Cerramos el Redis de los Crons (que creamos aquí)
+    if (cronRedisClient) {
+        try {
+            await cronRedisClient.quit();
+            console.log('USER: Cron Redis desconectado');
+        } catch (err) {
+            console.error('Error cerrando Cron Redis', err);
+        }
+    }
 	
 	if (app) {
 		try {

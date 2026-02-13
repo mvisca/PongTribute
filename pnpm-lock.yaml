@@ -143,6 +143,9 @@ importers:
 
   packages/frontend:
     dependencies:
+      '@transcendence/shared':
+        specifier: workspace:*
+        version: link:../shared
       babylonjs:
         specifier: 8.31.0
         version: 8.31.0

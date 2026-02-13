@@ -1,9 +1,23 @@
+// packages/game/src/services/GameService.ts
+
 //CREA y MANEJA EL MAPA DE PARTIDAS ACTIVAS: ES LLAMADO POR GameGateway 
 // CUANDO HAY UNA CONEXION O DESCONEXION DE WEBSOCKET
 
 import { WebSocket } from 'ws';
+import { Redis } from 'ioredis';
 import { MatchRepository } from '../repositories/MatchRepository.js';
-import { GameState, GAME_CONSTANTS } from '@transcendence/shared'; 
+
+import {
+    GameState,
+    GAME_CONSTANTS,
+    GAME_MODES,
+    GAME_STATUS,
+    SOCKET_EVENTS,
+    PaddleState,
+	BallState,
+	GameInputPayload,
+	MatchTypes
+} from '@transcendence/shared'; 
 
 interface GameSession {
     matchId: string;
@@ -12,373 +26,476 @@ interface GameSession {
     socketP1: WebSocket | null;
     socketP2: WebSocket | null;
     gameState: GameState;
-    loopId: NodeJS.Timeout | null;
+	loopId: NodeJS.Timeout | null;
+	isLocal: boolean;
 }
 
 export class GameService {
     private activeMatches: Map<string, GameSession> = new Map();
+    private disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
 
-    constructor(private matchRepo: MatchRepository) {}
+	constructor(
+		private matchRepo: MatchRepository,
+		private redis: Redis
+	) { }
 
     // -------------------------------------------------------------------
-    // MÉTODO: UNIRSE A PARTIDA (AHORA ES ASYNC)
+    // 1. UNIRSE O RECONECTARSE A PARTIDA
     // -------------------------------------------------------------------
     public async joinMatch(matchId: string, userId: string, socket: WebSocket): Promise<void> {
-        console.log(`🔌 Usuario ${userId} intentando unirse a partida ${matchId}`);
-        
-        // 1. Recuperar Sesión en Memoria
         let session = this.activeMatches.get(matchId);
         
-        // --- CORRECCIÓN CLAVE: HIDRATACIÓN ---
-        // Si no hay sesión, PRIMERO buscamos en DB para obtener los datos
-        // necesarios para crearla (IDs de jugadores).
+        // A. CREAR SESIÓN SI NO EXISTE
         if (!session) {
-            console.log(`✨ Buscando datos en DB para crear sesión ${matchId}...`);
-            
-            // Usamos AWAIT porque la DB es asíncrona
-            const matchFromDb = await this.matchRepo.findById(matchId);
+            let matchData: any = await this.matchRepo.findById(matchId);
+            let isLocalMatch = false;
 
-            if (!matchFromDb) {
-                socket.close(1008, 'Match not found in DB');
+            // --- LÓGICA LOCAL START ---
+            // Si no está en DB, buscamos el ticket en Redis
+            if (!matchData) {
+                const localDataString = await this.redis.get(`match:local:${matchId}`);
+                if (localDataString) {
+                    const localMatch = JSON.parse(localDataString);
+                    // Mapeamos el JSON al formato que espera tu lógica
+                    matchData = {
+                        id: localMatch.id,
+                        player1_id: localMatch.player1.userId,
+                        player2_id: localMatch.player2.userId, // 'guest-id'
+                        target_score: localMatch.targetScore,
+                        game_mode: localMatch.gameMode || 'classic',
+                        status: 'active'
+                    };
+                    isLocalMatch = true;
+                    // Consumimos el ticket para limpieza
+                    await this.redis.del(`match:local:${matchId}`);
+                }
+            }
+            // --- LÓGICA LOCAL END ---
+
+            if (!matchData || matchData.status === 'finished') {
+                socket.close(1008, 'Match invalid or finished');
                 return;
             }
 
-			// Extraemos el score. Si la DB devuelve null (raro), usamos 11 por defecto (fallback)
-			const targetScore = matchFromDb.target_score || 11;
-
-            // AHORA SÍ tenemos los datos para crear la sesión correctamente
             session = {
                 matchId: matchId,
-                player1Id: String(matchFromDb.player1_id), // Convertimos a string por seguridad
-                player2Id: String(matchFromDb.player2_id),
+                player1Id: String(matchData.player1_id),
+                player2Id: String(matchData.player2_id),
                 socketP1: null,
                 socketP2: null,
-                gameState: this.createInitialState(matchId, targetScore),
-                loopId: null
+                gameState: this.createInitialState(matchId, matchData.target_score || 11, matchData.game_mode),
+                loopId: null,
+                isLocal: isLocalMatch // <--- GUARDAMOS EL ESTADO
             };
 
-            // Guardamos en memoria
             this.activeMatches.set(matchId, session);
         }
         
-        // 2. Asignar Socket (Usando los datos de la sesión que ya tenemos seguros)
-        if (session.player1Id === userId) {
-            session.socketP1 = socket;
-            console.log('✅ Player 1 conectado');
-        } else if (session.player2Id === userId) {
-            session.socketP2 = socket;
-            console.log('✅ Player 2 conectado');
-        } else {
-            console.log('⛔ Usuario no autorizado en esta partida');
-            socket.close(1008, 'Not a player in this match');
+        // B. ASIGNAR SOCKET
+        // En Local, el Player 1 controla todo. El Player 2 es virtual.
+        // Solo asignamos socketP1. socketP2 se queda null (y no pasa nada).
+        const isPlayer1 = session.player1Id === userId;
+        const isPlayer2 = session.player2Id === userId;
+
+        if (!isPlayer1 && !isPlayer2) {
+            socket.close(1008, 'Not a player');
             return;
         }
-
-        // 3. Comprobar si ambos están listos
-        if (session.socketP1 && session.socketP2) {
-            // Solo iniciamos si está en WAITING (evita reiniciar si ya estaba jugando y hubo reconexión)
-            if (session.gameState.status === 'WAITING') {
-                console.log('🚀 AMBOS JUGADORES CONECTADOS. INICIANDO JUEGO...');
+		// Asignación de sockets
+        if (isPlayer1) {
+            session.socketP1 = socket;
+            // Si es partida local, asignamos el mismo socket al P2
+            // para que reciba actualizaciones, aunque lógicamente controlas todo tú.
+            if (session.isLocal) {
+                 session.socketP2 = socket; 
+            }
+        } else {
+            session.socketP2 = socket;
+		}
+		
+        // C. GESTIÓN DE ESTADO
+        if (session.gameState.status === GAME_STATUS.PLAYING) {
+            this.handleReconnection(session, matchId, isPlayer1);
+            socket.send(JSON.stringify({ event: SOCKET_EVENTS.GAME_UPDATE, data: session.gameState }));
+        }
+        else if (session.gameState.status === GAME_STATUS.WAITING) {
+            // En local arrancamos apenas conecta el P1
+            if (session.isLocal && session.socketP1) {
+                this.startGameLoop(matchId);
+            }
+            // En online esperamos a los dos
+            else if (!session.isLocal && session.socketP1 && session.socketP2) {
                 this.startGameLoop(matchId);
             }
         }
+	}
+	
+    private handleReconnection(session: GameSession, matchId: string, isPlayer1: boolean) {
+        const timer = this.disconnectTimeouts.get(matchId);
+        if (timer) {
+            clearTimeout(timer);
+            this.disconnectTimeouts.delete(matchId);
+        }
+        const rivalSocket = isPlayer1 ? session.socketP2 : session.socketP1;
+        rivalSocket?.send(JSON.stringify({ event: SOCKET_EVENTS.GAME_OPPONENT_RECONNECTED }));
+        this.startGameLoop(matchId);
     }
     
     // -------------------------------------------------------------------
-    // AUXILIAR: ESTADO INICIAL
+    // 2. MANEJAR DESCONEXIÓN
     // -------------------------------------------------------------------
-    private createInitialState(matchId: string, targetScore: number): GameState {
-        const WALL_MARGIN = 10; 
+    public async handleDisconnect(userId: string, matchId?: string): Promise<void> {
+        const targetMatchId = matchId || this.findMatchIdByUserId(userId);
+        if (!targetMatchId) return;
+
+        const session = this.activeMatches.get(targetMatchId) as GameSession;
+        if (!session || session.gameState.status === GAME_STATUS.FINISHED) return;
+
+        // Pausar Loop
+        if (session.loopId) {
+            clearInterval(session.loopId);
+            session.loopId = null; 
+        }
+        session.gameState.status = GAME_STATUS.PAUSED;
+        
+		// Envia un mensaje al que aún está conectado
+        const isPlayer1Gone = session.player1Id === userId;
+        const rivalSocket = isPlayer1Gone ? session.socketP2 : session.socketP1;
+        
+        rivalSocket?.send(JSON.stringify({ 
+            event: SOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED, 
+            data: { timeout: GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT / 1000 } 
+        }));
+        
+        const timeoutId = setTimeout(() => {
+            this.forfeitMatch(targetMatchId, userId);
+        }, GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT); 
+        
+        this.disconnectTimeouts.set(targetMatchId, timeoutId);
+    }
+
+    // -------------------------------------------------------------------
+    // 3. GAME LOOP (Central)
+	// -------------------------------------------------------------------
+    private startGameLoop(matchId: string) {
+        const session = this.activeMatches.get(matchId);
+        if (!session) return;
+
+        session.gameState.status = GAME_STATUS.PLAYING;
+        if (session.loopId) clearInterval(session.loopId);
+
+        session.loopId = setInterval(() => {
+            // 1. Si ya no estamos jugando, paramos
+            if (session.gameState.status !== GAME_STATUS.PLAYING) return;
+
+            // 2. Calculamos física (AQUI el estado puede cambiar a FINISHED)
+            this.updatePhysics(session);
+            
+            // 3. Verificamos si terminó (Forzamos el tipo para callar a TS)
+            if ((session.gameState.status as string) === GAME_STATUS.FINISHED) return;
+
+            // 4. Si sigue activo, emitimos
+            this.broadcastState(session);
+
+        }, 1000 / GAME_CONSTANTS.FPS);
+    }
+ 
+    // -------------------------------------------------------------------
+    // 4. FÍSICA Y LÓGICA DEL JUEGO (dx/dy Corregidos)
+    // -------------------------------------------------------------------
+    private updatePhysics(session: GameSession) {
+        const { config, ball, player1, player2 } = session.gameState;
+
+        // A. Movimiento de Palas (Inercia)
+        if (config.hasInertia && config.friction) {
+            [player1, player2].forEach(paddle => {
+                if (Math.abs(paddle.dy) > 0.1) {
+                    paddle.y += paddle.dy;
+                    paddle.dy *= config.friction!;
+                    
+                    const maxPos = config.height - config.paddleHeight;
+                    if (paddle.y < 0) { paddle.y = 0; paddle.dy = 0; }
+                    if (paddle.y > maxPos) { paddle.y = maxPos; paddle.dy = 0; }
+                } else {
+                    paddle.dy = 0;
+                }
+            });
+        }
+
+        // B. Movimiento de la Bola (USANDO DX/DY)
+        ball.x += ball.dx; 
+        ball.y += ball.dy;
+
+        // C. Rebote Paredes
+        if (ball.y - config.ballRadius <= 0 || ball.y + config.ballRadius >= config.height) {
+            ball.dy *= -1; 
+        }
+
+        // D. Colisión Palas
+        const paddle = (ball.x < config.width / 2) ? player1 : player2;
+        if (this.checkCollision(ball, paddle, config)) {
+            this.handlePaddleHit(session.gameState, paddle);
+        }
+
+        // E. Puntuación
+        if (ball.x < 0) {
+            player2.score++;
+            this.checkScoreOrReset(session, 'player2');
+        } else if (ball.x > config.width) {
+            player1.score++;
+            this.checkScoreOrReset(session, 'player1');
+        }
+    }
+
+    private checkScoreOrReset(session: GameSession, scorer: 'player1' | 'player2') {
+        const { targetScore, player1, player2 } = session.gameState;
+        const currentScore = scorer === 'player1' ? player1.score : player2.score;
+
+        if (currentScore >= targetScore) {
+            const winnerId = scorer === 'player1' ? session.player1Id : session.player2Id;
+            this.endGame(session.matchId, winnerId);
+        } else {
+            this.resetBall(session.gameState, scorer === 'player1' ? 'left' : 'right');
+        }
+    }
+
+    private checkCollision(ball: BallState, paddle: PaddleState, config: any): boolean {
+       // Usamos el radio desde la config, no desde la bola
+        const r = config.ballRadius;
+
+        const inX = ball.x - r < paddle.x + config.paddleWidth && 
+                   ball.x + r > paddle.x;
+                   
+        const inY = ball.y + r > paddle.y && 
+                   ball.y - r < paddle.y + config.paddleHeight;
+                   
+        return inX && inY;
+    }
+
+    private handlePaddleHit(game: GameState, paddle: PaddleState) {
+        const { ball, config } = game;
+
+        // 1. Invertir dirección X (USANDO DX)
+        ball.dx = (ball.x < config.width / 2) ? Math.abs(ball.dx) : -Math.abs(ball.dx);
+
+        // 2. Ángulo relativo
+        const hitPoint = ball.y - (paddle.y + config.paddleHeight / 2);
+        const normalizedHit = hitPoint / (config.paddleHeight / 2);
+        const angle = normalizedHit * (Math.PI / 4); 
+
+        // 3. Aceleración
+        if (config.ballAcceleration) {
+            ball.speed *= (1 + config.ballAcceleration);
+        }
+
+        // 4. Recalcular vectores (USANDO DX/DY)
+        const directionX = (ball.dx > 0) ? 1 : -1;
+        ball.dx = directionX * ball.speed * Math.cos(angle);
+        ball.dy = ball.speed * Math.sin(angle);
+    }
+
+    private resetBall(game: GameState, scorerSide: 'left' | 'right') {
+        const { config } = game;
+        
+        game.ball.x = config.width / 2;
+        game.ball.y = config.height / 2;
+        game.ball.speed = config.ballSpeedBase; 
+
+        const direction = (scorerSide === 'left') ? 1 : -1; 
+        
+        // USANDO DX/DY
+        game.ball.dx = direction * config.ballSpeedBase;
+        game.ball.dy = 0; 
+    }
+
+    // -------------------------------------------------------------------
+    // 5. ESTADO INICIAL (ARGUMENTOS CORREGIDOS)
+    // -------------------------------------------------------------------
+    private createInitialState(matchId: string, targetScore: number, mode: string): GameState {
+        const modeConfig = GAME_MODES[mode] || GAME_MODES.classic;
+        const fullConfig = { ...GAME_CONSTANTS, ...modeConfig }; // Fusión de configs
+
+        const midY = fullConfig.CANVAS_HEIGHT / 2 - fullConfig.PADDLE_HEIGHT / 2;
+        const midX = fullConfig.CANVAS_WIDTH / 2;
+
+        const isLeft = Math.random() < 0.5;
+        const angle = (Math.random() * 2 - 1) * (Math.PI / 4);
 
         return {
-            id: matchId,
-            status: 'WAITING',
-			targetScore: targetScore,
+            id: matchId, 
+            status: GAME_STATUS.WAITING,
+            targetScore: targetScore,
+            winnerId: undefined,
             config: {
-                width: GAME_CONSTANTS.COURT_WIDTH,
-                height: GAME_CONSTANTS.COURT_HEIGHT,
-                paddleWidth: GAME_CONSTANTS.PADDLE_WIDTH,
-                paddleHeight: GAME_CONSTANTS.PADDLE_HEIGHT,
-                ballRadius: GAME_CONSTANTS.BALL_SIZE
-			},
-            player1: { 
-                x: WALL_MARGIN, 
-                y: (GAME_CONSTANTS.COURT_HEIGHT / 2) - (GAME_CONSTANTS.PADDLE_HEIGHT / 2), 
-                score: 0 
+                width: fullConfig.CANVAS_WIDTH,
+                height: fullConfig.CANVAS_HEIGHT,
+                paddleWidth: fullConfig.PADDLE_WIDTH,
+                paddleHeight: fullConfig.PADDLE_HEIGHT,
+                ballRadius: fullConfig.BALL_RADIUS,
+                paddleSpeed: modeConfig.paddleSpeed,
+                ballSpeedBase: modeConfig.ballSpeedBase,
+                ballAcceleration: modeConfig.ballAcceleration,
+                hasInertia: modeConfig.hasInertia,
+                friction: modeConfig.friction
             },
-            player2: { 
-                x: GAME_CONSTANTS.COURT_WIDTH - WALL_MARGIN - GAME_CONSTANTS.PADDLE_WIDTH, 
-                y: (GAME_CONSTANTS.COURT_HEIGHT / 2) - (GAME_CONSTANTS.PADDLE_HEIGHT / 2), 
-                score: 0 
+            player1: {
+                x: fullConfig.WALL_MARGIN,
+                y: midY,
+                score: 0,
+                dy: 0
             },
-            ball: { 
-                x: GAME_CONSTANTS.COURT_WIDTH / 2, 
-                y: GAME_CONSTANTS.COURT_HEIGHT / 2, 
-                dx: GAME_CONSTANTS.BALL_SPEED, 
-                dy: GAME_CONSTANTS.BALL_SPEED 
+            player2: {
+                x: fullConfig.CANVAS_WIDTH - fullConfig.WALL_MARGIN - fullConfig.PADDLE_WIDTH,
+                y: midY,
+                score: 0,
+                dy: 0
+            },
+            ball: {
+                x: midX,
+                y: fullConfig.CANVAS_HEIGHT / 2,
+                speed: modeConfig.ballSpeedBase,
+                // USANDO DX/DY
+                dx: modeConfig.ballSpeedBase * (isLeft ? -1 : 1) * Math.cos(angle),
+                dy: modeConfig.ballSpeedBase * Math.sin(angle)
             }
         };
     }
 
     // -------------------------------------------------------------------
-    // MÉTODO: MANEJAR DESCONEXIÓN (ASYNC)
+    // 6. PROCESAR INPUTS
     // -------------------------------------------------------------------
-    public async handleDisconnect(userId: string, matchId: string): Promise<void> {
+    public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
         const session = this.activeMatches.get(matchId);
-        if (!session) return; 
+        if (!session || session.gameState.status !== GAME_STATUS.PLAYING) return;
 
-        console.log(`⚠️ Jugador ${userId} desconectado de ${matchId}`);
+        let payload: GameInputPayload;
+        try { payload = JSON.parse(message.toString()); } catch { return; }
 
-        let winnerSocket: WebSocket | null = null;
-        let winnerId: string | null = null;
+		let paddle: PaddleState;
 
-        // Aquí podríamos usar session.player1Id directamente para ahorrar DB call,
-        // pero seguimos la lógica original por seguridad.
-        const matchFromDb = await this.matchRepo.findById(matchId); // AWAIT
-        if (!matchFromDb) return;
-
-        if (String(matchFromDb.player1_id) === userId) {
-            winnerSocket = session.socketP2;
-            winnerId = String(matchFromDb.player2_id);
-        } else {
-            winnerSocket = session.socketP1;
-            winnerId = String(matchFromDb.player1_id);
-        }
-
-        if (winnerSocket && winnerSocket.readyState === WebSocket.OPEN) {
-            winnerSocket.send(JSON.stringify({
-                event: 'GAME_OVER',
-                data: {
-                    reason: 'OPPONENT_DISCONNECTED',
-                    message: '¡Tu rival se ha desconectado! Ganas por abandono.'
-                }
-            }));
-        }
-
-        if (session.loopId) {
-            clearInterval(session.loopId);
-        }
-
-        if (winnerId) {
-            // finishMatch suele ser async también en Repos SQL
-            await this.matchRepo.finishMatch(matchId, winnerId, 5, 0, Date.now());
-            console.log(`🏆 Partida guardada por abandono. Ganador: ${winnerId}`);
-        }
-
-        this.activeMatches.delete(matchId);
-    }
-
-    // -------------------------------------------------------------------
-    // AUXILIAR: START GAME LOOP
-    // -------------------------------------------------------------------
-    private startGameLoop(matchId: string) {
-        const session = this.activeMatches.get(matchId);
-        if (!session) return;
-
-        session.gameState.status = 'PLAYING';
-
-        session.loopId = setInterval(() => {
-            // --- CORRECCIÓN ERROR TIPOS ---
-            // Usamos 'as string' para que TS no se queje si no ve 'FINISHED' en el tipo
-            if ((session.gameState.status as string) === 'FINISHED') {
-                if (session.loopId) clearInterval(session.loopId);
-                return;
-            }
-            
-//            if (session.gameState.status === 'PAUSED') {
-//                 this.broadcastState(session);
-//                 return;
-//            }
-
-            this.updatePhysics(session);
-
-            if ((session.gameState.status as string) === 'FINISHED') return;
-
-            this.broadcastState(session);
-
-        }, 1000 / GAME_CONSTANTS.FPS);
-    }
-
-    // -------------------------------------------------------------------
-    // LA LOGICA FISICA + PUNTUACION
-    // -------------------------------------------------------------------
-    private updatePhysics(session: GameSession) {
-        const { ball, config, player1, player2 } = session.gameState;
-        const r = config.ballRadius;
-
-        // Mover bola
-        ball.x += ball.dx;
-        ball.y += ball.dy;
-
-        // 1. Rebote Arriba/Abajo
-        if (ball.y - r < 0 || ball.y + r > config.height) {
-            ball.dy *= -1; 
-        }
-
-        // 2. Colisión con Palas 
-        if (ball.x - r < player1.x + config.paddleWidth && 
-            ball.y > player1.y && ball.y < player1.y + config.paddleHeight) {
-                ball.dx *= -1; 
-                ball.x = player1.x + config.paddleWidth + r + 1; 
-        }
-
-        if (ball.x + r > player2.x && 
-            ball.y > player2.y && ball.y < player2.y + config.paddleHeight) {
-                ball.dx *= -1;
-                ball.x = player2.x - r - 1;
-        }
-
-		const winScore = session.gameState.targetScore;
+		// --- SELECCIÓN DE PALA ---
+		if (session.isLocal) {
+			// MODO LOCAL: El payload dicta qué pala se mueve ('left' o 'right')
+			// El front enviará playerSide='right' cuando use las flechas
+			if (payload.playerSide === 'right') {
+				paddle = session.gameState.player2;
+			} else {
+				paddle = session.gameState.player1; // Default left/W/S
+			}
+			
+		} else {
+			// MODO ONLINE: El ID del usuario dicta qué pala se mueve (Seguridad)
+            const isP1 = session.player1Id === userId;
+            paddle = isP1 ? session.gameState.player1 : session.gameState.player2;
+		}
 		
-        // 3. PUNTUACION
-        if (ball.x < 0) {
-            session.gameState.player2.score++;
-            if (session.gameState.player2.score >= winScore) {
-                this.endGame(session.matchId, session.player2Id);
-                return; 
+        const { config } = session.gameState; // Obtenemos la config de la sesión
+        const speed = config.paddleSpeed; 
+
+        if (payload.action === 'STOP') {
+             if (!config.hasInertia) paddle.dy = 0;
+        } 
+        else if (payload.action === 'MOVE_UP') {
+            if (config.hasInertia) {
+                paddle.dy = -speed; 
+            } else {
+                paddle.y = Math.max(0, paddle.y - speed);
             }
-            this.resetBall(session);
-        } else if (ball.x > session.gameState.config.width) {
-            session.gameState.player1.score++;
-            if (session.gameState.player1.score >= winScore) {
-                this.endGame(session.matchId, session.player1Id);
-                return; 
+        } 
+        else if (payload.action === 'MOVE_DOWN') {
+             if (config.hasInertia) {
+                paddle.dy = speed;
+            } else {
+                paddle.y = Math.min(config.height - config.paddleHeight, paddle.y + speed);
             }
-            this.resetBall(session); 
         }
     }
 
-    private resetBall(session: GameSession) {
-        const { config, ball } = session.gameState;
-        ball.x = config.width / 2;
-        ball.y = config.height / 2;
-        ball.dx *= -1; 
-        ball.dy = (Math.random() > 0.5 ? 1 : -1) * GAME_CONSTANTS.BALL_SPEED; 
-    }
-
-    private broadcastState(session: GameSession) {
-        const updateMsg = JSON.stringify({
-            event: 'GAME_UPDATE',
-            data: session.gameState
-        });
-        session.socketP1?.send(updateMsg);
-        session.socketP2?.send(updateMsg);
-    }
-    
-    
-    // 
-    private async endGame(matchId: string, winnerId: string) {
+    // -------------------------------------------------------------------
+    // 7. FINALIZACIÓN
+    // -------------------------------------------------------------------
+    private endGame(matchId: string, winnerId: string) {
         const session = this.activeMatches.get(matchId);
         if (!session) return;
 
-		// 1. Detener el bucle de juego (Game Loop)
-		// Si no paramos el intervalo, el servidor seguiría calculando 
-		// la física de una partida terminada, consumiendo CPU inútilmente.
         if (session.loopId) {
             clearInterval(session.loopId);
             session.loopId = null;
         }
         
-		// 2. Actualizar estado y recuperar puntuaciones finales
-        (session.gameState.status) = 'FINISHED';
-        const p1Score = session.gameState.player1.score;
-        const p2Score = session.gameState.player2.score;
+        session.gameState.status = GAME_STATUS.FINISHED;
+        // En local, winnerId podría ser 'guest-id', parseInt daría NaN, pero no importa porque no guardamos
+        
+		session.gameState.winnerId = parseInt(winnerId) || 0; // || 0 por si es 'guest-id'
 
-        console.log(`🏆 GAME OVER. Winner: ${winnerId} | Score: ${p1Score}-${p2Score}`);
-
-        // 3. PERSISTENCIA: Guardar resultado en Base de Datos 
-		// (llama al repo para escribir quien gano y demas datos).
-		// Importante: Hacer esto ANTES de borrar la sesión de memoria.
-		// Esta envuelto en un try-catch por si la base de datos falla que 
-		// no se caiga el servidor (loguea el error y continua para cerrar 
-		// la conexion de los clientes limpiamente).
-        try {
-            await this.matchRepo.finishMatch(
+        // --- PROTECCIÓN DB START ---
+        if (!session.isLocal) {
+             this.matchRepo.finishMatch(
                 matchId, 
                 winnerId, 
-                p1Score, 
-                p2Score, 
+                session.gameState.player1.score, 
+                session.gameState.player2.score, 
                 Date.now()
-            );
-            console.log('✅ Resultado guardado en DB');
-        } catch (error) {
-            console.error('❌ Error guardando resultado en DB:', error);
+            ).catch(e => console.error(e));
         }
+		// --- PROTECCIÓN DB END ---
 
-        // 4. Notificar a los clientes vía WebSocket
         const endMsg = JSON.stringify({
-            event: 'GAME_OVER',
-            data: { 
-                winnerId: winnerId,
-                reason: 'SCORE_LIMIT_REACHED'
-            }
+            event: SOCKET_EVENTS.GAME_OVER,
+            data: { winnerId, reason: 'SCORE_LIMIT_REACHED' }
         });
 
-		// Usamos try-catch individual por si un socket ya se cerró abruptamente
-		// Con el '?': si el socketP1 existe llama a send(), sino no hace nada. 
-		// Evita errores si un jugador se desconectó antes de ganar.
-        try { session.socketP1?.send(endMsg); } catch(e) {}
-        try { session.socketP2?.send(endMsg); } catch(e) {}
-        
-        // 5. Eliminamos la session del Map en memoria RAM (para evitar leaks y/o colapso de server)
+        session.socketP1?.send(endMsg);
+        session.socketP2?.send(endMsg);
         this.activeMatches.delete(matchId);
     }
-    
-    // -------------------------------------------------------------------
-    // PROCESADO DE LOS INPUTS (ASYNC)
-    // -------------------------------------------------------------------
-    public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
+
+    private forfeitMatch(matchId: string, loserId: string) {
         const session = this.activeMatches.get(matchId);
         if (!session) return;
-
-        const msgString = message.toString();
-        let payload: any;
-        try {
-            payload = JSON.parse(msgString);
-        } catch (e) {
-            console.error('❌ JSON inválido recibido');
-            return;
-        }
-
-		//VALIDACION DE INPUTS. SEGURIDAD.
-		// Si el userId no coincide con ninguno de los jugadores
-		//  de la sesión, aborto la ejecución silenciosamente.
-
-        // Si ya tenemos los IDs en la sesión, NO hace falta ir a DB.
-        // Optimizamos usando la caché de sesión.
-        let playerPaddle = null;
         
-        if (session.player1Id === userId) {
-            playerPaddle = session.gameState.player1;
-        } else if (session.player2Id === userId) {
-            playerPaddle = session.gameState.player2;
-        } else {
-            return; 
-        }
-
-        const { height, paddleHeight } = session.gameState.config;
+        this.disconnectTimeouts.delete(matchId);
         
-        switch (payload.action) {
-            case 'MOVE_UP':
-                playerPaddle.y = Math.max(0, playerPaddle.y - GAME_CONSTANTS.PADDLE_SPEED);
-                break;
-            case 'MOVE_DOWN':
-                playerPaddle.y = Math.min(height - paddleHeight, playerPaddle.y + GAME_CONSTANTS.PADDLE_SPEED);
-                break;
-            //case 'PAUSE_TOGGLE':
-            //    this.togglePause(session);
-            //    break;
+        const winnerId = (session.player1Id === loserId) ? session.player2Id : session.player1Id;
+        const winnerSocket = (session.player1Id === loserId) ? session.socketP2 : session.socketP1;
+        
+        winnerSocket?.send(JSON.stringify({
+            event: SOCKET_EVENTS.GAME_OVER,
+            data: {
+                reason: 'OPPONENT_DISCONNECTED',
+                winnerId: winnerId,
+                message: '¡Tu rival abandonó!'
+            }
+        }));
+        
+        //this.matchRepo.finishMatch(matchId, winnerId, 0, 0, Date.now()).catch(e => console.error(e));
+        
+		// --- PROTECCIÓN DB START ---
+        if (!session.isLocal) {
+             this.matchRepo.finishMatch(
+                matchId, 
+                winnerId, 
+                session.gameState.player1.score, 
+                session.gameState.player2.score, 
+                Date.now()
+            ).catch(e => console.error(e));
         }
+		this.activeMatches.delete(matchId);
     }
 
-/*
-    private togglePause(session: GameSession) {
-        if (session.gameState.status === 'PLAYING') {
-            session.gameState.status = 'PAUSED';
-        } else if (session.gameState.status === 'PAUSED') {
-            session.gameState.status = 'PLAYING';
-        }
+    private broadcastState(session: GameSession) {
+        const updateMsg = JSON.stringify({
+            event: SOCKET_EVENTS.GAME_UPDATE,
+            data: session.gameState
+        });
+        if (session.socketP1?.readyState === WebSocket.OPEN) session.socketP1.send(updateMsg);
+        if (session.socketP2?.readyState === WebSocket.OPEN) session.socketP2.send(updateMsg);
     }
-*/
-	
+
+    private findMatchIdByUserId(userId: string): string | undefined {
+        for (const [matchId, session] of this.activeMatches) {
+            if (session.player1Id === userId || session.player2Id === userId) return matchId;
+        }
+        return undefined;
+    }
 }
