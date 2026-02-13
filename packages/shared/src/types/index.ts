@@ -8,3 +8,4 @@ export * from './user.types.js';
 export * from './fastify.js';
 export * from './game.types.js';
 export * from './image.types.js';
+export * from './health.types.js';

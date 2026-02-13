@@ -1,21 +1,8 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { Redis } from 'ioredis';
+import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
 import { CommsService } from '../services/comms.service.js';
-
-// TODO debería mover estas interfaces a Shared
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
 
 /** Controller para manejar las peticiones del servicio de comunicaciones */
 export class CommsController {
@@ -73,6 +60,6 @@ export class CommsController {
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
 			dependencies: checks
-		}; // TODO por qué return? a quien se lo retorna? los controllers deben manejar http responses en apis, que sucede en ws?
+		};
 	}
 }

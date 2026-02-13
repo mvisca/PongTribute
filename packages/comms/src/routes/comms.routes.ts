@@ -14,13 +14,16 @@ export const wsRoutes: FastifyPluginAsync = async (app) => {
 	// Crear el controller con el servicio
 	const controller = new CommsController(service);
 
-	/** WebSocket endpoint para comunicaciones en tiempo real */
+	// @fastify/websocket: websocket:true activa el upgrade HTTP→WS.
+	// En rutas HTTP normales no se necesita porque el default es false.
+	// El handler WS recibe (socket, request) en vez de (request, reply)
+	// porque no hay respuesta HTTP — la comunicación es bidireccional vía socket.
 	app.get('/comms/ws', { 
-			websocket: true, // TODO Por default es false y por default endpoint o api es true? por que en endpoint no pongo nada y aquí sí? que otras opciones similares hay?
-			preHandler: [CommsMiddleware.validateJWT]
-		}, 
-		(socket, request) => { // TODO por qué una función aquí y no el estilo como en los otros endpoints donde se pone controller: o handler:
-			controller.handleWebSocketConnection(socket, request);
-		} // TODO por qué socker request y no request reply? socket es de tipy FastifySocket o similar?
+		websocket: true,
+		preHandler: [CommsMiddleware.validateJWT]
+	}, 
+	(socket, request) => {
+		controller.handleWebSocketConnection(socket, request);
+	}
 	);
 }

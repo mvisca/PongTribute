@@ -1,18 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
+import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
 import { GatewayEnv } from '../config.js';
-
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
 
 /**
  * Controller para manejar el health check del gateway

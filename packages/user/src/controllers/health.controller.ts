@@ -1,18 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { Redis } from 'ioredis';
-
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
+import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
 
 /**
  * Controller para manejar el health check del servicio de usuarios

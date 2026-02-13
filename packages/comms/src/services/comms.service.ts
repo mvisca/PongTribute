@@ -58,27 +58,6 @@ export class CommsService {
 	
 	// TODO preguntarme cuando hacerlo, pero quiero investigar todo el flujo y arquitectura del servicio redis, sus intancias en servicios. tarea debe quedar fuera del flujo de refactorizacion en base a resolucion de "TODOs".
 	
-	// ============================================================================
-	// VALIDACIONES INTERNAS
-	// ============================================================================
-	
-	private validateConnectionLimits(userId: string): boolean {  // TODO no se esta usando? Es ok eso? quien esta controlando los limites?
-		const maxPerUser = CommsEnv.WS_MAX_CONNECTIONS_PER_USER();
-		const current = this.connections.get(userId)?.size || 0;
-		
-		if (current >= maxPerUser) {
-			this.logger.warn(`[Comms] Límite por usuario alcanzado para ${userId}`);
-			return false;
-		}
-		
-		const globalMax = CommsEnv.WS_MAX_CONNECTIONS();
-		if (this.totalConnections >= globalMax) {
-			this.logger.warn(`[Comms] Límite global alcanzado (${this.totalConnections}/${globalMax})`);
-			return false;
-		}
-		
-		return true;
-	}
 	
 	// ============================================================================
 	// INICIALIZACIÓN
@@ -109,9 +88,11 @@ export class CommsService {
 					this.logger.error('[Comms] Error crítico en handleRedisMessage', err);
 				});
 			});
-			
-			// Iniciar Heartbeat para mantener WS vivos
-			this.startHeartbeat(); // TODO explicar como funciona el heartbet, esta llamada es un proceso recurrente o puntual?
+
+			// Heartbeat: proceso recurrente via setInterval (cada WS_PING_INTERVAL_MS)
+			// Cada ciclo envía ping a todos los sockets. 
+			// Si no responden pong antes del siguiente ciclo, se considera zombie y se termina la conexión.
+			this.startHeartbeat();
 			this.logger.log('[Comms] Servicio inicializado completamente y escuchando.');
 			
 		} catch (err) {
@@ -340,7 +321,7 @@ export class CommsService {
 			
 			extWs.on('close', () => this.handleDisconnect(extWs, user.id));
 			
-			extWs.on('error', (err: Error) => { // TODO es esta la mejor inferencia de tipo?
+			extWs.on('error', (err: Error) => {
 				this.logger.error(`[Comms] Fallo en socket user ${user.id}`, err);
 			});
 		} catch (err) {

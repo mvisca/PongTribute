@@ -1,20 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import type { Redis } from "ioredis";
-import { AuthTypes, SharedErrors } from "@transcendence/shared";
+import { AuthTypes, SharedErrors, HealthCheckDependency, HealthCheckResponse } from "@transcendence/shared";
 import { AuthService } from "../index.js";
-
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
 
 export class AuthController {
 
