@@ -102,6 +102,25 @@ export class MatchRepository {
         // 2. Ejecutar (Better-sqlite3 usa .run() para UPDATES)
         updateP1.run(newUsername, userId);
         updateP2.run(newUsername, userId);
+	}
+	
+	/**
+     * resetZombieMatches
+     * Se llama SOLO al inicio del servidor.
+     * Marca como 'aborted' todas las partidas que quedaron 'active' 
+     * tras un reinicio inesperado.
+     */
+    async resetZombieMatches(): Promise<number> {
+        const stmt = this.db.prepare(
+            `UPDATE matches 
+             SET status = ?, 
+                 finished_at = ? 
+             WHERE status = ?`
+        );
+		const result = stmt.run('aborted', Date.now(), 'active');
+		
+        // Retorna cuantas filas afectó
+        return result.changes; 
     }
 
 	/**

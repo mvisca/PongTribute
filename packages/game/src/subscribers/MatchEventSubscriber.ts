@@ -107,5 +107,13 @@ export class MatchEventSubscriber {
         } catch (error) {
             console.error('❌ Error parsing Redis message:', error);
         }
+	}
+	
+	// Cierra limpiamente la conexion Redis
+	public async disconnect() {
+        if (this.subscriber) {
+            console.log('🔌 [MatchEventSubscriber] Disconnecting...');
+            await this.subscriber.quit();
+        }
     }
 }

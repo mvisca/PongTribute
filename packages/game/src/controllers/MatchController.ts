@@ -139,41 +139,7 @@ export class MatchController {
 			return reply.status(200).send(match);
 
 		} catch (error) {
-			// 4. Manejo de Errores (Error Mapping)
-			// Convertimos las excepciones del dominio en códigos HTTP estándar
-			console.error("❌ [Controller] Error en acceptMatch:", error);
-
-			if (error instanceof Error) {
-				// 404 Not Found: El ID de partida no existe
-				if (error.message.includes('not found')) {
-					return reply.status(404).send({
-						error: 'Not Found',
-						message: error.message
-					});
-				}
-
-				// 403 Forbidden: Soy un usuario cotilla intentando aceptar una partida ajena
-				if (error.message.includes('not the invited player')) {
-					return reply.status(403).send({
-						error: 'Forbidden',
-						message: error.message
-					});
-				}
-
-				// 400 Bad Request: La partida ya empezó o terminó
-				if (error.message.includes('not pending')) {
-					return reply.status(400).send({
-						error: 'Bad Request',
-						message: error.message
-					});
-				}
-			}
-
-			// 500 Internal Server Error: Fallo de DB o código inesperado
-			return reply.status(500).send({
-				error: 'Internal Server Error',
-				message: 'Could not accept match'
-			});
+			SharedErrors.handleError(error, reply);
 		}
 	}
 	
@@ -209,41 +175,7 @@ export class MatchController {
 			return reply.status(200).send(match);
 
 		} catch (error) {
-			// 4. Manejo de Errores (Error Mapping)
-			// Convertimos las excepciones del dominio en códigos HTTP estándar
-			console.error("❌ [Controller] Error en rejectMatch:", error);
-
-			if (error instanceof Error) {
-				// 404 Not Found: El ID de partida no existe
-				if (error.message.includes('not found')) {
-					return reply.status(404).send({
-						error: 'Not Found',
-						message: error.message
-					});
-				}
-
-				// 403 Forbidden: Soy un usuario cotilla intentando rechazar una partida ajena
-				if (error.message.includes('not the invited player')) {
-					return reply.status(403).send({
-						error: 'Forbidden',
-						message: error.message
-					});
-				}
-
-				// 400 Bad Request: La partida ya empezó o terminó
-				if (error.message.includes('not pending')) {
-					return reply.status(400).send({
-						error: 'Bad Request',
-						message: error.message
-					});
-				}
-			}
-
-			// 500 Internal Server Error: Fallo de DB o código inesperado
-			return reply.status(500).send({
-				error: 'Internal Server Error',
-				message: 'Could not reject match'
-			});
+			SharedErrors.handleError(error, reply);
 		}
 	}
 	
@@ -262,17 +194,21 @@ export class MatchController {
             return reply.status(401).send({ message: 'Unauthorized' });
         }
 
-        // Delegamos al servicio (que ya tiene la lógica de guards)
-        await this.matchService.cancelPrivateMatch(userId, matchId);
+		try {
+			// Delegamos al servicio (que ya tiene la lógica de guards)
+			await this.matchService.cancelPrivateMatch(userId, matchId);
 
-		
-        // Retornamos estructura definida en Schema
-        const response: MatchTypes.CancelMatchResponse = {
-            success: true,
-            message: 'Invitation cancelled successfully'
-        };
-
-        return reply.status(200).send(response);
+			
+			// Retornamos estructura definida en Schema
+			const response: MatchTypes.CancelMatchResponse = {
+				success: true,
+				message: 'Invitation cancelled successfully'
+			};
+			return reply.status(200).send(response);
+			
+		} catch (error) {
+			SharedErrors.handleError(error, reply);
+		}
     }
 
     /**

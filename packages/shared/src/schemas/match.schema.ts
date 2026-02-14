@@ -4,7 +4,7 @@ import { Type, Static } from '@sinclair/typebox';
 export enum GameMode {
 	CLASSIC = 'classic',
 	SPEED = 'speed',
-	RETRO = 'retro'
+	PRO = 'pro'
 };
 
 export namespace MatchSchemas {
