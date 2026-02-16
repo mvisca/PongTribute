@@ -26,11 +26,46 @@ export class MatchService {
 	private matchRepo: MatchRepository;
 	private redis: Redis;
 
-	// INYECCIÓN DE DEPENDENCIA
+	// CONSTRUCTOR: INYECCIÓN DE DEPENDENCIA
 	// El servicio NO se preocupa de dónde viene Redis, solo pide una instancia.
     constructor(matchRepo: MatchRepository, redisClient: Redis) { // Recibe la instancia, no la crea.
 		this.matchRepo = matchRepo;
 		this.redis = redisClient;
+	}
+	
+	//===========NUEVO MANAGER GENERAL==========
+	/**
+     * handleCreateMatch
+     * ORQUESTADOR CENTRAL: Recibe la petición bruta y decide qué hacer.
+     * Reemplaza la lógica de decisión que antes tenía el Controller.
+     */
+    async handleCreateMatch(userId: string, body: MatchSchemas.CreateMatchBodyType) {
+        
+		// Extraemos lo que necesitamos
+        const { matchType, opponentId, gameMode } = body;
+
+        // 1. VALIDACIÓN DE NEGOCIO (Antes estaba en el Controller)
+        // El servicio protege su propia integridad.
+        if (matchType === 'private' && !opponentId) {
+            throw new SharedErrors.ValidationError('Private match requires an opponentId');
+        }
+
+        // 2. ENRUTAMIENTO INTELIGENTE
+        if (matchType === 'public') {
+			// Usamos '??' para usar CLASSIC si gameMode es undefined
+			// ?? significa: Si lo de la izquierda es null o undefined, usa lo de la derecha".
+            return this.joinPublicQueue(userId, gameMode ?? GameMode.CLASSIC);
+        }
+
+        if (matchType === 'local') {
+            // Pasamos el body completo como config
+            return this.createLocalMatch(userId, body);
+        }
+
+        // 3. DEFAULT: PRIVATE
+        // Si llegamos aquí, sabemos que opponentId existe gracias al paso 1.
+        // El signo ! le dice a TS: "Confía en mí, esto no es null".
+        return this.createPrivateMatch(userId, opponentId!, body);
     }
 
 	/**

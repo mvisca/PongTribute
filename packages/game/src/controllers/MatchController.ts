@@ -30,7 +30,7 @@ export class MatchController {
 	 * * Flujo de decisión:
 	 * 1. Si es PUBLIC: Llama a joinPublicQueue (Redis/Memoria).
 	 * 2. Si es PRIVATE: Llama a createPrivateMatch (Base de Datos).
-	 */
+	 
 	async createMatch(
 		request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
 		reply: FastifyReply
@@ -106,8 +106,50 @@ export class MatchController {
 			SharedErrors.handleError(error, reply);
 		}
 	}
+	*/
+	// ========================================================================
+    // MÉTODO CREATE MATCH (Refactorizado)
+    // ========================================================================
+    /**
+     * createMatch
+     * Ahora es puramente un adaptador HTTP.
+     * Recibe la petición -> Llama al orquestador del servicio -> Devuelve respuesta.
+     */
+    async createMatch(
+        request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
+        reply: FastifyReply
+    ) {
+        console.log("\n--- NEW REQUEST (SECURE) ---");
+        console.log("[Controller] 1. Entrando en createMatch");
 
+        // 1. AUTENTICACIÓN
+        const user = request.user as AuthTypes.AccessTokenPayload;
+        
+        try {
+            // 2. LLAMADA AL SERVICIO (Una sola línea maestra)
+            // Ya no nos importa si es pública, privada o local. El servicio se encarga.
+            const result = await this.matchService.handleCreateMatch(user.id, request.body);
 
+            // 3. RESPUESTA HTTP
+            console.log("[Controller] Respuesta exitosa del servicio.");
+
+            // Decisión de Código HTTP (Responsabilidad de la capa de Transporte)
+            // Si nos unimos a cola (esperando) -> 200 OK
+            // Si se creó una partida (recurso creado) -> 201 Created
+            if ('outcome' in result && result.outcome === 'added_to_queue') {
+                return reply.status(200).send(result);
+            }
+            
+            // Para 'match_found', 'local' o 'private' -> 201
+            return reply.status(201).send(result);
+
+        } catch (error) {
+            // El servicio lanza errores (Validation, Conflict, etc), aquí los capturamos
+            SharedErrors.handleError(error, reply);
+        }
+    }
+
+	
 	// ========================================================================
 	// MÉTODO ACCEPT MATCH
 	// ========================================================================
