@@ -33,13 +33,18 @@ export const SOCKET_EVENTS = {
 
 	//Sala de espera
 	JOINED_MATCH: 'match:joined',
+	
+	/*
+	OJO, OJITO, LAS CONSTANTES COMENTADAS AHORA NO LAS USO, 
+	ELIMINAR SI NO SE USARAN EN FUTURO
+	Quizas no estria mal emitir estos eventos para hacerlo mas explicito ?????
+	*/
 	// Game
-	GAME_START: 'game:start',
+	// GAME_START: 'game:start',
 	GAME_OVER: 'game:over',
 	GAME_UPDATE: 'game:update',
-	// Game reconection
-	GAME_PAUSED: 'game:paused',                     // El juego se detiene (ej: usuario minimiza o desconexión)
-	GAME_RESUMED: 'game:resumed',                   // El juego continua
+	//GAME_PAUSED: 'game:paused',                     // El juego se detiene (ej: usuario minimiza o desconexión)
+	//GAME_RESUMED: 'game:resumed',                   // El juego continua
 	GAME_OPPONENT_DISCONNECTED: 'game:opponent_disconnected', // Aviso específico: "Tu rival se ha ido, espera 15s"
 	GAME_OPPONENT_RECONNECTED: 'game:opponent_reconnected',   // Aviso: "Tu Rival volvió"
 	

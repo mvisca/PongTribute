@@ -60,7 +60,7 @@ export interface MatchFoundEvent extends BaseEvent {
 	payload: {
 		matchId: string;     // ID único del emparejamiento
 		playerIds: string[]; // IDs de los usuarios emparejados
-		roomId: string;      // Sala de juego asignada
+		//roomId: string;      // Sala de juego asignada
 	};
 }
 
@@ -92,7 +92,7 @@ export interface MatchStartedEvent extends BaseEvent {
 	payload: {
 		matchId: string;
 		playerIds: string[];
-		roomId?: string; // Opcional - puede no ser necesario
+		//roomId?: string; // Opcional - puede no ser necesario
 	};
 }
 

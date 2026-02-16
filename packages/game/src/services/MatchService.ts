@@ -16,7 +16,7 @@ import {
 	MatchCancelledEvent,
 	MatchQueueTimeoutEvent
 } from '@transcendence/shared';
-
+import { GameEnv } from '../config.js';
 
 /**
  * MatchService
@@ -112,8 +112,8 @@ export class MatchService {
 				source: 'game-service', // Opcional, pero útil para debugar
 				payload: {  // al definir este obj, TypeScrpit busca las variables en el ambito local.
 					matchId: matchDomain.id,     // Mapea los datos de tu dominio
-					playerIds: [opponentId, userId],
-					roomId: matchDomain.id
+					playerIds: [opponentId, userId]
+					//roomId: matchDomain.id
 				}
 			};
 
@@ -587,7 +587,7 @@ export class MatchService {
 	private async fetchUserProfile(userId: string): Promise<{ username: string }> {
 		
 		// 1. Obtener URL Base
-		const baseUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
+		const baseUrl = GameEnv.USER_SERVICE_URL();
 		
 		// Usamos la ruta interna, no la pública (/api)
 		// Esta ruta interna esta protegida por el SERVICE_SECRET en lugar del JWT
@@ -598,7 +598,7 @@ export class MatchService {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',
-					'x-service-secret': process.env.SERVICE_SECRET || ''
+					'x-service-secret': GameEnv.SERVICE_SECRET()
 				}
 			});
 			

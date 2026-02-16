@@ -178,15 +178,16 @@ export class GameService {
 
 		const session = this.activeMatches.get(targetMatchId) as GameSession;
 
-		// Si es local, no hay reconexión ni rival remoto. Limpieza inmediata.
-    if (session.isLocal) {
-        this.stopGameLoop(session);
-        this.activeMatches.delete(targetMatchId);
-        return;
-	}
-		
 		// Si ya terminó, ignoramos desconexiones residuales
-        if (!session || session.gameState.status === GAME_STATUS.FINISHED) return;
+		if (!session || session.gameState.status === GAME_STATUS.FINISHED) return;
+
+		// Si es local, no hay reconexión ni rival remoto. Limpieza inmediata.
+		if (session.isLocal) {
+			this.stopGameLoop(session);
+			this.activeMatches.delete(targetMatchId);
+			return;
+		}
+		
 
 		// 1. Detenemos el loop inmediatamente
 		this.stopGameLoop(session); // Usamos el helper  centralizado
