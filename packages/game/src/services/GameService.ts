@@ -177,6 +177,14 @@ export class GameService {
         if (!targetMatchId) return;
 
 		const session = this.activeMatches.get(targetMatchId) as GameSession;
+
+		// Si es local, no hay reconexión ni rival remoto. Limpieza inmediata.
+    if (session.isLocal) {
+        this.stopGameLoop(session);
+        this.activeMatches.delete(targetMatchId);
+        return;
+	}
+		
 		// Si ya terminó, ignoramos desconexiones residuales
         if (!session || session.gameState.status === GAME_STATUS.FINISHED) return;
 
@@ -298,13 +306,17 @@ export class GameService {
         // E. Puntuación y condición de victoria
         if (ball.x < 0) {
             paddleRight.score++;
-            this.checkScoreOrReset(session, 'paddleRight');
+            // Capturamos el retorno. Si hay ganador, lo devolvemos inmediatamente.
+            const winner = this.checkScoreOrReset(session, 'paddleRight');
+            if (winner) return winner; 
         } else if (ball.x > config.width) {
             paddleLeft.score++;
-            this.checkScoreOrReset(session, 'paddleLeft');
-		}
+            // Idem para el otro lado.
+            const winner = this.checkScoreOrReset(session, 'paddleLeft');
+            if (winner) return winner;
+        }
 		
-		return null; // El juego sigue
+		return null; // Si no hay ganador, el juego sigue
     }
 
 	/**
@@ -486,6 +498,9 @@ export class GameService {
             }
         }
     }
+
+
+	
 
     // -------------------------------------------------------------------
     // 7. FINALIZACIÓN
