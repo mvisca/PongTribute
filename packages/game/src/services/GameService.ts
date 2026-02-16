@@ -451,35 +451,100 @@ export class GameService {
 	/**
      * Procesa los inputs del usuario (teclas) y actualiza la velocidad de las palas.
      */
-    public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
-        const session = this.activeMatches.get(matchId);
-        if (!session || session.gameState.status !== GAME_STATUS.PLAYING) return;
+    // public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
+    //     const session = this.activeMatches.get(matchId);
+    //     if (!session || session.gameState.status !== GAME_STATUS.PLAYING) return;
 
-        let payload: GameInputPayload;
-        try { payload = JSON.parse(message.toString()); } catch { return; }
+    //     let payload: GameInputPayload;
+    //     try { payload = JSON.parse(message.toString()); } catch { return; }
 
-		let paddle: PaddleState;
+	// 	let paddle: PaddleState;
 
-		// --- SELECCIÓN DE PALA SEGURA---
-		if (session.isLocal) {
-			// MODO LOCAL: El payload dicta qué pala se mueve ('left' o 'right')
-			// El front enviará playerSide='right' cuando use las flechas
-			if (payload.playerSide === 'right') {
-				paddle = session.gameState.paddleRight;
-			} else {
-				paddle = session.gameState.paddleLeft; // Default left/W/S
-			}
+	// 	// --- SELECCIÓN DE PALA SEGURA---
+	// 	if (session.isLocal) {
+	// 		// MODO LOCAL: El payload dicta qué pala se mueve ('left' o 'right')
+	// 		// El front enviará playerSide='right' cuando use las flechas
+	// 		if (payload.playerSide === 'right') {
+	// 			paddle = session.gameState.paddleRight;
+	// 		} else {
+	// 			paddle = session.gameState.paddleLeft; // Default left/W/S
+	// 		}
 			
-		} else {
-			// MODO ONLINE: El ID del usuario dicta qué pala se mueve (Seguridad)
+	// 	} else {
+	// 		// MODO ONLINE: El ID del usuario dicta qué pala se mueve (Seguridad)
+    //         const isP1 = session.player1Id === userId;
+    //         paddle = isP1 ? session.gameState.paddleLeft : session.gameState.paddleRight;
+	// 	}
+		
+    //     const { config } = session.gameState; // Obtenemos la config de la sesión
+    //     const speed = config.paddleSpeed;
+
+	// 	// Aplicar movimiento o física
+    //     if (payload.action === 'STOP') {
+    //          if (!config.hasInertia) paddle.dy = 0;
+    //     }
+    //     else if (payload.action === 'MOVE_UP') {
+    //         if (config.hasInertia) {
+    //             paddle.dy = -speed;
+    //         } else {
+    //             paddle.y = Math.max(0, paddle.y - speed);
+    //         }
+    //     }
+    //     else if (payload.action === 'MOVE_DOWN') {
+    //          if (config.hasInertia) {
+    //             paddle.dy = speed;
+    //         } else {
+    //             paddle.y = Math.min(config.height - config.paddleHeight, paddle.y + speed);
+    //         }
+    //     }
+    // }
+
+	public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
+        const session = this.activeMatches.get(matchId);
+        if (!session) return;
+
+        // 1. Parseamos PRIMERO para saber qué intentan hacer
+        let payload: GameInputPayload;
+        try { 
+            payload = JSON.parse(message.toString()); 
+        } catch { 
+            return; 
+        }
+
+        // 2. Guard de Estado: Permitimos inputs si está JUGANDO, o si está PAUSADO y quiere DESPAUSAR
+        const isPauseToggle = payload.action === 'PAUSE_TOGGLE';
+        const isPlaying = session.gameState.status === GAME_STATUS.PLAYING;
+        
+        if (!isPlaying && !isPauseToggle) return;
+
+        // 3. Manejo de Pausa (Solo Local)
+        if (isPauseToggle) {
+            if (session.isLocal) {
+                this.togglePause(session);
+            }
+            return; // No procesamos movimiento si es un comando de sistema
+        }
+
+        // Si el juego está pausado, ignoramos movimientos (doble check)
+        if (!isPlaying) return;
+
+        // 4. Lógica de Movimiento (tu código original sigue aquí abajo)
+        let paddle: PaddleState;
+
+        if (session.isLocal) {
+            if (payload.playerSide === 'right') {
+                paddle = session.gameState.paddleRight;
+            } else {
+                paddle = session.gameState.paddleLeft;
+            }
+        } else {
             const isP1 = session.player1Id === userId;
             paddle = isP1 ? session.gameState.paddleLeft : session.gameState.paddleRight;
-		}
-		
-        const { config } = session.gameState; // Obtenemos la config de la sesión
+        }
+        
+        const { config } = session.gameState;
         const speed = config.paddleSpeed; 
 
-		// Aplicar movimiento o física
         if (payload.action === 'STOP') {
              if (!config.hasInertia) paddle.dy = 0;
         } 
@@ -499,7 +564,21 @@ export class GameService {
         }
     }
 
-
+	/**
+     * Alterna entre pausa y juego. Solo para local.
+     */
+    private togglePause(session: GameSession) {
+        if (session.gameState.status === GAME_STATUS.PLAYING) {
+            // PAUSAR
+            this.stopGameLoop(session);
+            session.gameState.status = GAME_STATUS.PAUSED;
+            this.broadcastState(session); // Notificar UI para mostrar overlay "PAUSED"
+        } else if (session.gameState.status === GAME_STATUS.PAUSED) {
+            // REANUDAR
+            this.startGameLoop(session); // Esto setea PLAYING y arranca el timer
+        }
+	}
+	
 	
 
     // -------------------------------------------------------------------
