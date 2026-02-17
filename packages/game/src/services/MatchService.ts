@@ -36,7 +36,8 @@ export class MatchService {
 	//===========NUEVO MANAGER GENERAL==========
 	/**
      * handleCreateMatch
-     * ORQUESTADOR CENTRAL: Recibe la petición bruta y decide qué hacer.
+     * ORQUESTADOR CENTRAL: Recibe la petición bruta y decide qué hacer 
+	 * segun sea una partida publica, local o privada.
      * Reemplaza la lógica de decisión que antes tenía el Controller.
      */
     async handleCreateMatch(userId: string, body: MatchSchemas.CreateMatchBodyType) {

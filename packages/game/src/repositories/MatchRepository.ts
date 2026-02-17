@@ -117,7 +117,7 @@ export class MatchRepository {
 	/**
      * resetZombieMatches
      * Se llama SOLO al inicio del servidor.
-     * Marca como 'aborted' todas las partidas que quedaron 'active' 
+     * Marca como 'expired' todas las partidas que quedaron 'active' 
      * tras un reinicio inesperado.
      */
     async resetZombieMatches(): Promise<number> {
@@ -127,7 +127,7 @@ export class MatchRepository {
                  finished_at = ? 
              WHERE status = ?`
         );
-		const result = stmt.run('aborted', Date.now(), 'active');
+		const result = stmt.run('expired', Date.now(), 'active');
 		
         // Retorna cuantas filas afectó
         return result.changes; 
