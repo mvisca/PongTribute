@@ -74,13 +74,10 @@ export class CommsService implements IEventService {
 			]);
 			this.logger.log('[Comms] Clientes Redis conectados');
 			
-			// Suscribirse solo a canales que tienen handler registrado
-			// Se auto-configura: al añadir un handler al array EVENT_HANDLERS,
-			// automáticamente se suscribe a sus canales
-			const channelsToSubscribe = EVENT_HANDLERS.flatMap(h => h.channels);
-
-			await this.redisSub.subscribe(...channelsToSubscribe);
-			this.logger.log(`[Comms] Suscrito a ${channelsToSubscribe.length} canales:\n${channelsToSubscribe.join(',\n')}\n`);
+			// Suscribirse a canale de applicacion.
+			// Se filtratá por eventType
+			await this.redisSub.subscribe(TRANSCENDENCE_EVENTS.EVENTS);
+			this.logger.log(`[Comms] Suscrito a ${TRANSCENDENCE_EVENTS.EVENTS}\n`);
 			
 			// Listener de mensajes Redis
 			this.redisSub.on('message', (channel, message) => {
@@ -225,27 +222,29 @@ export class CommsService implements IEventService {
 	// ==========================================================================
 	
 	private async handleRedisMessage(
-		channel: any, // TODO Type correcto
+		channel: string, // TODO actualmente no se usa, borrarlo=
 		messageStr: string
 	): Promise<void> {
 		try {
 			// Parse con el tipo SystemEvent definido en shared
-			const event = JSON.parse(messageStr); // TODO agregar type assertion
+			const event = JSON.parse(messageStr) as TranscendenceEventsTypes.SystemEvent;
 			
-			this.logger.log(`[Comms] Evento Redis recibido: ${event.type} (Source: ${event.source})`);
+			if (!event?.type) return;
+
+			this.logger.log(`[Comms] Evento recibido: ${event.type}`);
 			
 			// Buscar el handler adecuado en el array de handlers importado
 			// Nota: Esto asume que tienes implementado el patrón Strategy en ./events/index.ts
-			const handler = EVENT_HANDLERS.find(h => h.channels.includes(channel));
+			const handler = EVENT_HANDLERS.find(h => h.eventTypes.includes(event.type));
 			
 			if (handler) {
-				await handler.handle(event, this);
+				await handler.handle(event, this); // Se pasa el evento y el CommsService al handler
 			} else {
-				this.logger.warn(`[Comms] No hay handler registrado para el canal: ${channel}`);
+				this.logger.warn(`[Comms] No hay handler registrado para el canal: ${event.type}`);
 			}
 			
 		} catch (err) {
-			this.logger.error(`[Comms] Error procesando mensaje Redis en ${channel}:`, err);
+			this.logger.error(`[Comms] Error procesando mensaje Redis}:`, err);
 		}
 	}
 	

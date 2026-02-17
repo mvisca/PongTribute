@@ -1,9 +1,17 @@
 import bcrypt from 'bcryptjs';
-import { UserTypes, Utils, SharedErrors, AuthTypes, TRANSCENDENCE_EVENTS } from '@transcendence/shared';
-import { IUserRepository, SQLiteUserRepository, UserEnv, UserMapper } from '../index.js';
+import {
+	UserTypes, 
+	Utils, 
+	SharedErrors,
+	TRANSCENDENCE_EVENTS
+} from '@transcendence/shared';
+import { 
+	IUserRepository,
+	SQLiteUserRepository,
+	UserEnv,
+	UserMapper
+} from '../index.js';
 import { redisClient } from '../app.js'; 
-import { TRANSCENDENCE_EVENTS } from '@transcendence/shared';
-   
 
 export class UserService {
 	private userRepo: IUserRepository;

@@ -13,9 +13,10 @@ type UserEvent = TranscendenceEventsTypes.UserLoginEvent | TranscendenceEventsTy
 
 export class UserEventHandler implements CommsEventHandler {
 
-	channels = [
+	eventTypes = [
 		TRANSCENDENCE_EVENTS.USER_LOGIN,
-		TRANSCENDENCE_EVENTS.USER_LOGOUT	
+		TRANSCENDENCE_EVENTS.USER_LOGOUT
+	
 	];
 
 	async handle(

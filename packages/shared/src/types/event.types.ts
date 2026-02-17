@@ -333,14 +333,6 @@ export namespace WebSocketEventsTypes {
 		};
 	}
 
-	export interface GameUpdate extends EventsTypes.BaseEvent {
-		type: typeof WEBSOCKET_EVENTS.GAME_UPDATE;
-		payload: {
-			matchId: string;
-			gameState: GameState;
-		};
-	}
-
 	// ── Reconexión ────────────────────────────────────────────────────────────
 
 	export interface GamePaused extends EventsTypes.BaseEvent {
@@ -389,7 +381,7 @@ export namespace WebSocketEventsTypes {
 		| JoinedMatch
 		| GameStart
 		| GameOver
-		| GameUpdate
+		| GameUpdateMessage
 		| GamePaused
 		| GameResumed
 		| GameOpponentDisconnected

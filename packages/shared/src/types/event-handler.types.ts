@@ -15,6 +15,6 @@ export interface IEventService {
  * TService es el tipo concreto del servicio (ej: CommsService en comms).
  */
 export interface EventHandler<TService extends IEventService = IEventService> {
-	channels: string[];
+	eventTypes: string[];
 	handle(event: EventsTypes.BaseEvent, service: TService): Promise<void>;
 }

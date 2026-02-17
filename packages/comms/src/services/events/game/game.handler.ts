@@ -9,7 +9,7 @@ import {
 } from '@transcendence/shared';
 
 export class GameEventHandler implements CommsEventHandler {
-	channels = [TRANSCENDENCE_EVENTS.GAME_UPDATE];
+	eventTypes = [ TRANSCENDENCE_EVENTS.GAME_UPDATE ];
 	
 	async handle(
 		event: EventsTypes.BaseEvent,

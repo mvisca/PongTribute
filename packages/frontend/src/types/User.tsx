@@ -6,5 +6,6 @@ export type User =
   avatar?: string;  
   status?: "online" | "offline";
   gamesPlayed?: number;
+  has2FAEnabled?: boolean;
 };
 

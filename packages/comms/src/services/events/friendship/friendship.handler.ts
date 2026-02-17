@@ -15,10 +15,10 @@ type FriendshipEvent =
 
 export class FriendshipEventHandler implements CommsEventHandler {
 	
-	channels = [
+	eventTypes = [
 		TRANSCENDENCE_EVENTS.FRIEND_REQUEST,
 		TRANSCENDENCE_EVENTS.FRIEND_ACCEPT,
-		TRANSCENDENCE_EVENTS.FRIEND_REMOVE,
+		TRANSCENDENCE_EVENTS.FRIEND_REMOVE
 	];
 	
 	async handle(

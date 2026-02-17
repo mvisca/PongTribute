@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { User } from "../types/User";
 
-const [avatar, setAvatar] = useState(user.avatar ?? "👤");
+
 
 type Props = {
   user: User;
@@ -10,6 +10,7 @@ type Props = {
 };
 
 export function EditProfile({ user, onSave, onCancel }: Props) {
+  const [avatar, setAvatar] = useState(user.avatar ?? "👤");
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
 //  const [password, setPassword] = useState(user.password);
