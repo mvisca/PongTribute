@@ -22,7 +22,9 @@ import {
 interface GameSession {
     matchId: string;
     player1Id: string;
-    player2Id: string;
+	player2Id: string;
+	player1Name?: string; 
+    player2Name?: string;
     socketP1: WebSocket | null;
     socketP2: WebSocket | null;
     gameState: GameState;
@@ -128,6 +130,14 @@ export class GameService {
         } else {
             session.socketP2 = socket;
 		}
+		
+		// ENVIAR ESTADO INICIAL COMPLETO (SNAPSHOT)
+        // Esto asegura que el cliente tenga la 'config' (canvas size, etc) antes de empezar a recibir parches.
+        const initialPayload = {
+            event: SOCKET_EVENTS.GAME_UPDATE, // O podrías crear un evento 'GAME_INIT'
+            data: session.gameState // <--- AQUÍ va el objeto COMPLETO con config
+        };
+		socket.send(JSON.stringify(initialPayload));
 		
         // C. GESTIÓN DE ESTADO Y ARRANQUE
 		if (session.gameState.status === GAME_STATUS.PLAYING) {
@@ -449,56 +459,7 @@ export class GameService {
         };
     }
 
-	/**
-     * Procesa los inputs del usuario (teclas) y actualiza la velocidad de las palas.
-     */
-    // public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
-    //     const session = this.activeMatches.get(matchId);
-    //     if (!session || session.gameState.status !== GAME_STATUS.PLAYING) return;
-
-    //     let payload: GameInputPayload;
-    //     try { payload = JSON.parse(message.toString()); } catch { return; }
-
-	// 	let paddle: PaddleState;
-
-	// 	// --- SELECCIÓN DE PALA SEGURA---
-	// 	if (session.isLocal) {
-	// 		// MODO LOCAL: El payload dicta qué pala se mueve ('left' o 'right')
-	// 		// El front enviará playerSide='right' cuando use las flechas
-	// 		if (payload.playerSide === 'right') {
-	// 			paddle = session.gameState.paddleRight;
-	// 		} else {
-	// 			paddle = session.gameState.paddleLeft; // Default left/W/S
-	// 		}
-			
-	// 	} else {
-	// 		// MODO ONLINE: El ID del usuario dicta qué pala se mueve (Seguridad)
-    //         const isP1 = session.player1Id === userId;
-    //         paddle = isP1 ? session.gameState.paddleLeft : session.gameState.paddleRight;
-	// 	}
-		
-    //     const { config } = session.gameState; // Obtenemos la config de la sesión
-    //     const speed = config.paddleSpeed;
-
-	// 	// Aplicar movimiento o física
-    //     if (payload.action === 'STOP') {
-    //          if (!config.hasInertia) paddle.dy = 0;
-    //     }
-    //     else if (payload.action === 'MOVE_UP') {
-    //         if (config.hasInertia) {
-    //             paddle.dy = -speed;
-    //         } else {
-    //             paddle.y = Math.max(0, paddle.y - speed);
-    //         }
-    //     }
-    //     else if (payload.action === 'MOVE_DOWN') {
-    //          if (config.hasInertia) {
-    //             paddle.dy = speed;
-    //         } else {
-    //             paddle.y = Math.min(config.height - config.paddleHeight, paddle.y + speed);
-    //         }
-    //     }
-    // }
+	
 
 	public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
         const session = this.activeMatches.get(matchId);
@@ -595,32 +556,39 @@ export class GameService {
 		// Detener loop
 		this.stopGameLoop(session);
 			
-			session.gameState.status = GAME_STATUS.FINISHED;
-			session.gameState.winnerId = winnerId;
+		 // Limpiar timeout de desconexión si existía
+		const timeout = this.disconnectTimeouts.get(session.matchId);
+		if (timeout) {
+			clearTimeout(timeout);
+			this.disconnectTimeouts.delete(session.matchId);
+		}
 
-			// Persistencia asíncrona (si no es local)
-			if (!session.isLocal) {
-				this.matchRepo.finishMatch(
-					session.matchId,
-					winnerId,
-					session.gameState.paddleLeft.score,
-					session.gameState.paddleRight.score,
-					Date.now()
-				).catch(e => console.error(e));
-			}
+		session.gameState.status = GAME_STATUS.FINISHED;
+		session.gameState.winnerId = winnerId;
+
+		// Persistencia asíncrona (si no es local)
+		if (!session.isLocal) {
+			this.matchRepo.finishMatch(
+				session.matchId,
+				winnerId,
+				session.gameState.paddleLeft.score,
+				session.gameState.paddleRight.score,
+				Date.now()
+			).catch(e => console.error(e));
+		}
 		
 		// Notificar clientes
-        const endMsg = JSON.stringify({
-            event: SOCKET_EVENTS.GAME_OVER,
-            data: { winnerId, reason: 'SCORE_LIMIT_REACHED' }
-        });
+		const endMsg = JSON.stringify({
+			event: SOCKET_EVENTS.GAME_OVER,
+			data: { winnerId, reason: 'SCORE_LIMIT_REACHED' }
+		});
 
-        session.socketP1?.send(endMsg);
+		session.socketP1?.send(endMsg);
 		session.socketP2?.send(endMsg);
 		
 		//Limpieza final de memoria
-        this.activeMatches.delete(session.matchId);
-    }
+		this.activeMatches.delete(session.matchId);
+	}
 
 	/**
      * Finaliza la partida por abandono (Desconexión prolongada).
@@ -656,6 +624,8 @@ export class GameService {
 		this.activeMatches.delete(matchId);
     }
 
+
+
 	/**
      * Emite el estado actual del juego a ambos jugadores.
      * Enviamos solo los datos dinámicos (sin config) para ahorrar ancho de banda.
@@ -682,5 +652,27 @@ export class GameService {
             if (session.player1Id === userId || session.player2Id === userId) return matchId;
         }
         return undefined;
+	}
+
+	/**
+     * Actualiza el nombre de un usuario en una partida activa (Memoria).
+     */
+    public updatePlayerNameInActiveMatch(userId: string, newName: string): void {
+        // Usamos tu propio helper para buscar la partida
+        const matchId = this.findMatchIdByUserId(userId);
+        
+        if (!matchId) return; // No está jugando, solo actualizamos DB (MatchService se encarga)
+
+        const session = this.activeMatches.get(matchId);
+        if (!session) return;
+
+        // Actualizamos la referencia en memoria
+        if (session.player1Id === userId) {
+            session.player1Name = newName;
+            console.log(`✨ [GameService] Memory updated: Player 1 -> ${newName}`);
+        } else if (session.player2Id === userId) {
+            session.player2Name = newName;
+            console.log(`✨ [GameService] Memory updated: Player 2 -> ${newName}`);
+        }
     }
 }

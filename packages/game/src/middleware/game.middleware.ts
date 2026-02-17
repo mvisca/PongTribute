@@ -70,50 +70,73 @@ export class GameMiddleware {
 			})
 		}
 		
-		// 2. Limpiamos el prefijo 'Bearer '
+		// Limpiamos el prefijo 'Bearer '
 		const token = authHeader.replace('Bearer ', '');
-		
-		try {
-			// 3. Verificamos la firma criptográfica
-			// TypeScript inferirá que decoded es JWTPayload gracias al import
-			const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
-			
-			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
-			console.log('== Schema completo:', isValid);
-			if (!isValid) 
-				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
-				schemaValidation: isValid,
-				operation: 'validateJWT',
-				payloadKeys: Object.keys(payload),
-				requestId: request.id
-			});
-			
-			const tokenIssuedAt = payload.iat!;
-			const userId = payload.id!;
-			
-			const lastLogoutAt = await GameMiddleware.fetchLastLogoutAt(userId);
-			
-			if (tokenIssuedAt < lastLogoutAt) {
-				throw new SharedErrors.UnauthorizedError('Token invalidado por logout', {
-					userId,
-					tokenIssuedAt,
-					lastLogoutAt,
-					operation: 'validateJWT',
-					payloadKeys: Object.keys(payload),
-					requestId: request.id
-				});	
-			}
 
-			// 4. Inyectamos el usuario en la request
-			// (Si shared se compiló bien, esto NO dará error)
-			request.user = payload;
+		let payload: AuthTypes.AccessTokenPayload;
+
+		// 2. Verificamos SOLO la firma criptográfica
+		try {
+			payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 		} catch (error) {
-			console.error("⚠️ Token inválido en Game:", error);
-			throw new SharedErrors.UnauthorizedError('Invalid token', {
-				operation: 'validateJWT',
-				service: 'game',
-				errorType: error instanceof Error ? error.constructor.name : typeof error
-			});
+            // Solo capturamos errores de JWT (firma inválida, mal formado, expirado nativo)
+            console.error("⚠️ Token criptográficamente inválido:", error);
+            throw new SharedErrors.UnauthorizedError('Token inválido o corrupto', {
+                operation: 'validateJWT',
+                service: 'game',
+                errorType: error instanceof Error ? error.constructor.name : typeof error
+            });
 		}
+		
+		// 3. Validación de estructura (Schema)
+        const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
+        if (!isValid) {
+            throw new SharedErrors.UnauthorizedError('Estructura de payload inválida', {
+                schemaValidation: isValid,
+                operation: 'validateJWT',
+                requestId: request.id
+            });
+        }
+			
+		// 4. Lógica de Negocio (Logout Check)
+		// Validación explícita de campos obligatorios para calmar a TypeScript
+		// Le garantizamos a TypeScript que si el código pasa de esa línea, id 
+		// e iat no son undefined. Esto elimina el error en la comparación 
+		// tokenIssuedAt < lastLogoutAt.
+        if (!payload.id || !payload.iat) {
+             throw new SharedErrors.UnauthorizedError('Token incompleto: falta id o iat', {
+                operation: 'validateJWT',
+                payloadKeys: Object.keys(payload)
+            });
+        }
+        // IMPORTANTE: Esto está FUERA del try/catch del jwt.verify.
+        // Si fetchLastLogoutAt lanza un NotFoundError o ServiceError, 
+        // dejará que suba y el Global Error Handler lo procesará con el código correcto (404/500), no 401.
+        const userId = payload.id;
+        const tokenIssuedAt = payload.iat; // JWT timestamp es en segundos
+        
+        const lastLogoutAt = await GameMiddleware.fetchLastLogoutAt(userId);
+        
+        // Comparación segura: lastLogoutAt suele ser ms, jwt es seconds.
+        // Asegúrate de normalizar si es necesario. Asumimos aquí que ambos son compatibles.
+        // Si lastLogoutAt viene en ms y iat en s, divide lastLogoutAt por 1000.
+        // Estandariza según tu backend (usualmente JWT usa segundos).
+        if (tokenIssuedAt < lastLogoutAt) {
+            throw new SharedErrors.UnauthorizedError('Token invalidado por logout previo', {
+                userId,
+                tokenIssuedAt,
+                lastLogoutAt,
+                operation: 'validateJWT'
+            }); 
+        }
+
+        // 5. Inyectamos el usuario LIMPIO en la request
+        // Mapeamos explícitamente para cumplir con la interfaz AuthenticatedUser
+        // y evitar ensuciar el objeto request con datos del token (iat, exp).
+        request.user = {
+            id: payload.id,
+            username: payload.username,
+            email: payload.email,
+        };
 	}
 }

@@ -21,7 +21,13 @@ import { getDatabase } from '../connection.js';
  */
 export class MatchRepository {
     // Instancia de better-sqlite3 lista para usar
-    private db = getDatabase();
+	// private db = getDatabase();
+    private db: ReturnType<typeof getDatabase>;
+    
+    constructor(db: ReturnType<typeof getDatabase>) {
+        this.db = db;
+    }
+
 
     // ========================================================================
     // ESCRITURA (COMMANDS)

@@ -13,7 +13,7 @@ import { MatchService } from '../services/MatchService.js';
 import { MatchEventSubscriber } from '../subscribers/MatchEventSubscriber.js';
 import { GameEnv } from '../config.js';
 import { healthRoutes } from './health.routes.js';
-
+import { getDatabase } from '../connection.js';
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
 
@@ -30,8 +30,10 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // Centralizamos la creación de instancias aquí para facilitar el testing.
 	// Si quisiéramos testear, podríamos pasar Repositorios "Mock" (falsos).
 
+	// 1. Obtener la instancia de DB primero (asegurando orden de ejecución)
+	const db = getDatabase();
 	// Repositorio
-	const matchRepo = new MatchRepository();
+	const matchRepo = new MatchRepository(db);
 
 	// Servicio de Matchmaking (Lógica de negocio + Redis + SQL)
     // Inyectamos repo y redisClient

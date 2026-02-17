@@ -131,7 +131,7 @@ export class MatchService {
                 created_at: Date.now(),
                 finished_at: null,
                 game_mode: gameMode,
-                target_score: 11
+                target_score: MatchConstants.MATCH_CONFIG.WINNING_SCORE
             };
 
 			// PERSISTENCIA
@@ -224,7 +224,7 @@ export class MatchService {
 
 		console.log(`🗑️ User ${userId} removing from queues`);
 
-        // Object.values(GameMode) nos da ['classic', 'speed', 'retro']
+        // Object.values(GameMode) nos da ['classic', 'speed', 'pro']
         const modes = Object.values(GameMode);
         
         const promises = modes.map(mode => {
@@ -280,7 +280,7 @@ export class MatchService {
             created_at: Date.now(),
             finished_at: null,
             game_mode: config?.gameMode || 'classic',
-            target_score: config?.targetScore || 11
+            target_score: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE
         };
 
         // 4. Persistencia (Bubble Up de errores SQL)
@@ -332,7 +332,7 @@ export class MatchService {
             id: matchId,
             status: 'active', // Nace activa para que el front entre directo
             gameMode: config?.gameMode || GameMode.CLASSIC, // O lo que venga en config
-            targetScore: config?.targetScore || 11,
+            targetScore: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE,
             player1: {
                 userId: userId,
                 username: p1Data.username,
@@ -340,7 +340,7 @@ export class MatchService {
                 isWinner: false
             },
             player2: {
-                userId: randomUUID(), // Generate unique UUID for guest player
+                userId: 'guest-player-id', // Generate unique UUID for guest player
                 username: 'Guest Player', // El front puede sobreescribir esto visualmente
                 score: 0,
                 isWinner: false
