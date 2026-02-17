@@ -96,14 +96,19 @@ export class FriendshipEventHandler implements CommsEventHandler {
 	): Promise<void> {
 		console.log(`[FriendshipHandler] Removida por ${event.payload.removerId} a ${event.payload.removedId}`);
 
-		const wsMessage = {
+		const wsMessage: WebSocketEventsTypes.FriendRemoved = {
 			type: WEBSOCKET_EVENTS.FRIEND_REMOVE,
 			timestamp: event.timestamp,
 			payload: {
 				removerId: event.payload.removerId,
+				removedId: event.payload.removedId,
 			},
 		};
 
-		commsService.broadcastToUsers([event.payload.removedId], wsMessage);
+		await commsService.broadcastToUsers(
+			[event.payload.removedId],
+			wsMessage
+		); // TODO este con await y los otros llamados a broadcast no?
 	}
+
 }

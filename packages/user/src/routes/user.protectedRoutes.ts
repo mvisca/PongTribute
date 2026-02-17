@@ -78,4 +78,9 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 		schema: FriendshipSchemas.UpdateFriendshipSchema,
 		handler: friendshipController.updateFriendship.bind(friendshipController)
 	});
+
+	app.delete('/friendships/:friendId', {
+		schema: FriendshipSchemas.DeleteFriendshipSchema,
+		handler: friendshipController.deleteFriendship.bind(friendshipController)
+	});
 }

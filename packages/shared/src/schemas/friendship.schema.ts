@@ -86,6 +86,20 @@ export namespace FriendshipSchemas {
 		security: [{ bearerAuth: [] }]
 	};
 
+	export const DeleteFriendshipParams = Type.Object({
+		friendId: UuidField
+	});
+
+	export const DeleteFriendshipSchema = {
+		description: 'Elimina una amista activa entre el usuario autenticado y otro usuario',
+		tags: ['Friendship'],
+		params: DeleteFriendshipParams,
+		response: {
+			204: Type.Null()
+		}, // TODO Faltan otros tipos de response. verificar que ahora se esta validando de forma estricta la respuesta que se da
+		security: [{ bearerAuth: [] }] // TODO Por qué de este modo, no había usado antes esto
+	}
+
 	// Alias temporal para mantener compatibilidad con capas aún no migradas
 	export const AcceptFriendshipParams = UpdateFriendshipParams;
 	export const AcceptFriendshipBody = UpdateFriendshipBody;

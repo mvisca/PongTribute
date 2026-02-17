@@ -80,12 +80,24 @@ export class FriendshipController {
 	}
 
 	private async publishFriendRemoved(
+		removerId: FriendshipTypes.UserTypes.UserId,
+		removedId: FriendshipTypes.UserTypes.UserId
+	): Promise<void> {
+		if (!redisClient) return;
 
-	) {
-		// TODO evaluar implmementación, sería neceario para que front actualice lista de amigos del usuario
+		const event: TranscendenceEventsTypes.FriendRemovedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REMOVE,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				removerId,
+				removedId,
+			},
+		};
+
+		await redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		console.log(`[FriendshipController] FRIEND_REMOVE publicado: ${removerId} elimino ${removedId}`);
 	}
-
-
 
 	// ============================================================================
 	// CREATE FRIENDSHIP
@@ -172,5 +184,33 @@ export class FriendshipController {
 			return SharedErrors.handleError(err, reply);
 		}
 	}
+
+	// ============================================================================
+	// DELETE FRIENDSHIP
+	// ============================================================================
+	async deleteFriendship(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise <void> {
+		try {
+			const user = request.user as AuthTypes.AccessTokenPayload;
+
+			if (!user.id) {
+				reply.code(401).send({ error: 'Unauthorized', message: 'Usuario no autenticado'});
+			}
+
+			const { friendId } = request.params as FriendshipTypes.DeleteFriendshipParams;
+			await this.friendshipService.deleteFriendship(user.id, friendId);
+
+			// Notificar a ambos usuarios para actualizar lista de amigos
+			this.publishFriendRemoved(user.id, friendId)
+				.catch((err: Error) => console.error('[FriendshipController] Error publicando FRIEND_REMOVE:', err));
+
+			return reply.code(204).send();
+		} catch(err) {
+			return SharedErrors.handleError(err, reply);
+		}
+	}
+	
 }
 

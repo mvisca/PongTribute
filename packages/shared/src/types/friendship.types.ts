@@ -55,6 +55,11 @@ export type ListFriendshipsResponse = Static<typeof FriendshipSchemas.ListFriend
 export type UpdateFriendshipParams = Static<typeof FriendshipSchemas.UpdateFriendshipParams>;
 
 /**
+ * Params HTTP para identificar amistad a eliminar (param + id de user en JWT)
+ */
+export type DeleteFriendshipParams = Static<typeof FriendshipSchemas.DeleteFriendshipParams>;
+
+/**
  * Body HTTP para actualizar (aceptar/rechazar) una amistad pendiente
  */
 export type UpdateFriendshipBody = Static<typeof FriendshipSchemas.UpdateFriendshipBody>;

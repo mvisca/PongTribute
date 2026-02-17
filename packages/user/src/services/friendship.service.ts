@@ -121,5 +121,32 @@ export class FriendshipService {
 
 		return await this.friendshipRepo.findByUser(userId);
 	}
+
+	async deleteFriendship(
+		currentUserId: UserTypes.UserId,
+		friendId: UserTypes.UserId
+	): Promise<void> {
+		const [ sortedUserId, sortedFriendId ] = this.sortIds(currentUserId, friendId);
+		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
+	
+		if (!friendship) {
+			throw new SharedErrors.NotFoundError(`No existe la amistad`, 'friendship', {
+				currentUserId,
+				friendId,
+				operation: 'deleteFriendship'
+			});
+		}
+
+		if (friendship.status !== FRIENDSHIP_STATUS.ACCEPTED) {
+			throw new SharedErrors.ConflictError('Solo se pueden eliminar amistades activas', 'friendship', {
+				currentUserId,
+				friendId,
+				operation: 'deleteFriendship',
+				currentStatus: friendship.status
+			});
+		}
+
+		await this.friendshipRepo.delete(sortedUserId, sortedFriendId);
+	}
 }
 
