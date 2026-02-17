@@ -8,13 +8,8 @@ import {
 	SharedErrors,
 	GameMode,
 	MatchConstants,
-	REDIS_CHANNELS,
-	MatchFoundEvent,
-	MatchInviteEvent,
-	MatchStartedEvent,
-	MatchRejectedEvent,
-	MatchCancelledEvent,
-	MatchQueueTimeoutEvent
+	TRANSCENDENCE_EVENTS,
+	TranscendenceEventsTypes
 } from '@transcendence/shared';
 
 
@@ -88,7 +83,7 @@ export class MatchService {
 				created_at: Date.now(),
 				finished_at: null,
 				game_mode: gameMode,
-				target_score: 11
+				target_score: 11 // TODO valor harcodeado, integrar constantes de game
 			};
 
 			// Persistencia Bubble-Up
@@ -104,8 +99,8 @@ export class MatchService {
             // Publicamos evento para que el Socket del oponente se entere
 			
 			// Defino el evento con tipado estricto. Si falta 'timestamp' o 'payload' está mal, falla.
-			const event: MatchFoundEvent = {
-				type: REDIS_CHANNELS.MATCH_FOUND, // Usa la constante ('match:found')
+			const event: TranscendenceEventsTypes.MatchFoundEvent = {
+				type: TRANSCENDENCE_EVENTS.MATCH_FOUND, // Usa la constante ('match:found')
 				timestamp: Date.now(),
 				source: 'game-service', // Opcional, pero útil para debugar
 				payload: {  // al definir este obj, TypeScrpit busca las variables en el ambito local.
@@ -115,7 +110,7 @@ export class MatchService {
 				}
 			};
 			// Publicamos en el CANAL UNICO de eventos (definido en shared)
-			await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+			await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
 
             return { outcome: 'match_found', match: matchDomain };
 		
@@ -161,8 +156,8 @@ export class MatchService {
                     console.log(`⏱️ Timeout user ${userId} from ${mode}`);
                     
                     // Solo notificamos si confirmamos el borrado, para evitar confundir al cliente.
-					const event: MatchQueueTimeoutEvent = {
-						type: REDIS_CHANNELS.MATCH_QUEUE_TIMEOUT,
+					const event: TranscendenceEventsTypes.MatchQueueTimeoutEvent = {
+						type: TRANSCENDENCE_EVENTS.MATCH_QUEUE_TIMEOUT,
 						timestamp: Date.now(),
 						source: 'game-service',
 						payload: {
@@ -171,7 +166,7 @@ export class MatchService {
 						}
 					};
 					// Publicar en canal global
-                    await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+                    await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
                 }
             }
         }
@@ -261,8 +256,8 @@ export class MatchService {
             let matchDomain = MatchMapper.toDomain(newMatch);
                 
             // 6. Notificar invitación
-			const event: MatchInviteEvent = {
-                type: REDIS_CHANNELS.MATCH_INVITE,
+			const event: TranscendenceEventsTypes.MatchInviteEvent = {
+                type: TRANSCENDENCE_EVENTS.MATCH_INVITE,
                 timestamp: Date.now(),
                 source: 'game-service',
                 payload: {
@@ -273,7 +268,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
 
             return matchDomain;
 
@@ -406,8 +401,8 @@ export class MatchService {
 			}
 			
 			// 5. Notificar inicio de partida (Redis)
-			const event: MatchStartedEvent = {
-                type: REDIS_CHANNELS.MATCH_STARTED,
+			const event: TranscendenceEventsTypes.MatchStartedEvent = {
+                type: TRANSCENDENCE_EVENTS.MATCH_STARTED,
                 timestamp: Date.now(),
                 source: 'game-service',
                 payload: {
@@ -417,7 +412,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
 
 			return matchDomain;
 		} catch (error) {
@@ -458,8 +453,8 @@ export class MatchService {
 			matchDomain.status = MatchConstants.MATCH_STATUS.REJECTED; // Actualizacion manual en memoria
 
 			// 5. Notificar rechazo (Redis)
-			const event: MatchRejectedEvent = {
-                type: REDIS_CHANNELS.MATCH_REJECTED,
+			const event: TranscendenceEventsTypes.MatchRejectedEvent = {
+                type: TRANSCENDENCE_EVENTS.MATCH_REJECTED,
                 timestamp: Date.now(),
                 source: 'game-service',
                 payload: {
@@ -469,7 +464,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
 
 			return matchDomain;
 		} catch (error) {
@@ -516,8 +511,8 @@ export class MatchService {
 			const targetId: string = match.player2_id;
 			
             // 3. Construir evento
-            const event: MatchCancelledEvent = {
-                type: REDIS_CHANNELS.MATCH_CANCELLED,
+            const event: TranscendenceEventsTypes.MatchCancelledEvent = {
+                type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
                 timestamp: Date.now(),
                 source: 'game-service',
                 payload: {
@@ -529,7 +524,7 @@ export class MatchService {
             };
 
             // 4. Publicamos el evento usando la instancia inyectada
-            return this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+            return this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
         });
 
         // Ejecutamos todas las notificaciones en paralelo
@@ -586,8 +581,8 @@ export class MatchService {
 
         // 4. Notificar al invitado (Player 2)
         // Es importante para que su interfaz se limpie si tenía el popup abierto.
-		const event: MatchCancelledEvent = {
-                type: REDIS_CHANNELS.MATCH_CANCELLED,
+		const event: TranscendenceEventsTypes.MatchCancelledEvent = {
+                type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
                 timestamp: Date.now(),
                 source: 'game-service',
                 payload: {
@@ -598,7 +593,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
 
     }
 

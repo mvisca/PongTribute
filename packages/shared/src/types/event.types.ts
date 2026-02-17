@@ -1,16 +1,16 @@
-import { REDIS_CHANNELS } from '../constants/event.constants.js';
+// packages/shared/src/types/event.types.ts
+
+import { TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS } from '../constants/event.constants.js';
 import { GameMode } from '../schemas/match.schema.js';
 import type { GameState } from './game.types.js';
+import { UserTypes } from './user.types.js';
 
-// 1. Interfaz Base para todos los eventos
-export interface BaseEvent {
-	type: string;		// Qué publica
-	timestamp: number;	// Cuándo publica
-	source?: string;	// Quién publica
-}
-
-// 2. Payloads Reutilizables
+// ============================================================================
+// TIPOS REUTILIZABLES
+// ============================================================================
+ 
 export interface UserInfoPayload {
+	userId: UserTypes.UserId;
 	username: string;
 	avatar: string;
 	email: string;
@@ -18,221 +18,380 @@ export interface UserInfoPayload {
 	isOnline: boolean;
 }
 
-//---------------------------------------------
-// EVENTOS DE USER
-//---------------------------------------------
+// ============================================================================
+// BASE
+// ============================================================================
 
-// LOGIN
-export interface UserLoginEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.USER_LOGIN;
-	targetUserId: string; // ID del usuario que hizo login
-	payload: UserInfoPayload;
+export namespace EventsTypes {
+
+	export interface BaseEvent {
+		type: string;
+		timestamp: number;
+		source?: string;
+	}
 }
 
-// LOGOUT
-export interface UserLogoutEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.USER_LOGOUT;
-	targetUserId: string; // ID del usuario que hizo logout
-	payload: UserInfoPayload;
-}
+// ============================================================================
+// TRANSCENDENCE_EVENTS — Redis (Backend → Backend)
+// ============================================================================
 
-// PROFILE UPDATED (Basado en las constants)
-export interface UserProfileUpdatedEvent extends BaseEvent {
-    type: typeof REDIS_CHANNELS.USER_PROFILE_UPDATED;
-    targetUserId: string;
-    payload: UserInfoPayload;
-}
+export namespace TranscendenceEventsTypes {
 
-// USER DISCONNECTED
-export interface UserDisconnectedEvent extends BaseEvent {
-    type: typeof REDIS_CHANNELS.USER_DISCONNECTED;
-    targetUserId: string;
-    payload: UserInfoPayload;
-}
+	// ── User / Social presence ──────────────────────────────────────────────
 
-// ---------------------------------------------
-// EVENTOS DE MATCH (Match Events) servicio game
-// ---------------------------------------------
+	export interface UserLoginEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.USER_LOGIN;
+		targetUserId: UserTypes.UserId;
+		payload: UserInfoPayload;
+	}
 
-// MATCH_FOUND
-export interface MatchFoundEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.MATCH_FOUND; // Asegúrate de haber añadido esta constante en event.constants.ts
-	payload: {
-		matchId: string;     // ID único del emparejamiento
-		playerIds: string[]; // IDs de los usuarios emparejados
-		roomId: string;      // Sala de juego asignada
-	};
-}
+	export interface UserLogoutEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.USER_LOGOUT;
+		targetUserId: UserTypes.UserId;
+		payload: UserInfoPayload;
+	}
 
-// MATCH_QUEUE_TIMEOUT
-export interface MatchQueueTimeoutEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.MATCH_QUEUE_TIMEOUT;
-	payload: {
-		userId: string;
-		reason: string;
-	};
-}
+	export interface UserProfileUpdatedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED;
+		targetUserId: UserTypes.UserId;
+		payload: UserInfoPayload;
+	}
 
+	export interface UserDisconnectedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.USER_DISCONNECTED;
+		targetUserId: UserTypes.UserId;
+		payload: UserInfoPayload;
+	}
 
-// MATCH_INVITE (privada)
-export interface MatchInviteEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.MATCH_INVITE;
-	payload: {
+	// ── Friendship ──────────────────────────────────────────────────────────
+
+	export interface FriendRequestEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.FRIEND_REQUEST;
+		payload: {
+			senderId: UserTypes.UserId;
+			senderUsername: string;
+			senderAvatar: string;
+			receiverId: UserTypes.UserId;
+		};
+	}
+
+	export interface FriendAcceptedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.FRIEND_ACCEPT;
+		payload: {
+			acceptorId: UserTypes.UserId;
+			acceptorUsername: string;
+			acceptorAvatar: string;
+			requesterId: UserTypes.UserId;
+		};
+	}
+
+	export interface FriendRemovedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.FRIEND_REMOVE;
+		payload: {
+			removerId: UserTypes.UserId;
+			removedId: UserTypes.UserId;
+		};
+	}
+
+	// ── Match ───────────────────────────────────────────────────────────────
+
+	export interface MatchFoundEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_FOUND;
+		payload: {
+			matchId: string;
+			playerIds: string[];
+			roomId: string;
+		};
+	}
+
+	export interface MatchQueueTimeoutEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_QUEUE_TIMEOUT;
+		payload: {
+			userId: string;
+			reason: string;
+		};
+	}
+
+	export interface MatchInviteEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_INVITE;
+		payload: {
+			matchId: string;
+			inviterId: string;
+			inviteeId: string;
+			gameMode: GameMode;
+		};
+	}
+
+	export interface MatchStartedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_STARTED;
+		payload: {
+			matchId: string;
+			playerIds: string[];
+			roomId?: string;
+		};
+	}
+
+	export interface MatchRejectedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_REJECTED;
+		payload: {
+			matchId: string;
+			rejectorId: string;
+			inviterId: string;
+		};
+	}
+
+	export interface MatchCancelledEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_CANCELLED;
+		payload: {
+			matchId: string;
+			cancelledById: string;
+			notifiedUserId: string;
+			reason?: string;
+		};
+	}
+
+	// ── Game ────────────────────────────────────────────────────────────────
+
+	export interface GameUpdatePayload {
+		match: {
+			id: string;
+			status: 'pending' | 'active' | 'finished' | 'rejected' | 'expired';
+			player1: {
+				userId: string;
+				username: string;
+				score: number;
+				isWinner: boolean;
+			};
+			player2: {
+				userId: string;
+				username: string;
+				score: number;
+				isWinner: boolean;
+			};
+			winnerId: string | null;
+			gameMode: GameMode;
+			targetScore: number;
+			createdAt: string;
+			finishedAt?: string;
+		};
+		gameState: GameState;
+		updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
+		timestamp: number;
+	}
+
+	export interface GameUpdateEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.GAME_UPDATE;
 		matchId: string;
-		inviterId: string;   // Quién invita
-		inviteeId: string;   // A quién invita
-		gameMode: GameMode;
-	};
+		payload: GameUpdatePayload;
+	}
+
+	// ── Union ────────────────────────────────────────────────────────────────
+
+	export type SystemEvent =
+		| UserLoginEvent
+		| UserLogoutEvent
+		| UserProfileUpdatedEvent
+		| UserDisconnectedEvent
+		| MatchFoundEvent
+		| MatchQueueTimeoutEvent
+		| MatchInviteEvent
+		| MatchStartedEvent
+		| MatchRejectedEvent
+		| MatchCancelledEvent
+		| GameUpdateEvent
+		| FriendRequestEvent
+		| FriendAcceptedEvent
+		| FriendRemovedEvent;
 }
 
-// MATCH_STARTED
-// Partida Iniciada (Similar a MatchFound pero para privadas/generico)
-export interface MatchStartedEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.MATCH_STARTED;
-	payload: {
-		matchId: string;
-		playerIds: string[];
-		roomId?: string; // Opcional - puede no ser necesario
-	};
-}
+// ============================================================================
+// WEBSOCKET_EVENTS — WebSocket (Backend → Frontend)
+// Cada interfaz describe exactamente lo que llega al browser.
+// El frontend solo necesita este namespace para tipar los mensajes entrantes.
+// ============================================================================
 
-// MATCH_REJECTED
-export interface MatchRejectedEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.MATCH_REJECTED;
-	payload: {
-		matchId: string;
-		rejectorId: string;  // Usuario que rechazó la invitación
-		inviterId: string;   // Usuario que creó la invitación (para notificarle)
-	};
-}
+export namespace WebSocketEventsTypes {
 
-// MATCH_CANCELLED
-export interface MatchCancelledEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.MATCH_CANCELLED;
-	payload: {
-		matchId: string;
-		cancelledById: string;   // Usuario que canceló la partida
-		notifiedUserId: string;  // Usuario a quien notificar la cancelación
-		reason?: string;
-	};
-}
+	// ── Mensaje específico para GAME_UPDATE simplificado para frontend ───────
+	export interface GameUpdateMessage {
+		type: typeof WEBSOCKET_EVENTS.GAME_UPDATE;
+		timestamp: number;
+		payload: {
+			matchId: string;
+			gameState: GameState;
+			updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
+		};
+	}			// Omitir campos internos del match que el frontend no necesita
 
+	// ── Presencia social ─────────────────────────────────────────────────────
 
-//---------------------------------------------
-// EVENTOS DE GAME
-//---------------------------------------------
-
-/**
- * Payload completo para GameUpdateEvent.
- * Incluye toda la información necesaria para que consumidores (comms, frontend)
- * puedan actualizar su estado sin hacer requests adicionales a la base de datos.
- */
-export interface GameUpdatePayload {
-	// Match info completo (de BD) para evitar requests adicionales
-	match: {
-		id: string;
-		status: 'pending' | 'active' | 'finished' | 'rejected' | 'expired';
-		player1: {
+	export interface FriendOnline extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_ONLINE;
+		payload: {
 			userId: string;
 			username: string;
-			score: number;
-			isWinner: boolean;
+			avatar: string;
 		};
-		player2: {
+	}
+
+	export interface FriendOffline extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_OFFLINE;
+		payload: {
 			userId: string;
 			username: string;
-			score: number;
-			isWinner: boolean;
+			avatar: string;
 		};
-		winnerId: string | null;
-		gameMode: GameMode;
-		targetScore: number;
-		createdAt: string;
-		finishedAt?: string;
-	};
-	// Estado en tiempo real del juego (posiciones, velocidades, scores)
-	gameState: GameState;
-	// Discriminador para que handlers actúen según el tipo de cambio
-	updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
-	// Timestamp del update
-	timestamp: number;
+	}
+
+	// ── Notificaciones de amistad ───────────────────────────────────────────
+
+	export interface FriendRequest extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_REQUEST;
+		payload: {
+			senderId: UserTypes.UserId;
+			senderUsername: string;
+			senderAvatar: string;
+		};
+	}
+
+	export interface FriendAccepted extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_ACCEPT;
+		payload: {
+			acceptorId: UserTypes.UserId;
+			acceptorUsername: string;
+			acceptorAvatar: string;
+		};
+	}
+
+	export interface FriendRemoved extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_REMOVE;
+		payload: {
+			removerId: UserTypes.UserId;
+			removedId: UserTypes.UserId;
+		}
+	}
+
+	// ── Notificaciones de partida ───────────────────────────────────────────
+
+	export interface MatchInvite extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.MATCH_INVITE;
+		payload: {
+			matchId: string;
+			inviterId: string;
+			inviterUsername: string;
+			inviterAvatar: string;
+			gameMode: GameMode;
+		};
+	}
+
+	export interface MatchCancelled extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.MATCH_CANCELLED;
+		payload: {
+			matchId: string;
+			cancelledById: string;
+			reason?: string;
+		};
+	}
+
+	export interface MatchRejected extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.MATCH_REJECTED;
+		payload: {
+			matchId: string;
+			rejectorId: string;
+		};
+	}
+
+	// ── Sala de espera / Game ─────────────────────────────────────────────────
+
+	export interface JoinedMatch extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.JOINED_MATCH;
+		payload: {
+			matchId: string;
+			opponentId: string;
+			opponentUsername: string;
+			opponentAvatar: string;
+			gameMode: GameMode;
+		};
+	}
+
+	export interface GameStart extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_START;
+		payload: {
+			matchId: string;
+			gameState: GameState;
+		};
+	}
+
+	export interface GameOver extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_OVER;
+		payload: {
+			matchId: string;
+			winnerId: string;
+			player1Score: number;
+			player2Score: number;
+			reason?: 'normal' | 'opponent_disconnected' | 'timeout';
+		};
+	}
+
+	export interface GameUpdate extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_UPDATE;
+		payload: {
+			matchId: string;
+			gameState: GameState;
+		};
+	}
+
+	// ── Reconexión ────────────────────────────────────────────────────────────
+
+	export interface GamePaused extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_PAUSED;
+		payload: {
+			matchId: string;
+			reason?: string;
+		};
+	}
+
+	export interface GameResumed extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_RESUMED;
+		payload: {
+			matchId: string;
+		};
+	}
+
+	export interface GameOpponentDisconnected extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED;
+		payload: {
+			matchId: string;
+			opponentId: string;
+			waitSeconds: number;
+		};
+	}
+
+	export interface GameOpponentReconnected extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.GAME_OPPONENT_RECONNECTED;
+		payload: {
+			matchId: string;
+			opponentId: string;
+		};
+	}
+
+	// ── Union — todo lo que puede llegar al browser ───────────────────────────
+
+	export type AnyWsMessage =
+		| FriendOnline
+		| FriendOffline
+		| FriendRequest
+		| FriendAccepted
+		| FriendRemoved
+		| MatchInvite
+		| MatchCancelled
+		| MatchRejected
+		| JoinedMatch
+		| GameStart
+		| GameOver
+		| GameUpdate
+		| GamePaused
+		| GameResumed
+		| GameOpponentDisconnected
+		| GameOpponentReconnected;
 }
-
-export interface GameUpdateEvent extends BaseEvent {
-	type: typeof REDIS_CHANNELS.GAME_UPDATE;
-	matchId: string;
-	payload: GameUpdatePayload;
-}
-
-// ---------------------------------------------
-// UNION TYPE FINAL
-// ---------------------------------------------
-// Registro de eventos para que el sistema los reconozca.
-// Al añadirlo al Unión, cuando hagas un switch (event.type) en
-//  el Frontend o en otro servicio, TypeScript sabrá automáticamente
-//  que si el tipo es GAME_START, entonces seguro tienes acceso a payload.gameId.
-export type SystemEvent =
-	// User
-	| UserLoginEvent
-	| UserLogoutEvent
-	| UserProfileUpdatedEvent
-	| UserDisconnectedEvent
-	// Match
-	| MatchFoundEvent
-	| MatchQueueTimeoutEvent
-	| MatchInviteEvent
-	| MatchStartedEvent
-	| MatchRejectedEvent
-	| MatchCancelledEvent
-	// Game
-	| GameUpdateEvent;
-
-	
-
-
-/*
-ESTOS YA NO SON EVENTOS REDIS SINO DE SOCKET
-// ---------------------------------------------
-// EVENTOS DE JUEGO (Game Events)
-// ---------------------------------------------
-
-// GAME_START
-// Crea un "contrato". Cualquier objeto que sea un evento de 
-// inicio de juego debe tener timestamp (heredado de Base) y 
-// la estructura que definimos aquí.
-export interface GameStartEvent extends BaseEvent {
-	//Esto es MÁGICO en TypeScript. No permite cualquier string. 
-	// Obliga a que el campo type sea exactamente 'game:start'.
-	type: typeof REDIS_CHANNELS.GAME_START; // Vincula con la constante
-	// Define estrictamente qué datos viajan por Redis. 
-	// Si intentas enviar un evento de inicio sin gameId, 
-	// TypeScript te gritará (previene bugs).
-    payload: {
-        gameId: string;
-        playerIds: string[]; // IDs de los jugadores
-        config?: any;        // Configuración de la partida
-    };
-}
-
-// GAME_END
-export interface GameEndEvent extends BaseEvent {
-    type: typeof REDIS_CHANNELS.GAME_END;
-    payload: {
-        gameId: string;
-        winnerId: string;
-		// score: { [playerId: string]: number }; // Ej: { "user1": 10, "user2": 5 }
-		scores: Record<string, number>; // objeto donde las claves son strings (user IDs) y los valores son números (puntos)
-    };
-}
-*/
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,5 @@
  // EVENTOS INTERNOS (Backend a Backend vía Redis)
-export const REDIS_CHANNELS = {
+export const TRANSCENDENCE_EVENTS = {
 		
 	// Es el CANAL ÚNICO. Todos publican y escuchan aquí
 	EVENTS: 'transcendence:events',
@@ -29,7 +29,7 @@ export const REDIS_CHANNELS = {
 } as const;
 
 // EVENTOS DE CLIENTE (Backend a Frontend vía WebSocket)
-export const SOCKET_EVENTS = {
+export const WEBSOCKET_EVENTS = {
 
 	//Sala de espera
 	JOINED_MATCH: 'match:joined',
@@ -42,8 +42,18 @@ export const SOCKET_EVENTS = {
 	GAME_RESUMED: 'game:resumed',                   // El juego continua
 	GAME_OPPONENT_DISCONNECTED: 'game:opponent_disconnected', // Aviso específico: "Tu rival se ha ido, espera 15s"
 	GAME_OPPONENT_RECONNECTED: 'game:opponent_reconnected',   // Aviso: "Tu Rival volvió"
-	
+	// Presencia social
+	FRIEND_ONLINE: 'friend:online',
+	FRIEND_OFFLINE: 'friend:offline',
+	// Notificaciones de amistad
+	FRIEND_REQUEST: 'friend:request', 
+	FRIEND_ACCEPT: 'friend:accept',
+	FRIEND_REMOVE: 'friend:remove',
+	// Notificaciones de partida
+	MATCH_INVITE: 'match:invite',
+	MATCH_CANCELLED: 'match:cancelled',
+	MATCH_REJECTED: 'match:rejected'
 } as const;
-		
-export type RedisChannelType = typeof REDIS_CHANNELS[keyof typeof REDIS_CHANNELS];
 
+export type TranscendenceEvent = typeof TRANSCENDENCE_EVENTS[keyof typeof TRANSCENDENCE_EVENTS];
+export type WebsocketEvent = typeof WEBSOCKET_EVENTS[keyof typeof WEBSOCKET_EVENTS];

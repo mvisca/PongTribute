@@ -1,20 +1,46 @@
-import { BaseEvent, EventHandler } from '../base.handler.js';
 import { CommsService } from '../../comms.service.js';
-import { REDIS_CHANNELS, GameUpdateEvent } from '@transcendence/shared';
+import { CommsEventHandler } from '../base.handler.js';
+import {
+	TRANSCENDENCE_EVENTS,
+	WEBSOCKET_EVENTS,
+	TranscendenceEventsTypes,
+	WebSocketEventsTypes,
+	EventsTypes
+} from '@transcendence/shared';
 
-export class GameEventHandler implements EventHandler {
-	channels = [REDIS_CHANNELS.GAME_UPDATE];
-
-	async handle(event: BaseEvent, comms: CommsService): Promise<void> {
-		const gameEvent = event as GameUpdateEvent;
-
+export class GameEventHandler implements CommsEventHandler {
+	channels = [TRANSCENDENCE_EVENTS.GAME_UPDATE];
+	
+	async handle(
+		event: EventsTypes.BaseEvent,
+		commsService: CommsService
+	): Promise<void> {
+		
+		const gameEvent = event as TranscendenceEventsTypes.GameUpdateEvent;
+		
 		console.log(`[GameHandler] Evento recibido: ${gameEvent.type} para match ${gameEvent.matchId}`);
-
-		// TODO: Implementar lógica de broadcast
-		// Ejemplo: broadcast del estado del juego a espectadores
-		// comms.broadcastToUsers(spectatorIds, {
-		//     type: REDIS_CHANNELS.GAME_UPDATE,
-		//     payload: gameEvent.payload
-		// });
+		
+		// Extraer playerIds del payload
+		const { playerIds } = gameEvent.payload.match
+		? {
+			playerIds: [
+				gameEvent.payload.match.player1.userId,
+				gameEvent.payload.match.player2.userId,
+			],
+		}
+		: { playerIds: [] };
+		
+		if (playerIds.length === 0) return;
+		const wsMessage: WebSocketEventsTypes.GameUpdateMessage = {
+			type: WEBSOCKET_EVENTS.GAME_UPDATE,
+			timestamp: gameEvent.timestamp,
+			payload: {
+				matchId: gameEvent.matchId,
+				gameState: gameEvent.payload.gameState,
+				updateType: gameEvent.payload.updateType,
+			}
+		};
+		
+		commsService.broadcastToUsers(playerIds, wsMessage);
 	}
 }

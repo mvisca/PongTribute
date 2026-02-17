@@ -1,8 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { UserTypes, Utils, SharedErrors, AuthTypes } from '@transcendence/shared';
+import { UserTypes, Utils, SharedErrors, AuthTypes, TRANSCENDENCE_EVENTS } from '@transcendence/shared';
 import { IUserRepository, SQLiteUserRepository, UserEnv, UserMapper } from '../index.js';
 import { redisClient } from '../app.js'; 
-import { REDIS_CHANNELS } from '@transcendence/shared';
+import { TRANSCENDENCE_EVENTS } from '@transcendence/shared';
    
 
 export class UserService {
@@ -222,7 +222,7 @@ export class UserService {
                 console.log(`📣 [UserService] Username changed: ${oldUsername} -> ${updatedUser.username}`);
                 
                 const eventPayload = {
-                    type: REDIS_CHANNELS.USER_PROFILE_UPDATED,
+                    type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,
                     payload: {
                         userId: id,
                         username: updatedUser.username
@@ -230,7 +230,7 @@ export class UserService {
                 };
 
                 // Publicar al canal de eventos
-                redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(eventPayload))
+                redisClient.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(eventPayload))
                     .catch(err => console.error('❌ Error publicando evento Redis:', err));
             } else {
                 console.warn('⚠️ [UserService] Redis client not available. Event not sent.');

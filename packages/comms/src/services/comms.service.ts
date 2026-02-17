@@ -4,12 +4,14 @@ import type { FastifyRequest } from "fastify";
 import { CommsEnv } from '../config.js';
 import { EVENT_HANDLERS } from './events/index.js';
 import {
-	SystemEvent,
-	RedisChannelType,
 	Utils,
 	AuthTypes,
 	CommsTypes,
-	IEventService
+	IEventService,
+	TranscendenceEventsTypes,
+	WebSocketEventsTypes,
+	TRANSCENDENCE_EVENTS,
+	UserTypes
 } from '@transcendence/shared';
 
 
@@ -39,7 +41,7 @@ export class CommsService implements IEventService {
 	private heartbeatInterval: NodeJS.Timeout | null = null; // TODO explciar que es este tipo?
 	private totalConnections = 0;
 	private logger = console;
-	
+
 	constructor() {
 		// 1. Configuración base desde variables de entorno
 		const redisConfig = {
@@ -49,12 +51,12 @@ export class CommsService implements IEventService {
 		};
 		
 		// 2. Cliente Estándar (Comandos / Publicar)
-		// Utils validará la config y atachará los logs de conexión
+		// Utils validará la config y realizará los logs de conexión
 		this.redis = Utils.createRedisClient(redisConfig);
 		
 		// 3. Cliente Suscriptor (Escuchar)
-		// Instanciamos uno nuevo usando la factoría para tener también logs en este canal
-		this.redisSub = Utils.createRedisClient(redisConfig);  // TODO no es mejor usar duplicate() ??
+		// Instanciamos un duplicado del anterior, forma más eficiente que crear otra instancia
+		this.redisSub = this.redis.duplicate();
 	}	
 	
 	// ============================================================================
@@ -68,7 +70,7 @@ export class CommsService implements IEventService {
 			// Conexión paralela
 			await Promise.all([
 				this.redis.connect(),
-				this.redisSub.connect()
+				this.redisSub.connect() // Por tener en config lazyConnect: true, se conectarán recién ahora
 			]);
 			this.logger.log('[Comms] Clientes Redis conectados');
 			
@@ -82,7 +84,7 @@ export class CommsService implements IEventService {
 			
 			// Listener de mensajes Redis
 			this.redisSub.on('message', (channel, message) => {
-				this.handleRedisMessage(channel as RedisChannelType, message).catch((err) => {
+				this.handleRedisMessage(channel, message).catch((err) => {
 					this.logger.error('[Comms] Error crítico en handleRedisMessage', err);
 				});
 			});
@@ -179,12 +181,18 @@ export class CommsService implements IEventService {
 	}
 	
 	// BROADCAST A LISTA DE USUARIOS
-	public async broadcastToUsers(userIds: string[], message: any): Promise<void> {
+	public async broadcastToUsers(
+		userIds: UserTypes.UserId[],
+		message: WebSocketEventsTypes.AnyWsMessage
+	): Promise<void> {
 		userIds.forEach(userId => this.sendToUser(userId, message));
 	}
 	
 	// BROADCAST GLOBAL
-	public broadcast(message: any, excludedUserId?: string): void {
+	public broadcast(
+		message: WebSocketEventsTypes.AnyWsMessage,
+		excludedUserId?: UserTypes.UserId
+	): void {	
 		const messageStr = JSON.stringify(message);
 		
 		this.connections.forEach((sockets, userId) => {
@@ -202,7 +210,7 @@ export class CommsService implements IEventService {
 	// CIERRE DE CONEXION
 	// ==========================================================================
 	
-	public async closeUserConnection(userId: string): Promise<void> {
+	public async closeUserConnection(userId: UserTypes.UserId): Promise<void> {
 		const sockets = this.connections.get(userId);
 		if (sockets) {
 			sockets.forEach(ws => {
@@ -217,12 +225,12 @@ export class CommsService implements IEventService {
 	// ==========================================================================
 	
 	private async handleRedisMessage(
-		channel: RedisChannelType,
+		channel: any, // TODO Type correcto
 		messageStr: string
 	): Promise<void> {
 		try {
 			// Parse con el tipo SystemEvent definido en shared
-			const event = JSON.parse(messageStr) as SystemEvent;
+			const event = JSON.parse(messageStr); // TODO agregar type assertion
 			
 			this.logger.log(`[Comms] Evento Redis recibido: ${event.type} (Source: ${event.source})`);
 			
@@ -267,7 +275,7 @@ export class CommsService implements IEventService {
 				break;
 			}
 		} catch (err) {
-			// Mensaje mal formado, ignorar
+			// Mensaje mal formado, ignorarU): Pr
 		}
 	}
 	

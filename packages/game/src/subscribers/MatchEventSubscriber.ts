@@ -3,7 +3,7 @@
 import { Redis } from 'ioredis';
 import { MatchService } from '../services/MatchService.js';
 import { GameService } from '../services/GameService.js';
-import { REDIS_CHANNELS, SystemEvent, Utils } from '@transcendence/shared';
+import { TRANSCENDENCE_EVENTS, TranscendenceEventsTypes, Utils } from '@transcendence/shared';
 import { GameEnv } from '../config.js'; 
 
 export class MatchEventSubscriber {
@@ -30,16 +30,16 @@ export class MatchEventSubscriber {
             console.log('🎧 [MatchEventSubscriber] Connecting...');
 
             // Nos suscribimos al canal de eventos definido en Shared
-            await this.subscriber.subscribe(REDIS_CHANNELS.EVENTS);
+            await this.subscriber.subscribe(TRANSCENDENCE_EVENTS.EVENTS);
             
             // Escuchamos mensajes
             this.subscriber.on('message', (channel, message) => {
-                if (channel === REDIS_CHANNELS.EVENTS) {
+                if (channel === TRANSCENDENCE_EVENTS.EVENTS) {
                     this.handleMessage(message);
                 }
             });
 
-            console.log('✅ [MatchEventSubscriber] Ready. Listening on channel:', REDIS_CHANNELS.EVENTS);
+            console.log('✅ [MatchEventSubscriber] Ready. Listening on channel:', TRANSCENDENCE_EVENTS.EVENTS);
             
         } catch (error) {
             console.error('❌ [MatchEventSubscriber] Failed to subscribe:', error);
@@ -49,7 +49,7 @@ export class MatchEventSubscriber {
     private handleMessage(message: string) {
 		try {
 			// 1. Casteamos a SystemEvent para que TypeScript nos ayude
-			const event = JSON.parse(message) as SystemEvent;
+			const event = JSON.parse(message) as TranscendenceEventsTypes.SystemEvent;
 			
 			// Validación defensiva básica
 			if (!event || !event.type) return;
@@ -60,7 +60,7 @@ export class MatchEventSubscriber {
 
 			switch (event.type) {
 				// CASO 1: Desconexión
-				case REDIS_CHANNELS.USER_DISCONNECTED:
+				case TRANSCENDENCE_EVENTS.USER_DISCONNECTED:
 					// Aquí TS sabe que es un UserDisconnectedEvent.
 					// Verificamos si usamos 'targetUserId' (legacy) o 'payload.userId' (estándar).
 					// Usamos una verificación segura:
@@ -88,7 +88,7 @@ export class MatchEventSubscriber {
 				
 				
 				// CASO 2: Actualización de Perfil
-				case REDIS_CHANNELS.USER_PROFILE_UPDATED:				
+				case TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED:				
 					const pUserId = evtAny.targetUserId || evtAny.payload?.userId;
 					const username = evtAny.payload?.username;
 					

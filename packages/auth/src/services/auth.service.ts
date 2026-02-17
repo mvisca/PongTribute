@@ -12,7 +12,7 @@ import {
 	SharedErrors,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
-import { REDIS_CHANNELS, UserLoginEvent, UserLogoutEvent } from '@transcendence/shared';
+import { TRANSCENDENCE_EVENTS, TranscendenceEventsTypes } from '@transcendence/shared';
 import { redisClient } from '../app.js';
 
 export class AuthService {
@@ -30,8 +30,8 @@ export class AuthService {
 			throw new Error('Cliente Redis no está inicializado en Auth Service');
 		
 		this.setupCache = new RedisCache<AuthTypes.SetupTokenData>(
-			redisClient,
-			'2fa:setup:' // Prefix para todas las keys ( '2fa:setup:{setupToken}' )
+			redisClient,	// La instancia singleton de Redis que se importa desde la app
+			'2fa:setup:'	// Prefix para todas las keys ( '2fa:setup:{setupToken}' )
 		);
 	}
 	
@@ -98,12 +98,13 @@ export class AuthService {
 		await this.setUserIsOnline(user.id, true);
 		
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
-		const loginEvent: UserLoginEvent = {
-			type: REDIS_CHANNELS.USER_LOGIN,
+		const loginEvent: TranscendenceEventsTypes.UserLoginEvent = {
+			type: TRANSCENDENCE_EVENTS.USER_LOGIN,
 			targetUserId: user.id,
 			source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
 			timestamp: Date.now(),
 			payload: {
+				userId: user.id,
 				username: user.username,
 				avatar: user.avatar,
 				email: user.email,
@@ -114,9 +115,9 @@ export class AuthService {
 		
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
-		redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(loginEvent))
+		redisClient.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(loginEvent))
 		.catch(err => {
-			console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
+			console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN}:`, err);
 		});
 		
 		// Crear user payload y par tokens
@@ -786,12 +787,13 @@ export class AuthService {
 			}
 
 			// Preparar objeto para notificaciones
-			const logoutEvent: UserLogoutEvent = {
-				type: REDIS_CHANNELS.USER_LOGOUT,
+			const logoutEvent: TranscendenceEventsTypes.UserLogoutEvent = {
+				type: TRANSCENDENCE_EVENTS.USER_LOGOUT,
 				targetUserId: userId,
 				source: 'auth-service',
 				timestamp: Date.now(),
 				payload: {
+					userId: user.id,
 					username: user.username,
 					email: user.email,
 					avatar: user.avatar,
@@ -807,9 +809,9 @@ export class AuthService {
 
 			// PUBLICACIÓN EN REDIS
 			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
-			redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(logoutEvent))
+			redisClient.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(logoutEvent))
 			.catch(err => {
-				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGOUT}:`, err);
+				console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT}:`, err);
 			});
 
 		} catch (err) {

@@ -14,7 +14,7 @@ import jwt from 'jsonwebtoken'; //Lib standar para crear y verificar tokens
 import { Value } from '@sinclair/typebox/value';
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
-import { SOCKET_EVENTS, AuthSchemas, AuthTypes } from '@transcendence/shared';
+import { WEBSOCKET_EVENTS, AuthSchemas, AuthTypes } from '@transcendence/shared';
 
 // Clase que encapsula la logica de conexion.
 // Esto nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
@@ -154,7 +154,7 @@ export class GameGateway {
 	//METODO PRIVADO AUXILIAR
     private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string) {
         const welcome = {
-            event: SOCKET_EVENTS.JOINED_MATCH,
+            event: WEBSOCKET_EVENTS.JOINED_MATCH,
             data: {
                 matchId,
                 playerId: userId,

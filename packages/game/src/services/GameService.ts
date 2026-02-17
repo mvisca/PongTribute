@@ -12,7 +12,7 @@ import {
     GAME_CONSTANTS,
     GAME_MODES,
     GAME_STATUS,
-    SOCKET_EVENTS,
+    WEBSOCKET_EVENTS,
     PaddleState,
 	BallState,
 	GameInputPayload,
@@ -116,7 +116,7 @@ export class GameService {
         // C. GESTIÓN DE ESTADO
         if (session.gameState.status === GAME_STATUS.PLAYING) {
             this.handleReconnection(session, matchId, isPlayer1);
-            socket.send(JSON.stringify({ event: SOCKET_EVENTS.GAME_UPDATE, data: session.gameState }));
+            socket.send(JSON.stringify({ event: WEBSOCKET_EVENTS.GAME_UPDATE, data: session.gameState }));
         }
         else if (session.gameState.status === GAME_STATUS.WAITING) {
             // En local arrancamos apenas conecta el P1
@@ -137,7 +137,7 @@ export class GameService {
             this.disconnectTimeouts.delete(matchId);
         }
         const rivalSocket = isPlayer1 ? session.socketP2 : session.socketP1;
-        rivalSocket?.send(JSON.stringify({ event: SOCKET_EVENTS.GAME_OPPONENT_RECONNECTED }));
+        rivalSocket?.send(JSON.stringify({ event: WEBSOCKET_EVENTS.GAME_OPPONENT_RECONNECTED }));
         this.startGameLoop(matchId);
     }
     
@@ -163,7 +163,7 @@ export class GameService {
         const rivalSocket = isPlayer1Gone ? session.socketP2 : session.socketP1;
         
         rivalSocket?.send(JSON.stringify({ 
-            event: SOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED, 
+            event: WEBSOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED, 
             data: { timeout: GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT / 1000 } 
         }));
         
@@ -439,7 +439,7 @@ export class GameService {
 		// --- PROTECCIÓN DB END ---
 
         const endMsg = JSON.stringify({
-            event: SOCKET_EVENTS.GAME_OVER,
+            event: WEBSOCKET_EVENTS.GAME_OVER,
             data: { winnerId, reason: 'SCORE_LIMIT_REACHED' }
         });
 
@@ -458,7 +458,7 @@ export class GameService {
         const winnerSocket = (session.player1Id === loserId) ? session.socketP2 : session.socketP1;
         
         winnerSocket?.send(JSON.stringify({
-            event: SOCKET_EVENTS.GAME_OVER,
+            event: WEBSOCKET_EVENTS.GAME_OVER,
             data: {
                 reason: 'OPPONENT_DISCONNECTED',
                 winnerId: winnerId,
@@ -483,7 +483,7 @@ export class GameService {
 
     private broadcastState(session: GameSession) {
         const updateMsg = JSON.stringify({
-            event: SOCKET_EVENTS.GAME_UPDATE,
+            event: WEBSOCKET_EVENTS.GAME_UPDATE,
             data: session.gameState
         });
         if (session.socketP1?.readyState === WebSocket.OPEN) session.socketP1.send(updateMsg);

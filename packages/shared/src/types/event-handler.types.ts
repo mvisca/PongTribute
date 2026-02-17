@@ -1,11 +1,12 @@
-import type { BaseEvent } from './event.types.js';
+import type { EventsTypes, WebSocketEventsTypes } from './event.types.js';
+import { UserTypes } from './user.types.js';
 
 /**
  * Interface mínima que un servicio debe implementar para manejar eventos.
  * Usa inversión de dependencias: shared define el contrato, comms implementa.
  */
 export interface IEventService {
-	broadcastToUsers(userIds: string[], event: any): Promise<void>;
+	broadcastToUsers(userIds: UserTypes.UserId[], event: WebSocketEventsTypes.AnyWsMessage): Promise<void>;
 	closeUserConnection(userId: string): Promise<void>;
 }
 
@@ -15,5 +16,5 @@ export interface IEventService {
  */
 export interface EventHandler<TService extends IEventService = IEventService> {
 	channels: string[];
-	handle(event: BaseEvent, service: TService): Promise<void>;
+	handle(event: EventsTypes.BaseEvent, service: TService): Promise<void>;
 }
