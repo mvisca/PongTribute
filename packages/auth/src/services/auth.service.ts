@@ -14,6 +14,7 @@ import {
 import { AuthEnv } from '../index.js';
 import { REDIS_CHANNELS, UserLoginEvent, UserLogoutEvent } from '@transcendence/shared';
 import { redisClient } from '../app.js';
+import { sendPasswordReset } from './email.service.js';
 
 export class AuthService {
 	
@@ -901,6 +902,80 @@ export class AuthService {
 				userId: user.id
 			});
 		}
+	}
+
+	//=========================================================================
+	// PUBLIC API - PASSWORD RESET VIA EMAIL
+	//=========================================================================
+	
+	/** Solicita reset de password: si email no existe, no hace nada (anti user enumeration) */
+	async requestPasswordReset(email: string): Promise<void> {
+		const user = await this.fetchUserByEmail(email);
+		if (!user) return;
+		
+		if (!redisClient) {
+			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
+		}
+		
+		// token visible al usuario, hash almacenado en redis
+		const token = crypto.randomBytes(32).toString('hex');
+		const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+		
+		const key = `pwdreset:${tokenHash}`;
+		await redisClient.set(key, user.id, 'EX', AuthEnv.RESET_TTL_SECONDS());
+
+		try {
+			const link = `${AuthEnv.RESET_URL_BASE()}?token=${token}`;
+			await sendPasswordReset(user.email, link);
+		} catch (err) {
+			// Si falla el envío, limpiar el token para no dejar resets “fantasma”
+			await redisClient.del(key).catch(() => undefined);
+			throw err;
+		}
+	}
+	
+	/** Confirma reset de password con token y actualiza password en User Service */
+	async confirmPasswordReset(token: string, newPassword: string): Promise<void> {
+		if (!redisClient) {
+			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
+		}
+		
+		const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+		const key = `pwdreset:${tokenHash}`;
+		
+		const userId = await redisClient.get(key);
+		if (!userId) {
+			throw new SharedErrors.UnauthorizedError('Token inválido o expirado', {
+				operation: 'confirmPasswordReset'
+			});
+		}
+		
+		const newPasswordHash = await bcrypt.hash(newPassword, 10);
+		
+		const updateResponse = await fetch(
+			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/password`,
+			{
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
+				},
+				body: JSON.stringify({ newPasswordHash }),
+				signal: AbortSignal.timeout(5000)
+			}
+		);
+		
+		if (!updateResponse.ok) {
+			throw new SharedErrors.ServiceError('user', `Fallo al actualizar password`, {
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/password`,
+				method: 'PUT',
+				status: updateResponse.status,
+				statusText: updateResponse.statusText,
+				userId
+			});
+		}
+		
+		await redisClient.del(key);
 	}
 	
 	// ========================================================================

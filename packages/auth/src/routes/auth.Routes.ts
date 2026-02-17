@@ -42,6 +42,18 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 		handler: controller.refreshAccessToken.bind(controller)
 	});
 
+	/** Solicitar reset de password por email (siempre 204) */
+	app.post('/auth/password-reset/request', {
+		schema: AuthSchemas.PasswordResetRequestBodySchema,
+		handler: controller.passwordResetRequest.bind(controller)
+	});
+
+	/** Confirmar reset de password con token */
+	app.post('/auth/password-reset/confirm', {
+		schema: AuthSchemas.PasswordResetConfirmBodySchema,
+		handler: controller.passwordResetConfirm.bind(controller)
+	});
+
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT
 	// ============================================================================

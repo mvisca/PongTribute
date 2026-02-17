@@ -107,6 +107,20 @@ export namespace AuthEnv {
 	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
 	
 	// =====================================================
+	// EMAIL (DEV SMTP) + PASSWORD RESET
+	// =====================================================
+	
+	export function SMTP_HOST(): string { return cnf().SMTP_HOST; }
+	export function SMTP_PORT(): number { return cnf().SMTP_PORT; }
+	export function SMTP_FROM(): string { return cnf().SMTP_FROM; }
+	export function SMTP_USER(): string | undefined { return cnf().SMTP_USER; }
+	export function SMTP_PASS(): string | undefined { return cnf().SMTP_PASS; }
+	export function SMTP_SECURE(): boolean | undefined { return cnf().SMTP_SECURE; }
+	export function SMTP_REQUIRE_TLS(): boolean | undefined { return cnf().SMTP_REQUIRE_TLS; }
+	export function RESET_URL_BASE(): string { return cnf().RESET_URL_BASE; }
+	export function RESET_TTL_SECONDS(): number { return cnf().RESET_TTL_SECONDS; }
+	
+	// =====================================================
 	// EXPORTS - FUNCIONES HELPER
 	// =====================================================
 	

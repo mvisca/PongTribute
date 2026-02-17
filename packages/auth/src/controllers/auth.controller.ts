@@ -224,6 +224,35 @@ export class AuthController {
 		}
 	}
 
+	/** Solicitar email de reset de password (siempre 204, no filtra existencia) */
+	async passwordResetRequest(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const { email } = request.body as AuthTypes.PasswordResetRequestBody;
+			await this.authService.requestPasswordReset(email);
+		} catch (err) {
+			// Importante: no filtrar por errores (ni existencia de usuario)
+			console.error('Password reset request failed:', err);
+		}
+		return reply.code(204).send();
+	}
+
+	/** Confirmar reset de password con token + nueva contraseña */
+	async passwordResetConfirm(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const { token, newPassword } = request.body as AuthTypes.PasswordResetConfirmBody;
+			await this.authService.confirmPasswordReset(token, newPassword);
+			return reply.code(204).send();
+		} catch (err) {
+			SharedErrors.handleError(err, reply);
+		}
+	}
+
 	// ============================================================================
 	// HEALTH CHECK
 	// ============================================================================

@@ -64,6 +64,17 @@ interface EnvVars {
 	FRONTEND_URL: string;
 	FRONTEND_PORT: number;
 	FRONTEND_HOST: string;
+
+	// AUTH EMAIL (dev SMTP)
+	SMTP_HOST: string;
+	SMTP_PORT: number;
+	SMTP_FROM: string;
+	SMTP_USER?: string;
+	SMTP_PASS?: string;
+	SMTP_SECURE?: boolean;
+	SMTP_REQUIRE_TLS?: boolean;
+	RESET_URL_BASE: string;
+	RESET_TTL_SECONDS: number;
 	
 	NODE_ENV: string;
 	LOG_LEVEL: string;
@@ -111,6 +122,12 @@ const DEFAULTS: EnvVars = {
 	FRONTEND_URL: 'http://localhost:5173',
 	FRONTEND_PORT: 5173,
 	FRONTEND_HOST: 'localhost',
+
+	SMTP_HOST: 'mailhog',
+	SMTP_PORT: 1025,
+	SMTP_FROM: 'no-reply@transcendence.local',
+	RESET_URL_BASE: 'http://localhost:5173/reset-password',
+	RESET_TTL_SECONDS: 900,
 	
 	NODE_ENV: 'test',
 	LOG_LEVEL: 'info',
@@ -181,11 +198,43 @@ export namespace SharedEnv {
 			console.error(`${varName}: Variable de entorno requerida no encontrada`);
 			process.exit(1);
 		};
+
+		function envMaybeString(envValue: string | undefined): string | undefined {
+			if (envValue === undefined) return undefined;
+			const trimmed = envValue.trim();
+			return trimmed === '' ? undefined : trimmed;
+		}
+
+		function envMaybeBoolean(envValue: string | undefined, varName: string): boolean | undefined {
+			if (envValue === undefined) return undefined;
+			if (envValue === 'true') return true;
+			if (envValue === 'false') return false;
+			console.error('\nERROR DE CONFIGURACIÓN\n');
+			console.error(`Variable: ${varName || 'desconocida'}`);
+			console.error(`Valor recibido: "${envValue}"`);
+			console.error(`Tipo esperado: boolean`);
+			console.error(`\nValores válidos: true, false\n`);
+			console.error(`\nCTRL+C para terminar\n`);
+			process.exit(1);
+		}
 		
 		function validatePort(port: number | undefined, context: string): void {
 			if (!port || isNaN(port) || port < 1024 || port > 65535) {
 				throw new Error(
 					`Puerto inválido o faltante: ${context}=${port}. Debe estar entre 1024-65535`
+				);
+			}
+		}
+
+		/**
+		 * Validación de puerto para conexiones salientes (cliente).
+		 * A diferencia de validatePort(), aquí se permiten puertos <1024 (ej: SMTP 587/465),
+		 * porque el proceso NO hace bind local; solo conecta al puerto remoto.
+		 */
+		function validateClientPort(port: number | undefined, context: string): void {
+			if (!port || isNaN(port) || port < 1 || port > 65535) {
+				throw new Error(
+					`Puerto inválido o faltante: ${context}=${port}. Debe estar entre 1-65535`
 				);
 			}
 		}
@@ -345,6 +394,17 @@ export namespace SharedEnv {
 			FRONTEND_URL: envOr(process.env.FRONTEND_URL, DEFAULTS.FRONTEND_URL, 'FRONTEND_URL'),
 			FRONTEND_PORT: envOr(process.env.FRONTEND_PORT, DEFAULTS.FRONTEND_PORT, 'FRONTEND_PORT'),
 			FRONTEND_HOST: envOr(process.env.FRONTEND_HOST, DEFAULTS.FRONTEND_HOST, 'FRONTEND_HOST'),
+
+			// AUTH EMAIL (dev smtp)
+			SMTP_HOST: envOr(process.env.SMTP_HOST, DEFAULTS.SMTP_HOST, 'SMTP_HOST'),
+			SMTP_PORT: envOr(process.env.SMTP_PORT, DEFAULTS.SMTP_PORT, 'SMTP_PORT'),
+			SMTP_FROM: envOr(process.env.SMTP_FROM, DEFAULTS.SMTP_FROM, 'SMTP_FROM'),
+			SMTP_USER: envMaybeString(process.env.SMTP_USER),
+			SMTP_PASS: envMaybeString(process.env.SMTP_PASS),
+			SMTP_SECURE: envMaybeBoolean(process.env.SMTP_SECURE, 'SMTP_SECURE'),
+			SMTP_REQUIRE_TLS: envMaybeBoolean(process.env.SMTP_REQUIRE_TLS, 'SMTP_REQUIRE_TLS'),
+			RESET_URL_BASE: envOr(process.env.RESET_URL_BASE, DEFAULTS.RESET_URL_BASE, 'RESET_URL_BASE'),
+			RESET_TTL_SECONDS: envOr(process.env.RESET_TTL_SECONDS, DEFAULTS.RESET_TTL_SECONDS, 'RESET_TTL_SECONDS'),
 			
 			// GLOBAL
 			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV, 'NODE_EV'),
@@ -374,6 +434,7 @@ export namespace SharedEnv {
 		validatePort(config.GAME_SERVICE_PORT, 'GAME_SERVICE_PORT');
 		validatePort(config.FRONTEND_PORT, 'FRONTEND_PORT');
 		validatePort(config.REDIS_PORT, 'REDIS_PORT');
+		validateClientPort(config.SMTP_PORT, 'SMTP_PORT');
 		
 		// Siempre requeridos
 		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
@@ -381,6 +442,20 @@ export namespace SharedEnv {
 		validateRequired(config.USER_SERVICE_URL, 'USER_SERVICE_URL');
 		validateRequired(config.GAME_SERVICE_URL, 'GAME_SERVICE_URL');
 		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
+
+		validateRequired(config.SMTP_HOST, 'SMTP_HOST');
+		validateRequired(config.SMTP_FROM, 'SMTP_FROM');
+		validateRequired(config.RESET_URL_BASE, 'RESET_URL_BASE');
+		if (!Number.isFinite(config.RESET_TTL_SECONDS) || config.RESET_TTL_SECONDS <= 0) {
+			throw new Error(`RESET_TTL_SECONDS inválido: ${config.RESET_TTL_SECONDS}. Debe ser > 0`);
+		}
+
+		// SMTP auth debe venir en par (si se configura)
+		const hasUser = Boolean(config.SMTP_USER);
+		const hasPass = Boolean(config.SMTP_PASS);
+		if (hasUser !== hasPass) {
+			throw new Error(`Configuración SMTP inválida: SMTP_USER y SMTP_PASS deben venir ambos o ninguno`);
+		}
 		
 		validateRequired(config.CLOUDINARY_DEFAULT_AVATAR, 'CLOUDINARY_DEFAULT_AVATAR');
 		validateRequired(config.CLOUDINARY_URL, 'CLOUDINARY_URL');

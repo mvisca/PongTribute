@@ -99,6 +99,16 @@ export namespace AuthTypes {
 	
 	/** Body de POST /auth/:id/update-password */
 	export type UpdatePasswordBody = Static<typeof AuthSchemas.UpdatePasswordBody>;
+
+	// ========================================================================
+	// PASSWORD RESET (EMAIL)
+	// ========================================================================
+	
+	/** Body de POST /auth/password-reset/request */
+	export type PasswordResetRequestBody = Static<typeof AuthSchemas.PasswordResetRequestBody>;
+	
+	/** Body de POST /auth/password-reset/confirm */
+	export type PasswordResetConfirmBody = Static<typeof AuthSchemas.PasswordResetConfirmBody>;
 	
 	// ========================================================================
 	// REFRESH TOKEN - Cliente HTTP

@@ -347,6 +347,40 @@ export namespace AuthSchemas {
 			404: NotFoundResponse
 		}
 	};
+
+	// ========================================================================
+	// PASSWORD RESET (EMAIL)
+	// ========================================================================
+
+	/** Body de POST /auth/password-reset/request */
+	export const PasswordResetRequestBody = Type.Object({
+		email: EmailField
+	});
+
+	/** Schema completo de POST /auth/password-reset/request */
+	export const PasswordResetRequestBodySchema = {
+		tags: ['Auth'],
+		body: PasswordResetRequestBody,
+		response: {
+			204: Type.Null()
+		}
+	};
+
+	/** Body de POST /auth/password-reset/confirm */
+	export const PasswordResetConfirmBody = Type.Object({
+		token: SetupTokenField,
+		newPassword: PasswordField
+	});
+
+	/** Schema completo de POST /auth/password-reset/confirm */
+	export const PasswordResetConfirmBodySchema = {
+		tags: ['Auth'],
+		body: PasswordResetConfirmBody,
+		response: {
+			204: Type.Null(),
+			401: UnauthorizedError
+		}
+	};
 	
 	// ========================================================================
 	// REFRESH TOKEN - Cliente HTTP
