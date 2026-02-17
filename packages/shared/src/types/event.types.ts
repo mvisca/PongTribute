@@ -213,15 +213,20 @@ export namespace TranscendenceEventsTypes {
 export namespace WebSocketEventsTypes {
 
 	// ── Mensaje específico para GAME_UPDATE simplificado para frontend ───────
-	export interface GameUpdateMessage {
+	export interface GameUpdate {
 		type: typeof WEBSOCKET_EVENTS.GAME_UPDATE;
 		timestamp: number;
 		payload: {
 			matchId: string;
 			gameState: GameState;
-			updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
+			updateType: 
+				| 'state_change'
+				| 'score_update'
+				| 'game_finished'
+				| 'game_paused'
+				| 'game_resumed';
 		};
-	}			// Omitir campos internos del match que el frontend no necesita
+	} // Omitie campos internos del match que el frontend no necesita
 
 	// ── Presencia social ─────────────────────────────────────────────────────
 
@@ -381,7 +386,7 @@ export namespace WebSocketEventsTypes {
 		| JoinedMatch
 		| GameStart
 		| GameOver
-		| GameUpdateMessage
+		| GameUpdate
 		| GamePaused
 		| GameResumed
 		| GameOpponentDisconnected

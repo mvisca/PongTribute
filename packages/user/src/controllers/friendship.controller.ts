@@ -1,6 +1,7 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { 
 	SharedErrors,
+	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 	AuthTypes
@@ -31,8 +32,59 @@ export class FriendshipController {
 		senderUsername: string,
 		receiverId: string
 	): Promise<void> {
-		if (!redisClient)
+		if (!redisClient) return;
+
+		// Conseguir avatar del sender (no está en el JWT)
+		const sender = await this.userService.findUserById(senderId);
+
+		const event: TranscendenceEventsTypes.FriendRequestEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REQUEST,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				senderId,
+				senderUsername,
+				senderAvatar: sender.avatar,
+				receiverId,
+			},
+		};
+
+		await redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		console.log(`[FriendshipController] FRIEND_REQUEST publicado: de ${senderId} a ${receiverId}`);
 	}
+
+	private async publishFriendAccepted(
+		acceptorId: FriendshipTypes.UserTypes.UserId, // TODO hacer este import no dependiente de FriendshipTypes
+		acceptorUsername: string,
+		requesterId: string
+	): Promise<void> {
+		if (!redisClient) return;
+
+		// Conseguir avatar del acceptor (no está en JWT)
+		const acceptor = await this.userService.findUserById(acceptorId);
+
+		const event: TranscendenceEventsTypes.FriendAcceptedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_ACCEPT,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				acceptorId,
+				acceptorUsername,
+				acceptorAvatar: acceptor.avatar,
+				requesterId,
+			},
+		};
+
+		await redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		console.log(`[FriendshipController] FRIEND_ACCEPT publicado: de ${acceptorId} a ${requesterId}`);
+	}
+
+	private async publishFriendRemoved(
+
+	) {
+		// TODO evaluar implmementación, sería neceario para que front actualice lista de amigos del usuario
+	}
+
 
 
 	// ============================================================================

@@ -31,7 +31,7 @@ export class GameEventHandler implements CommsEventHandler {
 		: { playerIds: [] };
 		
 		if (playerIds.length === 0) return;
-		const wsMessage: WebSocketEventsTypes.GameUpdateMessage = {
+		const wsMessage: WebSocketEventsTypes.GameUpdate = {
 			type: WEBSOCKET_EVENTS.GAME_UPDATE,
 			timestamp: gameEvent.timestamp,
 			payload: {

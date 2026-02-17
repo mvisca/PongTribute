@@ -1,10 +1,8 @@
- // EVENTOS INTERNOS (Backend a Backend vía Redis)
-export const TRANSCENDENCE_EVENTS = {
-		
-	// Es el CANAL ÚNICO. Todos publican y escuchan aquí
-	EVENTS: 'transcendence:events',
+// Canal único Redis (Servicio a Servicio)
+export const REDIS_CHANNEL = 'transcendence:events' as const;
 
-	// Los TIPOS DE EVENTOS
+export const TRANSCENDENCE_EVENTS = {
+	// Los TIPOS DE EVENTOS (type del message Servicio a Servicio del canal Redis)
 	// User
 	USER_LOGIN: 'user:login',
 	USER_LOGOUT: 'user:logout',

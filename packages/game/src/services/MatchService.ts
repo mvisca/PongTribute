@@ -8,6 +8,7 @@ import {
 	SharedErrors,
 	GameMode,
 	MatchConstants,
+	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes
 } from '@transcendence/shared';
@@ -110,7 +111,7 @@ export class MatchService {
 				}
 			};
 			// Publicamos en el CANAL UNICO de eventos (definido en shared)
-			await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+			await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 
             return { outcome: 'match_found', match: matchDomain };
 		
@@ -166,7 +167,7 @@ export class MatchService {
 						}
 					};
 					// Publicar en canal global
-                    await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+                    await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
                 }
             }
         }
@@ -268,7 +269,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 
             return matchDomain;
 
@@ -412,7 +413,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 
 			return matchDomain;
 		} catch (error) {
@@ -464,7 +465,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 
 			return matchDomain;
 		} catch (error) {
@@ -524,7 +525,7 @@ export class MatchService {
             };
 
             // 4. Publicamos el evento usando la instancia inyectada
-            return this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+            return this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
         });
 
         // Ejecutamos todas las notificaciones en paralelo
@@ -593,7 +594,7 @@ export class MatchService {
                 }
             };
             
-            await this.redis.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(event));
+            await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 
     }
 

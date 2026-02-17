@@ -12,7 +12,10 @@ import {
 	SharedErrors,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
-import { TRANSCENDENCE_EVENTS, TranscendenceEventsTypes } from '@transcendence/shared';
+import { 
+	REDIS_CHANNEL,
+	TRANSCENDENCE_EVENTS,
+	TranscendenceEventsTypes } from '@transcendence/shared';
 import { redisClient } from '../app.js';
 
 export class AuthService {
@@ -115,7 +118,7 @@ export class AuthService {
 		
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
-		redisClient.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(loginEvent))
+		redisClient.publish(REDIS_CHANNEL, JSON.stringify(loginEvent))
 		.catch(err => {
 			console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN}:`, err);
 		});
@@ -809,7 +812,7 @@ export class AuthService {
 
 			// PUBLICACIÓN EN REDIS
 			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
-			redisClient.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(logoutEvent))
+			redisClient.publish(REDIS_CHANNEL, JSON.stringify(logoutEvent))
 			.catch(err => {
 				console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT}:`, err);
 			});

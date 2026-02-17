@@ -3,6 +3,7 @@ import {
 	UserTypes, 
 	Utils, 
 	SharedErrors,
+	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS
 } from '@transcendence/shared';
 import { 
@@ -238,7 +239,7 @@ export class UserService {
                 };
 
                 // Publicar al canal de eventos
-                redisClient.publish(TRANSCENDENCE_EVENTS.EVENTS, JSON.stringify(eventPayload))
+                redisClient.publish(REDIS_CHANNEL, JSON.stringify(eventPayload))
                     .catch(err => console.error('❌ Error publicando evento Redis:', err));
             } else {
                 console.warn('⚠️ [UserService] Redis client not available. Event not sent.');
