@@ -90,7 +90,7 @@ export namespace AuthEnv {
 	export function UNIQUE_SESSION(): boolean { return cnf().UNIQUE_SESSION; }
 	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
 	export function TOKEN_EXPIRY(): number { return cnf().TOKEN_EXPIRY; }
-	export function REFRESH_TOKEN_EXPIRY(): string { return cnf().REFRESH_TOKEN_EXPIRY; }
+	export function REFRESH_TOKEN_EXPIRY(): number { return cnf().REFRESH_TOKEN_EXPIRY; }
 	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
 	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
 	

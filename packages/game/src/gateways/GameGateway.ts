@@ -142,11 +142,6 @@ export class GameGateway {
         } catch (err) {
             console.log('⛔ [Gateway] Conexión rechazada: Token inválido');
             socket.close(1008, 'Invalid Token');
-			// Martin: no se hacen throw en los catch para que el controller envíe respuestas de fallo al clietne?
-			// No, aqui la conexion HTTP ya no existe mas, termino, ahora es un socket y
-			//para decir error se usa socket.close(codigo de cierre, mensaje). Si haces
-			// un throw new Error el servvidor explotara o logueara el error en consola
-			// y dejara un socket zombie.
 		}
     }
 

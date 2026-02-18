@@ -32,7 +32,7 @@ interface EnvVars {
 	AUTH_SERVICE_HOST: string;
 	JWT_SECRET: string;
 	TOKEN_EXPIRY: number;
-	REFRESH_TOKEN_EXPIRY: string;
+	REFRESH_TOKEN_EXPIRY: number;
 	BCRYPT_ROUNDS: number;
 	UNIQUE_SESSION: boolean;
 
@@ -79,7 +79,7 @@ const DEFAULTS: EnvVars = {
 	AUTH_SERVICE_HOST: 'localhost',
 	JWT_SECRET: 'default_super_secret_key_CHANGE_THIS',
 	TOKEN_EXPIRY: 3600,
-	REFRESH_TOKEN_EXPIRY: '365d',
+	REFRESH_TOKEN_EXPIRY: 84600,
 	BCRYPT_ROUNDS: 10,
 	UNIQUE_SESSION: true,
 
@@ -180,6 +180,20 @@ export namespace SharedEnv {
 			process.exit(1);
 		};
 		
+		function validateRange(
+			value: number,
+			min: number,
+			max: number,
+			varName: string
+		): number {
+			if (value < min || value > max) {
+				throw new Error(
+					`${varName} debe estar entre ${min} y ${max}`
+				);
+			}
+			return value;
+		}
+
 		function validatePort(port: number | undefined, context: string): void {
 			if (!port || isNaN(port) || port < 1024 || port > 65535) {
 				throw new Error(
@@ -298,8 +312,18 @@ export namespace SharedEnv {
 			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT'),
 			AUTH_SERVICE_HOST: envOr(process.env.AUTH_SERVICE_HOST, DEFAULTS.AUTH_SERVICE_HOST, 'AUTH_SERVICE_HOST'),
 			JWT_SECRET: envOr(process.env.JWT_SECRET, DEFAULTS.JWT_SECRET, 'JWT_SECRET'),
-			TOKEN_EXPIRY: envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
-			REFRESH_TOKEN_EXPIRY: envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
+			TOKEN_EXPIRY: validateRange(
+				envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
+				300, // 5 minutos
+				86400, // 24 horas
+				'TOKEN_EXPIRY'
+			),
+			REFRESH_TOKEN_EXPIRY: validateRange(
+				envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
+				300,
+				86400,
+				'REFRESH_TOKEN_EXPIRY'
+			),
 			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, 'BCRYPT_ROUNDS'),
 			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION, 'UNIQUE_SESSION'),
 			
@@ -324,8 +348,6 @@ export namespace SharedEnv {
 				envOr(process.env.GAME_SERVICE_DB_PATH, DEFAULTS.GAME_SERVICE_DB_PATH, 'GAME_SERVICE_DB_PATH'),
 				getBaseDir()
 			),
-
-
 
 			// USER SERVICE
 			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL, 'USER_SERVICE_URL'),

@@ -188,10 +188,9 @@ export class AuthService {
 		
 		// hashear con sha-256 (64 caracteres)
 		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-		
-		//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
-		// calcula expiración usando REFRESH_TOKEN_EXPIRY (formato: "7d", "24h", etc.)
-		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY() as any));
+
+		// Calcula expiración (REFRESH_TOKEN_EXPIRY en segundos, convierte a ms)
+		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY() * 1000));
 		
 		// almacenar record refresh token
 		const response = await fetch(
