@@ -14,7 +14,7 @@ export default function App() {
   //const [page, setPage] = useState<Page>("local-game"); // PARA TESTEO DEL LOCAL-GAME
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-
+  
   return (
     <>
       {page === "login" && (

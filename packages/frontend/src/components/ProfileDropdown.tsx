@@ -8,9 +8,10 @@ type Props = {
   onClose: () => void;
 };
 
-const [isEditing, setIsEditing] = useState(false);
-
 export function ProfileDropdown({ user, onClose }: Props) {
+
+  const [isEditing, setIsEditing] = useState(false);
+  
   return (
     <div className="absolute top-16 right-4 w-80 bg-purple-800 rounded-xl shadow-lg p-4 z-50">
       
