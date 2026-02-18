@@ -1,12 +1,13 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { 
+import {
 	SharedErrors,
 	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
-	AuthTypes
+	AuthTypes,
+	FriendshipTypes,
+	UserTypes
 } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared'; // TODO narrow este import
 import { 
 	FriendshipService,
 	UserService
@@ -54,7 +55,7 @@ export class FriendshipController {
 	}
 
 	private async publishFriendAccepted(
-		acceptorId: FriendshipTypes.UserTypes.UserId, // TODO hacer este import no dependiente de FriendshipTypes
+		acceptorId: UserTypes.UserId,
 		acceptorUsername: string,
 		requesterId: string
 	): Promise<void> {
@@ -80,8 +81,8 @@ export class FriendshipController {
 	}
 
 	private async publishFriendRemoved(
-		removerId: FriendshipTypes.UserTypes.UserId,
-		removedId: FriendshipTypes.UserTypes.UserId
+		removerId: UserTypes.UserId,
+		removedId: UserTypes.UserId
 	): Promise<void> {
 		if (!redisClient) return;
 

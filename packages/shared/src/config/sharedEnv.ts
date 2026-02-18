@@ -320,8 +320,8 @@ export namespace SharedEnv {
 			),
 			REFRESH_TOKEN_EXPIRY: validateRange(
 				envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
-				300,
-				86400,
+				300, // 5 min
+				31536000, // 365 días
 				'REFRESH_TOKEN_EXPIRY'
 			),
 			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, 'BCRYPT_ROUNDS'),

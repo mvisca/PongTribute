@@ -261,8 +261,6 @@ export class AuthService {
 		return await verified.json() as AuthTypes.RefreshTokenRecord;
 	}
 	
-	// ELIMINAR TODOS LOS REFRESH TOKENS DEL USUARIO CADUCADOS O POR ROTACIÓN
-	
 	/** Elimina todos los refresh token del usuario */
 	private async deleteRefreshTokensById(userId: string): Promise<void> {
 		const response = await fetch(`${AuthEnv.USER_SERVICE_URL()}/internal/tokens/user/${userId}`, {
@@ -300,9 +298,6 @@ export class AuthService {
 			userId
 		});
 	}
-	
-	// ELIMINAR UN REFRESH TOKEN EN PARTICULAR
-	/* Mas granular para manejo de múltiples sesiones simultaneas. */
 	
 	// LOGOUT 
 	

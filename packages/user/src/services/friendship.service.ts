@@ -1,6 +1,14 @@
-import { SharedErrors, FRIENDSHIP_STATUS, UserTypes } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
-import { IFriendshipRepository, SQLiteFriendshipRepository } from '../index.js';
+import {
+	SharedErrors,
+	FRIENDSHIP_STATUS,
+	FriendshipStatus,
+	UserTypes,
+	FriendshipTypes
+} from '@transcendence/shared';
+import {
+	IFriendshipRepository,
+	SQLiteFriendshipRepository
+} from '../index.js';
 
 export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
@@ -9,9 +17,9 @@ export class FriendshipService {
 		this.friendshipRepo = friendshipRepo;
 	}
 
-	private isFriendshipStatus(value: unknown): value is FriendshipTypes.FriendshipStatus {
-		return (Object.values(FRIENDSHIP_STATUS) as FriendshipTypes.FriendshipStatus[]).includes(
-			value as FriendshipTypes.FriendshipStatus
+	private isFriendshipStatus(value: unknown): value is FriendshipStatus {
+		return (Object.values(FRIENDSHIP_STATUS) as FriendshipStatus[]).includes(
+			value as FriendshipStatus
 		);
 	}
 

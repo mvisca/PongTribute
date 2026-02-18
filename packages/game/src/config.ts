@@ -134,7 +134,7 @@ export namespace GameEnv {
 				customOptions: {
 					removeAdditional: 'all',
 					coerceTypes: false,
-					useDefaults: true // TODO propagar esta configuracion a Auth y User
+					useDefaults: true
 				}
 			}
 		};

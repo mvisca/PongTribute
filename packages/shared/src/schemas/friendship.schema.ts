@@ -1,5 +1,6 @@
-import { Type } from '@sinclair/typebox';
+import { Not, Type } from '@sinclair/typebox';
 import { FRIENDSHIP_STATUS } from '../constants/friendship.constants.js';
+import { ConflictError, NotFoundError, UnauthorizedError } from '../errors/AppError.js';
 
 const UuidField = Type.String({ format: 'uuid' });
 
@@ -61,7 +62,10 @@ export namespace FriendshipSchemas {
 		tags: ['Friendship'],
 		body: CreateFriendshipBody,
 		response: {
-			201: Friendship
+			201: Friendship,
+			401: UnauthorizedError,
+			404: NotFoundError,
+			409: ConflictError
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -81,7 +85,10 @@ export namespace FriendshipSchemas {
 		params: UpdateFriendshipParams,
 		body: UpdateFriendshipBody,
 		response: {
-			200: Friendship
+			200: Friendship,
+			401: UnauthorizedError,
+			404: NotFoundError,
+			409: ConflictError
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -95,9 +102,11 @@ export namespace FriendshipSchemas {
 		tags: ['Friendship'],
 		params: DeleteFriendshipParams,
 		response: {
-			204: Type.Null()
-		}, // TODO Faltan otros tipos de response. verificar que ahora se esta validando de forma estricta la respuesta que se da
-		security: [{ bearerAuth: [] }] // TODO Por qué de este modo, no había usado antes esto
+			204: Type.Null(),
+			401: UnauthorizedError,
+			404: NotFoundError
+		},
+		security: [{ bearerAuth: [] }]
 	}
 
 	// Alias temporal para mantener compatibilidad con capas aún no migradas

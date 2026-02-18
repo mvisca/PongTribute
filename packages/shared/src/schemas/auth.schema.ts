@@ -168,10 +168,11 @@ export namespace AuthSchemas {
 	/** Schema para logout sin body */
 	export const LogoutBodySchema = {
 		tags: ['Auth'],
-		response: { 
+		response: {
 			204: Type.Null(),
 			401: UnauthorizedError
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	}
 
 	export const LastLogoutAtBody = Type.Object({
@@ -213,7 +214,8 @@ export namespace AuthSchemas {
 			401: UnauthorizedError,
 			404: NotFoundResponse,
 			409: ConflictErrorResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	/** Body de POST /auth/:id/verify-2fa-setup
@@ -233,7 +235,8 @@ export namespace AuthSchemas {
 			200: LoginSuccessResponse,
 			401: UnauthorizedError,
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	// ========================================================================
@@ -301,7 +304,8 @@ export namespace AuthSchemas {
 			200: LoginSuccessResponse,
 			401: UnauthorizedError,
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 
 	// ========================================================================
@@ -345,7 +349,8 @@ export namespace AuthSchemas {
 			204: Type.Null(),
 			401: UnauthorizedError,
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	// ========================================================================

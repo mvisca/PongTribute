@@ -1,8 +1,8 @@
-import * as SharedTypes from '@transcendence/shared';
+import { FriendshipTypes, UserTypes, FriendshipStatus } from '@transcendence/shared';
 
 /**
  * @class FriendshipMapper
- * 
+ *
  * Funciones puras para convertir entre representaciones del usuario:\
  * \
  * - **rowToUserPublic(row)** → Convierte una fila de SQLite en `UserPublic`. \
@@ -18,18 +18,18 @@ import * as SharedTypes from '@transcendence/shared';
  */
 export class FriendshipMapper {
 
-	static rowToFriendshipResponse(row: SharedTypes.FriendshipRow): SharedTypes.Friendship {
+	static rowToFriendshipResponse(row: FriendshipTypes.FriendshipRow): FriendshipTypes.Friendship {
 		return {
-			userId: row.user_id as SharedTypes.UserTypes.UserId,
-			initiatorId: row.initiator_id as SharedTypes.UserTypes.UserId,
-			friendId: row.friend_id as SharedTypes.UserTypes.UserId,
-			status: row.status as SharedTypes.FriendshipStatus,
+			userId: row.user_id as UserTypes.UserId,
+			initiatorId: row.initiator_id as UserTypes.UserId,
+			friendId: row.friend_id as UserTypes.UserId,
+			status: row.status as FriendshipStatus,
 			createdAt: new Date(row.created_at),
 			updatedAt: new Date(row.updated_at)
 		};
 	}
 
-	static dataToInsert(data: SharedTypes.Friendship) : SharedTypes.FriendshipRow {
+	static dataToInsert(data: FriendshipTypes.Friendship) : FriendshipTypes.FriendshipRow {
 		return {
 			user_id: data.userId,
 			initiator_id: data.initiatorId,
@@ -40,7 +40,7 @@ export class FriendshipMapper {
 		};
 	}
 
-	static dataToSet(data: SharedTypes.UpdateFriendshipData) : SharedTypes.UpdateFriendshipRow {
+	static dataToSet(data: FriendshipTypes.UpdateFriendshipData) : FriendshipTypes.UpdateFriendshipRow {
 		return {
 			user_id: data.userId,
 			friend_id: data.friendId,

@@ -1,4 +1,5 @@
 import { Type, Static } from '@sinclair/typebox';
+import { UnauthorizedError } from '../errors/AppError.js';
 
 // DEFINICION DEL ENUM (La única fuente de la verdad)
 export enum GameMode {
@@ -87,7 +88,8 @@ export namespace MatchSchemas {
         response: {
             201: Match,             // Si hay match -> Devuelve objeto Match
             200: JoinQueueResponse  // Si a la cola -> Devuelve outcome simple
-        }
+        },
+        security: [{ bearerAuth: [] }]
     };
 
     // GET /matches/:id
@@ -108,7 +110,8 @@ export namespace MatchSchemas {
 			200: Match,
 			403: Type.Object({ error: Type.String(), message: Type.String() }),
 			404: Type.Object({ error: Type.String(), message: Type.String() })
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 
 	// POST /matches/:id/reject
@@ -124,7 +127,8 @@ export namespace MatchSchemas {
 			200: Match,
 			403: Type.Object({ error: Type.String(), message: Type.String() }),
 			404: Type.Object({ error: Type.String(), message: Type.String() })
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 
     export const GetMatchSchema = {
@@ -157,7 +161,8 @@ export namespace MatchSchemas {
             400: Type.Object({ error: Type.String(), message: Type.String() }),
             403: Type.Object({ error: Type.String(), message: Type.String() }),
             404: Type.Object({ error: Type.String(), message: Type.String() })
-        }
+        },
+        security: [{ bearerAuth: [] }]
 	};
 	
 	// Definir el Schema del Response de abandonar/cancelar un usuario de una cola
@@ -177,8 +182,10 @@ export namespace MatchSchemas {
 			offset: Type.Optional(Type.Number({ default: 0, minimum: 0 }))
 		}),
 		response: {
-			200: Type.Array(Match)
-		}
+			200: Type.Array(Match),
+			401: UnauthorizedError
+		},
+		security: [{ bearerAuth: [] }]
 	};
 
 	export type GetMatchHistoryReq = {

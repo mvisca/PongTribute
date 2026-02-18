@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { UnauthorizedError } from '../errors/AppError.js';
 
 // ============================================================================
 // REUSABLE FIELD DEFINITIONS
@@ -221,7 +222,8 @@ export namespace UserSchemas {
 		response: {
 			200: UserPublic,
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	/**
@@ -233,7 +235,8 @@ export namespace UserSchemas {
 		response: {
 			200: UserPublic,
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	/**
@@ -245,7 +248,8 @@ export namespace UserSchemas {
 		response: {
 			200: UserPublic,
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	export const getInternalUserByIdSchema = {
@@ -355,9 +359,11 @@ export namespace UserSchemas {
 		body: UpdateUserBody,
 		response: {
 			200: UserPublic,
+			401: UnauthorizedError,
 			404: NotFoundResponse,
 			409: ConflictErrorResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	// ========================================================================
@@ -381,7 +387,7 @@ export namespace UserSchemas {
 			passwordHash: PasswordHashField
 		}),
 		response: {
-			200:UserInternal,
+			204: Type.Null(),
 			404: NotFoundResponse
 		}
 	}
@@ -542,7 +548,8 @@ export namespace UserSchemas {
 		response: {
 			204: Type.Null(),
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 	
 	// ========================================================================
@@ -558,6 +565,7 @@ export namespace UserSchemas {
 		response: {
 			204: Type.Null(),
 			404: NotFoundResponse
-		}
+		},
+		security: [{ bearerAuth: [] }]
 	};
 }
