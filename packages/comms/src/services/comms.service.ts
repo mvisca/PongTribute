@@ -33,13 +33,36 @@ export class CommsService implements IEventService {
 	// Mapa: UserId -> Set de Sockets (Soporte multi-pestaña/dispositivo)
 	private connections: Map<string, Set<ExtendedWebSocket>> = new Map();
 	
-	// Cliente para comandos (SET, GET, PUBLISH)
-	private redis: Redis;
+	/*
+	Clientes Redis:
+	Uno para manejo de comandos redis
+	Otro para subscripciones a eventos TRANSCENDENCE_EVENTS
 	
-	// Cliente exclusivo para SUSCRIBER (SUBSCRIBE, ON MESSAGE) // TODO explicar tdlr la logica de subscripcion, fases, metodos, flujo
+	ARCHITECTURE:
+	Necesita un cliente dedicado para subscribe (no puede hacer otros comandos, sería bloqueante)
+	- redis: para comandos (set, get, publish, etc)
+	- redisSub: solo suscripción y recepción de mensaje
+	FLOW:
+	1. init: conecta redisSub y se suscibe a TRANSCENDENCE_EVENTS
+	2. on message: parse evento, encuentra el handler apropiado
+	3. dispatch: handler procesa y envía mensaje por websocket a usuarios
+	4. cleanup: desconecta redisSub en graceful shutdown
+
+	PHASES:
+	- suscripción: await redisSub.subscribe(TRANSCENDENCE_EVENTS)
+	- escucha: redisSub.on('message', (channel, message) => ...)
+	- dispatch: EVENT_HANDLERS,find(h => h.event.indludes(event.type))
+	*/
+	private redis: Redis;
 	private redisSub: Redis;
 	
-	private heartbeatInterval: NodeJS.Timeout | null = null; // TODO explciar que es este tipo?
+	/**
+	 * Intervalo de heartbeat para mantener conexión Redis viva
+	 * NodeJS.Timeout es el tipo que retorna  setInterval() en Node.js (en browser retorna number)
+	 * 
+	 * Se usa en clearInterval(this.heartbeatInterval) para limpiarlo
+	 */
+	private heartbeatInterval: NodeJS.Timeout | null = null;
 	private totalConnections = 0;
 	private logger = console;
 
@@ -147,7 +170,7 @@ export class CommsService implements IEventService {
 					}
 
 					ws.isAlive = false; // Marcar como pendiente
-					ws.ping(); // Enviar ping
+					ws.ping(); // Enviar ping, es síncrono, a diferencia del de redis que es async
 				});
 			});
 		}, CommsEnv.WS_PING_INTERVAL_MS());

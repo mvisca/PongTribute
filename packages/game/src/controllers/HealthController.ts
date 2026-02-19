@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { Redis } from 'ioredis';
 import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
+import { getDatabase } from '../connection.js';
 
 /**
  * Controller para manejar el health check del servicio de juegos
@@ -15,7 +16,10 @@ export class HealthController {
 	/**
 	 * Maneja el health check del servicio
 	 */
-	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
+	async handleHealthCheck(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<HealthCheckResponse> {
 		const checks: Record<string, HealthCheckDependency> = {};
 		let allHealthy = true;
 
@@ -31,6 +35,15 @@ export class HealthController {
 			}
 		} else {
 			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
+			allHealthy = false;
+		}
+
+		try {
+			const db = getDatabase();
+			db.prepare('SELECT 1').get();
+			checks.database = { status: 'ok' };
+		} catch(err: any) {
+			checks.databse = { status: 'unreachable', error: err.message };
 			allHealthy = false;
 		}
 
