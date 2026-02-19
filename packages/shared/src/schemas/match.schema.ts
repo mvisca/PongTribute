@@ -5,7 +5,7 @@ import { UnauthorizedError } from '../errors/AppError.js';
 export enum GameMode {
 	CLASSIC = 'classic',
 	SPEED = 'speed',
-	RETRO = 'retro'
+	PRO = 'pro'
 };
 
 export namespace MatchSchemas {

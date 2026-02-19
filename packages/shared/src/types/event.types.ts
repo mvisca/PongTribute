@@ -8,7 +8,7 @@ import { UserTypes } from './user.types.js';
 // ============================================================================
 // TIPOS REUTILIZABLES
 // ============================================================================
- 
+
 export interface UserInfoPayload {
 	userId: UserTypes.UserId;
 	username: string;
@@ -32,7 +32,7 @@ export namespace EventsTypes {
 }
 
 // ============================================================================
-// TRANSCENDENCE_EVENTS — Redis (Backend → Backend)
+// TRANSCENDENCE_EVENTS — Redis (Backend to Backend)
 // ============================================================================
 
 export namespace TranscendenceEventsTypes {
@@ -100,7 +100,6 @@ export namespace TranscendenceEventsTypes {
 		payload: {
 			matchId: string;
 			playerIds: string[];
-			roomId: string;
 		};
 	}
 
@@ -205,7 +204,7 @@ export namespace TranscendenceEventsTypes {
 }
 
 // ============================================================================
-// WEBSOCKET_EVENTS — WebSocket (Backend → Frontend)
+// WEBSOCKET_EVENTS — WebSocket (Backend to Frontend)
 // Cada interfaz describe exactamente lo que llega al browser.
 // El frontend solo necesita este namespace para tipar los mensajes entrantes.
 // ============================================================================
@@ -219,7 +218,7 @@ export namespace WebSocketEventsTypes {
 		payload: {
 			matchId: string;
 			gameState: GameState;
-			updateType: 
+			updateType:
 				| 'state_change'
 				| 'score_update'
 				| 'game_finished'
@@ -309,21 +308,13 @@ export namespace WebSocketEventsTypes {
 	// ── Sala de espera / Game ─────────────────────────────────────────────────
 
 	export interface JoinedMatch extends EventsTypes.BaseEvent {
-		type: typeof WEBSOCKET_EVENTS.JOINED_MATCH;
+		type: typeof WEBSOCKET_EVENTS.MATCH_JOINED;
 		payload: {
 			matchId: string;
 			opponentId: string;
 			opponentUsername: string;
 			opponentAvatar: string;
 			gameMode: GameMode;
-		};
-	}
-
-	export interface GameStart extends EventsTypes.BaseEvent {
-		type: typeof WEBSOCKET_EVENTS.GAME_START;
-		payload: {
-			matchId: string;
-			gameState: GameState;
 		};
 	}
 
@@ -339,21 +330,6 @@ export namespace WebSocketEventsTypes {
 	}
 
 	// ── Reconexión ────────────────────────────────────────────────────────────
-
-	export interface GamePaused extends EventsTypes.BaseEvent {
-		type: typeof WEBSOCKET_EVENTS.GAME_PAUSED;
-		payload: {
-			matchId: string;
-			reason?: string;
-		};
-	}
-
-	export interface GameResumed extends EventsTypes.BaseEvent {
-		type: typeof WEBSOCKET_EVENTS.GAME_RESUMED;
-		payload: {
-			matchId: string;
-		};
-	}
 
 	export interface GameOpponentDisconnected extends EventsTypes.BaseEvent {
 		type: typeof WEBSOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED;
@@ -384,11 +360,8 @@ export namespace WebSocketEventsTypes {
 		| MatchCancelled
 		| MatchRejected
 		| JoinedMatch
-		| GameStart
 		| GameOver
 		| GameUpdate
-		| GamePaused
-		| GameResumed
 		| GameOpponentDisconnected
 		| GameOpponentReconnected;
 }

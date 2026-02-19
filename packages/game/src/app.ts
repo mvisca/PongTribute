@@ -1,15 +1,15 @@
-import Fastify, { FastifyInstance, FastifyError } from 'fastify';
+// Tu trabajo es CONFIGURAR FASTIFY
+
+import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import fastifyWebsocket from '@fastify/websocket';
-import type { Redis } from 'ioredis';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { gameRoutes } from './index.js';
 import { GameEnv } from './config.js';
 import { healthRoutes } from './routes/health.routes.js';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { Redis } from 'ioredis';
+import { SWAGGER_THEME_CSS } from '@transcendence/shared';
 
 export interface GameAppDependencies {
 	redisClient: Redis;
@@ -17,18 +17,15 @@ export interface GameAppDependencies {
 
 export function buildApp(deps: GameAppDependencies): FastifyInstance {
 
-	const __filename = fileURLToPath(import.meta.url);
-	const __dirname = dirname(__filename);
-
 	// 1. Inicialización con Configuración (Logger, etc.)
 	const app = Fastify(GameEnv.getFastifyConfig());
-	
+
 	// 2. Plugins Globales de Seguridad
 	app.register(helmet, {
-		contentSecurityPolicy: false, // Ajustar según necesidad del juego
+		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});
-	
+
 	// 2. Plugins de documentación
 	app.register(swagger, {
 		openapi: {
@@ -57,23 +54,8 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 			return { schema, url };
 		}
 	});
-	
-	// 2. Plugins de documentacion con UI interactiva
-	/*app.register(swaggerUI, {
-	routePrefix: '/docs',
-	staticCSP: true,
-	uiConfig: {
-	docExpansion: 'list',
-	deepLinking: false
-	}
-	});*/
 
-	const swaggerThemeCSS = readFileSync(
-		// En runtime compilado, __dirname apunta a dist/, por eso subimos 2 niveles hasta /packages
-		join(__dirname, '../../shared/src/styles/', 'swagger-custom.css'),
-		'utf-8'
-	);
-	
+	// Swagger UI (Visual)
 	app.register(swaggerUI, {
 		routePrefix: '/docs',
 		staticCSP: true,
@@ -86,24 +68,21 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 			css: [
 				{
 					filename: 'swagger-custom.css',
-					content: swaggerThemeCSS
+					content: SWAGGER_THEME_CSS
 				}
 			]
 		}
 	});
-	
-	
-	// 2.1. REGISTRO DE WEBSOCKETS
-	// Esto habilita ws:// en tu servidor
+
+	// REGISTRO DE WEBSOCKETS
 	app.register(fastifyWebsocket);
-	
-	// 3. Hooks Globales (Logging de peticiones)
+
+	// Hooks Globales (Logging Visual de Rutas)
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
-		
-		if (method == 'HEAD')
-			return;
-		
+
+		if (method == 'HEAD') return;
+
 		const url = route.url;
 		const icon = {
 			POST: 'GAME 📝: ',
@@ -119,7 +98,7 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 	app.register(healthRoutes, { ...deps });
 	console.log('REG GAME ROUTES');
 	app.register(gameRoutes, { prefix: '/api' });
-	
+
 	// 6. Manejador de Errores Global
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
@@ -127,7 +106,7 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
-	
+
 	console.log('Returning App: GAME');
 	return app;
 }

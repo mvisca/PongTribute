@@ -45,6 +45,13 @@ export interface PaddleState {
 
 
 // 3. Estado completo de la partida
+/**
+ * GameState Completo
+ * Se usa para:
+ * 1. Inicializar la partida (status: WAITING/ACTIVE)
+ * 2. Reconexiones (status: PLAYING)
+ * Contiene TODO: Configuración + Posiciones
+ */
 export interface GameState {
     id: string;              // UUID de la partida (string, no number, por seguridad)
     paddleLeft: PaddleState;  // Pala izquierda (jugador 1)
@@ -53,9 +60,20 @@ export interface GameState {
 	// Unimos dimensiones + reglas de modo para que el front tenga TODO el contexto
     config: GameConfig & GameModeConfig;
 	targetScore: number;
-    status: GameStatus;
+    status: GameStatus; // 'waiting' | 'playing' | 'paused' | 'finished'
     winnerId?: UserTypes.UserId;  // UUID del usuario ganador (si finished)
 }
+
+/**
+ * GameDynamicState (Estado Ligero)
+ * Se usa para:
+ * 1. Bucle de juego (60 FPS)
+ * 2. Evento 'game:update'
+ * * Usamos 'Omit' para crear un nuevo tipo basado en GameState
+ * pero excluyendo las propiedades estáticas.
+ * Si actualizas GameState, este se actualiza solo. ¡Magia de TS!
+ */
+export type GameDynamicState = Omit<GameState, 'config' | 'id'>;
 
 // 4. Inputs del Cliente (Lo que envía el usuario)
 export interface GameInputPayload {

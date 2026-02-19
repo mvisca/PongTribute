@@ -12,7 +12,7 @@ import {
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes
 } from '@transcendence/shared';
-
+import { GameEnv } from '../config.js';
 
 /**
  * MatchService
@@ -22,17 +22,53 @@ export class MatchService {
 	private matchRepo: MatchRepository;
 	private redis: Redis;
 
-	// INYECCIÓN DE DEPENDENCIA
+	// CONSTRUCTOR: INYECCIÓN DE DEPENDENCIA
 	// El servicio NO se preocupa de dónde viene Redis, solo pide una instancia.
     constructor(matchRepo: MatchRepository, redisClient: Redis) { // Recibe la instancia, no la crea.
 		this.matchRepo = matchRepo;
 		this.redis = redisClient;
+	}
+	
+	//===========NUEVO MANAGER GENERAL==========
+	/**
+     * handleCreateMatch
+     * ORQUESTADOR CENTRAL: Recibe la petición bruta y decide qué hacer 
+	 * segun sea una partida publica, local o privada.
+     * Reemplaza la lógica de decisión que antes tenía el Controller.
+     */
+    async handleCreateMatch(userId: string, body: MatchSchemas.CreateMatchBodyType) {
+        
+		// Extraemos lo que necesitamos
+        const { matchType, opponentId, gameMode } = body;
+
+        // 1. VALIDACIÓN DE NEGOCIO (Antes estaba en el Controller)
+        // El servicio protege su propia integridad.
+        if (matchType === 'private' && !opponentId) {
+            throw new SharedErrors.ValidationError('Private match requires an opponentId');
+        }
+
+        // 2. ENRUTAMIENTO INTELIGENTE
+        if (matchType === 'public') {
+			// Usamos '??' para usar CLASSIC si gameMode es undefined
+			// ?? significa: Si lo de la izquierda es null o undefined, usa lo de la derecha".
+            return this.joinPublicQueue(userId, gameMode ?? GameMode.CLASSIC);
+        }
+
+        if (matchType === 'local') {
+            // Pasamos el body completo como config
+            return this.createLocalMatch(userId, body);
+        }
+
+        // 3. DEFAULT: PRIVATE
+        // Si llegamos aquí, sabemos que opponentId existe gracias al paso 1.
+        // El signo ! le dice a TS: "Confía en mí, esto no es null".
+        return this.createPrivateMatch(userId, opponentId!, body);
     }
 
 	/**
      * joinPublicQueue
      * 
-     * Mecanismo: Cola FIFO utilizando Redis Sorted Sets (`match:queue:$gameMode`).
+     * Mecanismo: Cola FIFO con Compensación de Errores y utilizando Redis Sorted Sets (`match:queue:$gameMode`).
 	 * Atomicidad: Se utiliza `ZPOPMIN` para obtener usuarios de las colas de 
 	 * forma atómica.
      * Acepta 'gameMode' para separar las colas.
@@ -40,11 +76,6 @@ export class MatchService {
      */
 	async joinPublicQueue(userId: string, gameMode: GameMode): Promise<MatchTypes.JoinQueueResponse> {
 
-		// Guard: Redis disponible?
-        // if (!this.redis) {
-        //     throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-		// }
-		
 		// Guard: Usuario no en partida activa?
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
 		if (activeMatch) throw new SharedErrors.ConflictError('User already has an active match');
@@ -54,51 +85,58 @@ export class MatchService {
 
 		console.log(`🔍 User ${userId} joining queue: ${QUEUE_KEY}`);
 
-		// Intento sacar de la cola al usuario más antiguo (ZPOPMIN es atómico)
+		// ATOMIC POP Intento sacar de la cola al usuario más antiguo (ID y SCORE/Timestamp)
+		// zpopmin devuelve [id, score, id, score ...]
 		const result = await this.redis.zpopmin(QUEUE_KEY, 1);
-		const opponentId = (result && result.length > 0) ? result[0] : null;
+		//const opponentId = (result && result.length > 0) ? result[0] : null;
 
-		// El encontrado no soy yo mismo?
-		if (opponentId && opponentId !== userId) {
-			
-			// CASO A: MATCH ENCONTRADO -> Crear partida 'active'
-			// 1. Obtener Nombres Reales (S2S Fetch)
-			//Justo en el momento en que ocurre el "Match Found", hacemos 
-			// un fetch rápido en paralelo de los nombres de ambos 
-			// jugadores usando el helper fetchUserProfile.
+		// Verificamos si obtuvimos algo
+        if (!result || result.length === 0) {
+             // NADIE EN COLA: Me añado yo y termino.
+             await this.redis.zadd(QUEUE_KEY, TICKET_TIMESTAMP, userId);
+             return { outcome: 'added_to_queue' };
+		}
+		
+		const opponentId = result[0];
+		const opponentScore = result[1]; // <--- Guardamos su antigüedad
+		
+		// CASO BORDE: Me saqué a mi mismo (poco probable pero posible por latencia)
+        if (opponentId === userId) {
+             await this.redis.zadd(QUEUE_KEY, opponentScore, opponentId);
+             return { outcome: 'added_to_queue' };
+		}
+		
+		// INTENTO DE MATCH (Bloque Seguro)
+        try {
+            // Fetch de datos
             const [p1Data, p2Data] = await Promise.all([
-                this.fetchUserProfile(opponentId), // El de la cola (Player 1)
-                this.fetchUserProfile(userId)      // Yo (Player 2)
-			]);
-			// Creamos la partida con los datos completos
-			const newMatch: MatchTypes.MatchRow = {
-				id: randomUUID(),
-				status: 'active',
-				player1_id: opponentId, // El que tenía el ticket más viejo va primero
-				player1_username: p1Data.username,
-				player1_score: 0,
-				player2_id: userId,     // Yo llego ahora
-				player2_username: p2Data.username,
-				player2_score: 0,
-				winner_id: null,
-				created_at: Date.now(),
-				finished_at: null,
-				game_mode: gameMode,
-				target_score: 11 // TODO valor harcodeado, integrar constantes de game
-			};
+                this.fetchUserProfile(opponentId),
+                this.fetchUserProfile(userId)
+            ]);
 
-			// Persistencia Bubble-Up
+            const newMatch: MatchTypes.MatchRow = {
+                id: randomUUID(),
+                status: 'active',
+                player1_id: opponentId,
+                player1_username: p1Data.username,
+                player1_score: 0,
+                player2_id: userId,
+                player2_username: p2Data.username,
+                player2_score: 0,
+                winner_id: null,
+                created_at: Date.now(),
+                finished_at: null,
+                game_mode: gameMode,
+                target_score: MatchConstants.MATCH_CONFIG.WINNING_SCORE
+            };
+
+			// PERSISTENCIA
 			await this.matchRepo.create(newMatch);
-
-			// =============OJO: refinar codigo para que notifique sin enviar el matchid aun
-			// o quizas es mejor que el sleep lo haga el front. ????
 
 			// Mapeo
             const matchDomain = MatchMapper.toDomain(newMatch);
 			
-			// Notificar al oponente vía Redis Pub/Sub (match_found vs mi_username)
-            // Publicamos evento para que el Socket del oponente se entere
-			
+			// Notificar al oponente vía Redis Pub/Sub (match_found vs mi_username)			
 			// Defino el evento con tipado estricto. Si falta 'timestamp' o 'payload' está mal, falla.
 			const event: TranscendenceEventsTypes.MatchFoundEvent = {
 				type: TRANSCENDENCE_EVENTS.MATCH_FOUND, // Usa la constante ('match:found')
@@ -106,8 +144,7 @@ export class MatchService {
 				source: 'game-service', // Opcional, pero útil para debugar
 				payload: {  // al definir este obj, TypeScrpit busca las variables en el ambito local.
 					matchId: matchDomain.id,     // Mapea los datos de tu dominio
-					playerIds: [opponentId, userId],
-					roomId: matchDomain.id // Creo que NO hace falta ??????????
+					playerIds: [opponentId, userId]
 				}
 			};
 			// Publicamos en el CANAL UNICO de eventos (definido en shared)
@@ -115,20 +152,18 @@ export class MatchService {
 
             return { outcome: 'match_found', match: matchDomain };
 		
-		} else {
-			// CASO B: Nadie esperando. Añadir a la cola.
-			// Si nos sacamos a nosotros mismos, nos ignoramos
-			if (opponentId === userId) {
-			// Log warning: te sacaste a ti mismo de la cola (raro pero posible)
-			}
-
-			// zadd: Añade al set. 
-			// Score = TICKET_TIMESTAMP (para ordenar por tiempo).
-			// Member = userId.
-			await this.redis.zadd(QUEUE_KEY, TICKET_TIMESTAMP, userId);
-			
-			return { outcome: 'added_to_queue' };
-		}
+			// 
+			} catch (error) {
+            console.error(`🔥 [CRITICAL] Error creando Match. Restaurando a ${opponentId} en cola.`, error);
+            
+            // COMPENSACIÓN (Rescate)
+            // Devolvemos al oponente a la cola con su antigüedad original
+            // TypeScript puede quejarse de que opponentScore es string, forzamos casteo si hace falta
+            await this.redis.zadd(QUEUE_KEY, opponentScore, opponentId);
+            
+            // Re-lanzamos el error para que el Controller avise al usuario actual
+            throw error;
+        }
 	}
 
 	/**
@@ -136,7 +171,6 @@ export class MatchService {
      * Cron Job: Se ejecuta cada 10 segundos desde server.ts
      */
 	async pruneQueues(): Promise<void> {
-		//if (!this.redis) return;
 		
 		const timeoutMs = MatchConstants.QUEUE_TIMEOUT_MS;
         const limit = Date.now() - timeoutMs;
@@ -179,13 +213,12 @@ export class MatchService {
 	 *Busca al usuario en TODAS las colas posibles y lo elimina.
 	 */
 	async leavePublicQueue(userId: string): Promise<void> {
-		//Guard
-		//if (!this.redis) return;
+
 		const client = this.redis;
 
 		console.log(`🗑️ User ${userId} removing from queues`);
 
-        // Object.values(GameMode) nos da ['classic', 'speed', 'retro']
+        // Object.values(GameMode) nos da ['classic', 'speed', 'pro']
         const modes = Object.values(GameMode);
         
         const promises = modes.map(mode => {
@@ -205,11 +238,6 @@ export class MatchService {
 		userId: string,
 		opponentId: string,
 		config?: Partial<MatchSchemas.CreateMatchBodyType>): Promise<MatchTypes.Match> {
-		
-		//Guard
-		// if (!this.redis) {
-		// 	throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-		// }
 
         // 1. Validaciones de Negocio
         if (userId === opponentId) {
@@ -246,7 +274,7 @@ export class MatchService {
             created_at: Date.now(),
             finished_at: null,
             game_mode: config?.gameMode || 'classic',
-            target_score: config?.targetScore || 11
+            target_score: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE
         };
 
         // 4. Persistencia (Bubble Up de errores SQL)
@@ -298,7 +326,7 @@ export class MatchService {
             id: matchId,
             status: 'active', // Nace activa para que el front entre directo
             gameMode: config?.gameMode || GameMode.CLASSIC, // O lo que venga en config
-            targetScore: config?.targetScore || 11,
+            targetScore: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE,
             player1: {
                 userId: userId,
                 username: p1Data.username,
@@ -306,7 +334,7 @@ export class MatchService {
                 isWinner: false
             },
             player2: {
-                userId: randomUUID(), // Generate unique UUID for guest player
+                userId: 'guest-player-id', // Generate unique UUID for guest player
                 username: 'Guest Player', // El front puede sobreescribir esto visualmente
                 score: 0,
                 isWinner: false
@@ -340,16 +368,11 @@ export class MatchService {
 		// Si no hay filas, devolvemos array vacío inmediatamente
 		if (rows.length === 0) return [];
 		
-		const matches = rows.map(row => MatchMapper.toDomain(row));
-		
-		// Mapeo directo (Memory only)
+		// Mapeo
         // Como 'row' ya tiene player1_username y player2_username, 
         // MatchMapper.toDomain los rellena automáticamente.
         return rows.map(row => MatchMapper.toDomain(row));
 	}
-
-
-
 
 
 	// ========================================================================
@@ -371,10 +394,6 @@ export class MatchService {
      * Confirma una partida privada, cambia su estado y notifica.
      */
 	async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
-		//Guard: Infraestructura
-		// if (!this.redis) {
-        //     throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-		// }
 		
         // 1. Obtener la partida cruda (Row)
         const matchRow = await this.matchRepo.findById(matchId); 
@@ -432,9 +451,7 @@ export class MatchService {
      * Rechaza una partida privada, cambia su estado y notifica.
      */
 	async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
-		// Guard: Infraestructura
-        // if (!this.redis) throw new SharedErrors.ServiceError('redis', 'Redis not available');
-		
+	
 		// 1. Obtener la partida cruda (Row)
 		const matchRow = await this.matchRepo.findById(matchId);
 
@@ -483,11 +500,6 @@ export class MatchService {
 	 * Evita que los invitados acepten partidas fantasma.
 	 **/
 	async cancelPendingMatches(userId: string): Promise<void> {
-		// Guard
-		// if (!this.redis) {
-		// 	console.error('❌ [MatchService] Redis not available for cancellation');
-        //     return;
-		// }
 		
         // 1. Buscamos las partidas creadas por este usuario que sigan PENDING
         const pendingMatches = await this.matchRepo.findPendingHostedByUser(userId);
@@ -551,9 +563,7 @@ export class MatchService {
      * Permite al creador (P1) revocar la invitación antes de que sea aceptada.
      */
 	async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
-		// Guard
-        // if (!this.redis) throw new SharedErrors.ServiceError('redis', 'Redis not available');
-		
+	
         console.log(`👉 ⚙️ [Service] Cancelando invitación ${matchId} por usuario ${userId}`);
 
         // 1. Obtener la partida
@@ -605,8 +615,9 @@ export class MatchService {
 	 * (pide al modulo User por HTTP el username del userId)
 	*/
 	private async fetchUserProfile(userId: string): Promise<{ username: string }> {
+		
 		// 1. Obtener URL Base
-		const baseUrl = process.env.USER_SERVICE_URL || 'http://localhost:3001';
+		const baseUrl = GameEnv.USER_SERVICE_URL();
 		
 		// Usamos la ruta interna, no la pública (/api)
 		// Esta ruta interna esta protegida por el SERVICE_SECRET en lugar del JWT
@@ -617,7 +628,7 @@ export class MatchService {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',
-					'x-service-secret': process.env.SERVICE_SECRET || ''
+					'x-service-secret': GameEnv.SERVICE_SECRET()
 				}
 			});
 			

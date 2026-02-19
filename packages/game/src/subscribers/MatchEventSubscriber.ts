@@ -3,13 +3,14 @@
 import { Redis } from 'ioredis';
 import { MatchService } from '../services/MatchService.js';
 import { GameService } from '../services/GameService.js';
-import { 
+import {
 	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 	Utils
 } from '@transcendence/shared';
-import { GameEnv } from '../config.js'; 
+import { GameEnv } from '../config.js';
+
 
 export class MatchEventSubscriber {
     private subscriber: Redis;
@@ -19,11 +20,11 @@ export class MatchEventSubscriber {
     constructor(matchService: MatchService, gameService: GameService) {
         this.matchService = matchService;
 		this.gameService = gameService;
-		
-        // 1. Obtener configuración usando tu función del namespace GameEnv
+
+        // 1. Obtener configuración usando la función del namespace GameEnv
         // Esto valida host, puerto, password y db automáticamente.
         const redisConfig = GameEnv.getRedisConfig();
-        
+
         console.log(`🔌 [Subscriber] Configurando Redis hacia ${redisConfig.host}:${redisConfig.port}`);
 
         // 2. Usar la Factory de Shared (Patrón del proyecto)
@@ -32,11 +33,11 @@ export class MatchEventSubscriber {
 
     public async connect() {
         try {
-            console.log('🎧 [MatchEventSubscriber] Connecting...');
+            console.log('🎧 [MatchEventSubscriber] Connecting to Pub/Sub...');
 
             // Nos suscribimos al canal de eventos definido en Shared
             await this.subscriber.subscribe(REDIS_CHANNEL);
-            
+
             // Escuchamos mensajes
             this.subscriber.on('message', (channel, message) => {
                 if (channel === REDIS_CHANNEL) {
@@ -45,7 +46,7 @@ export class MatchEventSubscriber {
             });
 
             console.log('✅ [MatchEventSubscriber] Ready. Listening on channel:', REDIS_CHANNEL);
-            
+
         } catch (error) {
             console.error('❌ [MatchEventSubscriber] Failed to subscribe:', error);
         }
@@ -55,62 +56,76 @@ export class MatchEventSubscriber {
 		try {
 			// 1. Casteamos a SystemEvent para que TypeScript nos ayude
 			const event = JSON.parse(message) as TranscendenceEventsTypes.SystemEvent;
-			
-			// Validación defensiva básica
-			if (!event || !event.type) return;
 
-			// TRUCO: Casteamos a 'any' temporalmente para extraer datos 
-            // sin que TypeScript se queje de las uniones estrictas.
-            const evtAny = event as any;
+			// Validación defensiva básica
+			if (!event || !event.type || !event.payload) return;
 
 			switch (event.type) {
 				// CASO 1: Desconexión
-				case TRANSCENDENCE_EVENTS.USER_DISCONNECTED:
-					// Aquí TS sabe que es un UserDisconnectedEvent.
-					// Verificamos si usamos 'targetUserId' (legacy) o 'payload.userId' (estándar).
-					// Usamos una verificación segura:
-					const disconnectedId = evtAny.targetUserId || evtAny.payload?.userId;
+                case TRANSCENDENCE_EVENTS.USER_DISCONNECTED: {
+					// El evento UserDisconnected NO tiene userId en el payload.
+                    // Lo tiene en la propiedad raíz 'targetUserId'.
+					// Hacemos un cast a un tipo intersección para acceder a la propiedad sin error.
+                    const disconnectedEvent = event as TranscendenceEventsTypes.SystemEvent & { targetUserId: string };
+                    const userId = disconnectedEvent.targetUserId;
 
-					if (disconnectedId) {
-						console.log(`⚡ [MatchEventSubscriber] Handling disconnect for: ${disconnectedId}`);
-							
-						// EJECUCIÓN PARALELA:
-						// 1. Limpiar colas de Matchmaking (MatchService)
-						// 2. Pausar partidas activas (GameService) - NUEVO
-						Promise.allSettled([
-							this.matchService.leavePublicQueue(disconnectedId),
-							this.matchService.cancelPendingMatches(disconnectedId),
-							this.gameService.handleDisconnect(disconnectedId)
-						]).then((results) => {
-							results.forEach((result, index) => {
-								if (result.status === 'rejected') {
-									console.error(`❌ Cleanup task ${index} failed for ${disconnectedId}:`, result.reason);
-								}
-							});
-						});
-					}
-					break;
-				
-				
-				// CASO 2: Actualización de Perfil
-				case TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED:				
-					const pUserId = evtAny.targetUserId || evtAny.payload?.userId;
-					const username = evtAny.payload?.username;
-					
-					if (pUserId && username) {
-						console.log(`📝 [Subscriber] Profile update received for ${pUserId}`);
-						this.matchService.handleUsernameChange(pUserId, username)
-							.catch(err => console.error('❌ Username sync error:', err));
-					}
-				break;
-				
+                    if (userId) {
+                        console.log(`⚡ [MatchEventSubscriber] User disconnect: ${userId}`);
+
+                        // Si falla uno, no detiene a los otros
+                        Promise.allSettled([
+                            this.matchService.leavePublicQueue(userId),
+                            this.matchService.cancelPendingMatches(userId),
+                            this.gameService.handleDisconnect(userId)
+                        ]);
+                    } else {
+                        console.warn('⚠️ [MatchEventSubscriber] User disconnected event missing targetUserId', event);
+                    }
+                    break;
+                }
+
+                // CASO 2: Actualización de Perfil
+                case TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED: {
+                    // El evento UserProfileUpdated tiene targetUserId en la raíz
+                    // y el payload contiene los datos cambiados (username, avatar, etc.)
+                    const updateEvent = event as TranscendenceEventsTypes.SystemEvent & {
+                        targetUserId: string;
+                        payload: { username?: string }
+                    };
+
+                    const userId = updateEvent.targetUserId;
+                    const username = updateEvent.payload?.username;
+
+                    if (userId && username) {
+                        console.log(`📝 [Subscriber] Syncing profile for ${username} (${userId})`);
+
+                        // 1. Actualizar DB (Historial y registros persistentes)
+                        this.matchService.handleUsernameChange(userId, username)
+                            .catch(err => console.error('❌ DB Update error:', err));
+
+                        // 2. Actualizar Memoria (Sesión activa en RAM)
+                        this.gameService.updatePlayerNameInActiveMatch(userId, username);
+                    } else {
+                         // Log de advertencia si llega el evento pero sin los datos necesarios
+                         if (!username) console.warn(`⚠️ [Subscriber] Profile update for ${userId} missing username`);
+                    }
+                    break;
+                }
+
 				default:
 					// Ignoramos eventos que no nos interesan
 					break;
-			}
-
+            }
         } catch (error) {
             console.error('❌ Error parsing Redis message:', error);
+        }
+	}
+
+	// Cierra limpiamente la conexion Redis
+	public async disconnect() {
+        if (this.subscriber) {
+            console.log('🔌 [MatchEventSubscriber] Disconnecting...');
+            await this.subscriber.quit();
         }
     }
 }

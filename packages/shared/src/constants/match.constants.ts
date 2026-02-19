@@ -57,7 +57,7 @@ export namespace MatchConstants {
 		/**
 		 * Puntaje para ganar una partida
 		*/
-		WINNING_SCORE: 5,
+		WINNING_SCORE: 11,
 		
 		/**
 		 * Numero de players por Match

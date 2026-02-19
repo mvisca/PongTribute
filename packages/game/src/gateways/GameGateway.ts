@@ -4,8 +4,6 @@
 //3. Valida manualmente el Token (ya que los navegadores no envian Headers en Websockets))
 //4. Acepta o rechaza la conexion
 
-// Tipo y clase para el socket de la lib ws
-// La necesitamos para que TypeScript conozca los metodos del obj socket (.send(),.on(), close(), ...)
 import { WebSocket } from 'ws';
 // Contiene el tipo que define como es una peticion HTTP en Fastfy.
 // Empieza siendo una peticion HTTP antes de convertirse en WebSocket
@@ -37,6 +35,10 @@ export class GameGateway {
     // Necesitamos el servicio para guardar la partida en memoria
 	constructor(private gameService: GameService) { }
 	
+	/**
+     * Maneja la conexión inicial WebSocket.
+     * Valida el ticket y delega la gestión de la sesión al Service.
+     */
 	//VALIDA PARAMETROS Y SEGURIDAD (JWT)
 	async handleConnection(connection: any, req: FastifyRequest): Promise<void> {
 		// 1. EXTRACCION DEL SOCKET REAL
@@ -110,16 +112,17 @@ export class GameGateway {
 
             console.log(`✅ [Gateway] Jugador Conectado: ${payload.username} (Match: ${matchId})`);
 			
-			// USO DEL SERVICIO INYECTADO
-			//METEMOS AL SOCKET EN LA SALA DE JUEGO (map activeMatches<> en GameService)
-			await this.gameService.joinMatch(matchId, userId, socket);
+			// CAPTURAR EL VALOR DE RETORNO
+            // Guardamos el estado que nos devuelve el servicio
+            const status = await this.gameService.joinMatch(matchId, userId, socket);
 
-			// 5. LOGICA DE BIENVENIDA. El servidor dice HOLA el primero.
-			// Aquí es donde confirmamos al cliente que "está dentro" y
-			// sabe que la conexion es estable y puede dejar de mostrar el spinner de carga 
-			// y mostrar la vista del juego.
-            // Vinculamos el socket con la partida (matchId) y el usuario (payload.id)
-            this.sendWelcomeMessage(socket, matchId, payload.id);
+            // Si devuelve null, es que algo falló (partida acabada, invalida, etc) y el socket se cerró dentro.
+			if (!status) return;
+			
+			// PASAR EL ESTADO AL WELCOME
+            // Pasamos 'status' como 4º argumento
+			this.sendWelcomeMessage(socket, matchId, payload.id, status);
+			
 
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
@@ -147,21 +150,25 @@ export class GameGateway {
 
 
 	//METODO PRIVADO AUXILIAR
-    private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string) {
+	/**
+     * Envía el mensaje inicial de protocolo.
+     * El frontend usa esto para saber que la conexión está lista.
+     */
+	private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string, status: string) {
+		// Podríamos pedirle al servicio la config, pero por ahora
+        // con devolver el status es suficiente para que el front reaccione.
+        // Si el front necesita la config, la pedirá.
         const welcome = {
-            event: WEBSOCKET_EVENTS.JOINED_MATCH,
+            event: WEBSOCKET_EVENTS.MATCH_JOINED,
             data: {
                 matchId,
                 playerId: userId,
-                status: 'pending', // Por ahora hardcodeado
-                message: 'Bienvenido a la sala de espera. Esperando oponente...'
+                status: status, // <--- ('active', 'waiting', 'playing')
+                message: status === 'playing' 
+                    ? 'Reconectando a partida en curso...' 
+                    : 'Conectado. Esperando rival...'
             }
-		};
-		
-		// IMPORTANTE: WebSocket solo envía TEXTO o BINARIO.
-        // No puedes enviar objetos JS directos, hay que serializar 
-		// a String (JSON) de texto plano. El cliente tendrá que hacer 
-		// JSON.parse() al recibirlo.
+        };
         socket.send(JSON.stringify(welcome));
     }
 }

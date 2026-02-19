@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { MatchService } from '../services/MatchService.js';
 // Importamos el Schema (Valor) Y el Tipo
-import { MatchSchemas, AuthTypes, MatchTypes, SharedErrors, GameMode } from '@transcendence/shared';
+import { MatchSchemas, MatchTypes, SharedErrors } from '@transcendence/shared';
 
 
 /**
@@ -21,93 +21,50 @@ export class MatchController {
 		this.matchService = matchService;
 	}
 
+	
 	// ========================================================================
-	// MÉTODO CREATE MATCH (Discrimina entre partida 'private' o 'public')
-	// ========================================================================
-	/**
-	 * createMatch
-	 * Orquesta la creación de partidas (privada) o la unión a colas de espera (publica).
-	 * * Flujo de decisión:
-	 * 1. Si es PUBLIC: Llama a joinPublicQueue (Redis/Memoria).
-	 * 2. Si es PRIVATE: Llama a createPrivateMatch (Base de Datos).
-	 */
-	async createMatch(
-		request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
-		reply: FastifyReply
-	) {
-		console.log("\n--- NEW REQUEST (SECURE) ---");
-		console.log("[Controller] 1. Entrando en createMatch");
+    // MÉTODO CREATE MATCH (Refactorizado)
+    // ========================================================================
+    /**
+     * createMatch
+     * Ahora es puramente un adaptador HTTP.
+     * Recibe la petición -> Llama al orquestador del servicio -> Devuelve respuesta.
+     */
+    async createMatch(
+        request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
+        reply: FastifyReply
+    ) {
+        console.log("\n--- NEW REQUEST (SECURE) ---");
+        console.log("[Controller] 1. Entrando en createMatch");
 
-		// 1. AUTENTICACIÓN
-        // El casting es seguro porque el middleware 'validateJWT' ya se ejecutó.
-		const user = request.user as AuthTypes.AccessTokenPayload;
-		console.log(`[Controller] User Authenticated: ${user.id}`);
-		
-		// 2. EXTRACCION DE DATOS
-		const { matchType, opponentId, gameMode } = request.body;
+        // 1. AUTENTICACIÓN
+        const user = request.user!;
+        
+        try {
+            // 2. LLAMADA AL SERVICIO (Una sola línea maestra)
+            // Ya no nos importa si es pública, privada o local. El servicio se encarga.
+            const result = await this.matchService.handleCreateMatch(user.id, request.body);
 
-		// 3. VALIDACIÓN DE ENTRADA (Verifica coherencia basica)
-		if (matchType === 'private' && !opponentId) {
-			console.log("❌ [Controller] Error: Private match sin opponentId");
-			return reply.status(400).send({
-				error: 'Bad Request',
-				message: 'Private match requires an opponentId'
-			});
-		}
+            // 3. RESPUESTA HTTP
+            console.log("[Controller] Respuesta exitosa del servicio.");
 
-		// 4. LÓGICA Y DELEGACIÓN
-		try {
-			let result;
+            // Decisión de Código HTTP (Responsabilidad de la capa de Transporte)
+            // Si nos unimos a cola (esperando) -> 200 OK
+            // Si se creó una partida (recurso creado) -> 201 Created
+            if ('outcome' in result && result.outcome === 'added_to_queue') {
+                return reply.status(200).send(result);
+            }
+            
+            // Para 'match_found', 'local' o 'private' -> 201
+            return reply.status(201).send(result);
 
-			if (matchType === 'public') {
-				// RAMA PÚBLICA: Gestión de Colas (Matchmaking)
-				console.log("[Controller] 4. Llamando a Service.joinPublicQueue...");
-				// El Schema asegura que gameMode es un string válido del Enum
-				result = await this.matchService.joinPublicQueue(user.id, gameMode as GameMode);
+        } catch (error) {
+            // El servicio lanza errores (Validation, Conflict, etc), aquí los capturamos
+            SharedErrors.handleError(error, reply);
+        }
+    }
 
-			} else if (matchType === 'local') { 
-                
-                console.log("[Controller] 4. Creando partida LOCAL (Ephemeral)...");
-                // Pasamos la config opcional (targetScore, etc) si existiera en el body
-                const config = request.body; 
-                result = await this.matchService.createLocalMatch(user.id, config);
-                
-				return reply.status(201).send(result);
-				
-			} else {
-				// RAMA PRIVADA: Creación Directa (Desafío)
-				console.log("[Controller] 4. Llamando a Service.createPrivateMatch...");
-				// El opponentId! es seguro aquí por la validación del paso 3
-				result = await this.matchService.createPrivateMatch(user.id, opponentId!);
-			}
-			
-			// 5. RESPUESTA EXITOSA
-			console.log("[Controller] 5. Respuesta recibida del servicio:", JSON.stringify(result).substring(0, 50) + "...");
-
-			// Distinguimos códigos HTTP según lo que pasó:
-			if ('outcome' in result) {
-				// Caso A: Se añadió a la cola pero no hay partida aún -> 200 OK
-				if (result.outcome === 'added_to_queue') {
-					return reply.status(200).send(result);
-				}
-				// Caso B: Se encontró partida inmediatamente -> 201 Created
-				if (result.outcome === 'match_found') {
-					return reply.status(201).send(result.match);
-				}
-			} else {
-				// Caso C: Partida privada creada -> 201 Created
-				return reply.status(201).send(result);
-			}
-
-			// Fallback por si acaso (defensivo)
-			return reply.status(500).send({ error: 'Unexpected state' });
-
-		} catch (error) {
-			SharedErrors.handleError(error, reply);
-		}
-	}
-
-
+	
 	// ========================================================================
 	// MÉTODO ACCEPT MATCH
 	// ========================================================================
@@ -123,7 +80,7 @@ export class MatchController {
 		// Extrae matchId de req.params
 		const { id } = req.params;
 		// Extrae userId de req.user
-        const user = req.user as AuthTypes.AccessTokenPayload;
+        const user = req.user!;
 
 		console.log(`User ${user.id} attempting to accept match ${id}`);
         
@@ -139,41 +96,7 @@ export class MatchController {
 			return reply.status(200).send(match);
 
 		} catch (error) {
-			// 4. Manejo de Errores (Error Mapping)
-			// Convertimos las excepciones del dominio en códigos HTTP estándar
-			console.error("❌ [Controller] Error en acceptMatch:", error);
-
-			if (error instanceof Error) {
-				// 404 Not Found: El ID de partida no existe
-				if (error.message.includes('not found')) {
-					return reply.status(404).send({
-						error: 'Not Found',
-						message: error.message
-					});
-				}
-
-				// 403 Forbidden: Soy un usuario cotilla intentando aceptar una partida ajena
-				if (error.message.includes('not the invited player')) {
-					return reply.status(403).send({
-						error: 'Forbidden',
-						message: error.message
-					});
-				}
-
-				// 400 Bad Request: La partida ya empezó o terminó
-				if (error.message.includes('not pending')) {
-					return reply.status(400).send({
-						error: 'Bad Request',
-						message: error.message
-					});
-				}
-			}
-
-			// 500 Internal Server Error: Fallo de DB o código inesperado
-			return reply.status(500).send({
-				error: 'Internal Server Error',
-				message: 'Could not accept match'
-			});
+			SharedErrors.handleError(error, reply);
 		}
 	}
 	
@@ -193,7 +116,7 @@ export class MatchController {
 		// Extrae matchId de req.params
 		const { id } = req.params;
 		// Extrae userId de req.user
-		const user = req.user as AuthTypes.AccessTokenPayload;
+		const user = req.user!;
 
 		console.log(`User ${user.id} attempting to reject match ${id}`);
         
@@ -209,41 +132,7 @@ export class MatchController {
 			return reply.status(200).send(match);
 
 		} catch (error) {
-			// 4. Manejo de Errores (Error Mapping)
-			// Convertimos las excepciones del dominio en códigos HTTP estándar
-			console.error("❌ [Controller] Error en rejectMatch:", error);
-
-			if (error instanceof Error) {
-				// 404 Not Found: El ID de partida no existe
-				if (error.message.includes('not found')) {
-					return reply.status(404).send({
-						error: 'Not Found',
-						message: error.message
-					});
-				}
-
-				// 403 Forbidden: Soy un usuario cotilla intentando rechazar una partida ajena
-				if (error.message.includes('not the invited player')) {
-					return reply.status(403).send({
-						error: 'Forbidden',
-						message: error.message
-					});
-				}
-
-				// 400 Bad Request: La partida ya empezó o terminó
-				if (error.message.includes('not pending')) {
-					return reply.status(400).send({
-						error: 'Bad Request',
-						message: error.message
-					});
-				}
-			}
-
-			// 500 Internal Server Error: Fallo de DB o código inesperado
-			return reply.status(500).send({
-				error: 'Internal Server Error',
-				message: 'Could not reject match'
-			});
+			SharedErrors.handleError(error, reply);
 		}
 	}
 	
@@ -255,24 +144,27 @@ export class MatchController {
         req: FastifyRequest<{ Params: MatchTypes.CancelMatchParams }>,
         reply: FastifyReply
     ) {
-        const userId = req.user?.id;
+        // 1. CONFIANZA EN EL MIDDLEWARE
+        // Usamos '!' (Non-null assertion) porque el middleware garantiza que user existe.
+        // Esto elimina el código defensivo sucio.
+        const user = req.user!; 
         const matchId = req.params.id;
-
-        if (!userId) {
-            return reply.status(401).send({ message: 'Unauthorized' });
+        
+        try {
+            // 2. LLAMADA AL SERVICIO
+            await this.matchService.cancelPrivateMatch(user.id, matchId);
+            
+            // 3. RESPUESTA ESTANDARIZADA
+            const response: MatchTypes.CancelMatchResponse = {
+                success: true,
+                message: 'Invitation cancelled successfully'
+            };
+            return reply.status(200).send(response);
+            
+        } catch (error) {
+            // 4. MANEJO DE ERRORES CENTRALIZADO
+            SharedErrors.handleError(error, reply);
         }
-
-        // Delegamos al servicio (que ya tiene la lógica de guards)
-        await this.matchService.cancelPrivateMatch(userId, matchId);
-
-		
-        // Retornamos estructura definida en Schema
-        const response: MatchTypes.CancelMatchResponse = {
-            success: true,
-            message: 'Invitation cancelled successfully'
-        };
-
-        return reply.status(200).send(response);
     }
 
     /**
@@ -286,7 +178,7 @@ export class MatchController {
         console.log("[Controller] Entrando en leaveQueue");
 
         // 1. AUTENTICACIÓN
-        const user = req.user as AuthTypes.AccessTokenPayload;
+        const user = req.user!;
         console.log(`User ${user.id} leaving public queue`);
 
         try {

@@ -1,9 +1,6 @@
 // ============================================================================
 // GAME CONSTANTS
 // ============================================================================
-
-// 
-
 // packages/shared/src/constants/game.constants.ts
 
 // 1. IMPORTAMOS LA DEFINICIÓN OFICIAL (Para evitar duplicados)
@@ -12,17 +9,7 @@ import { GameModeConfig } from '../types/game.types.js';
 
 export const GAME_CONSTANTS = {
   // =========================================
-  // LEGACY (Compatibilidad con Backend)
-  // =========================================
-  COURT_WIDTH: 800,
-  COURT_HEIGHT: 600,
-  BALL_SIZE: 10,
-  BALL_SPEED: 5,
-  PADDLE_SPEED: 20,
-  COUNTDOWN_SECONDS: 3,
-
-  // =========================================
-  // NUEVA ARQUITECTURA (Para Local Game y Backend Pro)
+  // LOCAL GAME y GAME PRO
   // =========================================
   CANVAS_WIDTH: 800,
   CANVAS_HEIGHT: 600,

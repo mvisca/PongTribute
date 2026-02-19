@@ -4,7 +4,8 @@ import {
 	FRIENDSHIP_STATUS,
 	SharedErrors,
 	UserTypes,
-	FriendshipTypes
+	FriendshipTypes,
+	TranscendenceEventsTypes
 } from '@transcendence/shared';
 import { FriendshipService } from '../src/services/friendship.service.js';
 import { IFriendshipRepository } from '../src/repositories/IFriendshipRepository.js';

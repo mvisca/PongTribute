@@ -1,3 +1,7 @@
+// Actúa como COMPOSITION ROOT (instancia Repo, Service, Redis). 
+// Aquí es donde deben vivir los Cron Jobs y el Health Check para 
+// compartir la misma instancia de servicios y base de datos.
+
 import { FastifyPluginAsync } from 'fastify';
 import { MatchController } from '../controllers/MatchController.js';
 import { GameGateway } from '../gateways/GameGateway.js';
@@ -8,7 +12,8 @@ import { GameMiddleware } from '../middleware/game.middleware.js';
 import { MatchService } from '../services/MatchService.js';
 import { MatchEventSubscriber } from '../subscribers/MatchEventSubscriber.js';
 import { GameEnv } from '../config.js';
-
+import { healthRoutes } from './health.routes.js';
+import { getDatabase } from '../connection.js';
 
 export const gameRoutes: FastifyPluginAsync = async (app) => {
 
@@ -25,11 +30,13 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     // Centralizamos la creación de instancias aquí para facilitar el testing.
 	// Si quisiéramos testear, podríamos pasar Repositorios "Mock" (falsos).
 
+	// 1. Obtener la instancia de DB primero (asegurando orden de ejecución)
+	const db = getDatabase();
 	// Repositorio
-	const matchRepo = new MatchRepository();
+	const matchRepo = new MatchRepository(db);
 
 	// Servicio de Matchmaking (Lógica de negocio + Redis + SQL)
-    // Inyectamos repo Y redisClient
+    // Inyectamos repo y redisClient
 	const matchService = new MatchService(matchRepo, redisClient);
 
 	// Servicio de Juego (Game Loop / Físicas)
@@ -39,6 +46,27 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     const controller = new MatchController(matchService);
 	const gateway = new GameGateway(gameService);
 	
+
+	// LIMPIEZA DE ZOMBIES (Al arrancar)
+    console.log('🧟 Buscando partidas zombies por reinicio...');
+    matchRepo.resetZombieMatches()
+        .then(count => {
+            if (count > 0) console.log(`💥 ZOMBIES: Se abortaron ${count} partidas huerfanas.`);
+            else console.log('✨ DB limpia: No hay partidas zombies.');
+        })
+        .catch(err => console.error('❌ Error limpiando zombies:', err));
+	
+
+	// ========================================================================
+	// 3. CRON JOBS
+	// ========================================================================
+    // Al estar aquí, comparte el mismo redisClient y matchService que la API
+    console.log('⏱️ Iniciando Cron Jobs internos en GameRoutes');
+    const cronInterval = setInterval(() => {
+        matchService.pruneQueues().catch(err => app.log.error(err));
+        matchService.prunePrivateInvites().catch(err => app.log.error(err));
+    }, 10000);
+
 	// ========================================================================
     // SUSCRIPTORES (Background Tasks)
     // ========================================================================
@@ -46,10 +74,16 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     const eventSubscriber = new MatchEventSubscriber(matchService, gameService);
     await eventSubscriber.connect();
 
+	// ========================================================================
+	// 5. REGISTRO HEALTH CHECK
+	// ========================================================================
+    // Pasamos el cliente redis para que el endpoint /health verifique la conexión real
+    await app.register(healthRoutes, { redisClient });
+
+
     // ========================================================================
     // RUTA HTTP DE CREAR PARTIDA (REST)
     // ========================================================================
-	
 	/**
      * POST /matches
      * Crea una nueva partida en la base de datos y devuelve su ID.
@@ -158,5 +192,16 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
     });
     
 	console.log('✅ Game Routes registered');
+
+	// ========================================================================
+	// 7. LIFECYCLE (Limpieza)
+	// ========================================================================
+    app.addHook('onClose', async () => {
+        console.log('🛑 GameRoutes: Limpiando recursos...');
+		clearInterval(cronInterval); // Paramos el cron
+		// Cierra el subscriber (que tiene su propia conexión Redis)
+		await eventSubscriber.disconnect();
+        await redisClient.quit();    // Cerramos Redis
+    });
 };
 

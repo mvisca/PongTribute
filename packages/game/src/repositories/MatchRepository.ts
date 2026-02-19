@@ -3,15 +3,31 @@
 import { MatchTypes, SharedErrors, MatchConstants } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
 
+
 /**
  * MatchRepository
  * Capa de Persistencia (Data Access Layer).
  * Responsabilidad única: Traducir objetos de dominio a SQL y viceversa.
  * Patrón de errores: Bubble Up (los errores de DB suben limpios al Controller).
+ * * Abstracción de acceso a datos para las partidas.
+ * * NOTA DE ARQUITECTURA:
+ * Aunque 'better-sqlite3' es síncrono por naturaleza, todos los métodos de este
+ * repositorio se definen como 'async' (Devuelven Promise) intencionalmente.
+ * * MOTIVACIÓN:
+ * 1. Mantiene la consistencia con la interfaz de BD asíncrona estándar en Node.js.
+ * 2. Permite una migración futura a PostgreSQL/TypeORM/Prisma sin refactorizar
+ * la capa de Servicios (GameService), que ya espera Promesas ("await").
+ * * @see GameService
  */
 export class MatchRepository {
     // Instancia de better-sqlite3 lista para usar
-    private db = getDatabase();
+	// private db = getDatabase();
+    private db: ReturnType<typeof getDatabase>;
+    
+    constructor(db: ReturnType<typeof getDatabase>) {
+        this.db = db;
+    }
+
 
     // ========================================================================
     // ESCRITURA (COMMANDS)
@@ -102,6 +118,25 @@ export class MatchRepository {
         // 2. Ejecutar (Better-sqlite3 usa .run() para UPDATES)
         updateP1.run(newUsername, userId);
         updateP2.run(newUsername, userId);
+	}
+	
+	/**
+     * resetZombieMatches
+     * Se llama SOLO al inicio del servidor.
+     * Marca como 'expired' todas las partidas que quedaron 'active' 
+     * tras un reinicio inesperado.
+     */
+    async resetZombieMatches(): Promise<number> {
+        const stmt = this.db.prepare(
+            `UPDATE matches 
+             SET status = ?, 
+                 finished_at = ? 
+             WHERE status = ?`
+        );
+		const result = stmt.run('expired', Date.now(), 'active');
+		
+        // Retorna cuantas filas afectó
+        return result.changes; 
     }
 
 	/**

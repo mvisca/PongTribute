@@ -6,7 +6,7 @@
 //4. Player2 pide partida publica (server hace matchmaking, 
 // saca a P1 de Redis, crea la partida en DB y retorna matchId).
 //5. Ambos se conectan por Websocket (ws://...) a esa partida
-//6. Reciben del server JOINED_MATCH para comfirmar
+//6. Reciben del server MTCH_JOINED para comfirmar
 
 //Para que funcione necesitas tener toda la plataforma levantada
 //  y usar 4 terminales:
