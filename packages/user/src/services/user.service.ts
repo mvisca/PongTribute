@@ -248,7 +248,7 @@ export class UserService {
         return updatedUser;
 	}
 
-	async update2FAStatus( // TODO actualizar llamado en user.controller
+	async update2FAStatus(
 		userId: string,
 		has2FAEnabled: boolean,
 		totpSecret?: string,

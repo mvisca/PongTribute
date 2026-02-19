@@ -95,7 +95,7 @@ export namespace CommsEnv {
       redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
       redisPassword: process.env.REDIS_PASSWORD,
       
-      userServiceUrl: process.env.USER_SERVICE_URL || 'http://localhost:3001', // TODO debería ser el backup como está o terminado en /api ?? los fecth internal no llevan api? o si? es correcto que sea parte de esta variable que ningun otro servicio incorpora como url de servicio?
+      userServiceUrl: process.env.USER_SERVICE_URL || 'http://localhost:3001',
       serviceSecret: process.env.SERVICE_SECRET || '',
       jwtSecret: process.env.JWT_SECRET || '',
       

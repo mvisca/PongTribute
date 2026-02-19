@@ -1024,7 +1024,7 @@ export class AuthService {
 		
 		// Conseguir usuario para pasarlo como parametro
 		// Generar nuevo par de tokens
-		const user = await this.fetchUserById(setupData.userId); // DUDA se está pasando demasiada info con este user creo... que se necesita realmente... se puede obtenerdel jwtPayload? es esta una buena via? ya esta aregando una apicall más
+		const user = await this.fetchUserById(setupData.userId);
 		return await this.generateTokenPair(user, true);
 	}
 	
