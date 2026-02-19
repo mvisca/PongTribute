@@ -1,41 +1,39 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import type { Redis } from 'ioredis';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { UserEnv, UserRoutes, UserService, AuthMiddleware } from './index.js';
-import { Utils } from '@transcendence/shared';
+import { UserEnv, UserRoutes } from './index.js';
+import { UserService } from './services/user.service.js';
 import { healthRoutes } from './routes/health.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Cliente Redis de toda la app User
-export let redisClient: Redis | null = null;
+export interface UserAppDependencies {
+	redisClient: Redis;
+	userService: UserService;
+}
 
 /** Crea y configuara la instancia de Fastfy */
-export function buildApp(): FastifyInstance { 
-	
-	try {
-		const redisConfig = UserEnv.getRedisConfig();
-		redisClient = Utils.createRedisClient(redisConfig);
-		console.log('Redis cliente creado en User service');
-	} catch (err) {
-		console.error('Error conectando Redis en User: ', err);
-		process.exit(1);
-	}
+export function buildApp(deps: UserAppDependencies): FastifyInstance {
 	
 	/** 1. Crear instancia app */
 	const app = Fastify(UserEnv.getFastifyConfig());
 	
-	/** 1.1 Inicializar UserService e inyectarlo en middleware */
-	const userService = new UserService();
-	AuthMiddleware.setUserService(userService);
-	console.log('UserService inyectado en AuthMiddleware');
-	
+	/** 1.5.  Rate limitng global */
+	app.register(rateLimit, {
+		max: 100, // 100 requests
+		timeWindow: '1 minute',
+		redis: deps.redisClient,
+		nameSpace: 'rl:user:',
+		skipOnError: true // No bloquear si Redis falla
+	});
+
 	/** 2. Plugins de seguridad */
 	app.register(helmet, {
 		contentSecurityPolicy: false,
@@ -76,7 +74,6 @@ export function buildApp(): FastifyInstance {
 		}
 	});
 	
-	/** 2. Plugins de documentacion con UI interactiva */
 	/** 2. Plugins de documentacion con UI interactiva */
 	const swaggerThemeCSS = readFileSync(
 		// En runtime compilado, __dirname apunta a dist/src, por eso subimos 3 niveles hasta /packages
@@ -120,19 +117,19 @@ export function buildApp(): FastifyInstance {
 		console.log(`${icon} ${method.padEnd(7)} ${url}`);
 	})
 	
-
+	
 	/** Registrar todas las rutas del servicio */
-	app.register(healthRoutes, { redisClient });
-	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal'});
+	app.register(healthRoutes, { ...deps });
+	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal', ...deps });
 	console.log('REG TOKEN PROTECTED ROUTES');
 	
-	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
+	app.register(UserRoutes.internalRoutes, { prefix: '/internal', ...deps });
 	console.log('REG USER INTERNAL ROUTES');
 	
-	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
+	app.register(UserRoutes.publicRoutes, { prefix: '/api', ...deps });
 	console.log('REG USER PUBLIC ROUTES');
 	
-	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
+	app.register(UserRoutes.protectedRoutes, { prefix: '/api', ...deps });
 	console.log('REG USER PROTECTED ROUTES');
 	
 	

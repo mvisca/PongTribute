@@ -1,12 +1,14 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserSchemas, FriendshipSchemas } from '@transcendence/shared';
 import { UserController, FriendshipController, AuthMiddleware } from '../index.js';
+import { UserAppDependencies } from '../app.js';
 
-export const protectedRoutes: FastifyPluginAsync = async (app) => {
-	const controller = new UserController();
-	const friendshipController = new FriendshipController();
+export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
+	const controller = new UserController(opts.userService);
+	const friendshipController = new FriendshipController(opts.userService, opts.redisClient);
 
-	app.addHook('preHandler', AuthMiddleware.validateJWT);
+	const validateJWT = AuthMiddleware.createValidateJWT(opts.userService);
+	app.addHook('preHandler', validateJWT);
 
 	// ============================================================================
 	// GET READ / CHECKS & GETS

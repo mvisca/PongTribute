@@ -1,9 +1,10 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserController, validateServiceSecret } from '../index.js';
 import { AuthSchemas, UserSchemas } from '@transcendence/shared';
+import { UserAppDependencies } from '../app.js';
 
-export const internalRoutes: FastifyPluginAsync = async (app) => {
-	const controller = new UserController();
+export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
+	const controller = new UserController(opts.userService);
 
 	app.addHook('preHandler', validateServiceSecret);
 

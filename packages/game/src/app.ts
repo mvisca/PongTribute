@@ -5,31 +5,21 @@ import type { Redis } from 'ioredis';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { gameRoutes } from './index.js';
-import { Utils } from '@transcendence/shared';
 import { GameEnv } from './config.js';
 import { healthRoutes } from './routes/health.routes.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-// Cliente Redis de toda la app Game
-export let redisClient: Redis | null = null;
+export interface GameAppDependencies {
+	redisClient: Redis;
+}
 
-export function buildApp(): FastifyInstance {
-	
+export function buildApp(deps: GameAppDependencies): FastifyInstance {
+
 	const __filename = fileURLToPath(import.meta.url);
 	const __dirname = dirname(__filename);
-	
-	
-	try {
-		const redisConfig = GameEnv.getRedisConfig();
-		redisClient = Utils.createRedisClient(redisConfig);
-		console.log('Redis cliente creado en Game service');
-	} catch (err) {
-		console.error('Error conectando Redis en Game: ', err);
-		process.exit(1);
-	}
-	
+
 	// 1. Inicialización con Configuración (Logger, etc.)
 	const app = Fastify(GameEnv.getFastifyConfig());
 	
@@ -126,7 +116,7 @@ export function buildApp(): FastifyInstance {
 	});
 
 	// 4. Registro de Rutas
-	app.register(healthRoutes, { redisClient });
+	app.register(healthRoutes, { ...deps });
 	console.log('REG GAME ROUTES');
 	app.register(gameRoutes, { prefix: '/api' });
 	

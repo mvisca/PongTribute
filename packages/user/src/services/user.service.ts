@@ -1,24 +1,26 @@
 import bcrypt from 'bcryptjs';
+import type { Redis } from 'ioredis';
 import {
-	UserTypes, 
-	Utils, 
+	UserTypes,
+	Utils,
 	SharedErrors,
 	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS
 } from '@transcendence/shared';
-import { 
+import {
 	IUserRepository,
 	SQLiteUserRepository,
 	UserEnv,
 	UserMapper
 } from '../index.js';
-import { redisClient } from '../app.js'; 
 
 export class UserService {
 	private userRepo: IUserRepository;
+	private redisClient: Redis;
 
-	constructor() {
+	constructor(redisClient: Redis) {
 		this.userRepo = new SQLiteUserRepository();
+		this.redisClient = redisClient;
 	}
 
 	/** Validación de argumento avatar en updateUser */
@@ -227,23 +229,19 @@ export class UserService {
 		const updatedUser = await this.userRepo.update(id, data);
 
 		if (updatedUser.username !== oldUsername) {
-            if (redisClient) {
-                console.log(`📣 [UserService] Username changed: ${oldUsername} -> ${updatedUser.username}`);
-                
-                const eventPayload = {
-                    type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,
-                    payload: {
-                        userId: id,
-                        username: updatedUser.username
-                    }
-                };
+            console.log(`📣 [UserService] Username changed: ${oldUsername} -> ${updatedUser.username}`);
 
-                // Publicar al canal de eventos
-                redisClient.publish(REDIS_CHANNEL, JSON.stringify(eventPayload))
-                    .catch(err => console.error('❌ Error publicando evento Redis:', err));
-            } else {
-                console.warn('⚠️ [UserService] Redis client not available. Event not sent.');
-            }
+            const eventPayload = {
+                type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,
+                payload: {
+                    userId: id,
+                    username: updatedUser.username
+                }
+            };
+
+            // Publicar al canal de eventos
+            this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(eventPayload))
+                .catch(err => console.error('❌ Error publicando evento Redis:', err));
         }
         return updatedUser;
 	}
@@ -275,7 +273,9 @@ export class UserService {
 	}
 
 	async anonymizeUser(id: string): Promise<void> {
-		await this.friendshipRepo.deleteAllByuserId(id);
+		// En esta llamada, el repo se encarga de limpiar también amistades
+		// DEUDA se debe manejar un llamado al FriendshipRepo para que haga la limpieza
+		// Así se mantiene la lógica en el service y cada repo maneja sus tablas ;P
 		await this.userRepo.anonymize(id);
 	}
 

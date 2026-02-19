@@ -1,7 +1,7 @@
-import { buildApp, redisClient as appRedisClient } from './app.js';
+import { buildApp } from './app.js';
 import { closeDatabase } from './connection.js';
 import { GameEnv } from './config.js';
-import { FastifyInstance } from 'fastify'; 
+import { FastifyInstance } from 'fastify';
 import { MatchRepository } from './repositories/MatchRepository.js';
 import { MatchService } from './services/MatchService.js';
 // Importamos Utils para crear conexiones y Redis type
@@ -10,15 +10,25 @@ import { Redis } from 'ioredis';
 
 
 let app: FastifyInstance | null = null;
+let appRedisClient: Redis | null = null;  // Cliente Redis de la app (para health, etc.)
 let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons
 
 async function start() {
 	try {
 		// Inicializar config
 		GameEnv.init();
-		
+
+		// Crear Redis antes de buildApp
+		try {
+			appRedisClient = Utils.createRedisClient(GameEnv.getRedisConfig());
+			console.log('Redis cliente creado en Game service');
+		} catch (err) {
+			console.error('Error conectando Redis en Game: ', err);
+			process.exit(1);
+		}
+
 		// Construir app
-		app = buildApp();
+		app = buildApp({ redisClient: appRedisClient! });
 		
 		// Arrancar el servidor
 		await app.listen({

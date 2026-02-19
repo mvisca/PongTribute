@@ -1,12 +1,13 @@
 import { FastifyPluginAsync } from "fastify";
 import { AuthSchemas } from "@transcendence/shared";
 import { AuthController, AuthMiddleware } from "../index.js";
+import { AuthAppDependencies } from "../app.js";
 
 
-export const authRoutes: FastifyPluginAsync = async (app) => {
+export const authRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, opts) => {
 
 	// instancia única de controller para todas las rutas
-	const controller = new AuthController();
+	const controller = new AuthController(opts.redisClient);
 
 	// ============================================================================
 	// PUBLIC ROUTES // LOGIN & VERIFY 2FA & VERIFY BACKUP CODE
@@ -15,12 +16,24 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	/** Registrar nuevo usuario */
 	app.post('/auth/register', {
 		schema: AuthSchemas.RegisterBodySchema,
+		config: {
+			rateLimit: {
+				max: 3,
+				timeWindow: '1 hour'
+			}
+		},
 		handler: controller.register.bind(controller)
 	});
 
 	/** Autenticar usuario y retornar tokens */
 	app.post('/auth/login', {
 		schema: AuthSchemas.LoginBodySchema,
+		config: {
+			rateLimit: {
+				max: 5,
+				timeWindow: '15 minutes'
+			}
+		},
 		handler: controller.login.bind(controller)
 	});
 
@@ -39,6 +52,12 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
 	/** Refresca tokens de acceso y refresh */
 	app.post('/auth/refresh', {
 		schema: AuthSchemas.RefreshTokenBodySchema,
+		config: {
+			rateLimit: {
+				max: 20,
+				timeWindow: '1 minute'
+			}
+		},
 		handler: controller.refreshAccessToken.bind(controller)
 	});
 

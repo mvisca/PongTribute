@@ -4,22 +4,20 @@ import { CommsEnv } from './config.js';
 import { CommsService } from './services/comms.service.js';
 
 let app: FastifyInstance | null = null;
+let commsService: CommsService | null = null;
 
 async function start() {
   try {
     // 1. Inicializar configuración
     CommsEnv.init();
-    
-    // 2. Construir app Fastify
-    app = buildApp();
-    
-    // 3. Inicializar CommsService (requiere Redis ya conectado)
-    const service = new CommsService();
-    await service.init();
-    
-    // Exportar para uso global (necesario en routes)
-    (global as any).commsService = service;
-    
+
+    // 2. Inicializar CommsService (requiere Redis ya conectado)
+    commsService = new CommsService();
+    await commsService.init();
+
+    // 3. Construir app Fastify, pasando commsService como dependencia
+    app = buildApp({ commsService });
+
     // 4. Arrancar servidor HTTP
     await app.listen({
       port: CommsEnv.PORT(),
@@ -49,10 +47,9 @@ async function gracefulShutdown(signal: string) {
   }
 
   // 2. Cerrar CommsService (WS + Redis internos)
-  const service = (global as any).commsService as CommsService | undefined;
-  if (service) {
+  if (commsService) {
     try {
-      await service.close();
+      await commsService.close();
       console.log('[Comms] CommsService cerrado (incluyendo Redis)');
     } catch (err) {
       console.error('[Comms] Error cerrando CommsService:', err);

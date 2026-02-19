@@ -1,19 +1,30 @@
 import { FastifyInstance } from 'fastify';
-import { buildApp, redisClient } from './app.js';
+import type { Redis } from 'ioredis';
+import { Utils } from '@transcendence/shared';
+import { buildApp } from './app.js';
 import { AuthEnv } from './config.js';
 import { TokenCleanupService } from './services/token-cleanup.service.js';
-import { TLowercase } from '@sinclair/typebox';
 
 let app: FastifyInstance | null = null;
 let cleanupService: TokenCleanupService | null = null;
+let redisClient: Redis | null = null;
 
 async function start() {
 	try {
 		// Inicializar config
 		AuthEnv.init();
-		
+
+		// Crear Redis antes de buildApp
+		try {
+			redisClient = Utils.createRedisClient(AuthEnv.getRedisConfig());
+			console.log('Redis cliente creado en Auth service');
+		} catch (err) {
+			console.error('Error conectando Redis en Auth: ', err);
+			process.exit(1);
+		}
+
 		// Construir app
-		app = buildApp();
+		app = buildApp({ redisClient: redisClient! });
 
 		// Arrancar el servidor
 		await app.listen({

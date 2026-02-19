@@ -1,4 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
+import type { Redis } from 'ioredis';
 import {
 	SharedErrors,
 	REDIS_CHANNEL,
@@ -8,20 +9,21 @@ import {
 	FriendshipTypes,
 	UserTypes
 } from '@transcendence/shared';
-import { 
+import {
 	FriendshipService,
 	UserService
 } from '../index.js';
-import { redisClient } from '../index.js';
 
 /** Controller de Friendship - Maneja peticiones HTTP relacionadas con amistades */
 export class FriendshipController {
 	private friendshipService: FriendshipService;
 	private userService: UserService;
+	private redisClient: Redis;
 
-	constructor() {
+	constructor(userService: UserService, redisClient: Redis) {
 		this.friendshipService = new FriendshipService();
-		this.userService = new UserService();
+		this.userService = userService;
+		this.redisClient = redisClient;
 	}
 
 	// ============================================================================
@@ -33,7 +35,7 @@ export class FriendshipController {
 		senderUsername: string,
 		receiverId: string
 	): Promise<void> {
-		if (!redisClient) return;
+		if (!this.redisClient) return;
 
 		// Conseguir avatar del sender (no está en el JWT)
 		const sender = await this.userService.findUserById(senderId);
@@ -50,7 +52,7 @@ export class FriendshipController {
 			},
 		};
 
-		await redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
 		console.log(`[FriendshipController] FRIEND_REQUEST publicado: de ${senderId} a ${receiverId}`);
 	}
 
@@ -59,7 +61,7 @@ export class FriendshipController {
 		acceptorUsername: string,
 		requesterId: string
 	): Promise<void> {
-		if (!redisClient) return;
+		if (!this.redisClient) return;
 
 		// Conseguir avatar del acceptor (no está en JWT)
 		const acceptor = await this.userService.findUserById(acceptorId);
@@ -76,7 +78,7 @@ export class FriendshipController {
 			},
 		};
 
-		await redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
 		console.log(`[FriendshipController] FRIEND_ACCEPT publicado: de ${acceptorId} a ${requesterId}`);
 	}
 
@@ -84,7 +86,7 @@ export class FriendshipController {
 		removerId: UserTypes.UserId,
 		removedId: UserTypes.UserId
 	): Promise<void> {
-		if (!redisClient) return;
+		if (!this.redisClient) return;
 
 		const event: TranscendenceEventsTypes.FriendRemovedEvent = {
 			type: TRANSCENDENCE_EVENTS.FRIEND_REMOVE,
@@ -96,7 +98,7 @@ export class FriendshipController {
 			},
 		};
 
-		await redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
 		console.log(`[FriendshipController] FRIEND_REMOVE publicado: ${removerId} elimino ${removedId}`);
 	}
 

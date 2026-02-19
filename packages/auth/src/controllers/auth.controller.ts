@@ -6,10 +6,10 @@ import { AuthService } from "../index.js";
 export class AuthController {
 
 	private authService: AuthService;
-	private redisClient: Redis | null;
+	private redisClient: Redis;
 
-	constructor(redisClient: Redis | null = null) {
-		this.authService = new AuthService();
+	constructor(redisClient: Redis) {
+		this.authService = new AuthService(redisClient);
 		this.redisClient = redisClient;
 	}
 

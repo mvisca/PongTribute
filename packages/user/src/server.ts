@@ -1,16 +1,31 @@
 import { FastifyInstance } from 'fastify';
-import { buildApp, UserEnv, redisClient, closeDatabase } from './index.js';
+import { buildApp, UserEnv, closeDatabase } from './index.js';
+import { UserService } from './services/user.service.js';
 import { TokenService } from './index.js';
+import { Utils } from '@transcendence/shared';
+import type { Redis } from 'ioredis';
 
 let app: FastifyInstance | null = null;
+let redisClient: Redis | null = null;
 
 async function start() {
 	try {
 		// Inicializar config
 		UserEnv.init();
 
+		// Crear Redis antes de buildApp
+		try {
+			redisClient = Utils.createRedisClient(UserEnv.getRedisConfig());
+			console.log('Redis cliente creado en User service');
+		} catch (err) {
+			console.error('Error conectando Redis en User: ', err);
+			process.exit(1);
+		}
+
+		const userService = new UserService(redisClient!);
+
 		// Construir app
-		app = buildApp();
+		app = buildApp({ redisClient: redisClient!, userService });
 
 		// Arrancar el servidor
 		await app.listen({
@@ -44,7 +59,7 @@ async function start() {
 
 async function gracefulShutdown(signal: string) {
 	console.log(`\n${signal} recibido. Iniciando Graceful Shutdown`);
-	
+
 	if (redisClient) {
 		try {
 			await redisClient.quit();

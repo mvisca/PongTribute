@@ -16,24 +16,23 @@ import {
 	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes } from '@transcendence/shared';
-import { redisClient } from '../app.js';
+import type { Redis } from 'ioredis';
 
 export class AuthService {
-	
+
 	// ========================================================================
 	// PROPIEDADES
 	// ========================================================================
 	private setupCache: RedisCache<AuthTypes.SetupTokenData>;
-	
+	private redisClient: Redis;
+
 	// ========================================================================
 	// CONSTRUCTOR
 	// ========================================================================
-	constructor() {
-		if (!redisClient)
-			throw new Error('Cliente Redis no está inicializado en Auth Service');
-		
+	constructor(redisClient: Redis) {
+		this.redisClient = redisClient;
 		this.setupCache = new RedisCache<AuthTypes.SetupTokenData>(
-			redisClient,	// La instancia singleton de Redis que se importa desde la app
+			redisClient,	// Instancia de Redis inyectada
 			'2fa:setup:'	// Prefix para todas las keys ( '2fa:setup:{setupToken}' )
 		);
 	}
@@ -85,21 +84,16 @@ export class AuthService {
 		user: UserTypes.UserInternal,
 		is2FAVerified: boolean = false
 	): Promise<AuthTypes.LoginSuccessResponse> {
-		
-		// Guard: Redis disponible?
-		if (!redisClient) {
-			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-		}
-		
+
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION() === true) {
 			await this.deleteRefreshTokensById(user.id);
 			await this.updateLastLogoutAt(user.id);
 		}
-		
+
 		// establecer usuario online
 		await this.setUserIsOnline(user.id, true);
-		
+
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
 		const loginEvent: TranscendenceEventsTypes.UserLoginEvent = {
 			type: TRANSCENDENCE_EVENTS.USER_LOGIN,
@@ -115,10 +109,10 @@ export class AuthService {
 				isOnline: user.isOnline
 			}
 		};
-		
+
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
-		redisClient.publish(REDIS_CHANNEL, JSON.stringify(loginEvent))
+		this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(loginEvent))
 		.catch(err => {
 			console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN}:`, err);
 		});
@@ -777,12 +771,6 @@ export class AuthService {
 			// Setear user ofline
 			await this.setUserIsOnline(userId, false);
 						
-			// Guard de Redis disponible
-			if (!redisClient) {
-				console.warn('[Auth] Redis no disponible - logout sin notificación');
-				return;
-			}
-
 			// Preparar objeto para notificaciones
 			const logoutEvent: TranscendenceEventsTypes.UserLogoutEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_LOGOUT,
@@ -798,15 +786,10 @@ export class AuthService {
 					isOnline: false
 				}
 			}
-			
-			// Guard de Redis disponible
-			if (!redisClient) {
-				throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-			}
 
 			// PUBLICACIÓN EN REDIS
-			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
-			redisClient.publish(REDIS_CHANNEL, JSON.stringify(logoutEvent))
+			// Si no hay redis se completa el logout sin notificaciones y sin romper
+			this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(logoutEvent))
 			.catch(err => {
 				console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT}:`, err);
 			});

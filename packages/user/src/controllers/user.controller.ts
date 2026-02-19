@@ -6,8 +6,8 @@ import { UserService, FriendshipService } from '../index.js';
 export class UserController {
 	private userService: UserService;
 
-	constructor() {
-		this.userService = new UserService();
+	constructor(userService: UserService) {
+		this.userService = userService;
 	}
 
 	// ========================================================================

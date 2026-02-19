@@ -20,6 +20,7 @@
 	},
 	"dependencies": {
 		"@fastify/helmet": "13.0.2",
+		"@fastify/rate-limit": "10.3.0",
 		"@sinclair/typebox": "0.34.41",
 		"@transcendence/shared": "workspace:*",
 		"bcryptjs": "3.0.3",

@@ -5,12 +5,13 @@ import { CommsEnv } from './config.js';
 import { CommsService } from './services/comms.service.js';
 import { CommsRoutes } from './routes/index.js';
 
-// Instancia única del servicio de comunicaciones (dueño de las conexiones Redis)
-export let commsService: CommsService | null = null;
+export interface CommsAppDependencies {
+	commsService: CommsService;
+}
 
 /** Crea y configura la instncia de Fastify */
-export function buildApp(): FastifyInstance {
-	
+export function buildApp(deps: CommsAppDependencies): FastifyInstance {
+
 	// Inicializar Fastify con config
 	const app = Fastify(CommsEnv.getFastifyConfig());
 	
@@ -40,8 +41,8 @@ export function buildApp(): FastifyInstance {
 	});
 
 	// Registro de rutas
-	app.register(CommsRoutes.healthRoutes);
-	app.register(CommsRoutes.wsRoutes, { prefix: '/api' });
+	app.register(CommsRoutes.healthRoutes, { ...deps });
+	app.register(CommsRoutes.wsRoutes, { prefix: '/api', ...deps });
 
 	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setNotFoundHandler((request, reply) => {
