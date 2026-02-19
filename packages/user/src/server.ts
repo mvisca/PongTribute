@@ -76,6 +76,4 @@ async function gracefulShutdown(signal: string) {
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
-start();
-
-//TODO centralizar manejo de señales, esta dentro de GetDatabase y en start()
+start()

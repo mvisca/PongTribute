@@ -105,10 +105,10 @@ export class FriendshipEventHandler implements CommsEventHandler {
 			},
 		};
 
-		await commsService.broadcastToUsers(
+		commsService.broadcastToUsers(
 			[event.payload.removedId],
 			wsMessage
-		); // TODO este con await y los otros llamados a broadcast no?
+		);
 	}
 
 }

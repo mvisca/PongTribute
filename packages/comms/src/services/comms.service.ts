@@ -104,8 +104,8 @@ export class CommsService implements IEventService {
 			this.logger.log(`[Comms] Suscrito a ${REDIS_CHANNEL}\n`);
 			
 			// Listener de mensajes Redis
-			this.redisSub.on('message', (channel, message) => {
-				this.handleRedisMessage(channel, message).catch((err) => {
+			this.redisSub.on('message', (_channel, message) => {
+				this.handleRedisMessage(message).catch((err) => {
 					this.logger.error('[Comms] Error crítico en handleRedisMessage', err);
 				});
 			});
@@ -246,7 +246,6 @@ export class CommsService implements IEventService {
 	// ==========================================================================
 	
 	private async handleRedisMessage(
-		channel: string, // TODO actualmente no se usa, borrarlo=
 		messageStr: string
 	): Promise<void> {
 		try {

@@ -115,10 +115,6 @@ export namespace AuthSchemas {
 	export const UsernameFieldEx = UsernameField;
 	export const EmailFieldEx = EmailField;
 
-	// ========================================================================
-	// COMUNES A TODOS
-	// ========================================================================
-	
 	/** Datos del usuario en respuestas de auth */
 	export const UserPayloadSchema = LocalUserPayloadObject;
 	

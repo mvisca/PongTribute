@@ -143,6 +143,11 @@ export class SQLiteUserRepository implements IUserRepository {
 		const now = Date.now();
 		const anonName = `anon_${now}`;
 
+		this.db.prepare(`
+			DELETE FROM friendships
+			WHERE user_id = ? OR friend_id = ?
+		`).run(id, id);
+
 		const restult = this.db.prepare(`
 			UPDATE users SET
 				username = ?,
@@ -167,11 +172,17 @@ export class SQLiteUserRepository implements IUserRepository {
 		if (restult.changes === 0)
 			throw new SharedErrors.NotFoundError(`No se ha podido modificar el record: ${id}`, 'user');
 
-		const anonymized = await this.findUserById(id);
-
-		if (!anonymized)
-			throw new SharedErrors.NotFoundError(`No se ha podido recuperar el usuario: ${id}`);
-		return anonymized;
+		return {
+			id: id,
+			username: anonName,
+			email: `${anonName}@deleted.email`,
+			avatar: UserConstants.ANON_AVATAR,
+			isOnline: false,
+			has2FAEnabled: false,
+			lastLogoutAt: Math.floor(now / 1000),
+			createdAt: new Date(now).toISOString(),
+			updatedAt: new Date(now).toISOString()
+			};
 	}
 
 	/** 
@@ -328,7 +339,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	async getLastLogoutAt(userId: string): Promise<number | null> {
 		const result = this.db.prepare(`
 			SELECT last_logout_at FROM users WHERE id = ?
-		`).get(userId) as { last_logout_at: number } | undefined; // TODO tipar con typo específico??
+		`).get(userId) as { last_logout_at: number } | undefined;
 
 		return result ? result.last_logout_at : null;
 	}

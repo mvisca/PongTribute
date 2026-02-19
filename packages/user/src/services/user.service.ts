@@ -275,6 +275,7 @@ export class UserService {
 	}
 
 	async anonymizeUser(id: string): Promise<void> {
+		await this.friendshipRepo.deleteAllByuserId(id);
 		await this.userRepo.anonymize(id);
 	}
 
