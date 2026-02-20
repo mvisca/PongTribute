@@ -10,7 +10,7 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 		context = error.context;
 	}
 
-	console.error({
+	console.error('[ERROR-HANDLER]', {
 		timestamp: new Date().toISOString(),
 		error: error instanceof Error ? {
 			message: error.message,
@@ -60,7 +60,7 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 	}
 	
 	// Error no conocido
-	console.error('Error no controlado (ya loggeado):', error);
+	console.error('[ERROR-HANDLER] Unhandled error (already logged):', error);
 	reply.code(500).send({
 		error: 'InternalServerError',
 		message: 'Error interno del servidor'

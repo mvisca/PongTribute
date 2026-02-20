@@ -131,7 +131,7 @@ export class UserService {
 			if (err instanceof SharedErrors.ValidationError || err instanceof SharedErrors.ServiceError || err instanceof SharedErrors.ConflictError || err instanceof SharedErrors.NotFoundError) {
 				throw err;
 			}
-			console.error('Fallo subiendo avatar: ', err);
+			console.error('[USER-SERVICE] Failed to upload avatar: ', err);
 			// Mantener avatar actual si falla (diferente de Auth Service)
 			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -230,7 +230,7 @@ export class UserService {
 		const updatedUser = await this.userRepo.update(id, data);
 		
 		if (updatedUser.username !== oldUsername) {
-			console.log(`[UserService] Cambio de username: ${oldUsername} ahora es ${updatedUser.username}`);
+			console.log(`[USER-SERVICE] Username changed: ${oldUsername} -> ${updatedUser.username}`);
 			
 			const eventPayload: TranscendenceEventsTypes.UserProfileUpdatedEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,
@@ -249,7 +249,7 @@ export class UserService {
 			
 			// Publicar al canal de eventos
 			this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(eventPayload))
-				.catch(err => console.error('Error publicando evento Redis:', err));
+				.catch(err => console.error('[USER-SERVICE] Failed to publish Redis event:', err));
 		}
 		return updatedUser;
 	}

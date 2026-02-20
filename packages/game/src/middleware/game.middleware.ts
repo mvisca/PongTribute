@@ -80,7 +80,7 @@ export class GameMiddleware {
 			payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 		} catch (error) {
             // Solo capturamos errores de JWT (firma inválida, mal formado, expirado nativo)
-            console.error("⚠️ Token criptográficamente inválido:", error);
+            console.error("[GAME-MIDDLEWARE] Cryptographically invalid token:", error);
             throw new SharedErrors.UnauthorizedError('Token inválido o corrupto', {
                 operation: 'validateJWT',
                 service: 'game',

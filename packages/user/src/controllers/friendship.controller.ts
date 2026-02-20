@@ -53,7 +53,7 @@ export class FriendshipController {
 		};
 
 		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
-		console.log(`[FriendshipController] FRIEND_REQUEST publicado: de ${senderId} a ${receiverId}`);
+		console.log(`[FRIENDSHIP] FRIEND_REQUEST published: from ${senderId} to ${receiverId}`);
 	}
 
 	private async publishFriendAccepted(
@@ -79,7 +79,7 @@ export class FriendshipController {
 		};
 
 		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
-		console.log(`[FriendshipController] FRIEND_ACCEPT publicado: de ${acceptorId} a ${requesterId}`);
+		console.log(`[FRIENDSHIP] FRIEND_ACCEPT published: from ${acceptorId} to ${requesterId}`);
 	}
 
 	private async publishFriendRemoved(
@@ -96,10 +96,10 @@ export class FriendshipController {
 				removerId,
 				removedId,
 			},
-		};
+		} satisfies TranscendenceEventsTypes.FriendRemovedEvent;
 
 		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
-		console.log(`[FriendshipController] FRIEND_REMOVE publicado: ${removerId} elimino ${removedId}`);
+		console.log(`[FRIENDSHIP] FRIEND_REMOVE published: ${removerId} removed ${removedId}`);
 	}
 
 	// ============================================================================
@@ -125,7 +125,7 @@ export class FriendshipController {
 
 			// Publicar evento en canal TRANSCENDENCE_EVENTS
 			this.publishFriendRequest(user.id, user.username, data.friendId)
-				.catch((err: Error) => console.error('[FriendshipController] Error publicando FRIEND_REQUEST:', err));
+				.catch((err: Error) => console.error('[FRIENDSHIP] Error publishing FRIEND_REQUEST:', err));
 
 			return reply.code(201).send(friendship);
 		} catch (err) {
@@ -155,7 +155,7 @@ export class FriendshipController {
 			if (accepted) {
 				// friendship.initiatiorId es quien envió la solicitud original (requesterId)
 				this.publishFriendAccepted(user.id, user.username, friendship.initiatorId)
-					.catch((err: Error) => console.error('[FriendshipController] Error publicando FRIEND_ACCEPT:', err));
+					.catch((err: Error) => console.error('[FRIENDSHIP] Error publishing FRIEND_ACCEPT:', err));
 			}
 
 			return reply.code(200).send(friendship);
@@ -207,7 +207,7 @@ export class FriendshipController {
 
 			// Notificar a ambos usuarios para actualizar lista de amigos
 			this.publishFriendRemoved(user.id, friendId)
-				.catch((err: Error) => console.error('[FriendshipController] Error publicando FRIEND_REMOVE:', err));
+				.catch((err: Error) => console.error('[FRIENDSHIP] Error publishing FRIEND_REMOVE:', err));
 
 			return reply.code(204).send();
 		} catch(err) {

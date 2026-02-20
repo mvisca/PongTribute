@@ -84,19 +84,12 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 		if (method == 'HEAD') return;
 
 		const url = route.url;
-		const icon = {
-			POST: 'GAME 📝: ',
-			GET: 'GAME 📖:',
-			PUT: 'GAME ✏️:',
-			DELETE: 'GAME 🗑️:',
-			PATCH: 'GAME 🔧:'
-		}[method as string] || '📌';
-		console.log(`${icon} ${method.padEnd(7)} ${url}`);
+		console.log(`[GAME] [ROUTE] ${method.padEnd(7)} ${url}`);
 	});
 
 	// 4. Registro de Rutas
 	app.register(healthRoutes, { ...deps });
-	console.log('REG GAME ROUTES');
+	console.log('[GAME] Registering game routes');
 	app.register(gameRoutes, { prefix: '/api' });
 
 	// 6. Manejador de Errores Global
@@ -107,6 +100,6 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 		});
 	});
 
-	console.log('Returning App: GAME');
+	console.log('[GAME] App ready');
 	return app;
 }

@@ -262,7 +262,7 @@ export namespace TestUtils {
 		const sessions = new Map<TestConstants.TestUserKey, AuthTypes.LoginResponse>();
 		
 		for (const key of TestConstants.TEST_USERS_KEYS) {
-			console.log(`=== Configurando Test User: ${key} ===`);
+			console.log(`[TEST] Setting up test user: ${key}`);
 			const userLoged = await setupUser(key, options);
 			
 			if (!userLoged || !('token' in userLoged)) {
@@ -272,7 +272,7 @@ export namespace TestUtils {
 			sessions.set(key, userLoged);
 		}
 		
-		console.log('✅ Sessions creadas');
+		console.log('[TEST] Sessions created');
 		return sessions;
 	}	
 }

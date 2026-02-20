@@ -76,7 +76,7 @@ export namespace AuthMiddleware {
 			
 			// Validación completa
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
-			console.log('== Schema completo:', isValid);
+			console.log('[AUTH-MIDDLEWARE] Schema validation:', isValid);
 			if (!isValid) 
 				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
 				schemaValidation: isValid,
@@ -109,7 +109,7 @@ export namespace AuthMiddleware {
 			return SharedErrors.handleError(err, reply);
 		}
 		
-		console.log('JWT válido @ AuthMiddleware @ Auth');
+		console.log('[AUTH-MIDDLEWARE] JWT valid');
 	}
 	
 	export const verifyOwnership = async (

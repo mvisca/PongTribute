@@ -108,13 +108,13 @@ export class AuthService {
 				lastLogoutAt: user.lastLogoutAt,
 				isOnline: user.isOnline
 			}
-		};
+		} satisfies TranscendenceEventsTypes.UserLoginEvent;
 
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
 		this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(loginEvent))
-		.catch(err => {
-			console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN}:`, err);
+			.catch(err => {
+				console.error(`[AUTH-SERVICE] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN} to Redis:`, err);
 		});
 		
 		// Crear user payload y par tokens
@@ -314,7 +314,7 @@ export class AuthService {
 		
 		if (response.ok) return;
 		if (response.status === 404) {
-			console.debug(`Logout 404 para userId: ${userId}`);
+			console.debug(`[AUTH-SERVICE] Logout 404 for userId: ${userId}`);
 			return;
 		} 
 		
@@ -418,7 +418,7 @@ export class AuthService {
 		
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-			console.error('Error updating 2FA status:', {
+			console.error('[AUTH-SERVICE] Error updating 2FA status:', {
 				status: response.status,
 				errorData,
 				requestBody: { has2FAEnabled: has2FAEnabled, totpSecret, backupCodeHash }
@@ -553,7 +553,7 @@ export class AuthService {
 			return data.url;
 		} catch (err) {
 			if (err instanceof SharedErrors.AppError) throw err;  // Re-throw validation errors
-			console.error('Fallo subiendo avatar: ', err);
+			console.error('[AUTH-SERVICE] Failed to upload avatar: ', err);
 			// Fallback a default avatar (similar a user.service)
 			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -567,7 +567,7 @@ export class AuthService {
 		try {
 			return await this.uploadAvatarToCloudinary(base64Image, oldAvatarUrl);
 		} catch (err) {
-			console.error('Fallo uploadAvatarToCloudinary, usando fallback: ', err);
+			console.error('[AUTH-SERVICE] Avatar upload failed, using fallback: ', err);
 			// Mantener avatar anterior si existe, sino default
 			return oldAvatarUrl || AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -737,12 +737,12 @@ export class AuthService {
 		await this.deleteRefreshTokensById(user.id);
 		if (AuthEnv.UNIQUE_SESSION() === false && AuthEnv.NODE_ENV() === 'development') {
 			console.warn(
-				'⚠️  ROTACIÓN DE REFRESH TOKENS NO IMPLEMENTADA PARA MULTI-SESIÓN.\n' +
-				'Con UNIQUE_SESSION=false, los refreshTokens de todas las sesiones se invalidan el logout.\n' +
-				'Esto protege de vulnerabilidad de reuso de refreshTokens ya usados a costa del UX/UI (sesiones cerradas).\n' +
-				'Soluciones:\n' +
-				'  1. Usar UNIQUE_SESSION=true (recomendado)\n' +
-				'  2. Implementar rotación granular por tokenId\n'
+				'[AUTH-SERVICE] REFRESH TOKEN ROTATION NOT IMPLEMENTED FOR MULTI-SESSION.\n' +
+				'With UNIQUE_SESSION=false, all session refresh tokens are invalidated on logout.\n' +
+				'This protects against refresh token reuse at the cost of UX (all sessions closed).\n' +
+				'Solutions:\n' +
+				'  1. Use UNIQUE_SESSION=true (recommended)\n' +
+				'  2. Implement granular rotation per tokenId\n'
 			);
 		}
 		
@@ -785,17 +785,17 @@ export class AuthService {
 					lastLogoutAt: user.lastLogoutAt,
 					isOnline: false
 				}
-			}
+			} satisfies TranscendenceEventsTypes.UserLogoutEvent;
 
 			// PUBLICACIÓN EN REDIS
 			// Si no hay redis se completa el logout sin notificaciones y sin romper
 			this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(logoutEvent))
-			.catch(err => {
-				console.error(`[Redis] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT}:`, err);
+				.catch(err => {
+					console.error(`[AUTH-SERVICE] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT} to Redis:`, err);
 			});
 
 		} catch (err) {
-			console.error(`Fallo al actualizar el estado online del usuario: ${userId}`, err);
+			console.error(`[AUTH-SERVICE] Failed to update online status for user: ${userId}`, err);
 		}
 	}
 	

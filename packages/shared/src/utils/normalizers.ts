@@ -43,13 +43,13 @@ export class UserNormalizer {
 		try {
 			new URL(trimmed);
 		} catch {
-			console.warn(`[UserNormalizer] Avatar URL inválida: ${trimmed}`);
+			console.warn(`[NORMALIZER] Invalid avatar URL: ${trimmed}`);
 			return undefined;
 		}
 
 		// Validar que sea de Cloudinary
 		if (!trimmed.startsWith('https://res.cloudinary.com/')) {
-			console.warn(`[UserNormalizer] Avatar URL no es de Cloudinary: ${trimmed}`);
+			console.warn(`[NORMALIZER] Avatar URL is not from Cloudinary: ${trimmed}`);
 			return undefined;
 		}
 

@@ -40,7 +40,7 @@ export class RedisCache<T> {
 			const parsed = JSON.parse(data); // Deserealizar
 			return parsed as T; // Casetear a T
 		} catch(err) {
-			console.error(`Error deserializando key ${fullKey}: `, err);
+			console.error(`[REDIS-CACHE] Error deserializing key ${fullKey}: `, err);
 			return null;
 		}
 	}

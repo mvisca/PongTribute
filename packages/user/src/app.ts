@@ -102,37 +102,30 @@ export function buildApp(deps: UserAppDependencies): FastifyInstance {
 	/** 3. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
-		
+
 		if (method == 'HEAD')
 			return;
-		
+
 		const url = route.url;
-		const icon = {
-			POST: 'USER 📝: ',
-			GET: 'USER 📖:',
-			PUT: 'USER ✏️:',
-			DELETE: 'USER 🗑️:',
-			PATCH: 'USER 🔧:'
-		}[method as string] || '📌';
-		console.log(`${icon} ${method.padEnd(7)} ${url}`);
+		console.log(`[USER] [ROUTE] ${method.padEnd(7)} ${url}`);
 	})
-	
-	
+
+
 	/** Registrar todas las rutas del servicio */
 	app.register(healthRoutes, { ...deps });
 	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal', ...deps });
-	console.log('REG TOKEN PROTECTED ROUTES');
-	
+	console.log('[USER] Registering internal token routes');
+
 	app.register(UserRoutes.internalRoutes, { prefix: '/internal', ...deps });
-	console.log('REG USER INTERNAL ROUTES');
-	
+	console.log('[USER] Registering internal routes');
+
 	app.register(UserRoutes.publicRoutes, { prefix: '/api', ...deps });
-	console.log('REG USER PUBLIC ROUTES');
-	
+	console.log('[USER] Registering public routes');
+
 	app.register(UserRoutes.protectedRoutes, { prefix: '/api', ...deps });
-	console.log('REG USER PROTECTED ROUTES');
-	
-	
+	console.log('[USER] Registering protected routes');
+
+
 	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
@@ -140,7 +133,7 @@ export function buildApp(deps: UserAppDependencies): FastifyInstance {
 			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
-	
-	console.log('Returning App: USER');
+
+	console.log('[USER] App ready');
 	return app;
 }

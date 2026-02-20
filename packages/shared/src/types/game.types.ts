@@ -1,6 +1,7 @@
 // packages/shared/src/types/game.types.ts
 
 import type { GameStatus } from '../constants/game.constants.js';
+import { GameModeType } from '../schemas/match.schema.js';
 import type { UserTypes } from './user.types.js';
 
 // Definición de Tipos para la Configuración del Modo
@@ -21,6 +22,7 @@ export interface GameConfig {
     paddleWidth: number;
     paddleHeight: number;
     ballRadius: number;
+	gameModeName: GameModeType;
 }
 
 // 2. Objetos del juego. La referencia al centro de la bola (BallState extiende de aqui)

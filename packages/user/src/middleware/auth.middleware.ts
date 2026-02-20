@@ -34,7 +34,7 @@ export namespace AuthMiddleware {
 						'context': 'User service, validateJWT middleware',
 						'payload': payload
 					});
-					console.log('== Schema completo:', isValid);
+					console.log('[USER-MIDDLEWARE] Schema validation:', isValid);
 
 					// TypeScript ahora infiere payload como AccessTokenPayload
 					const tokenIssuedAt = payload.iat!;
@@ -53,7 +53,7 @@ export namespace AuthMiddleware {
 					return SharedErrors.handleError(err, reply);
 				}
 
-				console.log('JWT válido @ AuthMiddleware @ User');
+				console.log('[USER-MIDDLEWARE] JWT valid');
 			};
 		}
 

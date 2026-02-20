@@ -46,7 +46,7 @@ export class RateLimitMiddleware {
 			reply.header('X-Rate-Limit', this.config.maxRequests.toString());
 			reply.header('X-RateLimit-Remaining', (this.config.maxRequests - newCount).toString());
 		} catch(err) {
-			console.error('Error en rate limit middleware: ', err);
+			console.error('[USER-MIDDLEWARE] Rate limit error: ', err);
 		}
 	}
 

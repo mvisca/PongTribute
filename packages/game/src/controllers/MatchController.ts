@@ -34,8 +34,7 @@ export class MatchController {
         request: FastifyRequest<{ Body: MatchSchemas.CreateMatchBodyType }>,
         reply: FastifyReply
     ) {
-        console.log("\n--- NEW REQUEST (SECURE) ---");
-        console.log("[Controller] 1. Entrando en createMatch");
+        console.log("[MATCH-CTRL] New request: createMatch");
 
         // 1. AUTENTICACIÓN
         const user = request.user!;
@@ -46,7 +45,7 @@ export class MatchController {
             const result = await this.matchService.handleCreateMatch(user.id, request.body);
 
             // 3. RESPUESTA HTTP
-            console.log("[Controller] Respuesta exitosa del servicio.");
+            console.log("[MATCH-CTRL] Service response successful.");
 
             // Decisión de Código HTTP (Responsabilidad de la capa de Transporte)
             // Si nos unimos a cola (esperando) -> 200 OK
@@ -74,7 +73,7 @@ export class MatchController {
 		req: FastifyRequest<{ Params: MatchTypes.AcceptMatchParams }>,
 		reply: FastifyReply
 	) {
-		console.log("[Controller] Entrando en acceptMatch");
+		console.log("[MATCH-CTRL] acceptMatch");
 
 		// 1. EXTRAE DATOS Y VALIDA JWT 
 		// Extrae matchId de req.params
@@ -82,7 +81,7 @@ export class MatchController {
 		// Extrae userId de req.user
         const user = req.user!;
 
-		console.log(`User ${user.id} attempting to accept match ${id}`);
+		console.log(`[MATCH-CTRL] User ${user.id} attempting to accept match ${id}`);
         
 		try {
 
@@ -110,7 +109,7 @@ export class MatchController {
 		req: FastifyRequest<{ Params: MatchTypes.RejectMatchParams }>,
 		reply: FastifyReply
 	) {
-		console.log("[Controller] Entrando en rejectMatch");
+		console.log("[MATCH-CTRL] rejectMatch");
 
 		// 1. EXTRAE DATOS Y VALIDA JWT 
 		// Extrae matchId de req.params
@@ -118,7 +117,7 @@ export class MatchController {
 		// Extrae userId de req.user
 		const user = req.user!;
 
-		console.log(`User ${user.id} attempting to reject match ${id}`);
+		console.log(`[MATCH-CTRL] User ${user.id} attempting to reject match ${id}`);
         
 		try {
 
@@ -175,11 +174,11 @@ export class MatchController {
         req: FastifyRequest, // No necesitamos Generics de Params aquí, porque no hay variables dinamicas en la URL
         reply: FastifyReply
     ) => {
-        console.log("[Controller] Entrando en leaveQueue");
+        console.log("[MATCH-CTRL] leaveQueue");
 
         // 1. AUTENTICACIÓN
         const user = req.user!;
-        console.log(`User ${user.id} leaving public queue`);
+        console.log(`[MATCH-CTRL] User ${user.id} leaving public queue`);
 
         try {
             // 2. LLAMADA AL SERVICIO
@@ -196,7 +195,7 @@ export class MatchController {
             });
 
         } catch (error) {
-            console.error("❌ [Controller] Error in leaveQueue:", error);
+            console.error("[MATCH-CTRL] Error in leaveQueue:", error);
             SharedErrors.handleError(error, reply);
         }
 	}

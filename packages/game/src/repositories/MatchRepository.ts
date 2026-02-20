@@ -2,6 +2,7 @@
 
 import { MatchTypes, SharedErrors, MatchConstants } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
+import { MatchMapper } from '../mappers/MatchMapper.js';
 
 
 /**
@@ -45,13 +46,17 @@ export class MatchRepository {
         // SQL Directo. Sin try-catch. Si falla (Unique constraint, etc), explota hacia arriba.
         const stmt = this.db.prepare(`
             INSERT INTO matches (
-                id, status, player1_id, player1_username, player1_score, 
-				player2_id, player2_username, player2_score, winner_id, 
-				created_at, finished_at, game_mode, target_score
+                id, status, 
+				player1_id, player1_username, player1_avatar, player1_score, 
+				player2_id, player2_username, player2_avatar, player2_score,
+				winner_id, game_mode, target_score,
+				created_at, finished_at
             ) VALUES (
-                @id, @status, @player1_id, @player1_username, @player1_score,
-				 @player2_id, @player2_username, @player2_score, @winner_id, 
-				 @created_at, @finished_at, @game_mode, @target_score
+                @id, @status,
+				@player1_id, @player1_username, @player1_avatar, @player1_score,
+				@player2_id, @player2_username, @player2_avatar, @player2_score,
+				@winner_id, @game_mode, @target_score,
+				@created_at, @finished_at
             )
         `);
         
@@ -98,7 +103,7 @@ export class MatchRepository {
 
 		// Opcional: Loguea cuántas filas se afectaron para control
 		if (info.changes > 0) {
-			console.log(`[MatchRepo] Han expirado ${info.changes} invitaciones privadas.`);
+			console.log(`[MATCH-REPO] Expired ${info.changes} private invitations.`);
 		}
     }
 
@@ -173,9 +178,9 @@ export class MatchRepository {
         const result = stmt.run(matchId);
         
         if (result.changes > 0) {
-			console.log(`🗑️ [Repository] Partida ${matchId} eliminada correctamente.`);
+			console.log(`[MATCH-REPO] Match ${matchId} deleted successfully.`);
         } else {
-			console.warn(`⚠️ [Repository] Se intentó borrar partida ${matchId} pero no existía.`);
+			console.warn(`[MATCH-REPO] Attempted to delete match ${matchId} but it did not exist.`);
         }
     }
 		
@@ -190,7 +195,7 @@ export class MatchRepository {
 	 * Busca invitaciones privadas creadas por este usuario (Host/Player1)
 	 * que todavía están esperando respuesta (pending).
 	 */
-	async findPendingHostedByUser(userId: string): Promise<MatchTypes.MatchRow[]> {
+	async findPendingHostedByUser(userId: string): Promise<MatchTypes.Match[]> {
 		// Asumimos que quien invita siempre es guardado como player1_id
 		const stmt = this.db.prepare(`
 			SELECT * FROM matches
@@ -200,8 +205,13 @@ export class MatchRepository {
 
 		// Usamos .all() porque devuelve un array de objetos. 
 		// Si usara get(), solo devolvería la 1ª coincidencia.
-		// con el as le digo que lo que sale de aqui cumple con la interfaz MatchRow
-		return stmt.all(userId, MatchConstants.MATCH_STATUS.PENDING) as MatchTypes.MatchRow[];
+		// con el as le digo que lo que sale de aqui cumple con la interfaz Match
+		const rows = stmt.all(
+			userId,
+			MatchConstants.MATCH_STATUS.PENDING
+		) as MatchTypes.MatchRow[];
+
+		return rows.map(row => MatchMapper.toDomain(row));
 	}
 
 
@@ -209,7 +219,7 @@ export class MatchRepository {
      * findActiveMatchByUserId
      * Busca si el usuario ya está jugando o esperando.
      */
-    async findActiveMatchByUserId(userId: string): Promise<MatchTypes.MatchRow | null> {
+    async findActiveMatchByUserId(userId: string): Promise<MatchTypes.Match | null> {
         const stmt = this.db.prepare(`
             SELECT * FROM matches
             WHERE (player1_id = ? OR player2_id = ?)
@@ -217,27 +227,32 @@ export class MatchRepository {
             LIMIT 1
         `);
         
-        const row = stmt.get(userId, userId, MatchConstants.MATCH_STATUS.ACTIVE, MatchConstants.MATCH_STATUS.PENDING);
-        return row ? (row as MatchTypes.MatchRow) : null;
+        const row = stmt.get(
+			userId,
+			userId,
+			MatchConstants.MATCH_STATUS.ACTIVE,
+			MatchConstants.MATCH_STATUS.PENDING
+		) as MatchTypes.MatchRow;
+        return row ? MatchMapper.toDomain(row) : null;
     }
 
     /**
      * findById
      * Búsqueda por PK.
      */
-    async findById(id: string): Promise<MatchTypes.MatchRow | null> {
+    async findById(id: string): Promise<MatchTypes.Match | null> {
         const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
-        const row = stmt.get(id);
-        return row ? (row as MatchTypes.MatchRow) : null;
+        const row = stmt.get(id) as MatchTypes.MatchRow;
+        return row ? MatchMapper.toDomain(row) : null;
 	}
 	
 	/**
      * findByUserId
      * Busca partidas terminadas donde user sea el Player1 o el Player2.
-     * RETORNO: un Array de objetos (MatchRow[]).
+     * RETORNO: un Array de objetos (Match[]).
      */
-    // El retorno es MatchRow[], nunca null (si no hay, es array vacío)
-    async findByUserId(userId: string, limit: number, offset: number): Promise<MatchTypes.MatchRow[]> {
+    // El retorno es Match[], nunca null (si no hay, es array vacío)
+    async findByUserId(userId: string, limit: number, offset: number): Promise<MatchTypes.Match[]> {
         const stmt = this.db.prepare(`
             SELECT * FROM matches
             WHERE (player1_id = ? OR player2_id = ?)
@@ -247,7 +262,15 @@ export class MatchRepository {
         `);
         
         // Usa .all() para devolver lista.
-        return stmt.all(userId, userId, MatchConstants.MATCH_STATUS.FINISHED, limit, offset) as MatchTypes.MatchRow[];
+		const rows = stmt.all(
+			userId,
+			userId,
+			MatchConstants.MATCH_STATUS.FINISHED,
+			limit,
+			offset
+		) as MatchTypes.MatchRow[];
+
+		return rows.map(row => MatchMapper.toDomain(row));
     }
 }
 	

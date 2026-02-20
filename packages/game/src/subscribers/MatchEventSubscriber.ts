@@ -25,7 +25,7 @@ export class MatchEventSubscriber {
         // Esto valida host, puerto, password y db automáticamente.
         const redisConfig = GameEnv.getRedisConfig();
 
-        console.log(`🔌 [Subscriber] Configurando Redis hacia ${redisConfig.host}:${redisConfig.port}`);
+        console.log(`[MATCH-SUBSCRIBER] Configuring Redis at ${redisConfig.host}:${redisConfig.port}`);
 
         // 2. Usar la Factory de Shared (Patrón del proyecto)
         this.subscriber = Utils.createRedisClient(redisConfig);
@@ -33,7 +33,7 @@ export class MatchEventSubscriber {
 
     public async connect() {
         try {
-            console.log('🎧 [MatchEventSubscriber] Connecting to Pub/Sub...');
+            console.log('[MATCH-SUBSCRIBER] Connecting to Pub/Sub...');
 
             // Nos suscribimos al canal de eventos definido en Shared
             await this.subscriber.subscribe(REDIS_CHANNEL);
@@ -45,10 +45,10 @@ export class MatchEventSubscriber {
                 }
             });
 
-            console.log('✅ [MatchEventSubscriber] Ready. Listening on channel:', REDIS_CHANNEL);
+            console.log('[MATCH-SUBSCRIBER] Ready. Listening on channel:', REDIS_CHANNEL);
 
         } catch (error) {
-            console.error('❌ [MatchEventSubscriber] Failed to subscribe:', error);
+            console.error('[MATCH-SUBSCRIBER] Failed to subscribe:', error);
         }
     }
 
@@ -70,7 +70,7 @@ export class MatchEventSubscriber {
                     const userId = disconnectedEvent.targetUserId;
 
                     if (userId) {
-                        console.log(`⚡ [MatchEventSubscriber] User disconnect: ${userId}`);
+                        console.log(`[MATCH-SUBSCRIBER] User disconnect: ${userId}`);
 
                         // Si falla uno, no detiene a los otros
                         Promise.allSettled([
@@ -79,7 +79,7 @@ export class MatchEventSubscriber {
                             this.gameService.handleDisconnect(userId)
                         ]);
                     } else {
-                        console.warn('⚠️ [MatchEventSubscriber] User disconnected event missing targetUserId', event);
+                        console.warn('[MATCH-SUBSCRIBER] User disconnected event missing targetUserId', event);
                     }
                     break;
                 }
@@ -97,17 +97,17 @@ export class MatchEventSubscriber {
                     const username = updateEvent.payload?.username;
 
                     if (userId && username) {
-                        console.log(`📝 [Subscriber] Syncing profile for ${username} (${userId})`);
+                        console.log(`[MATCH-SUBSCRIBER] Syncing profile for ${username} (${userId})`);
 
                         // 1. Actualizar DB (Historial y registros persistentes)
                         this.matchService.handleUsernameChange(userId, username)
-                            .catch(err => console.error('❌ DB Update error:', err));
+                            .catch(err => console.error('[MATCH-SUBSCRIBER] DB update error:', err));
 
                         // 2. Actualizar Memoria (Sesión activa en RAM)
                         this.gameService.updatePlayerNameInActiveMatch(userId, username);
                     } else {
                          // Log de advertencia si llega el evento pero sin los datos necesarios
-                         if (!username) console.warn(`⚠️ [Subscriber] Profile update for ${userId} missing username`);
+                         if (!username) console.warn(`[MATCH-SUBSCRIBER] Profile update for ${userId} missing username`);
                     }
                     break;
                 }
@@ -117,14 +117,14 @@ export class MatchEventSubscriber {
 					break;
             }
         } catch (error) {
-            console.error('❌ Error parsing Redis message:', error);
+            console.error('[MATCH-SUBSCRIBER] Error parsing Redis message:', error);
         }
 	}
 
 	// Cierra limpiamente la conexion Redis
 	public async disconnect() {
         if (this.subscriber) {
-            console.log('🔌 [MatchEventSubscriber] Disconnecting...');
+            console.log('[MATCH-SUBSCRIBER] Disconnecting...');
             await this.subscriber.quit();
         }
     }

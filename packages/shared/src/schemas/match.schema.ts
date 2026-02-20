@@ -2,7 +2,7 @@ import { Type, Static } from '@sinclair/typebox';
 import { UnauthorizedError } from '../errors/AppError.js';
 
 // DEFINICION DEL ENUM (La única fuente de la verdad)
-export enum GameMode {
+export enum GameModeType {
 	CLASSIC = 'classic',
 	SPEED = 'speed',
 	PRO = 'pro'
@@ -39,6 +39,7 @@ export namespace MatchSchemas {
     export const MatchPlayer = Type.Object({
         userId: Type.String({ format: 'uuid' }),
         username: Type.String(),
+		avatar: Type.String(),
         score: Type.Number({ default: 0 }),
         isWinner: Type.Boolean({ default: false }) // Útil para frontend
     });
@@ -53,7 +54,7 @@ export namespace MatchSchemas {
         winnerId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
         createdAt: Type.String({ format: 'date-time' }),
 		finishedAt: Type.Optional(Type.String({ format: 'date-time' })),
-		gameMode: Type.Enum(GameMode),
+		gameMode: Type.Enum(GameModeType),
         targetScore: Type.Number()
     });
 
@@ -68,7 +69,7 @@ export namespace MatchSchemas {
 	export const CreateMatchBody = Type.Object({
 		matchType: MatchType,
 		opponentId: Type.Optional(Type.String({ format: 'uuid' })), // Si null -> Matchmaking público
-		gameMode: Type.Optional(Type.Enum(GameMode, { default: GameMode.CLASSIC })),
+		gameMode: Type.Optional(Type.Enum(GameModeType, { default: GameModeType.CLASSIC })),
 		targetScore: Type.Optional(Type.Number({ minimum: 1, maximum: 21, default: 11 })),
     });
 

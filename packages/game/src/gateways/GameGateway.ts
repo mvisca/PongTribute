@@ -54,7 +54,7 @@ export class GameGateway {
 
         // 3. VALIDACION DE ENTRADA
         if (!matchId || !token) {
-			console.log('⛔ [Gateway] Conexión rechazada: Faltan parámetros');
+			console.log('[GATEWAY] Connection rejected: missing parameters');
 			// En protocolo WebSocket, los cierres tienen codigos numericos:
 			//  1000: "Normal"
 			//  1008: "Policy Violation". 
@@ -76,7 +76,7 @@ export class GameGateway {
 			// 4b. Validar estructura del payload con TypeBox (igual que middlewares HTTP)
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
 			if (!isValid) {
-				console.log('⛔ [Gateway] Token con estructura inválida');
+				console.log('[GATEWAY] Connection rejected: invalid token structure');
 				socket.close(1008, 'Invalid token structure');
 				return;
 			}
@@ -94,7 +94,7 @@ export class GameGateway {
 			);
 
 			if (!response.ok) {
-				console.log('⛔ [Gateway] Fallo validación de usuario');
+				console.log('[GATEWAY] Connection rejected: user validation failed');
 				socket.close(1008, 'User validation failed');
 				return;
 			}
@@ -103,14 +103,14 @@ export class GameGateway {
 
 			// Token es inválido si fue emitido ANTES del logout (revocado)
 			if (payload.iat! < lastLogoutAt) {
-				console.log('⛔ [Gateway] Token revocado (emitido antes del último logout)');
+				console.log('[GATEWAY] Connection rejected: token revoked (issued before last logout)');
 				socket.close(1008, 'Token revoked');
 				return;
 			}
 
 			const userId = payload.id;
 
-            console.log(`✅ [Gateway] Jugador Conectado: ${payload.username} (Match: ${matchId})`);
+            console.log(`[GATEWAY] Player connected: ${payload.username} (Match: ${matchId})`);
 			
 			// CAPTURAR EL VALOR DE RETORNO
             // Guardamos el estado que nos devuelve el servicio
@@ -118,11 +118,6 @@ export class GameGateway {
 
             // Si devuelve null, es que algo falló (partida acabada, invalida, etc) y el socket se cerró dentro.
 			if (!status) return;
-			
-			// PASAR EL ESTADO AL WELCOME
-            // Pasamos 'status' como 4º argumento
-			this.sendWelcomeMessage(socket, matchId, payload.id, status);
-			
 
             // 6. EVENTO: MENSAJE. Escucha indefinidamente mensajes del cliente (Ping, Movimiento, etc.)
             // Se dispara cada vez que el cliente envía datos (ej: "Mover paleta arriba")
@@ -134,41 +129,17 @@ export class GameGateway {
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
             socket.on('close', async () => {
-                console.log(`❌ [Gateway] Jugador Desconectado: ${payload.username}`);
+                console.log(`[GATEWAY] Player disconnected: ${payload.username}`);
 				try {
 					await this.gameService.handleDisconnect(userId, matchId);
 				} catch (err) {
-					console.error(`❌ [Gateway] Error en handleDisconnect:`, err);
+					console.error(`[GATEWAY] Error in handleDisconnect:`, err);
 				}
 			});
 
         } catch (err) {
-            console.log('⛔ [Gateway] Conexión rechazada: Token inválido');
+            console.log('[GATEWAY] Connection rejected: invalid token');
             socket.close(1008, 'Invalid Token');
 		}
-    }
-
-
-	//METODO PRIVADO AUXILIAR
-	/**
-     * Envía el mensaje inicial de protocolo.
-     * El frontend usa esto para saber que la conexión está lista.
-     */
-	private sendWelcomeMessage(socket: WebSocket, matchId: string, userId: string, status: string) {
-		// Podríamos pedirle al servicio la config, pero por ahora
-        // con devolver el status es suficiente para que el front reaccione.
-        // Si el front necesita la config, la pedirá.
-        const welcome = {
-            event: WEBSOCKET_EVENTS.MATCH_JOINED,
-            data: {
-                matchId,
-                playerId: userId,
-                status: status, // <--- ('active', 'waiting', 'playing')
-                message: status === 'playing' 
-                    ? 'Reconectando a partida en curso...' 
-                    : 'Conectado. Esperando rival...'
-            }
-        };
-        socket.send(JSON.stringify(welcome));
     }
 }

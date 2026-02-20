@@ -48,20 +48,20 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
 	
 
 	// LIMPIEZA DE ZOMBIES (Al arrancar)
-    console.log('🧟 Buscando partidas zombies por reinicio...');
+    console.log('[GAME-ROUTES] Checking for zombie matches on startup...');
     matchRepo.resetZombieMatches()
         .then(count => {
-            if (count > 0) console.log(`💥 ZOMBIES: Se abortaron ${count} partidas huerfanas.`);
-            else console.log('✨ DB limpia: No hay partidas zombies.');
+            if (count > 0) console.log(`[GAME-ROUTES] Aborted ${count} orphan zombie matches.`);
+            else console.log('[GAME-ROUTES] Database clean: no zombie matches found.');
         })
-        .catch(err => console.error('❌ Error limpiando zombies:', err));
+        .catch(err => console.error('[GAME-ROUTES] Error cleaning zombie matches:', err));
 	
 
 	// ========================================================================
 	// 3. CRON JOBS
 	// ========================================================================
     // Al estar aquí, comparte el mismo redisClient y matchService que la API
-    console.log('⏱️ Iniciando Cron Jobs internos en GameRoutes');
+    console.log('[GAME-ROUTES] Starting internal cron jobs');
     const cronInterval = setInterval(() => {
         matchService.pruneQueues().catch(err => app.log.error(err));
         matchService.prunePrivateInvites().catch(err => app.log.error(err));
@@ -191,13 +191,13 @@ export const gameRoutes: FastifyPluginAsync = async (app) => {
         gateway.handleConnection(connection, req);
     });
     
-	console.log('✅ Game Routes registered');
+	console.log('[GAME-ROUTES] Game routes registered');
 
 	// ========================================================================
 	// 7. LIFECYCLE (Limpieza)
 	// ========================================================================
     app.addHook('onClose', async () => {
-        console.log('🛑 GameRoutes: Limpiando recursos...');
+        console.log('[GAME-ROUTES] Cleaning up resources...');
 		clearInterval(cronInterval); // Paramos el cron
 		// Cierra el subscriber (que tiene su propia conexión Redis)
 		await eventSubscriber.disconnect();

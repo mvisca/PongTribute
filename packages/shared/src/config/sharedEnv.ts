@@ -148,11 +148,11 @@ export namespace SharedEnv {
 				if (typeof defaultValue === 'number') {
 					const n = Number(envValue);
 					if (isNaN(n)) {
-						console.error('\nERROR DE CONFIGURACIÓN\n');
-						console.error(`Variable: ${varName || 'desconocida'}`);
-						console.error(`Valor recibido: "${envValue}"`);
-						console.error(`Tipo esperado: number`);
-						console.error(`\nCTRL+C para terminar\n`);
+					console.error('\n[CONFIG] CONFIGURATION ERROR\n');
+					console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
+					console.error(`[CONFIG] Value received: "${envValue}"`);
+					console.error('[CONFIG] Expected type: number');
+					console.error('\n[CONFIG] Press CTRL+C to exit\n');
 
 						process.exit(1);
 					}
@@ -164,12 +164,12 @@ export namespace SharedEnv {
 					if (envValue === 'false')
 						return false as T;
 
-					console.error('\nERROR DE CONFIGURACIÓN\n');
-					console.error(`Variable: ${varName || 'desconocida'}`);
-					console.error(`Valor recibido: "${envValue}"`);
-					console.error(`Tipo esperado: boolean`);
-					console.error(`\nValores válidos: true, false\n`);
-					console.error(`\nCTRL+C para terminar\n`);
+				console.error('\n[CONFIG] CONFIGURATION ERROR\n');
+				console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
+				console.error(`[CONFIG] Value received: "${envValue}"`);
+				console.error('[CONFIG] Expected type: boolean');
+				console.error('\n[CONFIG] Valid values: true, false\n');
+				console.error('\n[CONFIG] Press CTRL+C to exit\n');
 
 					process.exit(1);
 				}
@@ -177,7 +177,7 @@ export namespace SharedEnv {
 			}
 			if (isDevelopment)
 				return defaultValue;
-			console.error(`${varName}: Variable de entorno requerida no encontrada`);
+			console.error(`[CONFIG] ${varName}: required environment variable not found`);
 			process.exit(1);
 		};
 
@@ -243,9 +243,9 @@ export namespace SharedEnv {
 			});
 
 			if (missing.length > 0) {
-				console.error('ERRORES DE CONFIGURACIÓN:');
-				missing.forEach(issue => console.error(`   - ${issue}`));
-				console.error('\nSolución: cp .env.example .env');
+			console.error('[CONFIG] CONFIGURATION ERRORS:');
+			missing.forEach(issue => console.error(`[CONFIG]    - ${issue}`));
+			console.error('\n[CONFIG] Fix: cp .env.example .env');
 				process.exit(1);
 			}
 		}
@@ -253,13 +253,13 @@ export namespace SharedEnv {
 		// Retorna el directorio base del proyecto según el entorno (desarrollo/test vs producción).
 		function getBaseDir(): string {
 			if (isDevelopment || isTest) {
-				console.log('DEVELOPMENT environment: cargando...');
+			console.log('[CONFIG] DEVELOPMENT environment: loading...');
 				const __filename = fileURLToPath(import.meta.url);
 				const __dirname = path.dirname(__filename);
 
 				return path.resolve(__dirname, '../../../../');
 			}
-			console.log('PRODUCTION environment: cargando...');
+			console.log('[CONFIG] PRODUCTION environment: loading...');
 			return '/app'; // path fijo para contenedor
 		};
 

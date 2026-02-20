@@ -100,38 +100,31 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 	/** 5. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
-		
+
 		if (method == 'HEAD')
 			return;
-		
+
 		const url = route.url;
-		const icon = {
-			POST: 'AUTH 📝: ',
-			GET: 'AUTH 📖:',
-			PUT: 'AUTH ✏️:',
-			DELETE: 'AUTH 🗑️:',
-			PATCH: 'AUTH 🔧:'
-		}[method as string] || '📌';
-		console.log(`${icon} ${method.padEnd(7)} ${url}`);
+		console.log(`[AUTH] [ROUTE] ${method.padEnd(7)} ${url}`);
 	})
-	
+
 	/** 6. Registrar todas las rutas del servicio */
 	app.register(healthRoutes, { ...deps });
-	console.log('REG AUTH PUBLIC ROUTES');
+	console.log('[AUTH] Registering public routes');
 	app.register(authRoutes, { prefix: '/api', ...deps });
-	
+
 	/** 7. Manejo global de errores. Captura cualquier error no manejado */
-	app.setErrorHandler((error, request, reply) => {		
+	app.setErrorHandler((error, request, reply) => {
 		SharedErrors.handleError(error, reply);
 	});
-	
+
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
 			error: 'Not found',
 			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
-	
-	console.log('Returning App: AUTH');
-	return app; 
+
+	console.log('[AUTH] App ready');
+	return app;
 }

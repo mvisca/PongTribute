@@ -10,7 +10,7 @@ export class TokenCleanupService {
 			await this.cleanup();
 		});
 
-		console.log('[TokenCleanup] Cronjob iniciado: limpiando cada 6 horas refreshToken caducados');
+		console.log('[TOKEN-CLEANUP] Cronjob started: cleaning expired refresh tokens every 6 hours');
 	}
 
 	private async cleanup(): Promise<void> {
@@ -27,17 +27,17 @@ export class TokenCleanupService {
 
 			if (response.ok) {
 				const result = (await response.json()) as { deleted: number };
-				console.log(`[TokenCleanup] Eliminados ${result.deleted} tokens expirados`);
+				console.log(`[TOKEN-CLEANUP] Deleted ${result.deleted} expired tokens`);
 			}
 		} catch(err) {
-			console.error('[TokenCleanup] Error en la limpieza:', err);
+			console.error('[TOKEN-CLEANUP] Error during cleanup:', err);
 		}
 	}
 
 	stop(): void {
 		if (this.job) {
 			this.job.stop();
-			console.log('[TokenCleanup] Cronjob detenido');
+			console.log('[TOKEN-CLEANUP] Cronjob stopped');
 		}
 	}
 }
