@@ -2,7 +2,7 @@
 
 import { TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS } from '../constants/event.constants.js';
 import { GameModeType } from '../schemas/match.schema.js';
-import type { GameState } from './game.types.js';
+import type { GameDynamicState, GameState } from './game.types.js';
 import { UserTypes } from './user.types.js';
 
 // ============================================================================
@@ -217,7 +217,7 @@ export namespace WebSocketEventsTypes {
 		timestamp: number;
 		payload: {
 			matchId: string;
-			gameState: GameState;
+			gameState: GameDynamicState;
 			updateType:
 				| 'state_change'
 				| 'score_update'
@@ -226,7 +226,7 @@ export namespace WebSocketEventsTypes {
 				| 'game_resumed';
 		};
 	} // Omitie campos internos del match que el frontend no necesita
-
+	
 	// ── Presencia social ─────────────────────────────────────────────────────
 
 	export interface FriendOnline extends EventsTypes.BaseEvent {

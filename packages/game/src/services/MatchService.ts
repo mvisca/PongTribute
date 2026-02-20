@@ -151,9 +151,19 @@ export class MatchService {
 			// Publicamos en el CANAL UNICO de eventos (definido en shared)
 			await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 			
+			const match = await this.matchRepo.findById(newMatch.id);
+			
+			if (!match) {
+				throw new SharedErrors.NotFoundError(
+					'Match not found after creation',
+					'MatchService.joinPublicQueue',
+					{ matchId: newMatch.id }
+				);
+			}
+			
 			return {
 				outcome: 'match_found',
-				match: MatchMapper.toDomain(newMatch)
+				match: match
 			};
 		} catch (error) {
 			console.error(`[MATCH-SERVICE] CRITICAL: Error creating match. Restoring ${opponentId} to queue.`, error);
@@ -190,7 +200,7 @@ export class MatchService {
 				const removedCount = await this.redis.zrem(queueKey, userId);
 				
 				if (removedCount > 0) {
-						console.log(`[MATCH-SERVICE] Timeout user ${userId} from ${mode}`);
+					console.log(`[MATCH-SERVICE] Timeout user ${userId} from ${mode}`);
 					
 					// Solo notificamos si confirmamos el borrado, para evitar confundir al cliente.
 					const event: TranscendenceEventsTypes.MatchQueueTimeoutEvent = {
@@ -283,6 +293,7 @@ export class MatchService {
 			
 			// 4. Persistencia (Bubble Up de errores SQL)
 			await this.matchRepo.create(newMatch); // Usamos el create genérico
+			// TODO debería recibir un domain y mapear a row dentro del repositorio
 			
 			try {
 				// 6. Notificar invitación
@@ -300,12 +311,21 @@ export class MatchService {
 				
 				await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
 				
-				return MatchMapper.toDomain(newMatch);
+				const match = await this.matchRepo.findById(newMatch.id);
+				
+				if (!match) {
+					throw new SharedErrors.NotFoundError('Match not found', 'Match Service', {
+						matchId: newMatch.id
+					});
+				}
+				
+				return match;
 			} catch (error) {
 				console.error(`[MATCH-SERVICE] CRITICAL: Post-creation failure. ROLLBACK.`, error);
 				
-				// ROLLBACK/REVIERTE ESTADO: Borramos la partida física si falló la notificación
+				// ROLLBACK/REVIERTE ESTADO: Borra la partida física al fallar la notificación
 				await this.matchRepo.deleteMatch(newMatch.id);
+				
 				throw new SharedErrors.ServiceError('redis','Error iniciando partida privada.');
 			}
 		}
@@ -378,7 +398,7 @@ export class MatchService {
 		* cuando un usuario actualiza su perfil.
 		*/
 		async handleUsernameChange(userId: string, newUsername: string): Promise<void> {
-		console.log(`[MATCH-SERVICE] Syncing username for user ${userId} -> ${newUsername}`);
+			console.log(`[MATCH-SERVICE] Syncing username for user ${userId} -> ${newUsername}`);
 			await this.matchRepo.updateUsernames(userId, newUsername);
 		}
 		

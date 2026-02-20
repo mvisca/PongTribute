@@ -12,7 +12,6 @@ import {
 	GAME_MODES,
 	GAME_STATUS,
 	GameInputPayload,
-	GameModeConfig,
 	GameModeType,
 	GameState,
 	WEBSOCKET_EVENTS,
@@ -21,12 +20,9 @@ import {
 	BallState,
 	MatchConstants,
 	GameStatus,
-	MatchTypes,
-	Utils,
-	WebsocketEvent
+	Utils
 } from '@transcendence/shared'; 
 import { GameEnv } from '../config.js';
-import { timeStamp } from 'console';
 
 interface GameSession {
 	matchId: string;
@@ -111,6 +107,8 @@ export class GameService {
 				
 				const local = await JSON.parse(raw);
 				
+				await this.redis.del(`match:local:${matchId}`);
+				
 				session = {
 					matchId: matchId,
 					player1Id: local.player1.userId,
@@ -143,7 +141,7 @@ export class GameService {
 		// Asigna sockets para jugador en partida remota o ambos en partida local 
 		if (session.isLocal) {
 			session.socketP1 = socket;
-			session!.socketP2 = socket; 
+			session.socketP2 = socket; 
 		} else if (isPlayer1) {
 			session.socketP1 = socket	
 		} else {
@@ -201,7 +199,7 @@ export class GameService {
 			}
 		} satisfies WebSocketEventsTypes.GameOpponentReconnected;
 		
-		rivalSocket?.send(JSON.stringify(msg));rivalSocket
+		rivalSocket?.send(JSON.stringify(msg));
 		
 		this.startGameLoop(session);
 	}
@@ -254,7 +252,7 @@ export class GameService {
 		
 		const msg = JSON.stringify(disconnectMsg);
 		
-		rivalSocket?.send(JSON.stringify(msg));
+		rivalSocket?.send(msg);
 		
 		// 4. Iniciamos cuenta atrás para victoria automática
 		const timeoutId = setTimeout(() => {
@@ -676,9 +674,7 @@ export class GameService {
 	* El Frontend debe usar la config que recibió en el evento inicial 'MATCH_JOINED' o el primer 'GAME_UPDATE'.
 	*/
 	private broadcastState(session: GameSession) {
-		// Extraemos 'config' y 'id' para NO enviarlos en cada frame (son estáticos)
-		// dynamicState contendrá: status, targetScore, winnerId, paddleLeft, paddleRight, ball
-		const { config, id, ...dynamicState } = session.gameState;
+		const { config, id, ...dynState } = session.gameState;
 		
 		// TypeScript ahora estará feliz si tipamos esto correctamente en el evento
 		const updateMsg = {
@@ -686,7 +682,7 @@ export class GameService {
 			timestamp: Date.now(),
 			payload: {
 				matchId: session.matchId,
-				gameState: session.gameState,
+				gameState: dynState,
 				updateType: 'state_change' as const
 			}
 		} satisfies WebSocketEventsTypes.GameUpdate;
