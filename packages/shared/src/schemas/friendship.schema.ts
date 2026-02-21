@@ -1,8 +1,9 @@
-import { Not, Type } from '@sinclair/typebox';
+import { Type } from '@sinclair/typebox';
 import { FRIENDSHIP_STATUS } from '../constants/friendship.constants.js';
-import { ConflictError, NotFoundError, UnauthorizedError } from '../errors/AppError.js';
+import { ErrorSchemas } from './error.schema.js';
+import { SchemaFields } from './fields.schema.js';
 
-const UuidField = Type.String({ format: 'uuid' });
+const { UuidField } = SchemaFields;
 
 export namespace FriendshipSchemas {
 
@@ -46,9 +47,9 @@ export namespace FriendshipSchemas {
 	export const ListFriendshipsSchema = {
 		description: 'Lista amistades del usuario autenticado (filtro opcional por estado)',
 		tags: ['Friendship'],
-	querystring: ListFriendshipsQuery,
+		querystring: ListFriendshipsQuery,
 		response: {
-			200: Type.Array(Friendship)
+			200: Type.Object({ friendships: Type.Array(Friendship) })
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -63,9 +64,9 @@ export namespace FriendshipSchemas {
 		body: CreateFriendshipBody,
 		response: {
 			201: Friendship,
-			401: UnauthorizedError,
-			404: NotFoundError,
-			409: ConflictError
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound,
+			409: ErrorSchemas.Conflict
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -86,9 +87,9 @@ export namespace FriendshipSchemas {
 		body: UpdateFriendshipBody,
 		response: {
 			200: Friendship,
-			401: UnauthorizedError,
-			404: NotFoundError,
-			409: ConflictError
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound,
+			409: ErrorSchemas.Conflict
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -103,8 +104,8 @@ export namespace FriendshipSchemas {
 		params: DeleteFriendshipParams,
 		response: {
 			204: Type.Null(),
-			401: UnauthorizedError,
-			404: NotFoundError
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	}

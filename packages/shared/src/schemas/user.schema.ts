@@ -1,113 +1,52 @@
 import { Type } from '@sinclair/typebox';
-import { UnauthorizedError } from '../errors/AppError.js';
+import { ErrorSchemas } from './error.schema.js';
+import { SchemaFields } from './fields.schema.js';
 
 // ============================================================================
-// REUSABLE FIELD DEFINITIONS
+// REUSABLE FIELD DEFINITIONS — importados de fields.schema.ts
+// Aliases locales para mantener legibilidad
 // ============================================================================
 
-const UsernameField = Type.String({
-	minLength: 3,
-	maxLength: 20,
-	pattern: '^[a-zA-Z0-9_-]+$',
-});
-
-const EmailField = Type.String({
-	format: 'email',
-});
-
-const PasswordField = Type.String({
-	minLength: 8,
-	maxLength: 32,
-	pattern: '^(?=.*[a-z])(?=.*\\d).*$',
-});
-
-const PasswordHashField = Type.String({
-	minLength: 60,
-	maxLength: 60,
-	pattern: '^\\$2[aby]\\$\\d{2}\\$.{53}$',
-});
-
-const AvatarFieldBase64 = Type.Optional(
-	Type.String({
-		minLength: 1,
-		maxLength: 13_300_000,
-		pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
-	})
-);
-
-const AvatarFieldUrl = Type.String({
-		format: 'uri',
-		pattern: '^https://res\\.cloudinary\\.com/',
-		maxLength: 500
-});
-
-const UuidField = Type.String({
-	format: 'uuid'
-});
-
-const BooleanField = Type.Boolean();
-
-const DateTimeField = Type.String({
-	format: 'date-time'
-});
-
-const SecondsField = Type.Integer();
-
-const TotpSecretField = Type.String({
-	minLength: 16,
-	maxLength: 64,
-	pattern: '^[A-Z2-7]+$'
-});
-
-const BackupCodeHashField = Type.String({
-	minLength: 60,
-	maxLength: 60,
-	pattern: '^\\$2[ayb]\\$[0-9]{2}\\$[A-Za-z0-9./]{53}$'
-});
-
-const TokenHashField = Type.String({
-	description: 'Refresh Token hasheado (SHA-256)',
-	minLength: 64,
-	maxLength: 64
-});
+const {
+	UsernameField,
+	EmailField,
+	PasswordField,
+	PasswordHashField,
+	AvatarFieldBase64,
+	AvatarFieldUrl,
+	UuidField,
+	BooleanField,
+	DateTimeField,
+	SecondsField,
+	TotpSecretField,
+	BackupCodeHashField,
+	TokenHashField,
+} = SchemaFields;
 
 // ============================================================================
-// COMMON ERROR RESPONSES
+// ERROR RESPONSES — importados de error.schema.ts (fuente única de verdad)
+// Aliases locales para mantener legibilidad
 // ============================================================================
 
-const ErrorResponse = Type.Object({
-	error: Type.String(),
-	message: Type.String()
-});
-
-const ConflictErrorResponse = Type.Object({
-	error: Type.String(),
-	message: Type.String(),
-	field: Type.String()
-});
-
-const NotFoundResponse = Type.Object({
-	error: Type.String(),
-	message: Type.String()
-});
+const { Unauthorized, NotFound, Conflict, Validation, Internal } = ErrorSchemas;
 
 // ============================================================================
 // SCHEMAS DE BODY
 // ============================================================================
 
 export namespace UserSchemas {
-	
+
 	// ========================================================================
 	// USER CREATION
 	// ========================================================================
-	
+
 	export const CreateUserInput = Type.Object({
 		username: UsernameField,
 		email: EmailField,
 		password: PasswordField,
 		avatar: AvatarFieldUrl
 	});
-	
+
 	/**
 	* Body para POST /api/users
 	* Valida datos de creacion de usuario
@@ -124,11 +63,11 @@ export namespace UserSchemas {
 		totpSecret: Type.Optional(Type.String()),
 		backupCodeHash: Type.Optional(Type.String())
 	});
-	
+
 	// ========================================================================
 	// SCHEMAS DE RESPONSE
 	// ========================================================================
-	
+
 	/**
 	* Response para endpoints que retornan User
 	* Usuario SIN passwordHash (por seguridad)
@@ -144,7 +83,7 @@ export namespace UserSchemas {
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});
-	
+
 	/**
 	* Response para endpoints que retornan User
 	* Con 'passwordHash' solo para uso interno (Repository, Auth)
@@ -166,11 +105,11 @@ export namespace UserSchemas {
 		createdAt: DateTimeField,
 		updatedAt: DateTimeField
 	});
-	
+
 	// ========================================================================
 	// SCHEMAS COMPLETOS PARA FASTIFY RUTA 'POST /api/user'
 	// ========================================================================
-	
+
 	/**
 	* Schema completo para POST /api/users
 	* Define el body de entrada y responses posibles
@@ -180,39 +119,39 @@ export namespace UserSchemas {
 		body: CreateUserInput,
 		response: {
 			201: UserPublic,
-			409: ConflictErrorResponse
+			409: Conflict
 		}
 	};
-	
+
 	// ========================================================================
 	// SCHEMAS DE PARAMS
 	// ========================================================================
-	
+
 	/**
 	* Params comunes para rutas con :id
 	*/
 	export const UserIdParams = Type.Object({
 		id: UuidField
 	});
-	
+
 	/**
 	* Params para ruta /users/username/:username
 	*/
 	export const UsernameParams = Type.Object({
 		username: UsernameField
 	});
-	
+
 	/**
 	* Params para ruta /users/email/:email
 	*/
 	export const EmailParams = Type.Object({
 		email: EmailField
 	});
-	
+
 	// ========================================================================
 	// GET SCHEMAS
 	// ========================================================================
-	
+
 	/**
 	* Schema para GET /api/users/:id
 	*/
@@ -221,11 +160,11 @@ export namespace UserSchemas {
 		params: UserIdParams,
 		response: {
 			200: UserPublic,
-			404: NotFoundResponse
+			404: NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};
-	
+
 	/**
 	* Schema para GET /api/users/username/:username
 	*/
@@ -234,11 +173,11 @@ export namespace UserSchemas {
 		params: UsernameParams,
 		response: {
 			200: UserPublic,
-			404: NotFoundResponse
+			404: NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};
-	
+
 	/**
 	* Schema para GET /api/users/email/:email
 	*/
@@ -247,26 +186,26 @@ export namespace UserSchemas {
 		params: EmailParams,
 		response: {
 			200: UserPublic,
-			404: NotFoundResponse
+			404: NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};
-	
+
 	export const getInternalUserByIdSchema = {
 		tags: ['User'],
 		params: UserIdParams,
 		response: {
 			200: UserInternal,
-			404: NotFoundResponse
+			404: NotFound
 		}
 	}
-	
+
 	export const getInternalUserByEmailSchema = {
 		tags: ['User'],
 		params: EmailParams,
 		response: {
 			200: UserInternal,
-			404: NotFoundResponse
+			404: NotFound
 		}
 	}
 
@@ -280,7 +219,7 @@ export namespace UserSchemas {
 			200: Type.Object({
 				friendsIds: Type.Array(UuidField)
 			}),
-			404: NotFoundResponse
+			404: NotFound
 		}
 	}
 
@@ -294,14 +233,14 @@ export namespace UserSchemas {
 			200: Type.Object({
 				lastLogoutAt: SecondsField
 			}),
-			404: NotFoundResponse
+			404: NotFound
 		}
 	}
 
 	// ========================================================================
 	// CHECK SCHEMAS
 	// ========================================================================
-	
+
 	/**
 	* Response para endpoints de verificación
 	* Retorna disponibilidad del recurso
@@ -311,7 +250,7 @@ export namespace UserSchemas {
 		username: Type.Optional(Type.String()),
 		email: Type.Optional(Type.String())
 	});
-	
+
 	/**
 	* Schema para GET /api/users/check-username/:username
 	*/
@@ -322,7 +261,7 @@ export namespace UserSchemas {
 			200: AvailabilityResponse
 		}
 	};
-	
+
 	/**
 	* Schema para GET /api/users/check-email/:email
 	*/
@@ -333,11 +272,11 @@ export namespace UserSchemas {
 			200: AvailabilityResponse
 		}
 	};
-	
+
 	// ========================================================================
 	// UPDATE USER SCHEMAS
 	// ========================================================================
-	
+
 	/**
 	* Body para PUT /api/users/:id
 	* Todos los campos son opcionales (actualización parcial)
@@ -349,7 +288,7 @@ export namespace UserSchemas {
 	}, {
 		minProperties: 1
 	});
-	
+
 	/**
 	* Schema para PUT /api/users/:id
 	*/
@@ -359,17 +298,17 @@ export namespace UserSchemas {
 		body: UpdateUserBody,
 		response: {
 			200: UserPublic,
-			401: UnauthorizedError,
-			404: NotFoundResponse,
-			409: ConflictErrorResponse
+			401: Unauthorized,
+			404: NotFound,
+			409: Conflict
 		},
 		security: [{ bearerAuth: [] }]
 	};
-	
+
 	// ========================================================================
 	// UPDATE PASSWORD SCHEMAS
 	// ========================================================================
-	
+
 	/**
 	* Body para PUT /api/users/:id/password
 	*/
@@ -388,21 +327,21 @@ export namespace UserSchemas {
 		}),
 		response: {
 			204: Type.Null(),
-			404: NotFoundResponse
+			404: NotFound
 		}
 	}
-	
+
 	// ========================================================================
 	// SET ONLINE STATUS SCHEMA
 	// ========================================================================
-	
+
 	/**
 	* Body para PATCH /internal/users/:id/online-status
 	*/
 	export const SetOnlineStatusBody = Type.Object({
 		isOnline: BooleanField
 	});
-	
+
 	/**
 	* Schema para PATCH /internal/users/:id/online-status
 	*/
@@ -412,14 +351,14 @@ export namespace UserSchemas {
 		body: SetOnlineStatusBody,
 		response: {
 			204: Type.Null(),
-			404: NotFoundResponse
+			404: NotFound
 		}
 	};
-	
+
 	// ========================================================================
 	// 2FA INTERNAL - Endpoint interno desde Auth
 	// ========================================================================
-	
+
 	/**
 	* Body de PATCH /internal/users/:id/2fa-status
 	* Llamado por Auth service para actualizar estado 2FA en DB
@@ -429,25 +368,25 @@ export namespace UserSchemas {
 		totpSecret: Type.Optional(TotpSecretField),
 		backupCodeHash: Type.Optional(BackupCodeHashField)
 	});
-	
+
 	/**
 	* Schema completo de PATCH /internal/users/:id/2fa-status
 	*/
 	export const Update2FAStatusBodySchema = {
 		description: "Actualiza activación/desactivación de 2FA",
-		tags:['User'],
+		tags: ['User'],
 		params: UserIdParams,
 		body: Update2FAStatusBody,
 		response: {
 			200: UserPublic,
-			404: NotFoundResponse
+			404: NotFound
 		}
 	};
-	
+
 	// ========================================================================
 	// REFRESH TOKEN - Internos (llamados desde Auth)
 	// ========================================================================
-	
+
 	/**
 	* Body de POST /internal/tokens (crear refresh token)
 	*/
@@ -457,7 +396,7 @@ export namespace UserSchemas {
 		expiresAt: DateTimeField,
 		is2FAVerified: BooleanField
 	});
-	
+
 	/**
 	* Response al crear o verificar refresh token
 	*/
@@ -469,7 +408,7 @@ export namespace UserSchemas {
 		is2FAVerified: BooleanField,
 		createdAt: DateTimeField
 	});
-	
+
 	/**
 	* Schema completo de POST /internal/tokens
 	*/
@@ -478,18 +417,18 @@ export namespace UserSchemas {
 		body: RefreshTokenData,
 		response: {
 			201: RefreshTokenResponseBody,
-			400: ErrorResponse,
-			500: ErrorResponse
+			400: Validation,
+			500: Internal
 		}
 	};
-	
+
 	/**
 	* Body de POST /internal/tokens/verify
 	*/
 	export const VerifyRefreshTokenBody = Type.Object({
 		tokenHash: TokenHashField
 	});
-	
+
 	/**
 	* Schema completo de POST /internal/tokens/verify
 	*/
@@ -498,19 +437,19 @@ export namespace UserSchemas {
 		body: VerifyRefreshTokenBody,
 		response: {
 			200: RefreshTokenResponseBody,
-			400: ErrorResponse,
-			404: NotFoundResponse,
-			500: ErrorResponse
+			400: Validation,
+			404: NotFound,
+			500: Internal
 		}
 	};
-	
+
 	/**
 	* Params de DELETE /internal/tokens/user/:id
 	*/
 	export const DeleteRefreshTokenByUserParams = Type.Object({
 		id: UuidField
 	});
-	
+
 	/**
 	* Schema completo de DELETE /internal/tokens/user/:id
 	*/
@@ -519,11 +458,11 @@ export namespace UserSchemas {
 		params: DeleteRefreshTokenByUserParams,
 		response: {
 			204: Type.Null(),
-			400: ErrorResponse,
-			500: ErrorResponse
+			400: Validation,
+			500: Internal
 		}
 	};
-	
+
 	/**
 	* Schema completo de POST /internal/tokens/cleanup
 	*/
@@ -531,14 +470,14 @@ export namespace UserSchemas {
 		tags: ['Token'],
 		response: {
 			204: Type.Null(),
-			500: ErrorResponse
+			500: Internal
 		}
 	};
-	
+
 	// ========================================================================
 	// ANONYMIZE SCHEMAS
 	// ========================================================================
-	
+
 	/**
 	* Schema para DELETE /api/users/:id (soft delete)
 	*/
@@ -547,15 +486,15 @@ export namespace UserSchemas {
 		params: UserIdParams,
 		response: {
 			204: Type.Null(),
-			404: NotFoundResponse
+			404: NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};
-	
+
 	// ========================================================================
 	// DELETE SCHEMAS
 	// ========================================================================
-	
+
 	/**
 	* Schema para DELETE /api/users/:id (hard delete)
 	*/
@@ -564,7 +503,7 @@ export namespace UserSchemas {
 		params: UserIdParams,
 		response: {
 			204: Type.Null(),
-			404: NotFoundResponse
+			404: NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};

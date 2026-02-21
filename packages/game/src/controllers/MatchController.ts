@@ -213,7 +213,7 @@ export class MatchController {
 			const matches = await this.matchService.getMatchHistory(userId, offset ?? 0);
 			
 			// 4. Responder
-			return reply.send(matches);
+			return reply.send({ matches });
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}

@@ -1,22 +1,23 @@
 import { Type, Static } from '@sinclair/typebox';
 import { UnauthorizedError } from '../errors/AppError.js';
 import { GameTypes } from '../types/game.types.js';
+import { ErrorSchemas } from './error.schema.js';
 
 export namespace MatchSchemas {
 
-    // ========================================================================
-    // DEFINICIONES BÁSICAS
-    // ========================================================================
+	// ========================================================================
+	// DEFINICIONES BÁSICAS
+	// ========================================================================
 
-    export const MatchStatus = Type.Union([
-        Type.Literal("pending"),
-        Type.Literal("active"),
+	export const MatchStatus = Type.Union([
+		Type.Literal("pending"),
+		Type.Literal("active"),
 		Type.Literal("finished"),
 		Type.Literal("rejected"),
 		Type.Literal("expired")
-    ]);
+	]);
 
-	
+
 	export const MatchType = Type.Union([
 		Type.Literal('public'),
 		Type.Literal('private'),
@@ -24,29 +25,29 @@ export namespace MatchSchemas {
 	]);
 
 
-	
-    // ========================================================================
-    // DEFINIMOS LOS OBJETOS DE DOMINIO (Entidades)
-    // ========================================================================
 
-    // Representa a un jugador dentro de la partida (simplificado para UI)
-    export const MatchPlayer = Type.Object({
-        userId: Type.String({ format: 'uuid' }),
-        username: Type.String(),
+	// ========================================================================
+	// DEFINIMOS LOS OBJETOS DE DOMINIO (Entidades)
+	// ========================================================================
+
+	// Representa a un jugador dentro de la partida (simplificado para UI)
+	export const MatchPlayer = Type.Object({
+		userId: Type.String({ format: 'uuid' }),
+		username: Type.String(),
 		avatar: Type.String(),
-        score: Type.Number({ default: 0 }),
-        isWinner: Type.Boolean({ default: false }) // Útil para frontend
-    });
+		score: Type.Number({ default: 0 }),
+		isWinner: Type.Boolean({ default: false }) // Útil para frontend
+	});
 
-    // La Partida completa (Objeto Match)
-    export const Match = Type.Object({
-        id: Type.String({ format: 'uuid' }),
-        status: MatchStatus,
-        // Propiedades explícitas en lugar de Array (Más fácil para SQL)
-        player1: MatchPlayer, 
-        player2: Type.Optional(MatchPlayer), // Opcional: Al crear partida pública, P2 es null
-        winnerId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
-        createdAt: Type.String({ format: 'date-time' }),
+	// La Partida completa (Objeto Match)
+	export const Match = Type.Object({
+		id: Type.String({ format: 'uuid' }),
+		status: MatchStatus,
+		// Propiedades explícitas en lugar de Array (Más fácil para SQL)
+		player1: MatchPlayer,
+		player2: Type.Optional(MatchPlayer), // Opcional: Al crear partida pública, P2 es null
+		winnerId: Type.Union([Type.String({ format: 'uuid' }), Type.Null()]),
+		createdAt: Type.String({ format: 'date-time' }),
 		finishedAt: Type.Optional(Type.String({ format: 'date-time' })),
 		gameMode: Type.Enum(GameTypes.GameModeType),
         targetScore: Type.Number()
@@ -54,43 +55,43 @@ export namespace MatchSchemas {
 
 	// Esto actualiza automáticamente el tipo estático MatchTypes.Match
 	export type Match = Static<typeof Match>;
-	
-    // ========================================================================
-    // DTOs (Inputs API)
-    // ========================================================================
 
-    // POST /matches - Crear una partida
+	// ========================================================================
+	// DTOs (Inputs API)
+	// ========================================================================
+
+	// POST /matches - Crear una partida
 	export const CreateMatchBody = Type.Object({
 		matchType: MatchType,
 		opponentId: Type.Optional(Type.String({ format: 'uuid' })), // Si null -> Matchmaking público
 		gameMode: Type.Optional(Type.Enum(GameTypes.GameModeType, { default: GameTypes.GameModeType.CLASSIC })),
 		targetScore: Type.Optional(Type.Number({ minimum: 1, maximum: 21, default: 11 })),
-    });
+	});
 
-	// ESTA LÍNEA ES MÁGICA: Convierte el Schema de JS a un Tipo de TS
+	// Convierte el Schema de JS a un Tipo de TS
 	export type CreateMatchBodyType = Static<typeof CreateMatchBody>;
 
 	// Definimos la respuesta para "En cola"
-    export const JoinQueueResponse = Type.Object({
-        outcome: Type.Literal('added_to_queue')
+	export const JoinQueueResponse = Type.Object({
+		outcome: Type.Literal('added_to_queue')
 	});
-	
-    // Schema para la ruta POST
-    export const CreateMatchSchema = {
-        description: 'Crea una partida nueva o entra al matchmaking',
-        tags: ['Game'],
-        body: CreateMatchBody,
-        response: {
-            201: Match,             // Si hay match -> Devuelve objeto Match
-            200: JoinQueueResponse  // Si a la cola -> Devuelve outcome simple
-        },
-        security: [{ bearerAuth: [] }]
-    };
 
-    // GET /matches/:id
-    export const GetMatchParams = Type.Object({
-        id: Type.String({ format: 'uuid' })
-    });
+	// Schema para la ruta POST
+	export const CreateMatchSchema = {
+		description: 'Crea una partida nueva o entra al matchmaking',
+		tags: ['Game'],
+		body: CreateMatchBody,
+		response: {
+			201: Match,             // Si hay match -> Devuelve objeto Match
+			200: JoinQueueResponse  // Si a la cola -> Devuelve outcome simple
+		},
+		security: [{ bearerAuth: [] }]
+	};
+
+	// GET /matches/:id
+	export const GetMatchParams = Type.Object({
+		id: Type.String({ format: 'uuid' })
+	});
 
 	// POST /matches/:id/accept
 	export const AcceptMatchParams = Type.Object({
@@ -103,8 +104,8 @@ export namespace MatchSchemas {
 		params: AcceptMatchParams,
 		response: {
 			200: Match,
-			403: Type.Object({ error: Type.String(), message: Type.String() }),
-			404: Type.Object({ error: Type.String(), message: Type.String() })
+			403: ErrorSchemas.Forbidden,
+			404: ErrorSchemas.NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -120,52 +121,52 @@ export namespace MatchSchemas {
 		params: RejectMatchParams,
 		response: {
 			200: Match,
-			403: Type.Object({ error: Type.String(), message: Type.String() }),
-			404: Type.Object({ error: Type.String(), message: Type.String() })
+			403: ErrorSchemas.Forbidden,
+			404: ErrorSchemas.NotFound
 		},
 		security: [{ bearerAuth: [] }]
 	};
 
-    export const GetMatchSchema = {
-        description: 'Obtiene el estado de una partida por ID',
-        tags: ['Game'],
-        params: GetMatchParams,
-        response: {
-            200: Match,
-            404: Type.Object({ error: Type.String(), message: Type.String() })
-        }
+	export const GetMatchSchema = {
+		description: 'Obtiene el estado de una partida por ID',
+		tags: ['Game'],
+		params: GetMatchParams,
+		response: {
+			200: Match,
+			404: ErrorSchemas.NotFound
+		}
 	};
-	
+
 	// DELETE /matches/:id
 	// El anfitrion cancela la invitacion antes de que el invitado la acepte o si nunca la acepta
-    export const CancelMatchParams = Type.Object({
-        id: Type.String({ format: 'uuid' })
-    });
+	export const CancelMatchParams = Type.Object({
+		id: Type.String({ format: 'uuid' })
+	});
 
-    export const CancelMatchResponse = Type.Object({
-        success: Type.Boolean(),
-        message: Type.String()
-    });
+	export const CancelMatchResponse = Type.Object({
+		success: Type.Boolean(),
+		message: Type.String()
+	});
 
-    export const CancelMatchSchema = {
-        description: 'Cancela una invitación a partida privada (solo creador)',
-        tags: ['Game'],
-        params: CancelMatchParams,
-        response: {
-            200: CancelMatchResponse,
-            400: Type.Object({ error: Type.String(), message: Type.String() }),
-            403: Type.Object({ error: Type.String(), message: Type.String() }),
-            404: Type.Object({ error: Type.String(), message: Type.String() })
-        },
-        security: [{ bearerAuth: [] }]
+	export const CancelMatchSchema = {
+		description: 'Cancela una invitación a partida privada (solo creador)',
+		tags: ['Game'],
+		params: CancelMatchParams,
+		response: {
+			200: CancelMatchResponse,
+			400: ErrorSchemas.Validation,
+			403: ErrorSchemas.Forbidden,
+			404: ErrorSchemas.NotFound
+		},
+		security: [{ bearerAuth: [] }]
 	};
-	
+
 	// Definir el Schema del Response de abandonar/cancelar un usuario de una cola
 	export const LeaveQueueResponseSchema = Type.Object({
 		message: Type.String(),
 		success: Type.Boolean()
 	});
-	
+
 	// Esquema para los parámetros de la URL y Query String para obtener el History de partidas
 	export const GetMatchHistorySchema = {
 		description: 'Obtiene el historial de partidas de un usuario',
@@ -177,8 +178,8 @@ export namespace MatchSchemas {
 			offset: Type.Optional(Type.Number({ default: 0, minimum: 0 }))
 		}),
 		response: {
-			200: Type.Array(Match),
-			401: UnauthorizedError
+			200: Type.Object({ matches: Type.Array(Match) }),
+			401: ErrorSchemas.Unauthorized
 		},
 		security: [{ bearerAuth: [] }]
 	};
