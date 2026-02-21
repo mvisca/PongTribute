@@ -12,7 +12,6 @@ import {
 	GAME_MODES,
 	GAME_STATUS,
 	GameTypes,
-	GameModeType,
 	WEBSOCKET_EVENTS,
 	WebSocketEventsTypes,
 	MatchConstants,
@@ -450,7 +449,7 @@ export class GameService {
 	/**
 	* Genera el estado inicial del juego (posiciones, velocidad) basado en el modo.
 	*/
-	private createInitialState(matchId: string, targetScore: number, mode: string): GameTypes.GameState {
+	private createInitialState(matchId: string, targetScore: number, mode: GameTypes.GameModeType): GameTypes.GameState {
 		const modeConfig = GAME_MODES[mode] || GAME_MODES.classic;
 		const fullConfig = { ...GAME_CONSTANTS, ...modeConfig }; // Fusión de configs
 		
@@ -476,7 +475,7 @@ export class GameService {
 				ballAcceleration: modeConfig.ballAcceleration,
 				hasInertia: modeConfig.hasInertia,
 				friction: modeConfig.friction,
-				gameModeName: mode as GameModeType
+				gameModeName: mode as GameTypes.GameModeType
 			},
 			paddleLeft: {
 				x: fullConfig.WALL_MARGIN,

@@ -5,7 +5,7 @@ import {
 	MatchTypes,
 	MatchSchemas,
 	SharedErrors,
-	GameModeType,
+	GameTypes,
 	MatchConstants,
 	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
@@ -51,7 +51,7 @@ export class MatchService {
 		if (matchType === 'public') {
 			// Usamos '??' para usar CLASSIC si gameMode es undefined
 			// ?? significa: Si lo de la izquierda es null o undefined, usa lo de la derecha".
-			return this.joinPublicQueue(userId, gameMode ?? GameModeType.CLASSIC);
+			return this.joinPublicQueue(userId, gameMode ?? GameTypes.GameModeType.CLASSIC);
 		}
 		
 		if (matchType === 'local') {
@@ -76,7 +76,7 @@ export class MatchService {
 	*/
 	async joinPublicQueue(
 		userId: string,
-		gameModeName: GameModeType
+		gameModeName: GameTypes.GameModeType
 	): Promise<MatchTypes.JoinQueueResponse> {
 		// Guard: Usuario no en partida activa?
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
@@ -187,7 +187,7 @@ export class MatchService {
 		const timeoutMs = MatchConstants.QUEUE_TIMEOUT_MS;
 		const limit = Date.now() - timeoutMs;
 		
-		for (const mode of Object.values(GameModeType)) {
+		for (const mode of Object.values(GameTypes.GameModeType)) {
 			const queueKey = `match:queue:${mode}`;
 			
 			// 1. FETCH: Obtenemos candidatos
@@ -231,7 +231,7 @@ export class MatchService {
 		console.log(`[MATCH-SERVICE] Removing user ${userId} from queues`);
 		
 		// Object.values(GameMode) nos da ['classic', 'speed', 'pro']
-		const modes = Object.values(GameModeType);
+		const modes = Object.values(GameTypes.GameModeType);
 		
 		const promises = modes.map(mode => {
 			const key = `match:queue:${mode}`;
@@ -329,7 +329,7 @@ export class MatchService {
 						matchId: newMatch.id,
 						inviterId: userId,
 						inviteeId: opponentId,
-						gameMode: config?.gameMode || GameModeType.CLASSIC
+						gameMode: config?.gameMode || GameTypes.GameModeType.CLASSIC
 					}
 				} satisfies TranscendenceEventsTypes.MatchInviteEvent;
 				
@@ -379,7 +379,7 @@ export class MatchService {
 			const localMatch: MatchTypes.Match = {
 				id: matchId,
 				status: 'active', // Nace activa para que el front entre directo
-				gameMode: config?.gameMode || GameModeType.CLASSIC, // O lo que venga en config
+				gameMode: config?.gameMode || GameTypes.GameModeType.CLASSIC, // O lo que venga en config
 				targetScore: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE,
 				player1: {
 					userId: userId,

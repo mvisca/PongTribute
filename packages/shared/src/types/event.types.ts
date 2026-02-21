@@ -1,7 +1,6 @@
 // packages/shared/src/types/event.types.ts
 
 import { TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS } from '../constants/event.constants.js';
-import { GameModeType } from '../schemas/match.schema.js';
 import type { GameTypes } from './game.types.js';
 import { UserTypes } from './user.types.js';
 
@@ -117,7 +116,7 @@ export namespace TranscendenceEventsTypes {
 			matchId: string;
 			inviterId: string;
 			inviteeId: string;
-			gameMode: GameModeType;
+			gameMode: GameTypes.GameModeType;
 		};
 	}
 
@@ -168,7 +167,7 @@ export namespace TranscendenceEventsTypes {
 				isWinner: boolean;
 			};
 			winnerId: string | null;
-			gameMode: GameModeType;
+			gameMode: GameTypes.GameModeType;
 			targetScore: number;
 			createdAt: string;
 			finishedAt?: string;
@@ -284,7 +283,7 @@ export namespace WebSocketEventsTypes {
 			inviterId: string;
 			inviterUsername: string;
 			inviterAvatar: string;
-			gameMode: GameModeType;
+			gameMode: GameTypes.GameModeType;
 		};
 	}
 
@@ -314,7 +313,7 @@ export namespace WebSocketEventsTypes {
 			opponentId: string;
 			opponentUsername: string;
 			opponentAvatar: string;
-			gameMode: GameModeType;
+			gameMode: GameTypes.GameModeType;
 			status: string; // 'waiting' | 'playing'
 		};
 	}

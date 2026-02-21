@@ -1,10 +1,15 @@
 // packages/shared/src/types/game.types.ts
 
 import type { GameStatus } from '../constants/game.constants.js';
-import { GameModeType } from '../schemas/match.schema.js';
 import type { UserTypes } from './user.types.js';
 
 export namespace GameTypes {
+
+export enum GameModeType {
+	CLASSIC = 'classic',
+	SPEED = 'speed',
+	PRO = 'pro'
+}
 
 // Definición de Tipos para la Configuración del Modo
 export interface GameModeConfig {
