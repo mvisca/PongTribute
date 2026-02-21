@@ -208,10 +208,14 @@ export class MatchController {
         // 2. Extraer Query (offset). Si es undefined, el servicio o schema maneja el default.
         const { offset } = req.query;
 
-        // 3. Llamar al servicio (si offset viene undefined, enviamos 0 al servicio)
-        const matches = await this.matchService.getMatchHistory(userId, offset ?? 0);
-        
-        // 4. Responder
-        return reply.send(matches);
+		try {
+			// 3. Llamar al servicio (si offset viene undefined, enviamos 0 al servicio)
+			const matches = await this.matchService.getMatchHistory(userId, offset ?? 0);
+			
+			// 4. Responder
+			return reply.send(matches);
+		} catch(err) {
+			SharedErrors.handleError(err, reply);
+		}
     }
 }

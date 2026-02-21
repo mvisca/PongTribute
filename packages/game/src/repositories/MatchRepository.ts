@@ -111,18 +111,22 @@ export class MatchRepository {
      * updateUsernames
      * Actualiza los nombres desnormalizados cuando un usuario cambia su profile.
      */
-    async updateUsernames(userId: string, newUsername: string): Promise<void> {
+    async updateUser(userId: string, newUsername: string, newAvatar: string): Promise<void> {
         // 1. Preparar las sentencias
         const updateP1 = this.db.prepare(`
-            UPDATE matches SET player1_username = ? WHERE player1_id = ?
+            UPDATE matches 
+			SET player1_username = ?, player1_avatar = ?
+			WHERE player1_id = ?
         `);
         const updateP2 = this.db.prepare(`
-            UPDATE matches SET player2_username = ? WHERE player2_id = ?
+            UPDATE matches
+			SET player2_username = ?, player2_avatar = ?
+			WHERE player2_id = ?
         `);
 
         // 2. Ejecutar (Better-sqlite3 usa .run() para UPDATES)
-        updateP1.run(newUsername, userId);
-        updateP2.run(newUsername, userId);
+        updateP1.run(newUsername, newAvatar, userId);
+        updateP2.run(newUsername, newAvatar, userId);
 	}
 	
 	/**

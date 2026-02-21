@@ -2,7 +2,7 @@
 
 import { TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS } from '../constants/event.constants.js';
 import { GameModeType } from '../schemas/match.schema.js';
-import type { GameDynamicState, GameState } from './game.types.js';
+import type { GameTypes } from './game.types.js';
 import { UserTypes } from './user.types.js';
 
 // ============================================================================
@@ -173,7 +173,7 @@ export namespace TranscendenceEventsTypes {
 			createdAt: string;
 			finishedAt?: string;
 		};
-		gameState: GameState;
+		gameState: GameTypes.GameState;
 		updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
 		timestamp: number;
 	}
@@ -217,7 +217,7 @@ export namespace WebSocketEventsTypes {
 		timestamp: number;
 		payload: {
 			matchId: string;
-			gameState: GameDynamicState;
+			gameState: GameTypes.GameDynamicState;
 			updateType:
 				| 'state_change'
 				| 'score_update'

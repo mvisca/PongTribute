@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Redis } from 'ioredis';
 import { MatchRepository } from '../repositories/MatchRepository.js';
-import { MatchMapper } from '../mappers/MatchMapper.js';
 import {
 	MatchTypes,
 	MatchSchemas,
@@ -10,7 +9,8 @@ import {
 	MatchConstants,
 	REDIS_CHANNEL,
 	TRANSCENDENCE_EVENTS,
-	TranscendenceEventsTypes
+	TranscendenceEventsTypes,
+	Utils
 } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
 
@@ -249,20 +249,44 @@ export class MatchService {
 	async createPrivateMatch(
 		userId: string,
 		opponentId: string,
-		config?: Partial<MatchSchemas.CreateMatchBodyType>): Promise<MatchTypes.Match> {
-			
-			// 1. Validaciones de Negocio
-			if (userId === opponentId) {
-				throw new SharedErrors.ConflictError('No puedes desafiarte a ti mismo');
+		config?: Partial<MatchSchemas.CreateMatchBodyType>
+	): Promise<MatchTypes.Match> {
+		
+		// 1. Validaciones de Negocio
+		if (userId === opponentId) {
+			throw new SharedErrors.ConflictError(
+				'No puedes desafiarte a ti mismo',
+				'MatchService.createPrivatMatch',
+				{ 
+					userId: userId,
+					opponentId: config?.opponentId
+				}
+			);
+		}
+		
+		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
+		if (activeMatch)
+			throw new SharedErrors.ConflictError(
+			'You are already in an active match',
+			'MatchService.createPrivatMatch',
+			{
+				userId: userId,
+				opponentId: opponentId,
+				activeMatch: activeMatch.id
 			}
-			
-			const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
-			if (activeMatch)
-				throw new SharedErrors.ConflictError('You are already in an active match');
-			
-			const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
-			if (activeMatchOpponent)
-				throw new SharedErrors.ConflictError('Opponent is already in an active match');
+		);
+		
+		const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
+		if (activeMatchOpponent)
+			throw new SharedErrors.ConflictError(
+			'Opponent is already in an active match',
+			'MatchService.createPrivatMatch',
+			{
+				userId: userId,
+				opponentId: opponentId,
+				activeMatch: activeMatchOpponent.id
+			}
+		);
 			
 			// 2. Obtener Nombres (Pre-Fetch a User)
 			// Necesitamos los nombres ANTES de crear la fila en SQL.
@@ -314,11 +338,13 @@ export class MatchService {
 				const match = await this.matchRepo.findById(newMatch.id);
 				
 				if (!match) {
-					throw new SharedErrors.NotFoundError('Match not found', 'Match Service', {
-						matchId: newMatch.id
-					});
+					throw new SharedErrors.NotFoundError(
+						'Match not found',
+						'Match Service.createPrivateMatch',
+						{ matchId: newMatch.id }
+					);
 				}
-				
+
 				return match;
 			} catch (error) {
 				console.error(`[MATCH-SERVICE] CRITICAL: Post-creation failure. ROLLBACK.`, error);
@@ -326,7 +352,15 @@ export class MatchService {
 				// ROLLBACK/REVIERTE ESTADO: Borra la partida física al fallar la notificación
 				await this.matchRepo.deleteMatch(newMatch.id);
 				
-				throw new SharedErrors.ServiceError('redis','Error iniciando partida privada.');
+				throw new SharedErrors.ServiceError(
+					'redis',
+					'Error al enviar mensaje para iniciar partida privada.',
+					{
+						newMatchId: newMatch.id,
+						player1Id: newMatch.player1_id,
+						player2Id: newMatch.player2_id
+					}
+				);
 			}
 		}
 		
@@ -355,7 +389,7 @@ export class MatchService {
 					isWinner: false
 				},
 				player2: {
-					userId: 'guest-player-id', // Generate unique UUID for guest player
+					userId: Utils.generateUserId(),
 					username: 'Guest Player', // El front puede sobreescribir esto visualmente
 					avatar: GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
 					score: 0,
@@ -397,9 +431,9 @@ export class MatchService {
 		* Coordina la actualización masiva de nombres en el historial
 		* cuando un usuario actualiza su perfil.
 		*/
-		async handleUsernameChange(userId: string, newUsername: string): Promise<void> {
+		async handleUserUpdate(userId: string, newUsername: string, newAvatar: string): Promise<void> {
 			console.log(`[MATCH-SERVICE] Syncing username for user ${userId} -> ${newUsername}`);
-			await this.matchRepo.updateUsernames(userId, newUsername);
+			await this.matchRepo.updateUser(userId, newUsername, newAvatar);
 		}
 		
 		/**
@@ -563,7 +597,7 @@ export class MatchService {
 		* las rechazo ni acepto. 
 		**/
 		async prunePrivateInvites(): Promise<void> {
-			this.matchRepo.expirePendingMatches();
+			await this.matchRepo.expirePendingMatches();
 			// Opcional: Podría loguear "Limpieza de privadas ejecutada" si quiero depurar.
 		}
 		

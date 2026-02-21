@@ -11,17 +11,14 @@ import {
 	GAME_CONSTANTS,
 	GAME_MODES,
 	GAME_STATUS,
-	GameInputPayload,
+	GameTypes,
 	GameModeType,
-	GameState,
 	WEBSOCKET_EVENTS,
 	WebSocketEventsTypes,
-	PaddleState,
-	BallState,
 	MatchConstants,
 	GameStatus,
 	Utils
-} from '@transcendence/shared'; 
+} from '@transcendence/shared';
 import { GameEnv } from '../config.js';
 
 interface GameSession {
@@ -34,7 +31,7 @@ interface GameSession {
 	player2Avatar: string;
 	socketP1: WebSocket | null;
 	socketP2: WebSocket | null;
-	gameState: GameState;
+	gameState: GameTypes.GameState;
 	loopId: NodeJS.Timeout | null;
 	isLocal: boolean;
 }
@@ -105,7 +102,7 @@ export class GameService {
 					return null;
 				}
 				
-				const local = await JSON.parse(raw);
+				const local = JSON.parse(raw);
 				
 				await this.redis.del(`match:local:${matchId}`);
 				
@@ -125,7 +122,7 @@ export class GameService {
 				} satisfies GameSession;
 			} 
 			// Guardar en redis la session
-			this.activeMatches.set(matchId, session!);
+			this.activeMatches.set(matchId, session);
 		}
 		
 		// BLOQUE 2: ASIGNACION DE SOCKET		
@@ -389,7 +386,11 @@ export class GameService {
 	/**
 	* AABB Collision detection (Axis-Aligned Bounding Box) simplificado.
 	*/
-	private checkCollision(ball: BallState, paddle: PaddleState, config: any): boolean {
+	private checkCollision(
+		ball: GameTypes.BallState,
+		paddle: GameTypes.PaddleState,
+		config: GameTypes.GameConfig & GameTypes.GameModeConfig
+	): boolean {
 		// Usamos el radio desde la config, no desde la bola
 		const r = config.ballRadius;
 		
@@ -405,7 +406,7 @@ export class GameService {
 	/**
 	* Calcula el rebote de la bola en la pala, variando el ángulo según dónde golpee.
 	*/
-	private handlePaddleHit(game: GameState, paddle: PaddleState) {
+	private handlePaddleHit(game: GameTypes.GameState, paddle: GameTypes.PaddleState) {
 		const { ball, config } = game;
 		
 		// 1. Invertir dirección X (USANDO DX)
@@ -427,7 +428,7 @@ export class GameService {
 		ball.dy = ball.speed * Math.sin(angle);
 	}
 	
-	private resetBall(game: GameState, scorerSide: 'left' | 'right') {
+	private resetBall(game: GameTypes.GameState, scorerSide: 'left' | 'right') {
 		const { config } = game;
 		
 		game.ball.x = config.width / 2;
@@ -449,7 +450,7 @@ export class GameService {
 	/**
 	* Genera el estado inicial del juego (posiciones, velocidad) basado en el modo.
 	*/
-	private createInitialState(matchId: string, targetScore: number, mode: string): GameState {
+	private createInitialState(matchId: string, targetScore: number, mode: string): GameTypes.GameState {
 		const modeConfig = GAME_MODES[mode] || GAME_MODES.classic;
 		const fullConfig = { ...GAME_CONSTANTS, ...modeConfig }; // Fusión de configs
 		
@@ -507,7 +508,7 @@ export class GameService {
 		if (!session) return;
 		
 		// 1. Parseamos PRIMERO para saber qué intentan hacer
-		let payload: GameInputPayload;
+		let payload: GameTypes.GameInputPayload;
 		try { 
 			payload = JSON.parse(message.toString()); 
 		} catch { 
@@ -532,7 +533,7 @@ export class GameService {
 		if (!isPlaying) return;
 		
 		// 4. Lógica de Movimiento (tu código original sigue aquí abajo)
-		let paddle: PaddleState;
+		let paddle: GameTypes.PaddleState;
 		
 		if (session.isLocal) {
 			if (payload.playerSide === 'right') {
@@ -705,7 +706,7 @@ export class GameService {
 	/**
 	* Actualiza el nombre de un usuario en una partida activa (Memoria).
 	*/
-	public updatePlayerNameInActiveMatch(userId: string, newName: string): void {
+	public updatePlayerInActiveMatch(userId: string, newName: string, newAvatar: string): void {
 		// Usamos tu propio helper para buscar la partida
 		const matchId = this.findMatchIdByUserId(userId);
 		
@@ -717,9 +718,11 @@ export class GameService {
 		// Actualizamos la referencia en memoria
 		if (session.player1Id === userId) {
 			session.player1Username = newName;
+			session.player1Avatar = newAvatar;
 			console.log(`[GAME-SERVICE] Memory updated: Player 1 -> ${newName}`);
 		} else if (session.player2Id === userId) {
 			session.player2Username = newName;
+			session.player2Avatar = newAvatar;
 			console.log(`[GAME-SERVICE] Memory updated: Player 2 -> ${newName}`);
 		}
 	}

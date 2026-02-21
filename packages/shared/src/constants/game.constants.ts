@@ -5,7 +5,7 @@
 
 // 1. IMPORTAMOS LA DEFINICIÓN OFICIAL (Para evitar duplicados)
 // Nota: Usamos .js en el import por ser ESM, aunque el archivo sea .ts
-import { GameModeConfig } from '../types/game.types.js';
+import { GameTypes } from '../types/game.types.js';
 
 export const GAME_CONSTANTS = {
   // =========================================
@@ -56,7 +56,7 @@ export const GAME_STATUS = {
 export type GameStatus = typeof GAME_STATUS[keyof typeof GAME_STATUS];
 
 // CONFIGURACIÓN DE MODOS (Usando el tipo importado)
-export const GAME_MODES: Record<string, GameModeConfig> = {
+export const GAME_MODES: Record<string, GameTypes.GameModeConfig> = {
   classic: {
     paddleSpeed: 9, ballSpeedBase: 6, ballAcceleration: 0, hasInertia: false
   },

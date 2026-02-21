@@ -4,6 +4,8 @@ import type { GameStatus } from '../constants/game.constants.js';
 import { GameModeType } from '../schemas/match.schema.js';
 import type { UserTypes } from './user.types.js';
 
+export namespace GameTypes {
+
 // Definición de Tipos para la Configuración del Modo
 export interface GameModeConfig {
   paddleSpeed: number;      // Píxeles por frame
@@ -81,8 +83,10 @@ export type GameDynamicState = Omit<GameState, 'config' | 'id'>;
 export interface GameInputPayload {
     gameId: string;
 	action: 'MOVE_UP' | 'MOVE_DOWN' | 'STOP' | 'PAUSE_TOGGLE';
-	
+
 	// Opcional porque en online 'classic' lo deduce del socketID.
     // Obligatorio para lógica 'local'. Ha de saber que pala se movió del 'local'
     playerSide?: 'left' | 'right';
+}
+
 }
