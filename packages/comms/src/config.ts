@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findEnvFile, RedisConfig, validateRedisConfig } from '@transcendence/shared';
-import type { FastifyRequest } from 'fastify';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

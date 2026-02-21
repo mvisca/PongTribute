@@ -11,7 +11,6 @@ import {
 	TranscendenceEventsTypes,
 	WebSocketEventsTypes,
 	REDIS_CHANNEL,
-	TRANSCENDENCE_EVENTS,
 	UserTypes
 } from '@transcendence/shared';
 
@@ -68,11 +67,7 @@ export class CommsService implements IEventService {
 
 	constructor() {
 		// 1. Configuración base desde variables de entorno
-		const redisConfig = {
-			host: CommsEnv.REDIS_HOST(),
-			port: CommsEnv.REDIS_PORT(),
-			lazyConnect: true, // Importante para que no conecte hasta llamar a init()
-		};
+		const redisConfig = CommsEnv.getRedisConfig();
 		
 		// 2. Cliente Estándar (Comandos / Publicar)
 		// Utils validará la config y realizará los logs de conexión

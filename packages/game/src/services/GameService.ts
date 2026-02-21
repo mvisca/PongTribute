@@ -475,7 +475,7 @@ export class GameService {
 				ballAcceleration: modeConfig.ballAcceleration,
 				hasInertia: modeConfig.hasInertia,
 				friction: modeConfig.friction,
-				gameModeName: mode as GameTypes.GameModeType
+				gameModeName: mode
 			},
 			paddleLeft: {
 				x: fullConfig.WALL_MARGIN,

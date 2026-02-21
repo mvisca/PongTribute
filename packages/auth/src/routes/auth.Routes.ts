@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { AuthSchemas } from "@transcendence/shared";
-import { AuthController, AuthMiddleware } from "../index.js";
+import { AuthController, AuthEnv, AuthMiddleware } from "../index.js";
 import { AuthAppDependencies } from "../app.js";
 
 
@@ -18,7 +18,7 @@ export const authRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, o
 		schema: AuthSchemas.RegisterBodySchema,
 		config: {
 			rateLimit: {
-				max: 3,
+				max: AuthEnv.NODE_ENV() === 'production' ? 10 : 100,
 				timeWindow: '1 hour'
 			}
 		},
@@ -30,7 +30,7 @@ export const authRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, o
 		schema: AuthSchemas.LoginBodySchema,
 		config: {
 			rateLimit: {
-				max: 5,
+				max: AuthEnv.NODE_ENV() === 'production' ? 20 : 100,
 				timeWindow: '15 minutes'
 			}
 		},

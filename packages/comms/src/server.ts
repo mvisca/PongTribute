@@ -11,6 +11,7 @@ async function start() {
     // 1. Inicializar configuración
     CommsEnv.init();
 
+	// TODO no sigue el pattern de DI de otros servicios, mirarlo
     // 2. Inicializar CommsService (requiere Redis ya conectado)
     commsService = new CommsService();
     await commsService.init();

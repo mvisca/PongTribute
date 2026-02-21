@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import ms from 'ms';
 import QRcode from 'qrcode';
 import speakeasy from 'speakeasy';
 import {
@@ -184,7 +183,7 @@ export class AuthService {
 		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
 		// Calcula expiración (REFRESH_TOKEN_EXPIRY en segundos, convierte a ms)
-		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY() * 1000));
+		const expiresAt = new Date(Date.now() + AuthEnv.REFRESH_TOKEN_EXPIRY() * 1000);
 		
 		// almacenar record refresh token
 		const response = await fetch(

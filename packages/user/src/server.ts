@@ -1,9 +1,14 @@
 import { FastifyInstance } from 'fastify';
-import { buildApp, UserEnv, closeDatabase } from './index.js';
-import { UserService } from './services/user.service.js';
-import { TokenService } from './index.js';
-import { Utils } from '@transcendence/shared';
 import type { Redis } from 'ioredis';
+import { Utils } from '@transcendence/shared';
+import { 
+	buildApp,
+	UserEnv,
+	getDatabase, // TODO por qué no esta implementado
+	closeDatabase,
+	UserService,
+	TokenService
+ } from './index.js';
 
 let app: FastifyInstance | null = null;
 let redisClient: Redis | null = null;
@@ -13,6 +18,7 @@ async function start() {
 		// Inicializar config
 		UserEnv.init();
 
+		
 		// Crear Redis antes de buildApp
 		try {
 			redisClient = Utils.createRedisClient(UserEnv.getRedisConfig());
@@ -21,11 +27,12 @@ async function start() {
 			console.error('[USER] Error connecting to Redis: ', err);
 			process.exit(1);
 		}
-
+		
+		// Se crea el UserService
 		const userService = new UserService(redisClient!);
 
-		// Construir app
-		app = buildApp({ redisClient: redisClient!, userService });
+		// Construir app, se pasa como DEPENDENCY INJECTION el Redis y el userService
+		app = buildApp({ redisClient, userService });
 
 		// Arrancar el servidor
 		await app.listen({

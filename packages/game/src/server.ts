@@ -1,19 +1,19 @@
-// Tu trabajo es ARRANCAR EL SERVIDOR.
-
-import { buildApp } from './app.js';
-import { closeDatabase, getDatabase } from './connection.js';
-import { GameEnv } from './config.js';
 import { FastifyInstance } from 'fastify';
-import { MatchRepository } from './repositories/MatchRepository.js';
-import { MatchService } from './services/MatchService.js';
-// Importamos Utils para crear conexiones y Redis type
-import { Utils } from '@transcendence/shared';
 import { Redis } from 'ioredis';
+import { Utils } from '@transcendence/shared';
+import { 
+	buildApp,
+	GameEnv,
+	closeDatabase,
+	getDatabase, 
+	MatchRepository,
+	MatchService
+} from './index.js';
 
 
 let app: FastifyInstance | null = null;
 let appRedisClient: Redis | null = null;  // Cliente Redis de la app (para health, etc.)
-let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons
+let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons // TODO un redis para crons??
 
 async function start() {
 	try {
