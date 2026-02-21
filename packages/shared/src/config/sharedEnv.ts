@@ -74,11 +74,16 @@ interface EnvVars {
 	REDIS_DB: number;
 };
 
-const DEFAULTS: EnvVars = {
+type DefaultVars = Omit<EnvVars, 'JWT_SECRET' | 'SERVICE_SECRET'> & {
+	JWT_SECRET: undefined;
+	SERVICE_SECRET: undefined;
+};
+
+const DEFAULTS: DefaultVars = {
 	AUTH_SERVICE_URL: 'http://localhost:3002',
 	AUTH_SERVICE_PORT: 3002,
 	AUTH_SERVICE_HOST: 'localhost',
-	JWT_SECRET: 'default_super_secret_key_CHANGE_THIS',
+	JWT_SECRET: undefined,
 	TOKEN_EXPIRY: 3600,
 	REFRESH_TOKEN_EXPIRY: 84600,
 	BCRYPT_ROUNDS: 10,
@@ -114,7 +119,7 @@ const DEFAULTS: EnvVars = {
 	NODE_ENV: 'test',
 	LOG_LEVEL: 'info',
 
-	SERVICE_SECRET: 'default_shared_secret_CHANGE_THIS',
+	SERVICE_SECRET: undefined,
 	REDIS_HOST: 'localhost',
 	REDIS_PORT: 6379,
 	REDIS_PASSWORD: 'create_a_supersafe_redis_password',
@@ -138,6 +143,19 @@ export namespace SharedEnv {
 		const isProduction = process.env.NODE_ENV === 'production';
 
 		// Retorna el valor de la variable de entorno parseado, o el default en desarrollo; falla en producción si no está definida.
+		// Requiere un secret obligatorio sin fallback en ningún entorno.
+		function requireSecret(envValue: string | undefined, varName: string): string {
+			if (envValue !== undefined && envValue.trim() !== '') {
+				return envValue;
+			}
+			console.error('\n[CONFIG] FATAL: SECRET NOT DEFINED\n');
+			console.error(`[CONFIG] Variable: ${varName}`);
+			console.error(`[CONFIG] This secret is REQUIRED in ALL environments (development, test, production).`);
+			console.error(`[CONFIG] Fix: define ${varName} in your .env file or environment variables.`);
+			console.error(`[CONFIG] Hint: cp .env.example .env  — then fill in real values.\n`);
+			process.exit(1);
+		}
+
 		function envOr<T>(
 			envValue: string | undefined,
 			defaultValue: T,
@@ -148,11 +166,11 @@ export namespace SharedEnv {
 				if (typeof defaultValue === 'number') {
 					const n = Number(envValue);
 					if (isNaN(n)) {
-					console.error('\n[CONFIG] CONFIGURATION ERROR\n');
-					console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
-					console.error(`[CONFIG] Value received: "${envValue}"`);
-					console.error('[CONFIG] Expected type: number');
-					console.error('\n[CONFIG] Press CTRL+C to exit\n');
+						console.error('\n[CONFIG] CONFIGURATION ERROR\n');
+						console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
+						console.error(`[CONFIG] Value received: "${envValue}"`);
+						console.error('[CONFIG] Expected type: number');
+						console.error('\n[CONFIG] Press CTRL+C to exit\n');
 
 						process.exit(1);
 					}
@@ -164,12 +182,12 @@ export namespace SharedEnv {
 					if (envValue === 'false')
 						return false as T;
 
-				console.error('\n[CONFIG] CONFIGURATION ERROR\n');
-				console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
-				console.error(`[CONFIG] Value received: "${envValue}"`);
-				console.error('[CONFIG] Expected type: boolean');
-				console.error('\n[CONFIG] Valid values: true, false\n');
-				console.error('\n[CONFIG] Press CTRL+C to exit\n');
+					console.error('\n[CONFIG] CONFIGURATION ERROR\n');
+					console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
+					console.error(`[CONFIG] Value received: "${envValue}"`);
+					console.error('[CONFIG] Expected type: boolean');
+					console.error('\n[CONFIG] Valid values: true, false\n');
+					console.error('\n[CONFIG] Press CTRL+C to exit\n');
 
 					process.exit(1);
 				}
@@ -225,8 +243,14 @@ export namespace SharedEnv {
 		}
 
 		// Verifica que los secrets estén definidos y, en producción, que no usen valores por defecto.
-		function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
+		// Valida secrets en TODOS los entornos (defense-in-depth).
+		function validateSecrets(secrets: Record<string, string | undefined>): void {
 			const missing: string[] = [];
+
+			const KNOWN_INSECURE_DEFAULTS = [
+				'default_super_secret_key_CHANGE_THIS',
+				'default_shared_secret_CHANGE_THIS',
+			];
 
 			Object.entries(secrets).forEach(([key, value]) => {
 				if (!value) {
@@ -234,18 +258,17 @@ export namespace SharedEnv {
 					return;
 				}
 
-				if (isProduction) {
-					const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
-					if (value === defaultValue) {
-						missing.push(`${key} usa valor default (INSEGURO en producción)`);
-					}
+				// Comprobar contra defaults inseguros conocidos en CUALQUIER entorno
+				const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
+				if (value === defaultValue || KNOWN_INSECURE_DEFAULTS.includes(value)) {
+					missing.push(`${key} usa valor default inseguro — CAMBIAR antes de ejecutar`);
 				}
 			});
 
 			if (missing.length > 0) {
-			console.error('[CONFIG] CONFIGURATION ERRORS:');
-			missing.forEach(issue => console.error(`[CONFIG]    - ${issue}`));
-			console.error('\n[CONFIG] Fix: cp .env.example .env');
+				console.error('[CONFIG] CONFIGURATION ERRORS:');
+				missing.forEach(issue => console.error(`[CONFIG]    - ${issue}`));
+				console.error('\n[CONFIG] Fix: cp .env.example .env');
 				process.exit(1);
 			}
 		}
@@ -253,7 +276,7 @@ export namespace SharedEnv {
 		// Retorna el directorio base del proyecto según el entorno (desarrollo/test vs producción).
 		function getBaseDir(): string {
 			if (isDevelopment || isTest) {
-			console.log('[CONFIG] DEVELOPMENT environment: loading...');
+				console.log('[CONFIG] DEVELOPMENT environment: loading...');
 				const __filename = fileURLToPath(import.meta.url);
 				const __dirname = path.dirname(__filename);
 
@@ -322,7 +345,7 @@ export namespace SharedEnv {
 			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL'),
 			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT'),
 			AUTH_SERVICE_HOST: envOr(process.env.AUTH_SERVICE_HOST, DEFAULTS.AUTH_SERVICE_HOST, 'AUTH_SERVICE_HOST'),
-			JWT_SECRET: envOr(process.env.JWT_SECRET, DEFAULTS.JWT_SECRET, 'JWT_SECRET'),
+			JWT_SECRET: requireSecret(process.env.JWT_SECRET, 'JWT_SECRET'),
 			TOKEN_EXPIRY: validateRange(
 				envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
 				300, // 5 minutos
@@ -382,7 +405,7 @@ export namespace SharedEnv {
 			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL, 'LOG_LEVEL'),
 
 			// INTER-SERVICE COMMUNICATION
-			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET, 'SERVICE_SECRET'),
+			SERVICE_SECRET: requireSecret(process.env.SERVICE_SECRET, 'SERVICE_SECRET'),
 
 			// REDIS 
 			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST, 'REDIS_HOST'),
@@ -433,7 +456,7 @@ export namespace SharedEnv {
 			JWT_SECRET: config.JWT_SECRET,
 			REDIS_PASSWORD: config.REDIS_PASSWORD,
 			CLOUDINARY_URL: config.CLOUDINARY_URL
-		}, isProduction);
+		});
 
 		return config;
 	}

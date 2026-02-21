@@ -182,7 +182,7 @@ export class FriendshipController {
 			const query = request.query as FriendshipTypes.ListFriendshipsQuery;
 			const friendships = await this.friendshipService.listFriendships(userId, query);
 
-			return reply.code(200).send(friendships);
+			return reply.code(200).send({ friendships });
 		} catch (err) {
 			return SharedErrors.handleError(err, reply);
 		}

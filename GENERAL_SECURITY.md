@@ -33,7 +33,7 @@ Se auditaron los 8 servicios del proyecto analizando autenticación, autorizaci�
 
 ---
 
-### C2. Gateway expuesto saltando Nginx/TLS
+### C2. ====RESUELTO==== Gateway expuesto saltando Nginx/TLS
 
 - **Archivo:** `docker-compose.yml` — `ports: - "3000:3000"` en el servicio gateway
 - **Riesgo:** Cualquier cliente puede enviar peticiones HTTP en claro a `http://host:3000/api/*`, saltando Nginx, TLS y todos los security headers.
