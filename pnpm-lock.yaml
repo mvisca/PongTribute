@@ -63,6 +63,9 @@ importers:
       node-fetch:
         specifier: 3.3.2
         version: 3.3.2
+      pino-pretty:
+        specifier: 13.1.2
+        version: 13.1.2
       qrcode:
         specifier: 1.5.4
         version: 1.5.4
@@ -124,6 +127,9 @@ importers:
       jsonwebtoken:
         specifier: 9.0.2
         version: 9.0.2
+      pino-pretty:
+        specifier: 13.1.2
+        version: 13.1.2
       ws:
         specifier: 8.18.3
         version: 8.18.3
@@ -137,9 +143,6 @@ importers:
       '@types/ws':
         specifier: ^8.18.1
         version: 8.18.1
-      pino-pretty:
-        specifier: 13.1.2
-        version: 13.1.2
       tsx:
         specifier: 4.20.6
         version: 4.20.6
@@ -219,6 +222,15 @@ importers:
       fastify:
         specifier: 5.6.2
         version: 5.6.2
+      jsonwebtoken:
+        specifier: 9.0.2
+        version: 9.0.2
+      pino-pretty:
+        specifier: 13.1.2
+        version: 13.1.2
+      ws:
+        specifier: ^8.18.3
+        version: 8.18.3
     devDependencies:
       '@types/better-sqlite3':
         specifier: 7.6.13
@@ -232,12 +244,6 @@ importers:
       '@types/ws':
         specifier: ^8.5.10
         version: 8.18.1
-      jsonwebtoken:
-        specifier: 9.0.2
-        version: 9.0.2
-      pino-pretty:
-        specifier: 13.1.2
-        version: 13.1.2
       socket.io-client:
         specifier: ^4.8.3
         version: 4.8.3
@@ -247,9 +253,6 @@ importers:
       typescript:
         specifier: 5.9.3
         version: 5.9.3
-      ws:
-        specifier: ^8.18.3
-        version: 8.18.3
 
   packages/gateway:
     dependencies:
@@ -339,6 +342,12 @@ importers:
       '@fastify/rate-limit':
         specifier: 10.3.0
         version: 10.3.0
+      '@fastify/swagger':
+        specifier: 9.6.1
+        version: 9.6.1
+      '@fastify/swagger-ui':
+        specifier: 5.2.3
+        version: 5.2.3
       '@sinclair/typebox':
         specifier: 0.34.41
         version: 0.34.41
@@ -360,13 +369,10 @@ importers:
       jsonwebtoken:
         specifier: 9.0.2
         version: 9.0.2
+      pino-pretty:
+        specifier: 13.1.2
+        version: 13.1.2
     devDependencies:
-      '@fastify/swagger':
-        specifier: 9.6.1
-        version: 9.6.1
-      '@fastify/swagger-ui':
-        specifier: 5.2.3
-        version: 5.2.3
       '@types/bcryptjs':
         specifier: 3.0.0
         version: 3.0.0
@@ -379,9 +385,6 @@ importers:
       '@types/node':
         specifier: 24.7.2
         version: 24.7.2
-      pino-pretty:
-        specifier: 13.1.2
-        version: 13.1.2
       tsx:
         specifier: 4.20.6
         version: 4.20.6

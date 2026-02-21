@@ -29,6 +29,8 @@ services:
       restart: on-failure
       env_file:
         - .env
+      environment:
+        - NODE_ENV=production
       expose:
         - "3002"
       healthcheck:
@@ -54,6 +56,8 @@ services:
       restart: on-failure
       env_file:
         - .env
+      environment:
+        - NODE_ENV=production
       volumes:
         - ${USER_SERVICE_DB_PATH}:/app/packages/user/db
       expose:
@@ -81,6 +85,8 @@ services:
       restart: on-failure
       env_file:
         - .env
+      environment:
+        - NODE_ENV=production
       volumes:
         - ${GAME_SERVICE_DB_PATH}:/app/packages/game/db
       expose:
@@ -108,6 +114,8 @@ services:
       restart: on-failure
       env_file:
         - .env
+      environment:
+        - NODE_ENV=production
       expose:
         - "3005"
       healthcheck:
@@ -133,6 +141,8 @@ services:
       restart: on-failure
       env_file:
         - .env
+      environment:
+        - NODE_ENV=production
       expose:
         - "3000"
       healthcheck:

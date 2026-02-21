@@ -4,15 +4,9 @@ import rateLimit from '@fastify/rate-limit';
 import type { Redis } from 'ioredis';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { SharedErrors } from "@transcendence/shared";
+import { SharedErrors, SWAGGER_THEME_CSS } from "@transcendence/shared";
 import { authRoutes, AuthEnv } from './index.js';
 import { healthRoutes } from './routes/health.routes.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export interface AuthAppDependencies {
 	redisClient: Redis;
@@ -23,7 +17,7 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 
 	/** 1. Crear instancia de app fastify */
 	const app = Fastify(AuthEnv.getFastifyConfig());
-	
+
 	/** 1.5.  Rate limitng global */
 	app.register(rateLimit, {
 		max: 100, // 100 requests
@@ -47,15 +41,15 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${AuthEnv.PORT()}`}
+				{ url: `http://localhost:${AuthEnv.PORT()}` }
 			],
 			components: {
 				securitySchemes: {
-				  bearerAuth: {
-					type: 'http',
-					scheme: 'bearer',
-					bearerFormat: 'JWT'
-				  }
+					bearerAuth: {
+						type: 'http',
+						scheme: 'bearer',
+						bearerFormat: 'JWT'
+					}
 				}
 			},
 			security: [{ bearerAuth: [] }], // aplica por defecto a todas las rutas
@@ -73,12 +67,8 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 	});
 
 	/** 4. Plugins de documentacion con UI interactiva */
-	const swaggerThemeCSS = readFileSync(
-		// En runtime compilado, __dirname apunta a dist/src, por eso subimos 3 niveles hasta /packages
-		join(__dirname, '../../../shared/src/styles/', 'swagger-custom.css'),
-		'utf-8'
-	);
-	
+	const swaggerThemeCSS = SWAGGER_THEME_CSS;
+
 	app.register(swaggerUI, {
 		routePrefix: '/docs',
 		staticCSP: true,
