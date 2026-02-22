@@ -50,13 +50,7 @@ export const gameRoutes: FastifyPluginAsync<GameAppDependencies> = async (app, o
 	 */
 	app.delete('/matches/queue', {
 		preHandler: [GameMiddleware.validateJWT],
-		schema: {
-			tags: ['Game'],
-			description: 'Cancela la espera a una partida publica',
-			response: {
-				200: MatchSchemas.LeaveQueueResponseSchema
-			}
-		},
+		schema: MatchSchemas.LeaveQueueSchema,
 		handler: controller.leaveQueue.bind(controller)
 	});
 
@@ -98,14 +92,11 @@ export const gameRoutes: FastifyPluginAsync<GameAppDependencies> = async (app, o
 	 * GET /matches/history/:userId
 	 * Obtiene un array de partidas de un usuario.
 	 */
-	app.get<MatchSchemas.GetMatchHistoryReq>(
-		'/matches/history/:userId',
-		{
+	app.get<MatchSchemas.GetMatchHistoryReq>('/matches/history/:userId', {
 			preHandler: [GameMiddleware.validateJWT],
 			schema: MatchSchemas.GetMatchHistorySchema,
 			handler: controller.getMatchHistory.bind(controller)
-		}
-	);
+	});
 
 	// ========================================================================
 	// WEBSOCKETS: CONEXIÓN REAL-TIME

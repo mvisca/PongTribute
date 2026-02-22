@@ -167,6 +167,17 @@ export namespace MatchSchemas {
 		success: Type.Boolean()
 	});
 
+	export const LeaveQueueSchema = {
+		description: 'Cancela la espera a una partida pública (abandona la cola)',
+		tags: ['Game'],
+		response: {
+			200: LeaveQueueResponseSchema,
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound
+		},
+		security: [{ bearerAuth: [] }]
+	};
+
 	// Esquema para los parámetros de la URL y Query String para obtener el History de partidas
 	export const GetMatchHistorySchema = {
 		description: 'Obtiene el historial de partidas de un usuario',
