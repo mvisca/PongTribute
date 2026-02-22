@@ -90,21 +90,50 @@ export class MatchRepository {
 	 * Actualiza a 'expired' una partida privada 'pending' que no se aprobó ni rechazó..
 	 * La llama un cron si alcanza el timeout de 60 seg
 	 */
-	async expirePendingMatches(): Promise<void> {
+	async expirePendingMatches(): Promise<
+		Array<{
+			matchId: string;
+			player1Id: string;
+			player2Id: string
+		}>
+	> {
 		const thresholdTimestamp = Date.now() - MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS;
-		const stmt = this.db.prepare(`
-        	UPDATE matches
+
+		const affected = this.db.prepare(`
+        	SELECT id, player1_id, player2_id
+			FROM matches
+			WHERE status = ?
+			AND created_at < ?
+		`).all(
+			MatchConstants.MATCH_STATUS.PENDING,
+			thresholdTimestamp
+		) as Array<{ id: string; player1_id: string; player2_id: string }>;
+
+		if (affected.length === 0) {
+			return [];
+		}
+
+		// Expirar caducados
+		this.db.prepare(`
+			UPDATE matches
 			SET status = ?
 			WHERE status = ?
 			AND created_at < ?
-		`);
-		// Ejecutamos pasando el valor para sustituir los '?'
-		const info = stmt.run(MatchConstants.MATCH_STATUS.EXPIRED, MatchConstants.MATCH_STATUS.PENDING, thresholdTimestamp);
+		`).run(
+			MatchConstants.MATCH_STATUS.EXPIRED,
+			MatchConstants.MATCH_STATUS.PENDING,
+			thresholdTimestamp
+		);
 
-		// Opcional: Loguea cuántas filas se afectaron para control
-		if (info.changes > 0) {
-			console.log(`[MATCH-REPO] Expired ${info.changes} private invitations.`);
+		if (affected.length > 0) {
+			console.log(`[MATCH-REPO] Expired ${affected.length} private invitations.`);
 		}
+
+		return affected.map(row => ({
+			matchId: row.id,
+			player1Id: row.player1_id,
+			player2Id: row.player2_id
+		}));
     }
 
 	/**

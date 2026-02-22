@@ -329,7 +329,8 @@ export class MatchService {
 						matchId: newMatch.id,
 						inviterId: userId,
 						inviteeId: opponentId,
-						gameMode: config?.gameMode || GameTypes.GameModeType.CLASSIC
+						gameMode: config?.gameMode || GameTypes.GameModeType.CLASSIC,
+						expiresAt: newMatch.created_at + MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS
 					}
 				} satisfies TranscendenceEventsTypes.MatchInviteEvent;
 				
@@ -575,7 +576,7 @@ export class MatchService {
 					payload: {
 						matchId: match.id,
 						cancelledById: match.player1.userId,  // El creador (cleanup automático)
-						notifiedUserId: targetId,         // El invitado (player2)
+						notifiedUserIds: [match.player1.userId, targetId ],         // El invitado (player2)
 						reason: 'host_disconnected'
 					}
 				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
@@ -597,8 +598,35 @@ export class MatchService {
 		* las rechazo ni acepto. 
 		**/
 		async prunePrivateInvites(): Promise<void> {
-			await this.matchRepo.expirePendingMatches();
-			// Opcional: Podría loguear "Limpieza de privadas ejecutada" si quiero depurar.
+			// Obtiene todas las invitaciones (partidas que están 'pending') y caducadas
+			// Cambia su status a 'expired'
+			const expired = await this.matchRepo.expirePendingMatches();
+
+			// Si no hay invitaciones caducadas termina
+			if (expired.length === 0) return;
+
+			// Para cada invitación caducada, crea un evento y lo publica en Redis 
+			const promises = expired.map(({ matchId, player1Id, player2Id }) => {
+				// Construye el nuevo evento que notificará al sistema
+				const event: TranscendenceEventsTypes.MatchCancelledEvent = {
+					type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
+					timestamp: Date.now(),
+					source: 'game-service',
+					payload: {
+						matchId,
+						cancelledById: 'system',
+						notifiedUserIds: [ player1Id, player2Id ],
+						reason: 'invitation_expired'
+					}
+				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
+
+				// Publica el evento al canal transcendence:events
+				return this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event)); 
+			});
+
+			// Espera que todas las publicaciones terminen sin fallar si alguna falla
+
+			await Promise.allSettled(promises);
 		}
 		
 		/**
@@ -642,7 +670,7 @@ export class MatchService {
 				payload: {
 					matchId: matchId,
 					cancelledById: userId,               // El creador que cancela
-					notifiedUserId: matchRow.player2.userId, // El invitado
+					notifiedUserIds: [ matchRow.player1.userId, matchRow.player2.userId ], // El invitado
 					reason: 'The invitation was cancelled by creator'
 				}
 			} satisfies TranscendenceEventsTypes.MatchCancelledEvent;

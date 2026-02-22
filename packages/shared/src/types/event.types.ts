@@ -118,6 +118,7 @@ export namespace TranscendenceEventsTypes {
 			inviterId: string;
 			inviteeId: string;
 			gameMode: GameTypes.GameModeType;
+			expiresAt: number;
 		};
 	}
 
@@ -144,7 +145,7 @@ export namespace TranscendenceEventsTypes {
 		payload: {
 			matchId: string;
 			cancelledById: string;
-			notifiedUserId: string;
+			notifiedUserIds: string[];
 			reason?: string;
 		};
 	}
@@ -298,6 +299,7 @@ export namespace WebSocketEventsTypes {
 			inviterUsername: string;
 			inviterAvatar: string;
 			gameMode: GameTypes.GameModeType;
+			expiresAt: number;
 		};
 	}
 
