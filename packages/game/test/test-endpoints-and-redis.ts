@@ -32,7 +32,7 @@ import { randomUUID } from 'crypto';
 import { Redis } from 'ioredis';
 import {
 	MatchTypes,
-	REDIS_CHANNEL,
+	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 	Utils
@@ -119,7 +119,7 @@ class RedisEventCollector {
 	}
 
 	async start() {
-		await this.subscriber.subscribe(REDIS_CHANNEL);
+		await this.subscriber.subscribe(TRANSCENDENCE_CHANNEL);
 		this.subscriber.on('message', (_channel: string, message: string) => {
 			try {
 				const event = JSON.parse(message) as TranscendenceEventsTypes.SystemEvent;
@@ -127,7 +127,7 @@ class RedisEventCollector {
 			} catch { /* ignorar mensajes no-JSON */ }
 		});
 		this.connected = true;
-		console.log(`${c.b}📡 Redis Event Collector escuchando en canal: ${REDIS_CHANNEL}${c.R}`);
+		console.log(`${c.b}📡 Redis Event Collector escuchando en canal: ${TRANSCENDENCE_CHANNEL}${c.R}`);
 	}
 
 	/** Busca eventos del tipo dado */
@@ -149,7 +149,7 @@ class RedisEventCollector {
 
 	async stop() {
 		if (this.connected) {
-			await this.subscriber.unsubscribe(REDIS_CHANNEL);
+			await this.subscriber.unsubscribe(TRANSCENDENCE_CHANNEL);
 			await this.subscriber.quit();
 			this.connected = false;
 		}
@@ -723,7 +723,7 @@ async function runTests() {
 				isOnline: false
 			}
 		};
-		await appRedis.publish(REDIS_CHANNEL, JSON.stringify(disconnectEvent));
+		await appRedis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(disconnectEvent));
 
 		// Esperar a que el subscriber procese
 		await new Promise(resolve => setTimeout(resolve, 1000));
@@ -772,7 +772,7 @@ async function runTests() {
 				isOnline: true
 			}
 		};
-		await appRedis.publish(REDIS_CHANNEL, JSON.stringify(profileEvent));
+		await appRedis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(profileEvent));
 
 		// Esperamos a que el subscriber procese
 		await new Promise(resolve => setTimeout(resolve, 500));

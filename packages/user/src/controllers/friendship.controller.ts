@@ -2,7 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import type { Redis } from 'ioredis';
 import {
 	SharedErrors,
-	REDIS_CHANNEL,
+	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 	AuthTypes,
@@ -52,7 +52,7 @@ export class FriendshipController {
 			},
 		};
 
-		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 		console.log(`[FRIENDSHIP] FRIEND_REQUEST published: from ${senderId} to ${receiverId}`);
 	}
 
@@ -78,7 +78,7 @@ export class FriendshipController {
 			},
 		};
 
-		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 		console.log(`[FRIENDSHIP] FRIEND_ACCEPT published: from ${acceptorId} to ${requesterId}`);
 	}
 
@@ -98,7 +98,7 @@ export class FriendshipController {
 			},
 		} satisfies TranscendenceEventsTypes.FriendRemovedEvent;
 
-		await this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(event));
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 		console.log(`[FRIENDSHIP] FRIEND_REMOVE published: ${removerId} removed ${removedId}`);
 	}
 

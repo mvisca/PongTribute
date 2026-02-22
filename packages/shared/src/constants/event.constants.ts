@@ -1,5 +1,5 @@
 // Canal único Redis (Servicio a Servicio)
-export const REDIS_CHANNEL = 'transcendence:events' as const;
+export const TRANSCENDENCE_CHANNEL = 'transcendence:events' as const;
 
 export const TRANSCENDENCE_EVENTS = {
 	// Los TIPOS DE EVENTOS (type del message Servicio a Servicio del canal Redis)
@@ -22,8 +22,8 @@ export const TRANSCENDENCE_EVENTS = {
 	FRIEND_ONLINE: 'friend:online',
 	FRIEND_OFFLINE: 'friend:offline',
 	// Game
+	GAME_OVER: 'game:over',
 	GAME_UPDATE: 'game:update'
-
 } as const;
 
 // EVENTOS DE CLIENTE (Backend a Frontend vía WebSocket)

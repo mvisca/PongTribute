@@ -4,7 +4,7 @@ import {
 	UserTypes,
 	Utils,
 	SharedErrors,
-	REDIS_CHANNEL,
+	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes
 } from '@transcendence/shared';
@@ -247,7 +247,7 @@ export class UserService {
 			} satisfies TranscendenceEventsTypes.UserProfileUpdatedEvent;
 			
 			// Publicar al canal de eventos
-			this.redisClient.publish(REDIS_CHANNEL, JSON.stringify(eventPayload))
+			this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(eventPayload))
 				.catch(err => console.error('[USER-SERVICE] Failed to publish Redis event:', err));
 		}
 		return updatedUser;

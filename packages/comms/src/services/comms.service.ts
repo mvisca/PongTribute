@@ -9,7 +9,7 @@ import {
 	IEventService,
 	TranscendenceEventsTypes,
 	WebSocketEventsTypes,
-	REDIS_CHANNEL,
+	TRANSCENDENCE_CHANNEL,
 	UserTypes
 } from '@transcendence/shared';
 
@@ -86,8 +86,8 @@ export class CommsService implements IEventService {
 			
 			// Suscribirse a canale de applicacion.
 			// Se filtratá por eventType
-			await this.redisSub.subscribe(REDIS_CHANNEL);
-			this.logger.log(`[Comms] Suscrito a ${REDIS_CHANNEL}\n`);
+			await this.redisSub.subscribe(TRANSCENDENCE_CHANNEL);
+			this.logger.log(`[Comms] Suscrito a ${TRANSCENDENCE_CHANNEL}\n`);
 			
 			// Listener de mensajes Redis
 			this.redisSub.on('message', (_channel, message) => {

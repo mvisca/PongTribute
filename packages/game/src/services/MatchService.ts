@@ -7,7 +7,7 @@ import {
 	SharedErrors,
 	GameTypes,
 	MatchConstants,
-	REDIS_CHANNEL,
+	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 	Utils
@@ -149,7 +149,7 @@ export class MatchService {
 				}
 			};
 			// Publicamos en el CANAL UNICO de eventos (definido en shared)
-			await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+			await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 			
 			const match = await this.matchRepo.findById(newMatch.id);
 			
@@ -213,7 +213,7 @@ export class MatchService {
 						}
 					};
 					// Publicar en canal global
-					await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+					await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 				}
 			}
 		}
@@ -333,7 +333,7 @@ export class MatchService {
 					}
 				} satisfies TranscendenceEventsTypes.MatchInviteEvent;
 				
-				await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+				await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 				
 				const match = await this.matchRepo.findById(newMatch.id);
 				
@@ -480,7 +480,7 @@ export class MatchService {
 					}
 				} satisfies TranscendenceEventsTypes.MatchStartedEvent;
 				
-				await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+				await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 				
 				return match;
 			} catch (error) {
@@ -526,7 +526,7 @@ export class MatchService {
 					}
 				} satisfies TranscendenceEventsTypes.MatchRejectedEvent;
 				
-				await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+				await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 				
 				return match;
 			} catch (error) {
@@ -581,7 +581,7 @@ export class MatchService {
 				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
 				
 				// 4. Publicamos el evento usando la instancia inyectada
-				return this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+				return this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 			});
 			
 			// Ejecutamos todas las notificaciones en paralelo
@@ -647,7 +647,7 @@ export class MatchService {
 				}
 			} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
 			
-			await this.redis.publish(REDIS_CHANNEL, JSON.stringify(event));
+			await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
 		}
 		
 		/**

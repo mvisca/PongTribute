@@ -4,7 +4,7 @@ import { Redis } from 'ioredis';
 import { MatchService } from '../services/MatchService.js';
 import { GameService } from '../services/GameService.js';
 import {
-	REDIS_CHANNEL,
+	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 	Utils
@@ -36,16 +36,16 @@ export class MatchEventSubscriber {
 			console.log('[MATCH-SUBSCRIBER] Connecting to Pub/Sub...');
 			
 			// Nos suscribimos al canal de eventos definido en Shared
-			await this.subscriber.subscribe(REDIS_CHANNEL);
+			await this.subscriber.subscribe(TRANSCENDENCE_CHANNEL);
 			
 			// Escuchamos mensajes
 			this.subscriber.on('message', (channel, message) => {
-				if (channel === REDIS_CHANNEL) {
+				if (channel === TRANSCENDENCE_CHANNEL) {
 					this.handleMessage(message);
 				}
 			});
 			
-			console.log('[MATCH-SUBSCRIBER] Ready. Listening on channel:', REDIS_CHANNEL);
+			console.log('[MATCH-SUBSCRIBER] Ready. Listening on channel:', TRANSCENDENCE_CHANNEL);
 			
 		} catch (error) {
 			console.error('[MATCH-SUBSCRIBER] Failed to subscribe:', error);
