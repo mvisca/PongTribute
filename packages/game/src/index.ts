@@ -8,3 +8,4 @@ export * from './controllers/MatchController.js';
 export * from './routes/game.routes.js';
 export * from './gateways/GameGateway.js';
 export * from './app.js';
+export * from './types.js';

@@ -1,8 +1,8 @@
 // packages/shared/src/types/event.types.ts
 
 import { TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS } from '../constants/event.constants.js';
+import { GameUpdateType } from '../constants/game.constants.js';
 import type { GameTypes } from './game.types.js';
-import { MatchTypes } from './match.types.js';
 import { UserTypes } from './user.types.js';
 
 // ============================================================================
@@ -232,12 +232,7 @@ export namespace WebSocketEventsTypes {
 		payload: {
 			matchId: string;
 			gameState: GameTypes.GameDynamicState;
-			updateType:
-				| 'state_change'
-				| 'score_update'
-				| 'game_finished'
-				| 'game_paused'
-				| 'game_resumed';
+			updateType: GameUpdateType;
 		};
 	} // Omitie campos internos del match que el frontend no necesita
 	

@@ -7,6 +7,16 @@
 // Nota: Usamos .js en el import por ser ESM, aunque el archivo sea .ts
 import { GameTypes } from '../types/game.types.js';
 
+export const GAME_UPDATE_TYPE = {
+	STATE_CHANGED: 'state_changed',
+	SCORE_UPDATE: 'score_updated',
+	GAME_FINISHED: 'game_finished',
+	PAUSED: 'game_paused',
+	RESUMED: 'game_resumed'
+} as const;
+
+export type GameUpdateType = typeof GAME_UPDATE_TYPE[keyof typeof GAME_UPDATE_TYPE];
+
 export const GAME_CONSTANTS = {
   // =========================================
   // LOCAL GAME y GAME PRO

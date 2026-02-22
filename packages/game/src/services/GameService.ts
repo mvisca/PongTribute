@@ -11,6 +11,8 @@ import {
 	GAME_CONSTANTS,
 	GAME_MODES,
 	GAME_STATUS,
+	GAME_UPDATE_TYPE,
+	GameUpdateType,
 	GameTypes,
 	WEBSOCKET_EVENTS,
 	WebSocketEventsTypes,
@@ -575,10 +577,11 @@ export class GameService {
 			// PAUSAR
 			this.stopGameLoop(session);
 			session.gameState.status = GAME_STATUS.PAUSED;
-			this.broadcastState(session); // Notificar UI para mostrar overlay "PAUSED"
+			this.broadcastState(session, GAME_UPDATE_TYPE.PAUSED); // Notificar UI para mostrar overlay "PAUSED"
 		} else if (session.gameState.status === GAME_STATUS.PAUSED) {
 			// REANUDAR
 			this.startGameLoop(session); // Esto setea PLAYING y arranca el timer
+			this.broadcastState(session, GAME_UPDATE_TYPE.RESUMED);
 		}
 	}
 	
@@ -673,7 +676,7 @@ export class GameService {
 	* Enviamos solo los datos dinámicos (sin config) para ahorrar ancho de banda.
 	* El Frontend debe usar la config que recibió en el evento inicial 'MATCH_JOINED' o el primer 'GAME_UPDATE'.
 	*/
-	private broadcastState(session: GameSession) {
+	private broadcastState(session: GameSession, updateType: GameUpdateType) {
 		const { config, id, ...dynState } = session.gameState;
 		
 		// TypeScript ahora estará feliz si tipamos esto correctamente en el evento
@@ -683,7 +686,7 @@ export class GameService {
 			payload: {
 				matchId: session.matchId,
 				gameState: dynState,
-				updateType: 'state_change' as const
+				updateType
 			}
 		} satisfies WebSocketEventsTypes.GameUpdate;
 		

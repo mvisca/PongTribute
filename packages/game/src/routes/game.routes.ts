@@ -7,22 +7,13 @@ import { GameAppDependencies } from '../types.js';
 
 export const gameRoutes: FastifyPluginAsync<GameAppDependencies> = async (app, opts) => {
 
-	const { matchService, gameService, eventSubscriber } = opts;
+	const { matchService, gameService } = opts;
 
 	// ========================================================================
 	// CONTROLADORES Y GATEWAYS (Capa de Transporte)
 	// ========================================================================
 	const controller = new MatchController(matchService);
 	const gateway = new GameGateway(gameService);
-
-	// ========================================================================
-	// CRON JOBS
-	// ========================================================================
-	console.log('[GAME-ROUTES] Starting internal cron jobs');
-	const cronInterval = setInterval(() => {
-		matchService.pruneQueues().catch(err => app.log.error(err));
-		matchService.prunePrivateInvites().catch(err => app.log.error(err));
-	}, 10000);
 
 	// ========================================================================
 	// RUTA HTTP DE CREAR PARTIDA (REST)
@@ -114,13 +105,4 @@ export const gameRoutes: FastifyPluginAsync<GameAppDependencies> = async (app, o
 	});
 
 	console.log('[GAME-ROUTES] Game routes registered');
-
-	// ========================================================================
-	// LIFECYCLE (Limpieza)
-	// ========================================================================
-	app.addHook('onClose', async () => {
-		console.log('[GAME-ROUTES] Cleaning up resources...');
-		clearInterval(cronInterval);
-		await eventSubscriber.disconnect();
-	});
 };

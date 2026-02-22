@@ -14,10 +14,10 @@ import { MatchEventSubscriber } from './subscribers/MatchEventSubscriber.js';
 
 
 let app: FastifyInstance | null = null;
-let redisClient: Redis | null = null;           // Redis para negocio, crons y health check
-let subscriberRedisClient: Redis | null = null; // Redis dedicado para pub/sub
-                                                // Necesario: en modo subscribe no puede
-                                                // emitir otros comandos.
+let redisClient: Redis | null = null;
+let subscriberRedisClient: Redis | null = null;
+let eventSubscriber: MatchEventSubscriber | null = null;
+let cronInterval: NodeJS.Timeout | null = null;
 
 async function start() {
 	try {
@@ -45,10 +45,20 @@ async function start() {
 		const matchRepo = new MatchRepository(db);
 		const matchService = new MatchService(matchRepo, redisClient);
 		const gameService = new GameService(matchRepo, redisClient);
-		const eventSubscriber = new MatchEventSubscriber(matchService, gameService, subscriberRedisClient);
+		eventSubscriber = new MatchEventSubscriber(matchService, gameService, subscriberRedisClient);
 
 		// Conectar subscriber antes de buildApp
 		await eventSubscriber.connect();
+
+		// ========================================================================
+		// CREACION DE CRONS JOBS
+		// ========================================================================
+	
+		cronInterval = setInterval(() => {
+			matchService.pruneQueues().catch(err => console.log('[GAME] Cron pruneQueues error:', err));
+			matchService.prunePrivateInvites().catch(err => console.error('[GAME] Cron prunePrivateInvites error:', err));
+		}, 10000);
+		console.log('[GAME] Cron jobs started');
 
 		// ========================================================================
 		// LIMPIEZA DE ZOMBIES (Al arrancar)
@@ -66,7 +76,7 @@ async function start() {
 		// CONSTRUIR APP — pasa todos los deps
 		// ========================================================================
 
-		app = buildApp({ redisClient: redisClient!, matchService, gameService, eventSubscriber });
+		app = buildApp({ redisClient: redisClient!, matchService, gameService });
 
 		// Arrancar el servidor
 		await app.listen({
@@ -88,6 +98,15 @@ async function start() {
 async function gracefulShutdown(signal: string) {
 	console.log(`\n[GAME] ${signal} received. Starting graceful shutdown`);
 
+	// Dejar de disparar crons
+	if (cronInterval) {
+		clearInterval(cronInterval);
+		console.log('[GAME] Cron jobs stopped');
+	}
+
+	// Dejar de recibir eventos Redis
+	if (MatchEventSubscriber)
+
 	if (subscriberRedisClient) {
 		try {
 			await subscriberRedisClient.quit();
@@ -97,6 +116,7 @@ async function gracefulShutdown(signal: string) {
 		}
 	}
 
+	// 
 	if (redisClient) {
 		try {
 			await redisClient.quit();
