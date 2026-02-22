@@ -7,28 +7,18 @@ import {
 	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
-	Utils
 } from '@transcendence/shared';
-import { GameEnv } from '../config.js';
 
 
 export class MatchEventSubscriber {
 	private subscriber: Redis;
 	private matchService: MatchService;
 	private gameService: GameService;
-	
-	constructor(matchService: MatchService, gameService: GameService) {
+
+	constructor(matchService: MatchService, gameService: GameService, subscriberRedis: Redis) {
 		this.matchService = matchService;
 		this.gameService = gameService;
-		
-		// 1. Obtener configuración usando la función del namespace GameEnv
-		// Esto valida host, puerto, password y db automáticamente.
-		const redisConfig = GameEnv.getRedisConfig();
-		
-		console.log(`[MATCH-SUBSCRIBER] Configuring Redis at ${redisConfig.host}:${redisConfig.port}`);
-		
-		// 2. Usar la Factory de Shared (Patrón del proyecto)
-		this.subscriber = Utils.createRedisClient(redisConfig);
+		this.subscriber = subscriberRedis;
 	}
 	
 	public async connect() {

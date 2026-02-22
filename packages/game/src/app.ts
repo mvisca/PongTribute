@@ -5,15 +5,13 @@ import helmet from '@fastify/helmet';
 import fastifyWebsocket from '@fastify/websocket';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
-import { gameRoutes } from './index.js';
+import { gameRoutes } from './routes/game.routes.js';
 import { GameEnv } from './config.js';
 import { healthRoutes } from './routes/health.routes.js';
-import { Redis } from 'ioredis';
 import { SWAGGER_THEME_CSS } from '@transcendence/shared';
+import { GameAppDependencies } from './types.js';
 
-export interface GameAppDependencies {
-	redisClient: Redis;
-}
+export type { GameAppDependencies };
 
 export function buildApp(deps: GameAppDependencies): FastifyInstance {
 
@@ -90,7 +88,7 @@ export function buildApp(deps: GameAppDependencies): FastifyInstance {
 	// 4. Registro de Rutas
 	app.register(healthRoutes, { ...deps });
 	console.log('[GAME] Registering game routes');
-	app.register(gameRoutes, { prefix: '/api' });
+	app.register(gameRoutes, { prefix: '/api', ...deps });
 
 	// 6. Manejador de Errores Global
 	app.setNotFoundHandler((request, reply) => {

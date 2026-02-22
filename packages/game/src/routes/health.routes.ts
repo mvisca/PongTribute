@@ -1,6 +1,6 @@
 import { FastifyPluginAsync } from "fastify";
 import { HealthController } from "../controllers/HealthController.js";
-import { GameAppDependencies } from "../app.js";
+import { GameAppDependencies } from "../types.js";
 
 export const healthRoutes: FastifyPluginAsync<GameAppDependencies> = async (app, opts) => {
 	// Crear el controller con Redis client

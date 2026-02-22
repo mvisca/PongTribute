@@ -1,38 +1,72 @@
 import { FastifyInstance } from 'fastify';
 import { Redis } from 'ioredis';
 import { Utils } from '@transcendence/shared';
-import { 
+import {
 	buildApp,
 	GameEnv,
 	closeDatabase,
-	getDatabase, 
+	getDatabase,
 	MatchRepository,
-	MatchService
+	MatchService,
+	GameService
 } from './index.js';
+import { MatchEventSubscriber } from './subscribers/MatchEventSubscriber.js';
 
 
 let app: FastifyInstance | null = null;
-let appRedisClient: Redis | null = null;  // Cliente Redis de la app (para health, etc.)
-let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons
-                                          // Se mantienen separados para evitar contención: el cliente
-                                          // de la app HTTP no debe verse bloqueado por operaciones de cron.
+let redisClient: Redis | null = null;           // Redis para negocio, crons y health check
+let subscriberRedisClient: Redis | null = null; // Redis dedicado para pub/sub
+                                                // Necesario: en modo subscribe no puede
+                                                // emitir otros comandos.
 
 async function start() {
 	try {
 		// Inicializar config
 		GameEnv.init();
 
-		// Crear Redis antes de buildApp
+		// ========================================================================
+		// INFRAESTRUCTURA (Redis)
+		// ========================================================================
+
 		try {
-			appRedisClient = Utils.createRedisClient(GameEnv.getRedisConfig());
-			console.log('[GAME] Redis client created');
+			redisClient = Utils.createRedisClient(GameEnv.getRedisConfig());
+			subscriberRedisClient = redisClient.duplicate();
+			console.log('[GAME] Redis clients created');
 		} catch (err) {
 			console.error('[GAME] Error connecting to Redis: ', err);
 			process.exit(1);
 		}
 
-		// Construir app
-		app = buildApp({ redisClient: appRedisClient! });
+		// ========================================================================
+		// COMPOSITION ROOT — Repos, Services, Subscriber
+		// ========================================================================
+
+		const db = getDatabase();
+		const matchRepo = new MatchRepository(db);
+		const matchService = new MatchService(matchRepo, redisClient);
+		const gameService = new GameService(matchRepo, redisClient);
+		const eventSubscriber = new MatchEventSubscriber(matchService, gameService, subscriberRedisClient);
+
+		// Conectar subscriber antes de buildApp
+		await eventSubscriber.connect();
+
+		// ========================================================================
+		// LIMPIEZA DE ZOMBIES (Al arrancar)
+		// ========================================================================
+
+		console.log('[GAME] Checking for zombie matches on startup...');
+		await matchRepo.resetZombieMatches()
+			.then(count => {
+				if (count > 0) console.log(`[GAME] Aborted ${count} orphan zombie matches.`);
+				else console.log('[GAME] Database clean: no zombie matches found.');
+			})
+			.catch(err => console.error('[GAME] Error cleaning zombie matches:', err));
+
+		// ========================================================================
+		// CONSTRUIR APP — pasa todos los deps
+		// ========================================================================
+
+		app = buildApp({ redisClient: redisClient!, matchService, gameService, eventSubscriber });
 
 		// Arrancar el servidor
 		await app.listen({
@@ -44,36 +78,6 @@ async function start() {
 		console.log(`[GAME] Service ready at http://${GameEnv.HOST()}:${GameEnv.PORT()}`);
 		console.log(`[GAME] DB Path: ${GameEnv.GAME_SERVICE_DB_FULL_PATH()}`);
 
-		// ========================================================================
-		// CRON JOB: PRUNE QUEUES + PRUNE INVITES
-		// ========================================================================
-
-		// Creamos dependencias para el Cron
-		const matchRepo = new MatchRepository(getDatabase());
-
-		// CREAMOS CONEXIÓN REDIS (Usando la Factory de Shared)
-        const redisConfig = GameEnv.getRedisConfig();
-        cronRedisClient = Utils.createRedisClient(redisConfig);
-
-		// Inyectamos dependencias (CUMPLE LA FIRMA: Repo + Redis)
-        const matchService = new MatchService(matchRepo, cronRedisClient);
-
-		console.log('[GAME] Starting cron job: Prune Public Queues (every 10s)');
-
-		// Ejecutar cada 10 segundos
-		setInterval(() => {
-			// Limpia cola de redis cada 90 seg
-			matchService.pruneQueues().catch(err => {
-				console.error('[GAME] Error in cron PruneQueues:', err);
-			});
-			// Pone en 'expired' las invitaciones que siguen en 'pending' tras 60 seg
-			matchService.prunePrivateInvites().catch(err => {
-				console.error('[GAME] Error in cron PrunePrivateInvites:', err);
-			});
-		}, 10000); // 10 segundos
-
-		// ========================================================================
-
 	} catch (err) {
 		console.log(`[GAME] Startup error:`, err instanceof Error ? err.message : err);
 		console.log('[GAME] Check .env file - if missing, run: "cp .env.example .env"');
@@ -84,25 +88,23 @@ async function start() {
 async function gracefulShutdown(signal: string) {
 	console.log(`\n[GAME] ${signal} received. Starting graceful shutdown`);
 
-	// Cerramos el Redis de la App
-	if (appRedisClient) {
+	if (subscriberRedisClient) {
 		try {
-			await appRedisClient.quit();
+			await subscriberRedisClient.quit();
+			console.log('[GAME] Subscriber Redis disconnected');
+		} catch (err) {
+			console.error('[GAME] Error closing subscriber Redis', err);
+		}
+	}
+
+	if (redisClient) {
+		try {
+			await redisClient.quit();
 			console.log('[GAME] Redis disconnected');
 		} catch (err) {
 			console.error('[GAME] Error closing Redis', err);
 		}
 	}
-
-	// Cerramos el Redis de los Crons (que creamos aquí)
-    if (cronRedisClient) {
-        try {
-            await cronRedisClient.quit();
-            console.log('[GAME] Cron Redis disconnected');
-        } catch (err) {
-            console.error('[GAME] Error closing cron Redis', err);
-        }
-    }
 
 	if (app) {
 		try {
