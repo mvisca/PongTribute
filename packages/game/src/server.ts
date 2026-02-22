@@ -13,7 +13,9 @@ import {
 
 let app: FastifyInstance | null = null;
 let appRedisClient: Redis | null = null;  // Cliente Redis de la app (para health, etc.)
-let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons // TODO un redis para crons??
+let cronRedisClient: Redis | null = null; // Cliente Redis exclusivo para los Crons
+                                          // Se mantienen separados para evitar contención: el cliente
+                                          // de la app HTTP no debe verse bloqueado por operaciones de cron.
 
 async function start() {
 	try {

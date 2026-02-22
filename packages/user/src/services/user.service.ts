@@ -10,7 +10,6 @@ import {
 } from '@transcendence/shared';
 import {
 	IUserRepository,
-	SQLiteUserRepository,
 	UserEnv,
 	UserMapper
 } from '../index.js';
@@ -18,9 +17,9 @@ import {
 export class UserService {
 	private userRepo: IUserRepository;
 	private redisClient: Redis;
-	
-	constructor(redisClient: Redis) {
-		this.userRepo = new SQLiteUserRepository();
+
+	constructor(redisClient: Redis, userRepo: IUserRepository) {
+		this.userRepo = userRepo;
 		this.redisClient = redisClient;
 	}
 	

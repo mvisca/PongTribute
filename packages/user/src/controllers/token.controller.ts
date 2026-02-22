@@ -5,8 +5,8 @@ import { TokenService } from "../index.js";
 export class TokenController {
 	private tokenService: TokenService;
 
-	constructor() {
-		this.tokenService = new TokenService();
+	constructor(tokenService: TokenService) {
+		this.tokenService = tokenService;
 	}
 	
 	async verifyToken(request: FastifyRequest, reply: FastifyReply): Promise<void> {

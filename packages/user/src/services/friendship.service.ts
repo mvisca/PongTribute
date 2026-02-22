@@ -6,14 +6,13 @@ import {
 	FriendshipTypes
 } from '@transcendence/shared';
 import {
-	IFriendshipRepository,
-	SQLiteFriendshipRepository
+	IFriendshipRepository
 } from '../index.js';
 
 export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
 
-	constructor(friendshipRepo: IFriendshipRepository = new SQLiteFriendshipRepository()) {
+	constructor(friendshipRepo: IFriendshipRepository) {
 		this.friendshipRepo = friendshipRepo;
 	}
 

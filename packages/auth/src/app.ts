@@ -6,10 +6,12 @@ import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { SharedErrors, SWAGGER_THEME_CSS } from "@transcendence/shared";
 import { authRoutes, AuthEnv } from './index.js';
+import { AuthService } from './services/auth.service.js';
 import { healthRoutes } from './routes/health.routes.js';
 
 export interface AuthAppDependencies {
 	redisClient: Redis;
+	authService: AuthService;
 }
 
 /** Crea y configuara la instancia de Fastfy */

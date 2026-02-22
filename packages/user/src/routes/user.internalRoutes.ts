@@ -4,7 +4,7 @@ import { AuthSchemas, UserSchemas } from '@transcendence/shared';
 import { UserAppDependencies } from '../app.js';
 
 export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
-	const controller = new UserController(opts.userService);
+	const controller = new UserController(opts.userService, opts.friendshipService);
 
 	app.addHook('preHandler', validateServiceSecret);
 

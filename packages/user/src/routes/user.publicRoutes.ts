@@ -6,7 +6,7 @@ import { UserAppDependencies } from '../app.js';
 export const publicRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
 
 	// instancia unica de controller para todas las rutas
-	const controller = new UserController(opts.userService);
+	const controller = new UserController(opts.userService, opts.friendshipService);
 
 	// ============================================================================
 	// GET CHECKS

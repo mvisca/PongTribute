@@ -20,9 +20,9 @@ export class FriendshipController {
 	private userService: UserService;
 	private redisClient: Redis;
 
-	constructor(userService: UserService, redisClient: Redis) {
-		this.friendshipService = new FriendshipService();
+	constructor(userService: UserService, friendshipService: FriendshipService, redisClient: Redis) {
 		this.userService = userService;
+		this.friendshipService = friendshipService;
 		this.redisClient = redisClient;
 	}
 

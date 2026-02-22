@@ -3,6 +3,7 @@ import type { Redis } from 'ioredis';
 import { Utils } from '@transcendence/shared';
 import { buildApp } from './app.js';
 import { AuthEnv } from './config.js';
+import { AuthService } from './services/auth.service.js';
 import { TokenCleanupService } from './services/token-cleanup.service.js';
 
 let app: FastifyInstance | null = null;
@@ -23,8 +24,11 @@ async function start() {
 			process.exit(1);
 		}
 
+		// Crear AuthService con Redis inyectado
+		const authService = new AuthService(redisClient!);
+
 		// Construir app
-		app = buildApp({ redisClient: redisClient! });
+		app = buildApp({ redisClient: redisClient!, authService });
 
 		// Arrancar el servidor
 		await app.listen({

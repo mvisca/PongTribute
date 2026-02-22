@@ -5,9 +5,11 @@ import { UserService, FriendshipService } from '../index.js';
 /** Controller de User - Orquesta llamadas al repository y maneja responses HTTP */
 export class UserController {
 	private userService: UserService;
+	private friendshipService: FriendshipService;
 
-	constructor(userService: UserService) {
+	constructor(userService: UserService, friendshipService: FriendshipService) {
 		this.userService = userService;
+		this.friendshipService = friendshipService;
 	}
 
 	// ========================================================================
@@ -210,8 +212,7 @@ export class UserController {
 	async getFriendsInternal(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
 			const { id } = request.params as UserTypes.UserIdParams;
-			const friendshipService = new FriendshipService();
-			const friendships = await friendshipService.listFriendships(id, { status: FRIENDSHIP_STATUS.ACCEPTED });
+			const friendships = await this.friendshipService.listFriendships(id, { status: FRIENDSHIP_STATUS.ACCEPTED });
 			const friendsIds = friendships.map(f => (f.userId === id ? f.friendId : f.userId));
 			return reply.code(200).send({ friendsIds });
 		} catch (err) {

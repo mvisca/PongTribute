@@ -1,16 +1,13 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import type { Redis } from "ioredis";
-import { AuthTypes, SharedErrors, HealthCheckDependency, HealthCheckResponse } from "@transcendence/shared";
+import { AuthTypes, SharedErrors } from "@transcendence/shared";
 import { AuthService } from "../index.js";
 
 export class AuthController {
 
 	private authService: AuthService;
-	private redisClient: Redis;
 
-	constructor(redisClient: Redis) {
-		this.authService = new AuthService(redisClient);
-		this.redisClient = redisClient;
+	constructor(authService: AuthService) {
+		this.authService = authService;
 	}
 
 	// ============================================================================
@@ -209,42 +206,6 @@ export class AuthController {
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
-	}
-
-	// ============================================================================
-	// HEALTH CHECK
-	// ============================================================================
-
-	/** Health check del servicio */
-	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
-		const checks: Record<string, HealthCheckDependency> = {};
-		let allHealthy = true;
-
-		// Verificar Redis
-		if (this.redisClient) {
-			try {
-				const redisStatus = await this.redisClient.ping();
-				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
-				if (redisStatus !== 'PONG') allHealthy = false;
-			} catch (error: any) {
-				checks.redis = { status: 'unreachable', error: error.message };
-				allHealthy = false;
-			}
-		} else {
-			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
-			allHealthy = false;
-		}
-
-		const statusCode = allHealthy ? 200 : 503;
-		reply.status(statusCode);
-
-		return {
-			status: allHealthy ? 'ok' : 'degraded',
-			service: 'AUTH SERVICE',
-			timestamp: new Date().toISOString(),
-			uptime: process.uptime(),
-			dependencies: checks
-		};
 	}
 
 }

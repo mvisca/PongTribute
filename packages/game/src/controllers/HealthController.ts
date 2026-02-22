@@ -43,7 +43,7 @@ export class HealthController {
 			db.prepare('SELECT 1').get();
 			checks.database = { status: 'ok' };
 		} catch(err: any) {
-			checks.databse = { status: 'unreachable', error: err.message };
+			checks.database = { status: 'unreachable', error: err.message };
 			allHealthy = false;
 		}
 

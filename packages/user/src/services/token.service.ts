@@ -1,12 +1,11 @@
 import { AuthTypes, SharedErrors } from "@transcendence/shared";
 import { ITokenRepository } from "../repositories/ITokenRepository.js";
-import { SQLiteTokenRepository } from "../repositories/SQLiteTokenRepository.js";
 
 export class TokenService {
 	private tokenRepo: ITokenRepository;
 
-	constructor() {
-		this.tokenRepo = new SQLiteTokenRepository();
+	constructor(tokenRepo: ITokenRepository) {
+		this.tokenRepo = tokenRepo;
 	}
 
 	async createToken(data: AuthTypes.RefreshTokenData): Promise<AuthTypes.RefreshTokenRecord> {

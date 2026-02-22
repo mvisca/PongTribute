@@ -7,7 +7,7 @@ import { AuthAppDependencies } from "../app.js";
 export const authRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, opts) => {
 
 	// instancia única de controller para todas las rutas
-	const controller = new AuthController(opts.redisClient);
+	const controller = new AuthController(opts.authService);
 
 	// ============================================================================
 	// PUBLIC ROUTES // LOGIN & VERIFY 2FA & VERIFY BACKUP CODE

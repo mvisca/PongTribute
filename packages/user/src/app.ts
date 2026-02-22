@@ -7,11 +7,15 @@ import swaggerUI from '@fastify/swagger-ui';
 import { SWAGGER_THEME_CSS } from '@transcendence/shared';
 import { UserEnv, UserRoutes } from './index.js';
 import { UserService } from './services/user.service.js';
+import { FriendshipService } from './services/friendship.service.js';
+import { TokenService } from './services/token.service.js';
 import { healthRoutes } from './routes/health.routes.js';
 
 export interface UserAppDependencies {
 	redisClient: Redis;
 	userService: UserService;
+	friendshipService: FriendshipService;
+	tokenService: TokenService;
 }
 
 /** Crea y configuara la instancia de Fastfy */

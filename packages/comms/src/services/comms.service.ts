@@ -1,10 +1,9 @@
-import { Redis } from 'ioredis';
+import type { Redis } from 'ioredis';
 import { WebSocket } from "ws";
 import type { FastifyRequest } from "fastify";
 import { CommsEnv } from '../config.js';
 import { EVENT_HANDLERS } from './events/index.js';
 import {
-	Utils,
 	AuthTypes,
 	CommsTypes,
 	IEventService,
@@ -65,17 +64,9 @@ export class CommsService implements IEventService {
 	private totalConnections = 0;
 	private logger = console;
 
-	constructor() {
-		// 1. Configuración base desde variables de entorno
-		const redisConfig = CommsEnv.getRedisConfig();
-		
-		// 2. Cliente Estándar (Comandos / Publicar)
-		// Utils validará la config y realizará los logs de conexión
-		this.redis = Utils.createRedisClient(redisConfig);
-		
-		// 3. Cliente Suscriptor (Escuchar)
-		// Instanciamos un duplicado del anterior, forma más eficiente que crear otra instancia
-		this.redisSub = this.redis.duplicate();
+	constructor(redis: Redis, redisSub: Redis) {
+		this.redis = redis;
+		this.redisSub = redisSub;
 	}	
 	
 	// ============================================================================

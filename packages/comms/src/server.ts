@@ -1,25 +1,41 @@
 import { FastifyInstance } from 'fastify';
+import type { Redis } from 'ioredis';
+import { Utils } from '@transcendence/shared';
 import { buildApp } from './app.js';
 import { CommsEnv } from './config.js';
 import { CommsService } from './services/comms.service.js';
 
 let app: FastifyInstance | null = null;
 let commsService: CommsService | null = null;
+let redisClient: Redis | null = null;
+let redisSubClient: Redis | null = null;
 
 async function start() {
   try {
     // 1. Inicializar configuración
     CommsEnv.init();
 
-	// TODO no sigue el pattern de DI de otros servicios, mirarlo
-    // 2. Inicializar CommsService (requiere Redis ya conectado)
-    commsService = new CommsService();
+    // 2. Crear clientes Redis (command + subscriber) en server.ts
+    //    redisSub es un duplicado: misma config, conexión independiente.
+    //    Redis exige un cliente dedicado solo para subscribe (no puede hacer
+    //    otros comandos mientras está en modo suscripción).
+    try {
+      redisClient = Utils.createRedisClient(CommsEnv.getRedisConfig());
+      redisSubClient = redisClient.duplicate();
+      console.log('[Comms] Redis clients created');
+    } catch (err) {
+      console.error('[Comms] Error creating Redis clients:', err);
+      process.exit(1);
+    }
+
+    // 3. Inicializar CommsService con las dependencias inyectadas
+    commsService = new CommsService(redisClient, redisSubClient);
     await commsService.init();
 
-    // 3. Construir app Fastify, pasando commsService como dependencia
+    // 4. Construir app Fastify, pasando commsService como dependencia
     app = buildApp({ commsService });
 
-    // 4. Arrancar servidor HTTP
+    // 5. Arrancar servidor HTTP
     await app.listen({
       port: CommsEnv.PORT(),
       host: CommsEnv.HOST()

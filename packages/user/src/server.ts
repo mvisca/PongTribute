@@ -1,13 +1,16 @@
 import { FastifyInstance } from 'fastify';
 import type { Redis } from 'ioredis';
 import { Utils } from '@transcendence/shared';
-import { 
+import {
 	buildApp,
 	UserEnv,
-	getDatabase, // TODO por qué no esta implementado
 	closeDatabase,
 	UserService,
-	TokenService
+	FriendshipService,
+	TokenService,
+	SQLiteUserRepository,
+	SQLiteFriendshipRepository,
+	SQLiteTokenRepository
  } from './index.js';
 
 let app: FastifyInstance | null = null;
@@ -28,11 +31,18 @@ async function start() {
 			process.exit(1);
 		}
 		
-		// Se crea el UserService
-		const userService = new UserService(redisClient!);
+		// Crear repos
+		const userRepo = new SQLiteUserRepository();
+		const friendshipRepo = new SQLiteFriendshipRepository();
+		const tokenRepo = new SQLiteTokenRepository();
 
-		// Construir app, se pasa como DEPENDENCY INJECTION el Redis y el userService
-		app = buildApp({ redisClient, userService });
+		// Crear services con dependencias inyectadas
+		const userService = new UserService(redisClient!, userRepo);
+		const friendshipService = new FriendshipService(friendshipRepo);
+		const tokenService = new TokenService(tokenRepo);
+
+		// Construir app con todas las deps
+		app = buildApp({ redisClient, userService, friendshipService, tokenService });
 
 		// Arrancar el servidor
 		await app.listen({
@@ -46,7 +56,6 @@ async function start() {
 
 		// Limpieza de tabla 'refresh_tokens' para development y production
 		if (UserEnv.NODE_ENV() !== 'test') {
-			const tokenService = new TokenService();
 			setInterval(async () => {
 				try {
 					await tokenService.cleanExpired();

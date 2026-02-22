@@ -28,13 +28,13 @@ export class CommsController {
 	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
 		const checks: Record<string, HealthCheckDependency> = {};
 		let allHealthy = true;
-		
+
 		// Check Redis connection
 		if (this.redisClient) {
 			try {
 				const redisStatus = await this.redisClient.ping();
 				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
-				if (redisStatus !== 'PONG') 
+				if (redisStatus !== 'PONG')
 					allHealthy = false;
 			} catch (error: any) {
 				checks.redis = { status: 'unreachable', error: error.message };
@@ -45,15 +45,18 @@ export class CommsController {
 			allHealthy = false;
 		}
 
+		// Check WebSocket subsystem
+		if (this.service) {
+			const stats = this.service.getStats();
+			checks.websocket = { status: 'ok', ...stats };
+		} else {
+			checks.websocket = { status: 'not_initialized', error: 'CommsService not available' };
+			allHealthy = false;
+		}
+
 		const statusCode = allHealthy ? 200 : 503;
 		reply.status(statusCode);
-		
-		if (allHealthy) {
-			console.log('[COMMS] Health check ok!');
-		} else {
-			console.warn('[COMMS] Health check degraded!', checks);
-		}
-		
+
 		return {
 			status: allHealthy ? 'ok' : 'degraded',
 			service: 'COMMS',
