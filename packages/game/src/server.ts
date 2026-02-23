@@ -53,7 +53,7 @@ async function start() {
 		// ========================================================================
 		// CREACION DE CRONS JOBS
 		// ========================================================================
-	
+
 		cronInterval = setInterval(() => {
 			matchService.pruneQueues().catch(err => console.log('[GAME] Cron pruneQueues error:', err));
 			matchService.prunePrivateInvites().catch(err => console.error('[GAME] Cron prunePrivateInvites error:', err));
@@ -98,39 +98,23 @@ async function start() {
 async function gracefulShutdown(signal: string) {
 	console.log(`\n[GAME] ${signal} received. Starting graceful shutdown`);
 
-	// Dejar de disparar crons
+	// 1. Dejar de disparar crons
 	if (cronInterval) {
 		clearInterval(cronInterval);
 		console.log('[GAME] Cron jobs stopped');
 	}
 
-	// if (MatchEventSubscriber)
-		
-	// Dejar de recibir eventos Redis
-	// if (eventSubscriber) {
-    // await eventSubscriber.disconnect();
-    // console.log('[GAME] Event subscriber disconnected');
-	// }
-
-	if (subscriberRedisClient) {
+	// 2. Dejar de recibir eventos Redis (disconnect() hace quit() internamente)
+	if (eventSubscriber) {
 		try {
-			await subscriberRedisClient.quit();
-			console.log('[GAME] Subscriber Redis disconnected');
+			await eventSubscriber.disconnect();
+			console.log('[GAME] Event subscriber disconnected');
 		} catch (err) {
-			console.error('[GAME] Error closing subscriber Redis', err);
+			console.error('[GAME] Error closing event subscriber', err);
 		}
 	}
 
-	// 
-	if (redisClient) {
-		try {
-			await redisClient.quit();
-			console.log('[GAME] Redis disconnected');
-		} catch (err) {
-			console.error('[GAME] Error closing Redis', err);
-		}
-	}
-
+	// 3. Cerrar Fastify (deja de aceptar requests HTTP/WS)
 	if (app) {
 		try {
 			await app.close();
@@ -140,6 +124,17 @@ async function gracefulShutdown(signal: string) {
 		}
 	}
 
+	// 4. Cerrar Redis general (ya no hay requests que lo necesiten)
+	if (redisClient) {
+		try {
+			await redisClient.quit();
+			console.log('[GAME] Redis disconnected');
+		} catch (err) {
+			console.error('[GAME] Error closing Redis', err);
+		}
+	}
+
+	// 5. Cerrar base de datos
 	try {
 		closeDatabase();
 		console.log('[GAME] Database closed');
