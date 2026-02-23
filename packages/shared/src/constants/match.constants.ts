@@ -27,24 +27,7 @@ export namespace MatchConstants {
 	 * Tipo de tupla literal derivado de slots
 	*/
 	export type PlayerSlot = typeof PLAYER_SLOT[keyof typeof PLAYER_SLOT];
-	
-	// ============================================================================
-	// PLAYER POSITIONS
-	// ============================================================================
-	
-	/**
-	 * Ubicacion en el campo
-	*/
-	export const PLAYER_POSITION = {
-		LEFT: "left",
-		RIGHT: "right"
-	} as const;
-	
-	/**
-	 * Tipo tupla literal derivado de position
-	*/
-	export type PlayerPosition = typeof PLAYER_POSITION[keyof typeof PLAYER_POSITION];
-	
+		
 	// ============================================================================
 	// CONFIGURACION DE MATCH
 	// ============================================================================
@@ -53,11 +36,6 @@ export namespace MatchConstants {
 	 * Constantes Match de una partida
 	*/
 	export const MATCH_CONFIG = {
-		
-		/**
-		 * Puntaje para ganar una partida
-		*/
-		WINNING_SCORE: 11,
 		
 		/**
 		 * Numero de players por Match

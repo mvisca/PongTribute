@@ -120,7 +120,7 @@ export namespace TranscendenceEventsTypes {
 			matchId: string;
 			inviterId: string;
 			inviteeId: string;
-			gameMode: GameTypes.GameModeType;
+			gameMode: GameConstants.GameModeType;
 			expiresAt: number;
 		};
 	}
@@ -172,7 +172,7 @@ export namespace TranscendenceEventsTypes {
 				isWinner: boolean;
 			};
 			winnerId: string | null;
-			gameMode: GameTypes.GameModeType;
+			gameMode: GameConstants.GameModeType;
 			targetScore: number;
 			createdAt: string;
 			finishedAt?: string;
@@ -296,7 +296,7 @@ export namespace WebSocketEventsTypes {
 			inviterId: string;
 			inviterUsername: string;
 			inviterAvatar: string;
-			gameMode: GameTypes.GameModeType;
+			gameMode: GameConstants.GameModeType;
 			expiresAt: number;
 		};
 	}
@@ -327,7 +327,7 @@ export namespace WebSocketEventsTypes {
 			opponentId: string;
 			opponentUsername: string;
 			opponentAvatar: string;
-			gameMode: GameTypes.GameModeType;
+			gameMode: GameConstants.GameModeType;
 			status: string; // 'waiting' | 'playing'
 		};
 	}

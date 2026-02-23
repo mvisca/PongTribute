@@ -80,4 +80,11 @@ export namespace GameConstants {
 		pro:     { paddleSpeed: 18, ballSpeedBase: 6, ballAcceleration: 0.10, hasInertia: true, friction: 0.88 },
 	};
 
+	// player side
+	export const PLAYER_SIDE = {
+		LEFT: 'left',
+		RIGHT: 'right'
+	} as const;
+	export type PlayerSide = typeof PLAYER_SIDE[keyof typeof PLAYER_SIDE];
+
 }
