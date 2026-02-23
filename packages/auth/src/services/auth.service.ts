@@ -929,7 +929,10 @@ export class AuthService {
 	}
 	
 	/** Confirma reset de password con token y actualiza password en User Service */
-	async confirmPasswordReset(token: string, newPassword: string): Promise<void> {
+	async confirmPasswordReset(
+		token: string,
+		newPassword: string
+	): Promise<void> {
 		if (!this.redisClient) {
 			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
 		}
@@ -944,7 +947,7 @@ export class AuthService {
 			});
 		}
 		
-		const newPasswordHash = await bcrypt.hash(newPassword, 10);
+		const passwordHash = await bcrypt.hash(newPassword, 10);
 		
 		const updateResponse = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/password`,
@@ -954,7 +957,7 @@ export class AuthService {
 					'Content-Type': 'application/json',
 					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
 				},
-				body: JSON.stringify({ newPasswordHash }),
+				body: JSON.stringify({ passwordHash }),
 				signal: AbortSignal.timeout(5000)
 			}
 		);
@@ -970,6 +973,9 @@ export class AuthService {
 		}
 		
 		await this.redisClient.del(key);
+
+		await this.deleteRefreshTokensById(userId);
+		await this.updateLastLogoutAt(userId);
 	}
 	
 	// ========================================================================

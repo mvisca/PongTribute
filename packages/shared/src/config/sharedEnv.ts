@@ -127,7 +127,7 @@ const DEFAULTS: DefaultVars = {
 	FRONTEND_PORT: 5173,
 	FRONTEND_HOST: 'localhost',
 
-	SMTP_HOST: 'mailhog',
+	SMTP_HOST: 'mailpit',
 	SMTP_PORT: 1025,
 	SMTP_FROM: 'no-reply@transcendence.local',
 	RESET_URL_BASE: 'http://localhost:5173/reset-password',

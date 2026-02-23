@@ -25,8 +25,8 @@ services:
       # `mailpit/mailpit` no es multi-arch y en ARM64 puede fallar con "exec format error".
       # Mailpit es un reemplazo compatible (multi-arch) manteniendo SMTP 1025 y UI 8025.
       image: axllent/mailpit:latest
-      container_name: ft_transcendence_maipit
-      restart: always
+      container_name: ft_transcendence_mailpit
+      restart: on-failure
       ports:
         # UI: http://localhost:8025
         - "8025:8025"
@@ -46,8 +46,6 @@ services:
       restart: on-failure
       env_file:
         - .env
-      environment:
-        - NODE_ENV=production
       expose:
         - "3002"
       healthcheck:
