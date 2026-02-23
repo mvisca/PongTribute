@@ -64,7 +64,6 @@ interface EnvVars {
 	FRONTEND_PORT: number;
 	FRONTEND_HOST: string;
 
-<<<<<<< reset-password
 	// AUTH EMAIL (dev SMTP)
 	SMTP_HOST: string;
 	SMTP_PORT: number;
@@ -76,8 +75,6 @@ interface EnvVars {
 	RESET_URL_BASE: string;
 	RESET_TTL_SECONDS: number;
 	
-=======
->>>>>>> main
 	NODE_ENV: string;
 	LOG_LEVEL: string;
 
@@ -130,15 +127,12 @@ const DEFAULTS: DefaultVars = {
 	FRONTEND_PORT: 5173,
 	FRONTEND_HOST: 'localhost',
 
-<<<<<<< reset-password
 	SMTP_HOST: 'mailhog',
 	SMTP_PORT: 1025,
 	SMTP_FROM: 'no-reply@transcendence.local',
 	RESET_URL_BASE: 'http://localhost:5173/reset-password',
 	RESET_TTL_SECONDS: 900,
 	
-=======
->>>>>>> main
 	NODE_ENV: 'test',
 	LOG_LEVEL: 'info',
 
@@ -222,7 +216,6 @@ export namespace SharedEnv {
 			process.exit(1);
 		};
 
-<<<<<<< reset-password
 		function envMaybeString(envValue: string | undefined): string | undefined {
 			if (envValue === undefined) return undefined;
 			const trimmed = envValue.trim();
@@ -242,7 +235,6 @@ export namespace SharedEnv {
 			process.exit(1);
 		}
 		
-=======
 		// Lanza error si el valor numérico está fuera del rango [min, max].
 		function validateRange(
 			value: number,
@@ -259,7 +251,6 @@ export namespace SharedEnv {
 		}
 
 		// Lanza error si el puerto no es un número válido en el rango 1024-65535.
->>>>>>> main
 		function validatePort(port: number | undefined, context: string): void {
 			if (!port || isNaN(port) || port < 1024 || port > 65535) {
 				throw new Error(
@@ -268,7 +259,6 @@ export namespace SharedEnv {
 			}
 		}
 
-<<<<<<< reset-password
 		/**
 		 * Validación de puerto para conexiones salientes (cliente).
 		 * A diferencia de validatePort(), aquí se permiten puertos <1024 (ej: SMTP 587/465),
@@ -282,9 +272,6 @@ export namespace SharedEnv {
 			}
 		}
 		
-=======
-		// Lanza error si NODE_ENV no es uno de los valores permitidos: development, production, test.
->>>>>>> main
 		function validateNodeEnv(env: string | undefined): void {
 			const validEnvs = ['development', 'production', 'test'];
 			if (!env || !validEnvs.includes(env)) {
@@ -461,7 +448,6 @@ export namespace SharedEnv {
 			FRONTEND_PORT: envOr(process.env.FRONTEND_PORT, DEFAULTS.FRONTEND_PORT, 'FRONTEND_PORT'),
 			FRONTEND_HOST: envOr(process.env.FRONTEND_HOST, DEFAULTS.FRONTEND_HOST, 'FRONTEND_HOST'),
 
-<<<<<<< reset-password
 			// AUTH EMAIL (dev smtp)
 			SMTP_HOST: envOr(process.env.SMTP_HOST, DEFAULTS.SMTP_HOST, 'SMTP_HOST'),
 			SMTP_PORT: envOr(process.env.SMTP_PORT, DEFAULTS.SMTP_PORT, 'SMTP_PORT'),
@@ -473,8 +459,6 @@ export namespace SharedEnv {
 			RESET_URL_BASE: envOr(process.env.RESET_URL_BASE, DEFAULTS.RESET_URL_BASE, 'RESET_URL_BASE'),
 			RESET_TTL_SECONDS: envOr(process.env.RESET_TTL_SECONDS, DEFAULTS.RESET_TTL_SECONDS, 'RESET_TTL_SECONDS'),
 			
-=======
->>>>>>> main
 			// GLOBAL
 			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV, 'NODE_EV'),
 			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL, 'LOG_LEVEL'),
@@ -503,12 +487,8 @@ export namespace SharedEnv {
 		validatePort(config.GAME_SERVICE_PORT, 'GAME_SERVICE_PORT');
 		validatePort(config.FRONTEND_PORT, 'FRONTEND_PORT');
 		validatePort(config.REDIS_PORT, 'REDIS_PORT');
-<<<<<<< reset-password
 		validateClientPort(config.SMTP_PORT, 'SMTP_PORT');
 		
-=======
-
->>>>>>> main
 		// Siempre requeridos
 		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
 		validateRequired(config.IMAGE_SERVICE_URL, 'IMAGE_SERVICE_URL');
@@ -516,7 +496,6 @@ export namespace SharedEnv {
 		validateRequired(config.GAME_SERVICE_URL, 'GAME_SERVICE_URL');
 		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
 
-<<<<<<< reset-password
 		validateRequired(config.SMTP_HOST, 'SMTP_HOST');
 		validateRequired(config.SMTP_FROM, 'SMTP_FROM');
 		validateRequired(config.RESET_URL_BASE, 'RESET_URL_BASE');
@@ -531,8 +510,6 @@ export namespace SharedEnv {
 			throw new Error(`Configuración SMTP inválida: SMTP_USER y SMTP_PASS deben venir ambos o ninguno`);
 		}
 		
-=======
->>>>>>> main
 		validateRequired(config.CLOUDINARY_DEFAULT_AVATAR, 'CLOUDINARY_DEFAULT_AVATAR');
 		validateRequired(config.CLOUDINARY_URL, 'CLOUDINARY_URL');
 		const cloudinaryParse = parseCloudinaryUrl(config.CLOUDINARY_URL, config.CLOUDINARY_API_KEY, config.CLOUDINARY_API_SECRET, config.CLOUDINARY_CLOUD_NAME);

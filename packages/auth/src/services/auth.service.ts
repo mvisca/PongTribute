@@ -11,17 +11,12 @@ import {
 	SharedErrors,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
-<<<<<<< reset-password
-import { REDIS_CHANNELS, UserLoginEvent, UserLogoutEvent } from '@transcendence/shared';
-import { redisClient } from '../app.js';
-import { sendPasswordReset } from './email.service.js';
-=======
 import { 
 	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes } from '@transcendence/shared';
 import type { Redis } from 'ioredis';
->>>>>>> main
+import { sendPasswordReset } from './email.service.js';
 
 export class AuthService {
 
@@ -912,7 +907,7 @@ export class AuthService {
 		const user = await this.fetchUserByEmail(email);
 		if (!user) return;
 		
-		if (!redisClient) {
+		if (!this.redisClient) {
 			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
 		}
 		
@@ -921,28 +916,28 @@ export class AuthService {
 		const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 		
 		const key = `pwdreset:${tokenHash}`;
-		await redisClient.set(key, user.id, 'EX', AuthEnv.RESET_TTL_SECONDS());
+		await this.redisClient.set(key, user.id, 'EX', AuthEnv.RESET_TTL_SECONDS());
 
 		try {
 			const link = `${AuthEnv.RESET_URL_BASE()}?token=${token}`;
 			await sendPasswordReset(user.email, link);
 		} catch (err) {
 			// Si falla el envío, limpiar el token para no dejar resets “fantasma”
-			await redisClient.del(key).catch(() => undefined);
+			await this.redisClient.del(key).catch(() => undefined);
 			throw err;
 		}
 	}
 	
 	/** Confirma reset de password con token y actualiza password en User Service */
 	async confirmPasswordReset(token: string, newPassword: string): Promise<void> {
-		if (!redisClient) {
+		if (!this.redisClient) {
 			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
 		}
 		
 		const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 		const key = `pwdreset:${tokenHash}`;
 		
-		const userId = await redisClient.get(key);
+		const userId = await this.redisClient.get(key);
 		if (!userId) {
 			throw new SharedErrors.UnauthorizedError('Token inválido o expirado', {
 				operation: 'confirmPasswordReset'
@@ -974,7 +969,7 @@ export class AuthService {
 			});
 		}
 		
-		await redisClient.del(key);
+		await this.redisClient.del(key);
 	}
 	
 	// ========================================================================

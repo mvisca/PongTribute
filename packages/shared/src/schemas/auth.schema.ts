@@ -301,7 +301,7 @@ export namespace AuthSchemas {
 		body: PasswordResetConfirmBody,
 		response: {
 			204: Type.Null(),
-			401: UnauthorizedError
+			401: Unauthorized
 		}
 	};
 	

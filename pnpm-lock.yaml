@@ -63,15 +63,12 @@ importers:
       node-fetch:
         specifier: 3.3.2
         version: 3.3.2
-<<<<<<< reset-password
       nodemailer:
         specifier: 6.9.16
         version: 6.9.16
-=======
       pino-pretty:
         specifier: 13.1.2
         version: 13.1.2
->>>>>>> main
       qrcode:
         specifier: 1.5.4
         version: 1.5.4

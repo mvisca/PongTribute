@@ -208,7 +208,6 @@ export class AuthController {
 		}
 	}
 
-<<<<<<< reset-password
 	/** Solicitar email de reset de password (siempre 204, no filtra existencia) */
 	async passwordResetRequest(
 		request: FastifyRequest,
@@ -238,42 +237,4 @@ export class AuthController {
 		}
 	}
 
-	// ============================================================================
-	// HEALTH CHECK
-	// ============================================================================
-
-	/** Health check del servicio */
-	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
-		const checks: Record<string, HealthCheckDependency> = {};
-		let allHealthy = true;
-
-		// Verificar Redis
-		if (this.redisClient) {
-			try {
-				const redisStatus = await this.redisClient.ping();
-				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
-				if (redisStatus !== 'PONG') allHealthy = false;
-			} catch (error: any) {
-				checks.redis = { status: 'unreachable', error: error.message };
-				allHealthy = false;
-			}
-		} else {
-			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
-			allHealthy = false;
-		}
-
-		const statusCode = allHealthy ? 200 : 503;
-		reply.status(statusCode);
-
-		return {
-			status: allHealthy ? 'ok' : 'degraded',
-			service: 'AUTH SERVICE',
-			timestamp: new Date().toISOString(),
-			uptime: process.uptime(),
-			dependencies: checks
-		};
-	}
-
-=======
->>>>>>> main
 }
