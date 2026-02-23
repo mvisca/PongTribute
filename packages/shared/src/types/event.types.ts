@@ -203,7 +203,7 @@ export namespace WebSocketEventsTypes {
 			gameState: GameTypes.GameDynamicState;
 			updateType: GameConstants.GameUpdateType;
 		};
-	} // Omitie campos internos del match que el frontend no necesita
+	} // Omite campos internos del match que el frontend no necesita
 	
 	// ── Presencia social ─────────────────────────────────────────────────────
 

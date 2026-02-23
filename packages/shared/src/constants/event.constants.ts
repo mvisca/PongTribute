@@ -22,8 +22,8 @@ export const TRANSCENDENCE_EVENTS = {
 	FRIEND_ONLINE: 'friend:online',
 	FRIEND_OFFLINE: 'friend:offline',
 	// Game
-	GAME_OVER: 'game:over',
-	GAME_UPDATE: 'game:update'
+	GAME_OVER: 'game:over', // OJO: repetido abajo, revisarlo.
+	GAME_UPDATE: 'game:update'  // OJO: repetido abajo. revisar si no es accidental
 } as const;
 
 // EVENTOS DE CLIENTE (Backend a Frontend vía WebSocket)
