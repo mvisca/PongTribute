@@ -104,8 +104,13 @@ async function gracefulShutdown(signal: string) {
 		console.log('[GAME] Cron jobs stopped');
 	}
 
+	// if (MatchEventSubscriber)
+		
 	// Dejar de recibir eventos Redis
-	if (MatchEventSubscriber)
+	// if (eventSubscriber) {
+    // await eventSubscriber.disconnect();
+    // console.log('[GAME] Event subscriber disconnected');
+	// }
 
 	if (subscriberRedisClient) {
 		try {
