@@ -99,7 +99,10 @@ export namespace AuthTypes {
 	
 	/** Body de POST /auth/:id/update-password */
 	export type UpdatePasswordBody = Static<typeof AuthSchemas.UpdatePasswordBody>;
-	
+
+	/** Body del response con nuevo par de tokens */
+	export type UpdatePasswordResponse = Static<typeof AuthSchemas.LoginSuccessResponse>;
+
 	// ========================================================================
 	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================
