@@ -100,9 +100,22 @@ export namespace AuthTypes {
 	/** Body de POST /auth/:id/update-password */
 	export type UpdatePasswordBody = Static<typeof AuthSchemas.UpdatePasswordBody>;
 
+<<<<<<< reset-password
+	// ========================================================================
+	// PASSWORD RESET (EMAIL)
+	// ========================================================================
+	
+	/** Body de POST /auth/password-reset/request */
+	export type PasswordResetRequestBody = Static<typeof AuthSchemas.PasswordResetRequestBody>;
+	
+	/** Body de POST /auth/password-reset/confirm */
+	export type PasswordResetConfirmBody = Static<typeof AuthSchemas.PasswordResetConfirmBody>;
+	
+=======
 	/** Body del response con nuevo par de tokens */
 	export type UpdatePasswordResponse = Static<typeof AuthSchemas.LoginSuccessResponse>;
 
+>>>>>>> main
 	// ========================================================================
 	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================

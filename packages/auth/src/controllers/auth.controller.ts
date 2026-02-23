@@ -208,4 +208,72 @@ export class AuthController {
 		}
 	}
 
+<<<<<<< reset-password
+	/** Solicitar email de reset de password (siempre 204, no filtra existencia) */
+	async passwordResetRequest(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const { email } = request.body as AuthTypes.PasswordResetRequestBody;
+			await this.authService.requestPasswordReset(email);
+		} catch (err) {
+			// Importante: no filtrar por errores (ni existencia de usuario)
+			console.error('Password reset request failed:', err);
+		}
+		return reply.code(204).send();
+	}
+
+	/** Confirmar reset de password con token + nueva contraseña */
+	async passwordResetConfirm(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const { token, newPassword } = request.body as AuthTypes.PasswordResetConfirmBody;
+			await this.authService.confirmPasswordReset(token, newPassword);
+			return reply.code(204).send();
+		} catch (err) {
+			SharedErrors.handleError(err, reply);
+		}
+	}
+
+	// ============================================================================
+	// HEALTH CHECK
+	// ============================================================================
+
+	/** Health check del servicio */
+	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
+		const checks: Record<string, HealthCheckDependency> = {};
+		let allHealthy = true;
+
+		// Verificar Redis
+		if (this.redisClient) {
+			try {
+				const redisStatus = await this.redisClient.ping();
+				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
+				if (redisStatus !== 'PONG') allHealthy = false;
+			} catch (error: any) {
+				checks.redis = { status: 'unreachable', error: error.message };
+				allHealthy = false;
+			}
+		} else {
+			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
+			allHealthy = false;
+		}
+
+		const statusCode = allHealthy ? 200 : 503;
+		reply.status(statusCode);
+
+		return {
+			status: allHealthy ? 'ok' : 'degraded',
+			service: 'AUTH SERVICE',
+			timestamp: new Date().toISOString(),
+			uptime: process.uptime(),
+			dependencies: checks
+		};
+	}
+
+=======
+>>>>>>> main
 }
