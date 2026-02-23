@@ -29,10 +29,8 @@ export class MatchEventSubscriber {
 			await this.subscriber.subscribe(TRANSCENDENCE_CHANNEL);
 			
 			// Escuchamos mensajes
-			this.subscriber.on('message', (channel, message) => {
-				if (channel === TRANSCENDENCE_CHANNEL) {
+			this.subscriber.on('message', (_channel, message) => {
 					this.handleMessage(message);
-				}
 			});
 			
 			console.log('[MATCH-SUBSCRIBER] Ready. Listening on channel:', TRANSCENDENCE_CHANNEL);
