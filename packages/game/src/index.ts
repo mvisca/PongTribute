@@ -9,3 +9,4 @@ export * from './routes/game.routes.js';
 export * from './gateways/GameGateway.js';
 export * from './app.js';
 export * from './types.js';
+export * from './subscribers/MatchEventSubscriber.js';
