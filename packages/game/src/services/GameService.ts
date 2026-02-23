@@ -8,16 +8,11 @@ import { Redis } from 'ioredis';
 import { MatchRepository } from '../repositories/MatchRepository.js';
 
 import {
-	GAME_CONSTANTS,
-	GAME_MODES,
-	GAME_STATUS,
-	GAME_UPDATE_TYPE,
-	GameUpdateType,
+	GameConstants,
 	GameTypes,
 	WEBSOCKET_EVENTS,
 	WebSocketEventsTypes,
 	MatchConstants,
-	GameStatus,
 	Utils
 } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
@@ -65,7 +60,7 @@ export class GameService {
 	* @param userId ID del usuario que conecta
 	* @param socket Conexión WebSocket activa
 	*/
-	public async joinMatch(matchId: string, userId: string, socket: WebSocket): Promise<GameStatus | null> {
+	public async joinMatch(matchId: string, userId: string, socket: WebSocket): Promise<GameConstants.GameStatus | null> {
 		// BLOQUE 1: HIDRATACION DE GAME / SESSION & STATE
 		// Si existe en partidas activas, es juego empezado, hay reconexión a session
 		let session = this.activeMatches.get(matchId);
@@ -162,9 +157,9 @@ export class GameService {
 		
 		socket.send(JSON.stringify(msg));
 		
-		if (session.gameState.status === GAME_STATUS.PLAYING) {
+		if (session.gameState.status === GameConstants.GAME_STATUS.PLAYING) {
 			this.handleReconnection(session, matchId, isPlayer1);
-		} else if (session.gameState.status === GAME_STATUS.WAITING) {
+		} else if (session.gameState.status === GameConstants.GAME_STATUS.WAITING) {
 			if (session.isLocal && session.socketP1) {
 				this.startGameLoop(session);
 			} else if (!session.isLocal && session.socketP1 && session.socketP2) {
@@ -219,7 +214,7 @@ export class GameService {
 		const session = this.activeMatches.get(targetMatchId) as GameSession | null;
 		
 		// Si ya terminó, ignoramos desconexiones residuales
-		if (!session || session.gameState.status === GAME_STATUS.FINISHED) return;
+		if (!session || session.gameState.status === GameConstants.GAME_STATUS.FINISHED) return;
 		
 		// Si es local, no hay reconexión ni rival remoto. Limpieza inmediata.
 		if (session.isLocal) {
@@ -232,7 +227,7 @@ export class GameService {
 		this.stopGameLoop(session); // Usamos el helper centralizado
 		
 		// 2. Estado a PAUSED
-		session.gameState.status = GAME_STATUS.PAUSED;
+		session.gameState.status = GameConstants.GAME_STATUS.PAUSED;
 		
 		// 3. Notificar al que aún está conectado
 		const isPlayer1Gone = session.player1Id === userId;
@@ -244,7 +239,7 @@ export class GameService {
 			payload: {
 				matchId: targetMatchId,
 				opponentId: userId,
-				waitSeconds: GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT / 1000
+				waitSeconds: GameConstants.GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT / 1000
 			}
 		} satisfies WebSocketEventsTypes.GameOpponentDisconnected;
 		
@@ -255,7 +250,7 @@ export class GameService {
 		// 4. Iniciamos cuenta atrás para victoria automática
 		const timeoutId = setTimeout(() => {
 			this.forfeitMatch(targetMatchId, userId);
-		}, GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT); 
+		}, GameConstants.GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT); 
 		
 		this.disconnectTimeouts.set(targetMatchId, timeoutId);
 	}
@@ -273,12 +268,12 @@ export class GameService {
 		this.stopGameLoop(session);
 		
 		console.log(`[GAME-SERVICE] Starting game loop for match ${session.matchId}`);
-		session.gameState.status = GAME_STATUS.PLAYING; // Aseguramos estado playing
+		session.gameState.status = GameConstants.GAME_STATUS.PLAYING; // Aseguramos estado playing
 		
 		// 2. Iniciar Intervalo
 		session.loopId = setInterval(() => {
 			// A. Guard de Seguridad: Si el estado cambió externamente (ej: desconexión)
-			if (session.gameState.status !== GAME_STATUS.PLAYING) {
+			if (session.gameState.status !== GameConstants.GAME_STATUS.PLAYING) {
 				this.stopGameLoop(session);
 				return;
 			}
@@ -293,10 +288,10 @@ export class GameService {
 				this.endGame(session, winnerId); // <--- FIX: endGame acepta session
 			} else {
 				// D. Sigue el juego: Broadcast a los clientes
-				this.broadcastState(session);
+				this.broadcastState(session, GameConstants.GAME_UPDATE_TYPE.STATE_CHANGED);
 			}
 			
-		}, 1000 / GAME_CONSTANTS.FPS);
+		}, 1000 / GameConstants.GAME_CONSTANTS.FPS);
 	}
 	
 	/**
@@ -452,8 +447,8 @@ export class GameService {
 	* Genera el estado inicial del juego (posiciones, velocidad) basado en el modo.
 	*/
 	private createInitialState(matchId: string, targetScore: number, mode: GameTypes.GameModeType): GameTypes.GameState {
-		const modeConfig = GAME_MODES[mode] || GAME_MODES.classic;
-		const fullConfig = { ...GAME_CONSTANTS, ...modeConfig }; // Fusión de configs
+		const modeConfig = GameConstants.GAME_MODES[mode] || GameConstants.GAME_MODES.classic;
+		const fullConfig = { ...GameConstants.GAME_CONSTANTS, ...modeConfig }; // Fusión de configs
 		
 		const midY = fullConfig.CANVAS_HEIGHT / 2 - fullConfig.PADDLE_HEIGHT / 2;
 		const midX = fullConfig.CANVAS_WIDTH / 2;
@@ -463,7 +458,7 @@ export class GameService {
 		
 		return {
 			id: matchId, 
-			status: GAME_STATUS.WAITING,
+			status: GameConstants.GAME_STATUS.WAITING,
 			targetScore: targetScore,
 			winnerId: undefined,
 			config: {
@@ -518,7 +513,7 @@ export class GameService {
 		
 		// 2. Guard de Estado: Permitimos inputs si está JUGANDO, o si está PAUSADO y quiere DESPAUSAR
 		const isPauseToggle = payload.action === 'PAUSE_TOGGLE';
-		const isPlaying = session.gameState.status === GAME_STATUS.PLAYING;
+		const isPlaying = session.gameState.status === GameConstants.GAME_STATUS.PLAYING;
 		
 		if (!isPlaying && !isPauseToggle) return;
 		
@@ -573,15 +568,15 @@ export class GameService {
 	* Alterna entre pausa y juego. Solo para local.
 	*/
 	private togglePause(session: GameSession) {
-		if (session.gameState.status === GAME_STATUS.PLAYING) {
+		if (session.gameState.status === GameConstants.GAME_STATUS.PLAYING) {
 			// PAUSAR
 			this.stopGameLoop(session);
-			session.gameState.status = GAME_STATUS.PAUSED;
-			this.broadcastState(session, GAME_UPDATE_TYPE.PAUSED); // Notificar UI para mostrar overlay "PAUSED"
-		} else if (session.gameState.status === GAME_STATUS.PAUSED) {
+			session.gameState.status = GameConstants.GAME_STATUS.PAUSED;
+			this.broadcastState(session, GameConstants.GAME_UPDATE_TYPE.PAUSED); // Notificar UI para mostrar overlay "PAUSED"
+		} else if (session.gameState.status === GameConstants.GAME_STATUS.PAUSED) {
 			// REANUDAR
 			this.startGameLoop(session); // Esto setea PLAYING y arranca el timer
-			this.broadcastState(session, GAME_UPDATE_TYPE.RESUMED);
+			this.broadcastState(session, GameConstants.GAME_UPDATE_TYPE.RESUMED);
 		}
 	}
 	
@@ -607,7 +602,7 @@ export class GameService {
 			this.disconnectTimeouts.delete(session.matchId);
 		}
 		
-		session.gameState.status = GAME_STATUS.FINISHED;
+		session.gameState.status = GameConstants.GAME_STATUS.FINISHED;
 		session.gameState.winnerId = winnerId;
 		
 		// Persistencia asíncrona (si no es local)
@@ -676,7 +671,7 @@ export class GameService {
 	* Enviamos solo los datos dinámicos (sin config) para ahorrar ancho de banda.
 	* El Frontend debe usar la config que recibió en el evento inicial 'MATCH_JOINED' o el primer 'GAME_UPDATE'.
 	*/
-	private broadcastState(session: GameSession, updateType: GameUpdateType) {
+	private broadcastState(session: GameSession, updateType: GameConstants.GameUpdateType) {
 		const { config, id, ...dynState } = session.gameState;
 		
 		// TypeScript ahora estará feliz si tipamos esto correctamente en el evento

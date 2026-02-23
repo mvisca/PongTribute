@@ -1,7 +1,10 @@
-// packages/shared/src/types/event.types.ts
+import { 
+	TRANSCENDENCE_EVENTS,
+	WEBSOCKET_EVENTS
+} from '../constants/event.constants.js';
 
-import { TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS } from '../constants/event.constants.js';
-import { GameUpdateType } from '../constants/game.constants.js';
+import { GameConstants } from '../constants/game.constants.js';
+
 import type { GameTypes } from './game.types.js';
 import { UserTypes } from './user.types.js';
 
@@ -146,7 +149,7 @@ export namespace TranscendenceEventsTypes {
 			matchId: string;
 			cancelledById: string;
 			notifiedUserIds: string[];
-			reason?: string;
+			reason?: GameConstants.MatchCancelledReason;
 		};
 	}
 
@@ -155,7 +158,7 @@ export namespace TranscendenceEventsTypes {
 	export interface GameUpdatePayload {
 		match: {
 			id: string;
-			status: 'pending' | 'active' | 'finished' | 'rejected' | 'expired';
+			status: GameConstants.GameUpdateType;
 			player1: {
 				userId: string;
 				username: string;
@@ -175,7 +178,7 @@ export namespace TranscendenceEventsTypes {
 			finishedAt?: string;
 		};
 		gameState: GameTypes.GameState;
-		updateType: 'state_change' | 'score_update' | 'game_finished' | 'game_paused' | 'game_resumed';
+		updateType: GameConstants.GameUpdateType
 		timestamp: number;
 	}
 
@@ -193,7 +196,7 @@ export namespace TranscendenceEventsTypes {
 			winnerId: string;
 			player1Score: number;
 			player2Score: number;
-			reason?: 'normal' | 'opponent_disconnected' | 'timeout'; // TODO no hay una constante que esxporta estos calores?
+			reason?: GameConstants.GameOverReason;
 		};
 	}
 
@@ -232,7 +235,7 @@ export namespace WebSocketEventsTypes {
 		payload: {
 			matchId: string;
 			gameState: GameTypes.GameDynamicState;
-			updateType: GameUpdateType;
+			updateType: GameConstants.GameUpdateType;
 		};
 	} // Omitie campos internos del match que el frontend no necesita
 	
@@ -303,7 +306,7 @@ export namespace WebSocketEventsTypes {
 		payload: {
 			matchId: string;
 			cancelledById: string;
-			reason?: string;
+			reason?: GameConstants.MatchCancelledReason;
 		};
 	}
 
@@ -336,7 +339,7 @@ export namespace WebSocketEventsTypes {
 			winnerId: string;
 			player1Score: number;
 			player2Score: number;
-			reason?: 'normal' | 'opponent_disconnected' | 'timeout';
+			reason?: GameConstants.GameOverReason;
 		};
 	}
 

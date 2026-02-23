@@ -1,6 +1,6 @@
 // packages/shared/src/types/game.types.ts
 
-import type { GameStatus } from '../constants/game.constants.js';
+import type { GameConstants } from '../constants/game.constants.js';
 import type { UserTypes } from './user.types.js';
 
 export namespace GameTypes {
@@ -69,7 +69,7 @@ export interface GameState {
 	// Unimos dimensiones + reglas de modo para que el front tenga TODO el contexto
     config: GameConfig & GameModeConfig;
 	targetScore: number;
-    status: GameStatus; // 'waiting' | 'playing' | 'paused' | 'finished'
+    status: GameConstants.GameStatus; // 'waiting' | 'playing' | 'paused' | 'finished'
     winnerId?: UserTypes.UserId;  // UUID del usuario ganador (si finished)
 }
 

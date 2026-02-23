@@ -6,6 +6,7 @@ import {
 	MatchSchemas,
 	SharedErrors,
 	GameTypes,
+	GameConstants,
 	MatchConstants,
 	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
@@ -671,7 +672,7 @@ export class MatchService {
 					matchId: matchId,
 					cancelledById: userId,               // El creador que cancela
 					notifiedUserIds: [ matchRow.player1.userId, matchRow.player2.userId ], // El invitado
-					reason: 'The invitation was cancelled by creator'
+					reason: GameConstants.MATCH_CANCELLED_REASON.HOST_CANCELLED
 				}
 			} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
 			
