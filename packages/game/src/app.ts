@@ -11,7 +11,9 @@ import { healthRoutes } from './routes/health.routes.js';
 import { SWAGGER_THEME_CSS } from '@transcendence/shared';
 import { GameAppDependencies } from './types.js';
 
-export function buildApp(deps: GameAppDependencies): FastifyInstance {
+export function buildApp(
+	deps: GameAppDependencies
+): FastifyInstance {
 
 	// 1. Inicialización con Configuración (Logger, etc.)
 	const app = Fastify(GameEnv.getFastifyConfig());

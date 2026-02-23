@@ -2,15 +2,21 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { Redis } from 'ioredis';
 import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
+import { MatchEventSubscriber } from '../index.js';
 
 /**
  * Controller para manejar el health check del servicio de juegos
  */
 export class HealthController {
 	private redisClient: Redis | null;
+	private eventSubcriber: MatchEventSubscriber | null;
 
-	constructor(redisClient: Redis | null = null) {
+	constructor(
+		redisClient: Redis | null = null,
+		eventSubscriber: MatchEventSubscriber | null = null
+	) {
 		this.redisClient = redisClient;
+		this.eventSubcriber = eventSubscriber;
 	}
 
 	/**
@@ -38,6 +44,7 @@ export class HealthController {
 			allHealthy = false;
 		}
 
+		// Verifica Database
 		try {
 			const db = getDatabase();
 			db.prepare('SELECT 1').get();
@@ -46,6 +53,11 @@ export class HealthController {
 			checks.database = { status: 'unreachable', error: err.message };
 			allHealthy = false;
 		}
+
+		// Verifica estado del subscriber
+		const subscriberConnected = this.eventSubcriber?.isConnected() ?? false;
+		checks.subscriber = { status: subscriberConnected ? 'ok' : 'unhealthy' };
+		if (!subscriberConnected) allHealthy = false;
 
 		const statusCode = allHealthy ? 200 : 503;
 		reply.status(statusCode);

@@ -14,6 +14,7 @@ export class MatchEventSubscriber {
 	private subscriber: Redis;
 	private matchService: MatchService;
 	private gameService: GameService;
+	private connected: boolean = false;
 
 	constructor(matchService: MatchService, gameService: GameService, subscriberRedis: Redis) {
 		this.matchService = matchService;
@@ -35,7 +36,10 @@ export class MatchEventSubscriber {
 			
 			console.log('[MATCH-SUBSCRIBER] Ready. Listening on channel:', TRANSCENDENCE_CHANNEL);
 			
+			this.connected = true;
+
 		} catch (error) {
+			this.connected = false;
 			console.error('[MATCH-SUBSCRIBER] Failed to subscribe:', error);
 		}
 	}
@@ -111,7 +115,13 @@ export class MatchEventSubscriber {
 	public async disconnect() {
 		if (this.subscriber) {
 			console.log('[MATCH-SUBSCRIBER] Disconnecting...');
+			this.connected = false;
 			await this.subscriber.quit();
 		}
+	}
+
+	// Para healthCheck
+	public isConnected() {
+		return this.connected;
 	}
 }

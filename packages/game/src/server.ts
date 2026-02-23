@@ -8,9 +8,9 @@ import {
 	getDatabase,
 	MatchRepository,
 	MatchService,
+	MatchEventSubscriber,
 	GameService
 } from './index.js';
-import { MatchEventSubscriber } from './subscribers/MatchEventSubscriber.js';
 
 
 let app: FastifyInstance | null = null;
@@ -76,7 +76,7 @@ async function start() {
 		// CONSTRUIR APP — pasa todos los deps
 		// ========================================================================
 
-		app = buildApp({ redisClient: redisClient!, matchService, gameService });
+		app = buildApp({ redisClient: redisClient!, matchService, gameService, eventSubscriber });
 
 		// Arrancar el servidor
 		await app.listen({
