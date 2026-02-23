@@ -71,7 +71,7 @@ export namespace MatchSchemas {
 	export const CreateMatchBody = Type.Object({
 		matchType: MatchTypeSchema,
 		opponentId: Type.Optional(UuidField), // Si null -> Matchmaking público
-		gameMode: GameModeSchema,
+		gameMode: Type.Optional(GameModeSchema),
 		targetScore: Type.Optional(Type.Integer({
 			minimum: GameConstants.GAME_CONSTANTS.SCORE.MIN,
 			maximum: GameConstants.GAME_CONSTANTS.SCORE.MAX,
