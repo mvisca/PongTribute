@@ -1,7 +1,7 @@
 //Hace la funcion de un traductor (de datos de sql a respuesta JSON)
 //Mapper es el encargado de convertir lo que sale de la base de 
 // datos al objeto que entiende la lógica de negocio y el frontend.
-import { MatchTypes, GameTypes } from '@transcendence/shared';
+import { MatchTypes, GameConstants } from '@transcendence/shared';
 
 export class MatchMapper {
 
@@ -44,7 +44,7 @@ export class MatchMapper {
 			// Como en DB es TEXT, TypeScript lo trata como string genérico.
             // Lo casteamos a 'any' o al tipo Union específico si es necesario, 
             // pero el Schema de salida ya lo validará.
-            gameMode: row.game_mode as GameTypes.GameModeType, 
+            gameMode: row.game_mode as GameConstants.GameModeType,
             targetScore: row.target_score
         };
     }

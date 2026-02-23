@@ -446,7 +446,7 @@ export class GameService {
 	/**
 	* Genera el estado inicial del juego (posiciones, velocidad) basado en el modo.
 	*/
-	private createInitialState(matchId: string, targetScore: number, mode: GameTypes.GameModeType): GameTypes.GameState {
+	private createInitialState(matchId: string, targetScore: number, mode: GameConstants.GameModeType): GameTypes.GameState {
 		const modeConfig = GameConstants.GAME_MODES[mode] || GameConstants.GAME_MODES.classic;
 		const fullConfig = { ...GameConstants.GAME_CONSTANTS, ...modeConfig }; // Fusión de configs
 		

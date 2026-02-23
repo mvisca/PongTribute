@@ -3,7 +3,7 @@ import { FRIENDSHIP_STATUS } from '../constants/friendship.constants.js';
 import { ErrorSchemas } from './error.schema.js';
 import { SchemaFields } from './fields.schema.js';
 
-const { UuidField } = SchemaFields;
+const { UuidField, DateTimeField, BooleanField } = SchemaFields;
 
 export namespace FriendshipSchemas {
 
@@ -26,8 +26,8 @@ export namespace FriendshipSchemas {
 		userId: UuidField,
 		friendId: UuidField,
 		status: FriendshipStatus,
-		createdAt: Type.String({ format: 'date-time' }),
-		updatedAt: Type.String({ format: 'date-time' })
+		createdAt: DateTimeField,
+		updatedAt: DateTimeField
 	});
 
 	// ============================================================================
@@ -77,7 +77,7 @@ export namespace FriendshipSchemas {
 	});
 
 	export const UpdateFriendshipBody = Type.Object({
-		accepted: Type.Boolean()
+		accepted: BooleanField
 	});
 
 	export const UpdateFriendshipSchema = {

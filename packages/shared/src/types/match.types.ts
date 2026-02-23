@@ -5,8 +5,8 @@ import { MatchSchemas } from '../schemas/match.schema.js';
 export namespace MatchTypes {
     // 1. Tipos inferidos de TypeBox (para uso en Controllers/Services)
     export type Match = Static<typeof MatchSchemas.Match>;
-    export type MatchPlayer = Static<typeof MatchSchemas.MatchPlayer>;
-    export type MatchStatus = Static<typeof MatchSchemas.MatchStatus>;
+    export type MatchPlayer = Static<typeof MatchSchemas.MatchPlayerSchema>;
+    export type MatchStatus = Static<typeof MatchSchemas.MatchStatusSchema>;
     
     // DTOs
     export type CreateMatchBody = Static<typeof MatchSchemas.CreateMatchBody>;

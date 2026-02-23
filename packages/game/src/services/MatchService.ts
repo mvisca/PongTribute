@@ -5,7 +5,6 @@ import {
 	MatchTypes,
 	MatchSchemas,
 	SharedErrors,
-	GameTypes,
 	GameConstants,
 	MatchConstants,
 	TRANSCENDENCE_CHANNEL,
@@ -52,7 +51,7 @@ export class MatchService {
 		if (matchType === 'public') {
 			// Usamos '??' para usar CLASSIC si gameMode es undefined
 			// ?? significa: Si lo de la izquierda es null o undefined, usa lo de la derecha".
-			return this.joinPublicQueue(userId, gameMode ?? GameTypes.GameModeType.CLASSIC);
+			return this.joinPublicQueue(userId, gameMode ?? GameConstants.GAME_MODE.CLASSIC);
 		}
 		
 		if (matchType === 'local') {
@@ -77,7 +76,7 @@ export class MatchService {
 	*/
 	async joinPublicQueue(
 		userId: string,
-		gameModeName: GameTypes.GameModeType
+		gameModeName: GameConstants.GameModeType
 	): Promise<MatchTypes.JoinQueueResponse> {
 		// Guard: Usuario no en partida activa?
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
@@ -132,7 +131,7 @@ export class MatchService {
 				created_at: Date.now(),
 				finished_at: null,
 				game_mode: gameModeName,
-				target_score: MatchConstants.MATCH_CONFIG.WINNING_SCORE
+				target_score: GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
 			};
 			
 			// PERSISTENCIA
@@ -188,7 +187,7 @@ export class MatchService {
 		const timeoutMs = MatchConstants.QUEUE_TIMEOUT_MS;
 		const limit = Date.now() - timeoutMs;
 		
-		for (const mode of Object.values(GameTypes.GameModeType)) {
+		for (const mode of Object.values(GameConstants.GAME_MODE)) {
 			const queueKey = `match:queue:${mode}`;
 			
 			// 1. FETCH: Obtenemos candidatos
@@ -232,7 +231,7 @@ export class MatchService {
 		console.log(`[MATCH-SERVICE] Removing user ${userId} from queues`);
 		
 		// Object.values(GameMode) nos da ['classic', 'speed', 'pro']
-		const modes = Object.values(GameTypes.GameModeType);
+		const modes = Object.values(GameConstants.GAME_MODE);
 		
 		const promises = modes.map(mode => {
 			const key = `match:queue:${mode}`;
@@ -312,8 +311,8 @@ export class MatchService {
 				winner_id: null,
 				created_at: Date.now(),
 				finished_at: null,
-				game_mode: config?.gameMode || 'classic',
-				target_score: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE
+				game_mode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
+				target_score: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
 			};
 			
 			// 4. Persistencia (Bubble Up de errores SQL)
@@ -330,7 +329,7 @@ export class MatchService {
 						matchId: newMatch.id,
 						inviterId: userId,
 						inviteeId: opponentId,
-						gameMode: config?.gameMode || GameTypes.GameModeType.CLASSIC,
+						gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
 						expiresAt: newMatch.created_at + MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS
 					}
 				} satisfies TranscendenceEventsTypes.MatchInviteEvent;
@@ -381,8 +380,8 @@ export class MatchService {
 			const localMatch: MatchTypes.Match = {
 				id: matchId,
 				status: 'active', // Nace activa para que el front entre directo
-				gameMode: config?.gameMode || GameTypes.GameModeType.CLASSIC, // O lo que venga en config
-				targetScore: config?.targetScore || MatchConstants.MATCH_CONFIG.WINNING_SCORE,
+				gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC, // O lo que venga en config
+				targetScore: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT,
 				player1: {
 					userId: userId,
 					username: p1Data.username,
@@ -578,7 +577,7 @@ export class MatchService {
 						matchId: match.id,
 						cancelledById: match.player1.userId,  // El creador (cleanup automático)
 						notifiedUserIds: [match.player1.userId, targetId ],         // El invitado (player2)
-						reason: 'host_disconnected'
+						reason: GameConstants.MATCH_CANCELLED_REASON.HOST_DISCONNECTED
 					}
 				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
 				
@@ -617,7 +616,7 @@ export class MatchService {
 						matchId,
 						cancelledById: 'system',
 						notifiedUserIds: [ player1Id, player2Id ],
-						reason: 'invitation_expired'
+						reason: GameConstants.MATCH_CANCELLED_REASON.INVITATION_EXPIRED
 					}
 				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
 
