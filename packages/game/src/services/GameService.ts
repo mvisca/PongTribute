@@ -692,7 +692,6 @@ export class GameService {
 			session.socketP2.send(msg);
 	}
 	
-	
 	private findMatchIdByUserId(userId: string): string | undefined {
 		for (const [matchId, session] of this.activeMatches) {
 			if (session.player1Id === userId || session.player2Id === userId) return matchId;

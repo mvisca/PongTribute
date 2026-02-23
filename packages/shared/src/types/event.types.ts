@@ -155,39 +155,6 @@ export namespace TranscendenceEventsTypes {
 
 	// ── Game ────────────────────────────────────────────────────────────────
 
-	export interface GameUpdatePayload {
-		match: {
-			id: string;
-			status: GameConstants.GameUpdateType;
-			player1: {
-				userId: string;
-				username: string;
-				score: number;
-				isWinner: boolean;
-			};
-			player2: {
-				userId: string;
-				username: string;
-				score: number;
-				isWinner: boolean;
-			};
-			winnerId: string | null;
-			gameMode: GameConstants.GameModeType;
-			targetScore: number;
-			createdAt: string;
-			finishedAt?: string;
-		};
-		gameState: GameTypes.GameState;
-		updateType: GameConstants.GameUpdateType
-		timestamp: number;
-	}
-
-	export interface GameUpdateEvent extends EventsTypes.BaseEvent {
-		type: typeof TRANSCENDENCE_EVENTS.GAME_UPDATE;
-		matchId: string;
-		payload: GameUpdatePayload;
-	}
-
 	export interface GameOverEvent extends EventsTypes.BaseEvent {
 		type: typeof TRANSCENDENCE_EVENTS.GAME_OVER;
 		payload: {
@@ -213,7 +180,6 @@ export namespace TranscendenceEventsTypes {
 		| MatchStartedEvent
 		| MatchRejectedEvent
 		| MatchCancelledEvent
-		| GameUpdateEvent
 		| GameOverEvent
 		| FriendRequestEvent
 		| FriendAcceptedEvent
