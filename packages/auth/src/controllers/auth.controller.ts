@@ -199,9 +199,9 @@ export class AuthController {
 			const { id } = request.params as AuthTypes.UserIdParams;
 			const { oldPassword, newPassword } = request.body as AuthTypes.UpdatePasswordBody;
 
-			await this.authService.changePassword(id, oldPassword, newPassword);
+			const tokens = await this.authService.changePassword(id, oldPassword, newPassword);
 
-			return reply.code(204).send();
+			return reply.code(200).send(tokens);
 
 		} catch(err) {
 			SharedErrors.handleError(err, reply);

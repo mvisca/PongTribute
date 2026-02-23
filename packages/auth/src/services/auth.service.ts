@@ -847,7 +847,11 @@ export class AuthService {
 	// PUBLIC API - CHANGE PASSWORD
 	//=========================================================================
 	
-	async changePassword(userId: string, oldPassword: string, newPassword: string):Promise<void> {
+	async changePassword(
+		userId: string,
+		oldPassword: string,
+		newPassword: string
+	):Promise<AuthTypes.UpdatePasswordResponse> {
 		const user = await this.fetchUserById(userId);
 		
 		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
@@ -883,6 +887,14 @@ export class AuthService {
 				userId: user.id
 			});
 		}
+
+		// Invalidar sesiones anteriores
+		await this.deleteRefreshTokensById(userId);
+		await this.updateLastLogoutAt(userId);
+
+		// Generar nuevos tokens para la sesion actual
+		const updateUser = await this.fetchUserById(userId);
+		return this.generateTokenPair(updateUser, true);
 	}
 	
 	// ========================================================================

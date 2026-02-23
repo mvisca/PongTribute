@@ -264,7 +264,7 @@ export namespace AuthSchemas {
 		params: UserIdParams,
 		body: UpdatePasswordBody,
 		response: {
-			204: Type.Null(),
+			200: LoginSuccessResponse,
 			401: Unauthorized,
 			404: NotFound
 		},
