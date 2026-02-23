@@ -1,18 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { Redis } from 'ioredis';
-
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
+import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
+import { getDatabase } from '../connection.js';
 
 /**
  * Controller para manejar el health check del servicio de usuarios
@@ -43,6 +32,16 @@ export class HealthController {
 			}
 		} else {
 			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
+			allHealthy = false;
+		}
+
+		// Verificar DB
+		try {
+			const db = getDatabase();
+			db.prepare('SELECT 1').get();
+			checks.database = { status: 'ok' };
+		} catch(err: any) {
+			checks.database = { status: 'unreachable', error: err.message };
 			allHealthy = false;
 		}
 

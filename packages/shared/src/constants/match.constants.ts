@@ -27,24 +27,7 @@ export namespace MatchConstants {
 	 * Tipo de tupla literal derivado de slots
 	*/
 	export type PlayerSlot = typeof PLAYER_SLOT[keyof typeof PLAYER_SLOT];
-	
-	// ============================================================================
-	// PLAYER POSITIONS
-	// ============================================================================
-	
-	/**
-	 * Ubicacion en el campo
-	*/
-	export const PLAYER_POSITION = {
-		LEFT: "left",
-		RIGHT: "right"
-	} as const;
-	
-	/**
-	 * Tipo tupla literal derivado de position
-	*/
-	export type PlayerPosition = typeof PLAYER_POSITION[keyof typeof PLAYER_POSITION];
-	
+		
 	// ============================================================================
 	// CONFIGURACION DE MATCH
 	// ============================================================================
@@ -53,11 +36,6 @@ export namespace MatchConstants {
 	 * Constantes Match de una partida
 	*/
 	export const MATCH_CONFIG = {
-		
-		/**
-		 * Puntaje para ganar una partida
-		*/
-		WINNING_SCORE: 5,
 		
 		/**
 		 * Numero de players por Match
@@ -85,27 +63,16 @@ export namespace MatchConstants {
 	 * Estados posibles de una partida
 	*/
 	export const MATCH_STATUS = {
-		
 		/**
 		 * Partida creada pero no iniciada\
 		 * Puede no usarse si la partida empieza de inmediato al crearse el match
 		*/
 		PENDING: "pending",
-		
-		/**
-		 * Partida activa
-		*/
 		ACTIVE: "active",
-		
-		/**
-		 * Partida terminada
-		*/
 		FINISHED: "finished",
-
-		// Partida rechazada por el friend retado
-		REJECTED: "rejected"
-
-	}as const;
+		REJECTED: "rejected",
+		EXPIRED: "expired"
+	} as const;
 	
 	export type MatchStatus = typeof MATCH_STATUS[keyof typeof MATCH_STATUS];
 	

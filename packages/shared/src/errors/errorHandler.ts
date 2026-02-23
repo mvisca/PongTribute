@@ -1,5 +1,6 @@
 import { FastifyReply } from 'fastify';
 import { AppError } from './AppError.js';
+import { stat } from 'fs';
 
 /** Handler centralizado de errores */
 export function handleError(error: unknown, reply: FastifyReply): void {
@@ -10,7 +11,8 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 		context = error.context;
 	}
 
-	console.error({
+	// Logea el error que procesa
+	console.error('[ERROR-HANDLER]', {
 		timestamp: new Date().toISOString(),
 		error: error instanceof Error ? {
 			message: error.message,
@@ -32,6 +34,19 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 		return;
 	}
 	
+
+	// Errores de Fastify/Plugins con statusCode propio 
+	if (error instanceof Error && 'statusCode' in error) {
+		const statusCode = (error as any).statusCode as number;
+		if (statusCode < 500) {
+			reply.code(statusCode).send({
+				statusCode,
+				error:error.name,
+				message: error.message
+			});
+		}
+	}
+
 	// Error del JWT
 	if (error instanceof Error && error.name === 'JsonWebTokenError') {
 		reply.code(401).send({
@@ -60,9 +75,9 @@ export function handleError(error: unknown, reply: FastifyReply): void {
 	}
 	
 	// Error no conocido
-	console.error('Error no controlado (ya loggeado):', error);
+	console.error('[ERROR-HANDLER] Unhandled error (already logged):', error);
 	reply.code(500).send({
-		error: 'IntenralServerError',
+		error: 'InternalServerError',
 		message: 'Error interno del servidor'
 	});
 }

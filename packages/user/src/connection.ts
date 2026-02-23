@@ -24,7 +24,7 @@ export function getDatabase(): Database.Database {
 			fs.mkdirSync(dbDir, { recursive: true });
 		}
 		
-		console.log(`🔌 Conectando a Game DB en: ${dbPath}`);
+		console.log(`[USER-DB] Connecting to database at: ${dbPath}`);
 		db = new Database(dbPath);
 		
 		// Write ahead loggin
@@ -49,16 +49,16 @@ export function getDatabase(): Database.Database {
 				
 				try {
 					db.exec(schema);
-					console.log(`Esquema cargado: ${file}`);
+				console.log(`[USER-DB] Schema loaded: ${file}`);
 				} catch (err) {
-					console.error(`Errod cargando ${file}:`, err);
+				console.error(`[USER-DB] Error loading ${file}:`, err);
 				}
 			}
 		} else {
-			console.error(`CRITICAL: No se encontró directorio 'schemas' en ${schemasDir}`);
+			console.error(`[USER-DB] CRITICAL: 'schemas' directory not found at ${schemasDir}`);
 		}
 		
-		console.log('DB inicializada: ', UserEnv.USER_SERVICE_DB_FULL_PATH(), '\n[ ', __filename, ' ]');
+		console.log(`[USER-DB] Database initialized: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
 	}
 	// Si ya existe el Singleton lo retorna directamente
 	return db;
@@ -69,6 +69,6 @@ export function closeDatabase(): void {
 	if (db) {
 		db.close();
 		db = null;
-		console.log('DB cerrada: ', __filename);
+		console.log('[USER-DB] Database closed');
 	}
 }

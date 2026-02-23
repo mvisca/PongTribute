@@ -166,3 +166,4 @@ packages/nginx/certs/*.pem
 !packages/nginx/certs/.gitkeep
 
 AUDIT*
+.DS_Store

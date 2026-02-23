@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
 import { beforeEach, describe, it } from 'node:test';
-
-import { FRIENDSHIP_STATUS, SharedErrors, UserTypes } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
+import {
+	FRIENDSHIP_STATUS,
+	SharedErrors,
+	UserTypes,
+	FriendshipTypes,
+	TranscendenceEventsTypes
+} from '@transcendence/shared';
 import { FriendshipService } from '../src/services/friendship.service.js';
 import { IFriendshipRepository } from '../src/repositories/IFriendshipRepository.js';
 

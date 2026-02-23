@@ -1,7 +1,6 @@
 import BetterSqlite3 from "better-sqlite3";
-import { UserTypes, FriendshipStatus, SharedErrors, FRIENDSHIP_STATUS } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
-import { IFriendshipRepository } from './IFriendshipRepository.js';      // ← Local
+import { UserTypes, FriendshipTypes, FriendshipStatus, SharedErrors, FRIENDSHIP_STATUS } from '@transcendence/shared';
+import { IFriendshipRepository } from './IFriendshipRepository.js';
 import { FriendshipMapper } from '../mappers/FriendshipMapper.js';   
 import { getDatabase } from '../index.js';
 

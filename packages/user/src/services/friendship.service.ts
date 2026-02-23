@@ -1,17 +1,24 @@
-import { SharedErrors, FRIENDSHIP_STATUS, UserTypes } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
-import { IFriendshipRepository, SQLiteFriendshipRepository } from '../index.js';
+import {
+	SharedErrors,
+	FRIENDSHIP_STATUS,
+	FriendshipStatus,
+	UserTypes,
+	FriendshipTypes
+} from '@transcendence/shared';
+import {
+	IFriendshipRepository
+} from '../index.js';
 
 export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
 
-	constructor(friendshipRepo: IFriendshipRepository = new SQLiteFriendshipRepository()) {
+	constructor(friendshipRepo: IFriendshipRepository) {
 		this.friendshipRepo = friendshipRepo;
 	}
 
-	private isFriendshipStatus(value: unknown): value is FriendshipTypes.FriendshipStatus {
-		return (Object.values(FRIENDSHIP_STATUS) as FriendshipTypes.FriendshipStatus[]).includes(
-			value as FriendshipTypes.FriendshipStatus
+	private isFriendshipStatus(value: unknown): value is FriendshipStatus {
+		return (Object.values(FRIENDSHIP_STATUS) as FriendshipStatus[]).includes(
+			value as FriendshipStatus
 		);
 	}
 
@@ -120,6 +127,33 @@ export class FriendshipService {
 		}
 
 		return await this.friendshipRepo.findByUser(userId);
+	}
+
+	async deleteFriendship(
+		currentUserId: UserTypes.UserId,
+		friendId: UserTypes.UserId
+	): Promise<void> {
+		const [ sortedUserId, sortedFriendId ] = this.sortIds(currentUserId, friendId);
+		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
+	
+		if (!friendship) {
+			throw new SharedErrors.NotFoundError(`No existe la amistad`, 'friendship', {
+				currentUserId,
+				friendId,
+				operation: 'deleteFriendship'
+			});
+		}
+
+		if (friendship.status !== FRIENDSHIP_STATUS.ACCEPTED) {
+			throw new SharedErrors.ConflictError('Solo se pueden eliminar amistades activas', 'friendship', {
+				currentUserId,
+				friendId,
+				operation: 'deleteFriendship',
+				currentStatus: friendship.status
+			});
+		}
+
+		await this.friendshipRepo.delete(sortedUserId, sortedFriendId);
 	}
 }
 

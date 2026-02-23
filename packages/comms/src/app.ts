@@ -1,31 +1,17 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import fastifyWebsocket from '@fastify/websocket';
-import type { Redis } from 'ioredis';
 import { CommsEnv } from './config.js';
-import { SharedEnv, Utils } from '@transcendence/shared';
-import {  CommsService } from './services/comms.service.js';
+import { CommsService } from './services/comms.service.js';
 import { CommsRoutes } from './routes/index.js';
 
-// Cliente Redis de la app Comms
-export let redisClient: Redis | null = null;
-
-// Instancia única del servicio de comunicaciones
-export let commsService: CommsService | null = null;
+export interface CommsAppDependencies {
+	commsService: CommsService;
+}
 
 /** Crea y configura la instncia de Fastify */
-export function buildApp(): FastifyInstance {
-	// TODO verificar patter si es igual al de otros servicios, por problema de acoplamiento
-	// Lo había resuelto instanciado Redis en server... desacoplando la app de Redis
-	try {
-		const redisConfig = CommsEnv.getRedisConfig(); // TODO
-		redisClient = Utils.createRedisClient(redisConfig);
-		console.log('[Comms] Redis cliente creado');
-	} catch(err) {
-		console.error('[Comms] Error conectado Redis:', err);
-		process.exit(1);
-	}
-	
+export function buildApp(deps: CommsAppDependencies): FastifyInstance {
+
 	// Inicializar Fastify con config
 	const app = Fastify(CommsEnv.getFastifyConfig());
 	
@@ -55,8 +41,8 @@ export function buildApp(): FastifyInstance {
 	});
 
 	// Registro de rutas
-	app.register(CommsRoutes.healthRoutes, { redisClient });
-	app.register(CommsRoutes.wsRoutes, { prefix: '/api' });
+	app.register(CommsRoutes.healthRoutes, { ...deps });
+	app.register(CommsRoutes.wsRoutes, { prefix: '/api', ...deps });
 
 	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setNotFoundHandler((request, reply) => {

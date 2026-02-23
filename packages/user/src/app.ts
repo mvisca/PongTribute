@@ -1,47 +1,44 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import type { Redis } from 'ioredis';
+import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { UserEnv, UserRoutes, UserService, AuthMiddleware } from './index.js';
-import { Utils } from '@transcendence/shared';
+import { SWAGGER_THEME_CSS } from '@transcendence/shared';
+import { UserEnv, UserRoutes } from './index.js';
+import { UserService } from './services/user.service.js';
+import { FriendshipService } from './services/friendship.service.js';
+import { TokenService } from './services/token.service.js';
 import { healthRoutes } from './routes/health.routes.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Cliente Redis de toda la app User
-export let redisClient: Redis | null = null;
+export interface UserAppDependencies {
+	redisClient: Redis;
+	userService: UserService;
+	friendshipService: FriendshipService;
+	tokenService: TokenService;
+}
 
 /** Crea y configuara la instancia de Fastfy */
-export function buildApp(): FastifyInstance { 
-	
-	try {
-		const redisConfig = UserEnv.getRedisConfig();
-		redisClient = Utils.createRedisClient(redisConfig);
-		console.log('Redis cliente creado en User service');
-	} catch (err) {
-		console.error('Error conectando Redis en User: ', err);
-		process.exit(1);
-	}
-	
+export function buildApp(deps: UserAppDependencies): FastifyInstance {
+
 	/** 1. Crear instancia app */
 	const app = Fastify(UserEnv.getFastifyConfig());
-	
-	/** 1.1 Inicializar UserService e inyectarlo en middleware */
-	const userService = new UserService();
-	AuthMiddleware.setUserService(userService);
-	console.log('UserService inyectado en AuthMiddleware');
-	
+
+	/** 1.5.  Rate limitng global */
+	app.register(rateLimit, {
+		max: 100, // 100 requests
+		timeWindow: '1 minute',
+		redis: deps.redisClient,
+		nameSpace: 'rl:user:',
+		skipOnError: true // No bloquear si Redis falla
+	});
+
 	/** 2. Plugins de seguridad */
 	app.register(helmet, {
 		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});
-	
+
 	/** 2. Plugins de documentación */
 	app.register(swagger, {
 		openapi: {
@@ -50,7 +47,7 @@ export function buildApp(): FastifyInstance {
 				version: '1.0.0'
 			},
 			servers: [
-				{ url: `http://localhost:${UserEnv.PORT()}`}
+				{ url: `http://localhost:${UserEnv.PORT()}` }
 			],
 			components: {
 				securitySchemes: {
@@ -75,15 +72,10 @@ export function buildApp(): FastifyInstance {
 			};
 		}
 	});
-	
+
 	/** 2. Plugins de documentacion con UI interactiva */
-	/** 2. Plugins de documentacion con UI interactiva */
-	const swaggerThemeCSS = readFileSync(
-		// En runtime compilado, __dirname apunta a dist/src, por eso subimos 3 niveles hasta /packages
-		join(__dirname, '../../../shared/src/styles/', 'swagger-custom.css'),
-		'utf-8'
-	);
-	
+	const swaggerThemeCSS = SWAGGER_THEME_CSS;
+
 	app.register(swaggerUI, {
 		routePrefix: '/docs',
 		staticCSP: true,
@@ -101,41 +93,34 @@ export function buildApp(): FastifyInstance {
 			]
 		}
 	});
-	
+
 	/** 3. Hooks */
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
-		
+
 		if (method == 'HEAD')
 			return;
-		
+
 		const url = route.url;
-		const icon = {
-			POST: 'USER 📝: ',
-			GET: 'USER 📖:',
-			PUT: 'USER ✏️:',
-			DELETE: 'USER 🗑️:',
-			PATCH: 'USER 🔧:'
-		}[method as string] || '📌';
-		console.log(`${icon} ${method.padEnd(7)} ${url}`);
+		console.log(`[USER] [ROUTE] ${method.padEnd(7)} ${url}`);
 	})
-	
+
 
 	/** Registrar todas las rutas del servicio */
-	app.register(healthRoutes, { redisClient });
-	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal'});
-	console.log('REG TOKEN PROTECTED ROUTES');
-	
-	app.register(UserRoutes.internalRoutes, { prefix: '/internal'});
-	console.log('REG USER INTERNAL ROUTES');
-	
-	app.register(UserRoutes.publicRoutes, { prefix: '/api' });
-	console.log('REG USER PUBLIC ROUTES');
-	
-	app.register(UserRoutes.protectedRoutes, { prefix: '/api'});
-	console.log('REG USER PROTECTED ROUTES');
-	
-	
+	app.register(healthRoutes, { ...deps });
+	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal', ...deps });
+	console.log('[USER] Registering internal token routes');
+
+	app.register(UserRoutes.internalRoutes, { prefix: '/internal', ...deps });
+	console.log('[USER] Registering internal routes');
+
+	app.register(UserRoutes.publicRoutes, { prefix: '/api', ...deps });
+	console.log('[USER] Registering public routes');
+
+	app.register(UserRoutes.protectedRoutes, { prefix: '/api', ...deps });
+	console.log('[USER] Registering protected routes');
+
+
 	/** Manejo global de errores. Captura cualquier error no manejado */
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
@@ -143,7 +128,7 @@ export function buildApp(): FastifyInstance {
 			message: `Route ${request.method} ${request.url} no encontrada`,
 		});
 	});
-	
-	console.log('Returning App: USER');
+
+	console.log('[USER] App ready');
 	return app;
 }

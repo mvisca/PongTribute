@@ -89,6 +89,8 @@ export namespace GameEnv {
 
 	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
 
+	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
+
 	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
 	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
 
@@ -134,7 +136,7 @@ export namespace GameEnv {
 				customOptions: {
 					removeAdditional: 'all',
 					coerceTypes: false,
-					useDefaults: true // TODO propagar esta configuracion a Auth y User
+					useDefaults: true
 				}
 			}
 		};

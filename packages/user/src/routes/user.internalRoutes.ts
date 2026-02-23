@@ -1,9 +1,10 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserController, validateServiceSecret } from '../index.js';
 import { AuthSchemas, UserSchemas } from '@transcendence/shared';
+import { UserAppDependencies } from '../app.js';
 
-export const internalRoutes: FastifyPluginAsync = async (app) => {
-	const controller = new UserController();
+export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
+	const controller = new UserController(opts.userService, opts.friendshipService);
 
 	app.addHook('preHandler', validateServiceSecret);
 
@@ -23,25 +24,25 @@ export const internalRoutes: FastifyPluginAsync = async (app) => {
 
 	// Obtener usuario por email (interno)
 	app.get('/users/by-email/:email', {
-		schema: { tags: ['User'] },
+		schema: UserSchemas.getInternalUserByEmailSchema,
 		handler: controller.findUserByEmailInternal.bind(controller),
 	});
 
 	// Obtener usuario por ID (interno)
 	app.get('/users/by-id/:id', {
-		schema: { tags: ['User'] },
+		schema: UserSchemas.getInternalUserByIdSchema,
 		handler: controller.findUserByIdInternal.bind(controller)
 	});
 
 	// Obtener lista de IDs de amigos (interno)
 	app.get('/users/:id/friends', {
-		schema: { tags: ['User'] },
+		schema: UserSchemas.getInternalFriendsSchema,
 		handler: controller.getFriendsInternal.bind(controller)
 	});
 
 	// Obtener lastLogoutAt de usuario
-	app.get('/users/:id/logout', {
-		schema: { tags: ['User'] },
+	app.get('/users/:id/last-logout', {
+		schema: UserSchemas.getLastLogoutAtSchema,
 		handler: controller.getLastLogoutAt.bind(controller)
 	});
 

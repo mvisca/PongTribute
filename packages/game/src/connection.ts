@@ -22,7 +22,7 @@ export function getDatabase(): Database.Database {
 			fs.mkdirSync(dbDir, { recursive: true });
 		}
 
-		console.log(`🔌 Conectando a Game DB en: ${dbPath}`);
+		console.log(`[GAME-DB] Connecting to database at: ${dbPath}`);
 
 		// En el constructor añado un Timeout de 5000 ms para evitar concurrencia
 		db = new Database(dbPath, {
@@ -48,13 +48,13 @@ export function getDatabase(): Database.Database {
 				const schema = fs.readFileSync(schemaPath, 'utf-8');
 				try {
 					db.exec(schema);
-					console.log(`Esquema cargado: ${file}`);
+					console.log(`[GAME-DB] Schema loaded: ${file}`);
 				} catch (err) {
-					console.error(`Error cargando ${file}:`, err);
+					console.error(`[GAME-DB] Error loading ${file}:`, err);
 				}
 			}
 		} else {
-			console.error(`CRITICAL: No se encontró directorio 'schemas' en: ${schemasDir}`);
+			console.error(`[GAME-DB] CRITICAL: 'schemas' directory not found at: ${schemasDir}`);
 		}
 	}
 	return db;
@@ -64,6 +64,6 @@ export function closeDatabase(): void {
 	if (db) {
 		db.close();
 		db = null;
-		console.log('DB cerrada: ', __filename);
+		console.log('[GAME-DB] Database closed');
 	}
 }

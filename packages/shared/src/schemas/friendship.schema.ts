@@ -1,7 +1,9 @@
 import { Type } from '@sinclair/typebox';
 import { FRIENDSHIP_STATUS } from '../constants/friendship.constants.js';
+import { ErrorSchemas } from './error.schema.js';
+import { SchemaFields } from './fields.schema.js';
 
-const UuidField = Type.String({ format: 'uuid' });
+const { UuidField, DateTimeField, BooleanField } = SchemaFields;
 
 export namespace FriendshipSchemas {
 
@@ -24,8 +26,8 @@ export namespace FriendshipSchemas {
 		userId: UuidField,
 		friendId: UuidField,
 		status: FriendshipStatus,
-		createdAt: Type.String({ format: 'date-time' }),
-		updatedAt: Type.String({ format: 'date-time' })
+		createdAt: DateTimeField,
+		updatedAt: DateTimeField
 	});
 
 	// ============================================================================
@@ -45,9 +47,9 @@ export namespace FriendshipSchemas {
 	export const ListFriendshipsSchema = {
 		description: 'Lista amistades del usuario autenticado (filtro opcional por estado)',
 		tags: ['Friendship'],
-	querystring: ListFriendshipsQuery,
+		querystring: ListFriendshipsQuery,
 		response: {
-			200: Type.Array(Friendship)
+			200: Type.Object({ friendships: Type.Array(Friendship) })
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -61,7 +63,10 @@ export namespace FriendshipSchemas {
 		tags: ['Friendship'],
 		body: CreateFriendshipBody,
 		response: {
-			201: Friendship
+			201: Friendship,
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound,
+			409: ErrorSchemas.Conflict
 		},
 		security: [{ bearerAuth: [] }]
 	};
@@ -72,7 +77,7 @@ export namespace FriendshipSchemas {
 	});
 
 	export const UpdateFriendshipBody = Type.Object({
-		accepted: Type.Boolean()
+		accepted: BooleanField
 	});
 
 	export const UpdateFriendshipSchema = {
@@ -81,10 +86,29 @@ export namespace FriendshipSchemas {
 		params: UpdateFriendshipParams,
 		body: UpdateFriendshipBody,
 		response: {
-			200: Friendship
+			200: Friendship,
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound,
+			409: ErrorSchemas.Conflict
 		},
 		security: [{ bearerAuth: [] }]
 	};
+
+	export const DeleteFriendshipParams = Type.Object({
+		friendId: UuidField
+	});
+
+	export const DeleteFriendshipSchema = {
+		description: 'Elimina una amista activa entre el usuario autenticado y otro usuario',
+		tags: ['Friendship'],
+		params: DeleteFriendshipParams,
+		response: {
+			204: Type.Null(),
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound
+		},
+		security: [{ bearerAuth: [] }]
+	}
 
 	// Alias temporal para mantener compatibilidad con capas aún no migradas
 	export const AcceptFriendshipParams = UpdateFriendshipParams;

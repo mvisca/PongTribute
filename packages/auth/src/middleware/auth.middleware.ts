@@ -11,7 +11,7 @@ import { AuthEnv } from "../config.js";
 */
 const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 	const response = await fetch(
-		`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+		`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 		{
 			method: 'GET',
 			headers: {
@@ -20,13 +20,13 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 			}
 		}
 	);
-	
+
 	if (!response.ok) {
 		if (response.status === 404) {
 			// Usuario no encontrado = token inválido
 			throw new SharedErrors.NotFoundError('Usuario no encontrado', 'user', {
 				userId,
-				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 				method: 'GET',
 				status: 404,
 				operation: 'fetchLastLogoutAt'
@@ -34,7 +34,7 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 		}
 		throw new SharedErrors.ServiceError('user', `Error obteniendo lastLogoutAt`, {
 			userId,
-			endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/logout`,
+			endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/last-logout`,
 			method: 'GET',
 			status: response.status,
 			statusText: response.statusText,
@@ -76,7 +76,7 @@ export namespace AuthMiddleware {
 			
 			// Validación completa
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
-			console.log('== Schema completo:', isValid);
+			console.log('[AUTH-MIDDLEWARE] Schema validation:', isValid);
 			if (!isValid) 
 				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
 				schemaValidation: isValid,
@@ -109,7 +109,7 @@ export namespace AuthMiddleware {
 			return SharedErrors.handleError(err, reply);
 		}
 		
-		console.log('JWT válido @ AuthMiddleware @ Auth');
+		console.log('[AUTH-MIDDLEWARE] JWT valid');
 	}
 	
 	export const verifyOwnership = async (

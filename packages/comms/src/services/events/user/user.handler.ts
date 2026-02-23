@@ -1,49 +1,63 @@
-import { EventHandler, BaseEvent } from "../base.handler.js";
-import { UserEvent, UserLoginEvent, UserLogoutEvent } from './user.events.js';
+import { CommsEventHandler } from "../base.handler.js";
+import { 
+	TRANSCENDENCE_EVENTS,
+	WEBSOCKET_EVENTS,
+	EventsTypes,
+	TranscendenceEventsTypes,
+	WebSocketEventsTypes } from '@transcendence/shared';
 import { CommsService } from '../../comms.service.js';
 import { CommsEnv } from '../../../config.js';
-import { REDIS_CHANNELS } from '@transcendence/shared';
 
-export class UserEventHandler implements EventHandler {
-	channels = [
-		REDIS_CHANNELS.USER_LOGIN,
-		REDIS_CHANNELS.USER_LOGOUT	
+// Union type local para el handler
+type UserEvent = TranscendenceEventsTypes.UserLoginEvent | TranscendenceEventsTypes.UserLogoutEvent;
+
+export class UserEventHandler implements CommsEventHandler {
+
+	eventTypes = [
+		TRANSCENDENCE_EVENTS.USER_LOGIN,
+		TRANSCENDENCE_EVENTS.USER_LOGOUT
+	
 	];
 
-	async handle(event: BaseEvent, commsService: CommsService): Promise<void> {
-		const userEvent = event as UserEvent;
+	async handle(
+		event: EventsTypes.BaseEvent,
+		commsService: CommsService
+	): Promise<void> {
+		const userEvent = event;
 
 		switch (userEvent.type) {
-			case REDIS_CHANNELS.USER_LOGIN:
-				await this.handleLogin(userEvent as UserLoginEvent, commsService);
+			case TRANSCENDENCE_EVENTS.USER_LOGIN:
+				await this.handleLogin(userEvent as TranscendenceEventsTypes.UserLoginEvent, commsService);
 				break;
 
-			case REDIS_CHANNELS.USER_LOGOUT:
-				await this.handleLogout(userEvent as UserLogoutEvent, commsService);
+			case TRANSCENDENCE_EVENTS.USER_LOGOUT:
+				await this.handleLogout(userEvent as TranscendenceEventsTypes.UserLogoutEvent, commsService);
 				break;
 		}
 	}
 
 	private async handleLogin(
-		event: UserLoginEvent,
-		comms: CommsService
+		event: TranscendenceEventsTypes.UserLoginEvent,
+		commsService: CommsService
 	): Promise<void> {
 		console.log(`[UserHandler] ${event.targetUserId} online`)
 
 		try {
-
+			// Todos los friends
 			const friends = await this.getUserFriends(event.targetUserId);
 			
+			// Ha de haber más de cero
 			if (friends.length > 0) {
-				comms.broadcastToUsers(friends, {
-					type: REDIS_CHANNELS.FRIEND_ONLINE,
+				commsService.broadcastToUsers(friends, {
+					type: WEBSOCKET_EVENTS.FRIEND_ONLINE,
+					timestamp: event.timestamp,
 					payload: {
-						userId: event.targetUserId,
+						userId: event.payload.userId,
 						username: event.payload.username,
 						avatar: event.payload.avatar,
-						timestamp: event.timestamp
-					}
-				});
+					},
+				} satisfies WebSocketEventsTypes.FriendOnline
+			);
 				console.log(`[UserHandler] Notificado ${friends.length} amigos`);
 			} else {
 				console.log(`[UserHandler] Los amigos de ${event.payload.username} no están online`);
@@ -56,25 +70,30 @@ export class UserEventHandler implements EventHandler {
 
 	private async handleLogout(
 		event: UserEvent,
-		comms: CommsService
+		commsService: CommsService
 	): Promise<void> {
 		console.log(`[UserHandler] ${event.targetUserId} offline`);
 
-		try {
-			const friends = await this.getUserFriends(event.targetUserId);
-			
-			if (friends.length > 0) {event.targetUserId
+		// Cerrar la conexion
+		commsService.closeUserConnection(event.targetUserId);
 
-				comms.broadcastToUsers(friends, {
-					type: REDIS_CHANNELS.FRIEND_OFFLINE,
+		try {
+			// Todos los friends
+			const friends = await this.getUserFriends(event.targetUserId);
+
+			// Ha de haber más de cero
+			if (friends.length > 0) {
+				// Mensaje a todos
+				commsService.broadcastToUsers(friends, {
+					type: WEBSOCKET_EVENTS.FRIEND_OFFLINE,
+					timestamp: event.timestamp,
 					payload: {
-						userId: event.targetUserId,
+						userId: event.payload.userId,
 						username: event.payload.username,
 						avatar: event.payload.avatar,
-						isOnline: event.payload.isOnline,
-						timestamp: event.timestamp
-					}
-				});
+					},
+				} satisfies WebSocketEventsTypes.FriendOffline
+			);
 				console.log(`[UserHandler] Notificado ${friends.length} amigos`);
 			} else {
 				console.log(`[UserHandler] Los amigos de ${event.payload.username} no están online`);

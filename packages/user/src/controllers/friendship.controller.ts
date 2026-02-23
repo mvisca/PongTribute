@@ -1,43 +1,105 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { SharedErrors } from '@transcendence/shared';
-import * as FriendshipTypes from '@transcendence/shared';
-import { FriendshipService } from '../index.js';
+import type { Redis } from 'ioredis';
+import {
+	SharedErrors,
+	TRANSCENDENCE_CHANNEL,
+	TRANSCENDENCE_EVENTS,
+	TranscendenceEventsTypes,
+	AuthTypes,
+	FriendshipTypes,
+	UserTypes
+} from '@transcendence/shared';
+import {
+	FriendshipService,
+	UserService
+} from '../index.js';
 
 /** Controller de Friendship - Maneja peticiones HTTP relacionadas con amistades */
 export class FriendshipController {
 	private friendshipService: FriendshipService;
+	private userService: UserService;
+	private redisClient: Redis;
 
-	constructor() {
-		this.friendshipService = new FriendshipService();
+	constructor(userService: UserService, friendshipService: FriendshipService, redisClient: Redis) {
+		this.userService = userService;
+		this.friendshipService = friendshipService;
+		this.redisClient = redisClient;
 	}
 
-	private buildNotFoundPayload(err: { message: string; field?: string }): Record<string, unknown> {
-		const payload: Record<string, unknown> = { error: 'Not Found', message: err.message };
-		if ('field' in err && typeof err.field === 'string')
-			payload.field = err.field;
-		return payload;
+	// ============================================================================
+	// PRIVATE HELPERS
+	// ============================================================================
+
+	private async publishFriendRequest(
+		senderId: string,
+		senderUsername: string,
+		receiverId: string
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		// Conseguir avatar del sender (no está en el JWT)
+		const sender = await this.userService.findUserById(senderId);
+
+		const event: TranscendenceEventsTypes.FriendRequestEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REQUEST,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				senderId,
+				senderUsername,
+				senderAvatar: sender.avatar,
+				receiverId,
+			},
+		};
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		console.log(`[FRIENDSHIP] FRIEND_REQUEST published: from ${senderId} to ${receiverId}`);
 	}
 
-	// TODO mirar la forma en que se manejan los errores, no es consistente con la centralizada
-	private errorHandler(err: unknown, request: FastifyRequest, reply: FastifyReply): void {
-		if (err instanceof SharedErrors.ConflictError) {
-			reply.code(409).send({ error: 'Conflict', message: err.message, field: err.field });
-			return;
-		}
+	private async publishFriendAccepted(
+		acceptorId: UserTypes.UserId,
+		acceptorUsername: string,
+		requesterId: string
+	): Promise<void> {
+		if (!this.redisClient) return;
 
-		if (err instanceof SharedErrors.NotFoundError) {
-			reply.code(404).send(this.buildNotFoundPayload(err));
-			return;
-		}
+		// Conseguir avatar del acceptor (no está en JWT)
+		const acceptor = await this.userService.findUserById(acceptorId);
 
-		if (err instanceof SharedErrors.ValidationError) {
-			reply.code(403).send({ error: 'Forbidden', message: err.message, field: err.field });
-			return;
-		}
+		const event: TranscendenceEventsTypes.FriendAcceptedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_ACCEPT,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				acceptorId,
+				acceptorUsername,
+				acceptorAvatar: acceptor.avatar,
+				requesterId,
+			},
+		};
 
-		request.log.error(err);
-		const message = err instanceof Error ? err.message : 'Unknown Error';
-		reply.code(500).send({ error: 'Internal Server Error', message });
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		console.log(`[FRIENDSHIP] FRIEND_ACCEPT published: from ${acceptorId} to ${requesterId}`);
+	}
+
+	private async publishFriendRemoved(
+		removerId: UserTypes.UserId,
+		removedId: UserTypes.UserId
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		const event: TranscendenceEventsTypes.FriendRemovedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REMOVE,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				removerId,
+				removedId,
+			},
+		} satisfies TranscendenceEventsTypes.FriendRemovedEvent;
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		console.log(`[FRIENDSHIP] FRIEND_REMOVE published: ${removerId} removed ${removedId}`);
 	}
 
 	// ============================================================================
@@ -45,9 +107,9 @@ export class FriendshipController {
 	// ============================================================================
 	async createFriendship(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const initiatorId = request.user?.id;
+			const user = request.user as AuthTypes.AccessTokenPayload;
 
-			if (!initiatorId) {
+			if (!user.id) {
 				reply.code(401).send({
 					error: 'Unauthorized',
 					message: 'Usuario no autenticado'
@@ -55,11 +117,19 @@ export class FriendshipController {
 				return;
 			}
 
+			// Lee el destinatario de la invitacion del body del request
 			const data = request.body as FriendshipTypes.CreateFriendshipBody;
-			const friendship = await this.friendshipService.createFriendship(initiatorId, data);
+
+			// Crea la amistad
+			const friendship = await this.friendshipService.createFriendship(user.id, data);
+
+			// Publicar evento en canal TRANSCENDENCE_EVENTS
+			this.publishFriendRequest(user.id, user.username, data.friendId)
+				.catch((err: Error) => console.error('[FRIENDSHIP] Error publishing FRIEND_REQUEST:', err));
+
 			return reply.code(201).send(friendship);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -68,9 +138,9 @@ export class FriendshipController {
 	// ============================================================================
 	async updateFriendship(request: FastifyRequest, reply: FastifyReply): Promise<void> {
 		try {
-			const currentUserId = request.user?.id;
+			const user = request.user as AuthTypes.AccessTokenPayload;
 
-			if (!currentUserId) {
+			if (!user.id) {
 				reply.code(401).send({
 					error: 'Unauthorized',
 					message: 'Usuario no autenticado'
@@ -80,10 +150,17 @@ export class FriendshipController {
 
 			const { friendId } = request.params as FriendshipTypes.UpdateFriendshipParams;
 			const { accepted } = request.body as FriendshipTypes.UpdateFriendshipBody;
-			const friendship = await this.friendshipService.updateFriendshipStatus(currentUserId, friendId, accepted);
+			const friendship = await this.friendshipService.updateFriendshipStatus(user.id, friendId, accepted);
+
+			if (accepted) {
+				// friendship.initiatiorId es quien envió la solicitud original (requesterId)
+				this.publishFriendAccepted(user.id, user.username, friendship.initiatorId)
+					.catch((err: Error) => console.error('[FRIENDSHIP] Error publishing FRIEND_ACCEPT:', err));
+			}
+
 			return reply.code(200).send(friendship);
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
 
@@ -104,10 +181,39 @@ export class FriendshipController {
 
 			const query = request.query as FriendshipTypes.ListFriendshipsQuery;
 			const friendships = await this.friendshipService.listFriendships(userId, query);
-			return reply.code(200).send(friendships);
+
+			return reply.code(200).send({ friendships });
 		} catch (err) {
-			return this.errorHandler(err, request, reply);
+			return SharedErrors.handleError(err, reply);
 		}
 	}
+
+	// ============================================================================
+	// DELETE FRIENDSHIP
+	// ============================================================================
+	async deleteFriendship(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise <void> {
+		try {
+			const user = request.user as AuthTypes.AccessTokenPayload;
+
+			if (!user.id) {
+				reply.code(401).send({ error: 'Unauthorized', message: 'Usuario no autenticado'});
+			}
+
+			const { friendId } = request.params as FriendshipTypes.DeleteFriendshipParams;
+			await this.friendshipService.deleteFriendship(user.id, friendId);
+
+			// Notificar a ambos usuarios para actualizar lista de amigos
+			this.publishFriendRemoved(user.id, friendId)
+				.catch((err: Error) => console.error('[FRIENDSHIP] Error publishing FRIEND_REMOVE:', err));
+
+			return reply.code(204).send();
+		} catch(err) {
+			return SharedErrors.handleError(err, reply);
+		}
+	}
+	
 }
 

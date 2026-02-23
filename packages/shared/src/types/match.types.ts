@@ -5,8 +5,8 @@ import { MatchSchemas } from '../schemas/match.schema.js';
 export namespace MatchTypes {
     // 1. Tipos inferidos de TypeBox (para uso en Controllers/Services)
     export type Match = Static<typeof MatchSchemas.Match>;
-    export type MatchPlayer = Static<typeof MatchSchemas.MatchPlayer>;
-    export type MatchStatus = Static<typeof MatchSchemas.MatchStatus>;
+    export type MatchPlayer = Static<typeof MatchSchemas.MatchPlayerSchema>;
+    export type MatchStatus = Static<typeof MatchSchemas.MatchStatusSchema>;
     
     // DTOs
     export type CreateMatchBody = Static<typeof MatchSchemas.CreateMatchBody>;
@@ -31,11 +31,13 @@ export namespace MatchTypes {
         // Player 1
 		player1_id: string;
 		player1_username: string;
+		player1_avatar: string;
         player1_score: number;
         
         // Player 2 (Puede ser NULL si está esperando rival)
 		player2_id: string | null;
 		player2_username: string | null,
+		player2_avatar: string | null;
         player2_score: number | null;
         
         winner_id: string | null;

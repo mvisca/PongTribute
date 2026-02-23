@@ -1,4 +1,7 @@
 import { User } from "../types/User";
+import { useState } from "react";
+import { EditProfile } from "./EditProfile";
+
 
 type Props = {
   user: User;
@@ -6,6 +9,9 @@ type Props = {
 };
 
 export function ProfileDropdown({ user, onClose }: Props) {
+
+  const [isEditing, setIsEditing] = useState(false);
+  
   return (
     <div className="absolute top-16 right-4 w-80 bg-purple-800 rounded-xl shadow-lg p-4 z-50">
       
@@ -17,12 +23,10 @@ export function ProfileDropdown({ user, onClose }: Props) {
         Close
       </button>
 
-      {/* User info */}
-     {/* User info */}
 <div className="mb-4">
   <div className="flex items-center gap-3">
     <div className="w-12 h-12 bg-purple-700 rounded-full flex items-center justify-center">
-      👤
+      {user.avatar ?? "👤"}
     </div>
 
     <div>
@@ -42,10 +46,26 @@ export function ProfileDropdown({ user, onClose }: Props) {
     Games played: <span className="font-bold">{user.gamesPlayed ?? 0}</span>
   </p>
 
-  <button className="mt-2 text-sm underline hover:text-purple-200">
-    Edit profile
-  </button>
+  <button
+  onClick={() => setIsEditing(true)}
+  className="mt-2 text-sm underline hover:text-purple-200"
+>
+  Edit profile
+</button>
+
 </div>
+{isEditing && (
+  <div className="mt-4 border-t border-purple-600 pt-4 animate-pulse">
+    <EditProfile
+      user={user}
+      onSave={(updatedUser) => {
+        Object.assign(user, updatedUser);
+        setIsEditing(false);
+      }}
+      onCancel={() => setIsEditing(false)}
+    />
+  </div>
+)}
 
 
       {/* Friends section */}

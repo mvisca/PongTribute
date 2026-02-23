@@ -1,5 +1,8 @@
 export * from './auth.types.js';
+export * from './comms.types.js';
 export * from './error.types.js';
+export * from './event.types.js';
+export * from './event-handler.types.js';
 export * from './friendship.types.js';
 export * from './match.types.js';
 export * from './middleware.types.js';
@@ -7,3 +10,4 @@ export * from './user.types.js';
 export * from './fastify.js';
 export * from './game.types.js';
 export * from './image.types.js';
+export * from './health.types.js';

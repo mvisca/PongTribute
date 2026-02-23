@@ -14,11 +14,13 @@ CREATE TABLE IF NOT EXISTS matches (
     -- JUGADOR 1 (Host) - Fusionamos datos de match_players aquí
     player1_id TEXT NOT NULL,
 	player1_username TEXT NOT NULL,
+	player1_avatar TEXT NOT NULL DEFAULT '',
     player1_score INTEGER DEFAULT 0,
     
     -- JUGADOR 2 (Rival) - Fusionamos datos de match_players aquí
     player2_id TEXT, -- Puede ser NULL si es matchmaking esperando rival
 	player2_username TEXT, --Puede ser NULL al inicio
+	player2_avatar TEXT,
     player2_score INTEGER DEFAULT 0,
     
     winner_id TEXT,
@@ -29,13 +31,6 @@ CREATE TABLE IF NOT EXISTS matches (
     -- Metadatos
     created_at INTEGER NOT NULL,
     finished_at INTEGER
-    
-    -- -- Configuración
-    -- is_private INTEGER DEFAULT 0, -- 0: Público, 1: Privado
-
-    -- Relación con Torneos (Del enfoque nuevo)
-    -- tournament_id TEXT,
-    -- round INTEGER
 );
 
 -- Índices para velocidad (Inspirados en indexes.sql [cite: 229])

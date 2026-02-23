@@ -1,14 +1,10 @@
 import { FastifyPluginAsync } from "fastify";
-import type { Redis } from "ioredis";
-import { AuthController } from "../controllers/auth.controller.js";
+import { HealthController } from "../controllers/health.controller.js";
+import { AuthAppDependencies } from "../app.js";
 
-export const healthRoutes: FastifyPluginAsync<{ redisClient: Redis | null }> = async (app, opts) => {
-	// Crear el controller con Redis client
-	const controller = new AuthController(opts.redisClient);
+export const healthRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, opts) => {
+	const controller = new HealthController(opts.redisClient);
 
-	/**
-	 * Health check endpoint
-	 */
 	app.get('/health', async (request, reply) => {
 		return controller.handleHealthCheck(request, reply);
 	});

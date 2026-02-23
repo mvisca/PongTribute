@@ -27,19 +27,19 @@ export function createRedisClient(config: Partial<RedisConfig>): Redis {
     const client = new Redis(finalConfig);
 
     client.on('connect', () => {
-        console.log(`[Redis] Conectado a ${finalConfig.host}:${finalConfig.port}`);
+        console.log(`[REDIS] Connected to ${finalConfig.host}:${finalConfig.port}`);
     });
 
     client.on('ready', () => {
-        console.log(`[Redis] Listo para recibir comandos`);
+        console.log(`[REDIS] Ready to receive commands`);
     });
 
     client.on('close', () => {
-        console.log(`[Redis] Conexión cerrada`);
+        console.log(`[REDIS] Connection closed`);
     });
     
     client.on('error', (err) => {
-        console.error(`[Redis] Error:`, err);
+        console.error(`[REDIS] Error:`, err);
     });
 
     return client;

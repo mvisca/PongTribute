@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { User } from "../types/User";
 
+
+
 type Props = {
   user: User;
   onSave: (user: User) => void;
@@ -8,18 +10,21 @@ type Props = {
 };
 
 export function EditProfile({ user, onSave, onCancel }: Props) {
+  const [avatar, setAvatar] = useState(user.avatar ?? "👤");
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
 //  const [password, setPassword] = useState(user.password);
 // NOTA: Poner en otro componente
 
   function handleSave() {
-    onSave({
-      ...user,
-      username,
-      email
-    });
-  }
+  onSave({
+    ...user,
+    username,
+    email,
+    avatar
+  });
+}
+
 
   return (
     <div className="bg-purple-900 p-4 rounded-xl">
@@ -38,6 +43,12 @@ export function EditProfile({ user, onSave, onCancel }: Props) {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
       />
+<input
+  className="input mt-2"
+  value={avatar}
+  onChange={(e) => setAvatar(e.target.value)}
+  placeholder="Avatar (emoji)"
+/>
 
       <div className="flex gap-2 mt-4">
         <button onClick={handleSave} className="btn-primary">

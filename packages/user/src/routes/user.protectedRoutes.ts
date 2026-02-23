@@ -1,12 +1,14 @@
 import { FastifyPluginAsync } from 'fastify';
 import { UserSchemas, FriendshipSchemas } from '@transcendence/shared';
 import { UserController, FriendshipController, AuthMiddleware } from '../index.js';
+import { UserAppDependencies } from '../app.js';
 
-export const protectedRoutes: FastifyPluginAsync = async (app) => {
-	const controller = new UserController();
-	const friendshipController = new FriendshipController();
+export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
+	const controller = new UserController(opts.userService, opts.friendshipService);
+	const friendshipController = new FriendshipController(opts.userService, opts.friendshipService, opts.redisClient);
 
-	app.addHook('preHandler', AuthMiddleware.validateJWT);
+	const validateJWT = AuthMiddleware.createValidateJWT(opts.userService);
+	app.addHook('preHandler', validateJWT);
 
 	// ============================================================================
 	// GET READ / CHECKS & GETS
@@ -77,5 +79,10 @@ export const protectedRoutes: FastifyPluginAsync = async (app) => {
 	app.patch('/friendships/:friendId', {
 		schema: FriendshipSchemas.UpdateFriendshipSchema,
 		handler: friendshipController.updateFriendship.bind(friendshipController)
+	});
+
+	app.delete('/friendships/:friendId', {
+		schema: FriendshipSchemas.DeleteFriendshipSchema,
+		handler: friendshipController.deleteFriendship.bind(friendshipController)
 	});
 }

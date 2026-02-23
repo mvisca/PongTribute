@@ -33,7 +33,7 @@ export class RateLimitMiddleware {
 
 				return reply.code(429).send({
 					error: 'Demasiadas solicitudes',
-					message: `Has excedido eel limte de ${this.config.maxRequests} uploads por hora`,
+					message: `Has excedido el limte de ${this.config.maxRequests} uploads por hora`,
 					retryAfter: ttl > 0 ? ttl : Math.floor(this.config.windowMs / 1000)
 				})
 			}
@@ -46,7 +46,7 @@ export class RateLimitMiddleware {
 			reply.header('X-Rate-Limit', this.config.maxRequests.toString());
 			reply.header('X-RateLimit-Remaining', (this.config.maxRequests - newCount).toString());
 		} catch(err) {
-			console.error('Error en rate limit middleware: ', err);
+			console.error('[USER-MIDDLEWARE] Rate limit error: ', err);
 		}
 	}
 

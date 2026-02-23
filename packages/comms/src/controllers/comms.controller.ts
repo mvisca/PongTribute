@@ -1,24 +1,10 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { WebSocket } from 'ws';
 import type { Redis } from 'ioredis';
+import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
 import { CommsService } from '../services/comms.service.js';
 
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
-
-/**
-* Controller para manejar las peticiones del servicio de comunicaciones
-*/
+/** Controller para manejar las peticiones del servicio de comunicaciones */
 export class CommsController {
 	private service: CommsService;
 	private redisClient: Redis | null;
@@ -28,9 +14,7 @@ export class CommsController {
 		this.redisClient = redisClient;
 	}
 	
-	/**
-	* Maneja la conexión WebSocket entrante
-	*/
+	/** Maneja la conexión WebSocket entrante */
 	handleWebSocketConnection(socket: WebSocket, request: FastifyRequest): void {
 		if (!this.service) {
 			socket.close(1011, 'Service not available');
@@ -40,19 +24,18 @@ export class CommsController {
 		this.service.handleConnection(socket, request);
 	}
 	
-	/**
-	* Maneja el health check del servicio
-	*/
+	/** Maneja el health check del servicio */
 	async handleHealthCheck(request: FastifyRequest, reply: FastifyReply): Promise<HealthCheckResponse> {
 		const checks: Record<string, HealthCheckDependency> = {};
 		let allHealthy = true;
-		
+
 		// Check Redis connection
 		if (this.redisClient) {
 			try {
 				const redisStatus = await this.redisClient.ping();
 				checks.redis = { status: redisStatus === 'PONG' ? 'ok' : 'unhealthy' };
-				if (redisStatus !== 'PONG') allHealthy = false;
+				if (redisStatus !== 'PONG')
+					allHealthy = false;
 			} catch (error: any) {
 				checks.redis = { status: 'unreachable', error: error.message };
 				allHealthy = false;
@@ -61,16 +44,19 @@ export class CommsController {
 			checks.redis = { status: 'not_initialized', error: 'Redis client not initialized' };
 			allHealthy = false;
 		}
-		
+
+		// Check WebSocket subsystem
+		if (this.service) {
+			const stats = this.service.getStats();
+			checks.websocket = { status: 'ok', ...stats };
+		} else {
+			checks.websocket = { status: 'not_initialized', error: 'CommsService not available' };
+			allHealthy = false;
+		}
+
 		const statusCode = allHealthy ? 200 : 503;
 		reply.status(statusCode);
-		
-		if (allHealthy) {
-			console.log('[COMMS] Health check ok!');
-		} else {
-			console.warn('[COMMS] Health check degraded!', checks);
-		}
-		
+
 		return {
 			status: allHealthy ? 'ok' : 'degraded',
 			service: 'COMMS',

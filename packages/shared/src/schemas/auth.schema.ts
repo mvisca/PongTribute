@@ -1,127 +1,45 @@
 import { Type } from '@sinclair/typebox';
+import { ErrorSchemas } from './error.schema.js';
+import { SchemaFields } from './fields.schema.js';
 
 // ============================================================================
-// DEFINICION DE FIELDS REUSABLES
+// REUSABLE FIELD DEFINITIONS — importados de fields.schema.ts
+// Aliases locales para mantener legibilidad
 // ============================================================================
 
-const UsernameField = Type.String({
-	minLength: 3,
-	maxLength: 20,
-	pattern: '^[a-zA-Z0-9_-]+$',
-});
-
-const EmailField = Type.String({
-	format: 'email',
-});
-
-const AvatarFieldBase64 = Type.Optional(
-		Type.String({
-			minLength: 1,
-			maxLength: 13_300_000, // max 10MB
-			pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
-		})
-);
-
-const AvatarFieldUrl = Type.Optional(
-	Type.String({
-		format: 'uri',
-		pattern: '^https://res\\.cloudinary\\.com/',
-		maxLength: 500
-	})
-);
-
-const PasswordField = Type.String({
-	minLength: 8,
-	maxLength: 32,
-	pattern: '^(?=.*[a-z])(?=.*\\d)[^\\s]+$',
-});
-
-const UuidField = Type.String({
-	format: 'uuid'
-});
-
-const BooleanField = Type.Boolean();
-
-const SecondsField = Type.Integer();
-
-const SetupTokenField = Type.String({
-	minLength: 64,
-	maxLength: 64,
-	pattern: '^[a-f0-9]{64}$'
-});
-
-const ProvisionalTokenField = Type.String({
-	pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'
-});
-
-const AccessTokenField = Type.String({
-	pattern: '^[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+\\.[A-Za-z0-9-_]+$'
-});
-
-const TotpCodeField = Type.String({
-	minLength: 6,
-	maxLength: 6,
-	pattern: '^[0-9]{6}$'
-});
-
-const RefreshTokenField = Type.String({
-	minLength: 64,
-	maxLength: 64
-});
-
-const BackupCodeField = Type.String({
-	minLength: 9,
-	maxLength: 9,
-	pattern: '^[A-F0-9]{4}-[A-F0-9]{4}$'
-});
-
-const LocalUserPayloadObject = Type.Object({
-	id: UuidField,
-	username: UsernameField,
-	email: EmailField,
-	has2FAEnabled: BooleanField,
-	is2FAVerified: BooleanField
-});
+const {
+	UsernameField,
+	EmailField,
+	AvatarFieldBase64,
+	PasswordField,
+	UuidField,
+	BooleanField,
+	SecondsField,
+	SetupTokenField,
+	ProvisionalTokenField,
+	AccessTokenField,
+	TotpCodeField,
+	RefreshTokenField,
+	BackupCodeField,
+	LocalUserPayloadObject,
+} = SchemaFields;
 
 // ============================================================================
-// RESPUESTAS DE ERROR
+// ERROR RESPONSES — importados de error.schema.ts (fuente única de verdad)
+// Aliases locales para mantener legibilidad
 // ============================================================================
 
-const UnauthorizedError = Type.Object({
-	error: Type.String(),
-	message: Type.String(),
-	details: Type.Optional(Type.Any())
-});
-
-const ConflictErrorResponse = Type.Object({
-	error: Type.String(),
-	message: Type.String(),
-	field: Type.String()
-});
-
-const NotFoundResponse = Type.Object({
-	error: Type.String(),
-	message: Type.String()
-});
+const { Unauthorized, NotFound, Conflict } = ErrorSchemas;
 
 // ============================================================================
 // EXPORTACION DE SCHEMAS EN NAMESPACE AuthSchemas
 // ============================================================================
 
 export namespace AuthSchemas {
-	
-	export const UuidFieldEx = UuidField;
-	export const BooleanFieldEx = BooleanField;
-	export const UsernameFieldEx = UsernameField;
-	export const EmailFieldEx = EmailField;
 
-	// ========================================================================
-	// COMUNES A TODOS
-	// ========================================================================
-	
 	/** Datos del usuario en respuestas de auth */
 	export const UserPayloadSchema = LocalUserPayloadObject;
-	
+
 	/** Params para rutas con :id */
 	export const UserIdParams = Type.Object({
 		id: UuidField
@@ -130,20 +48,20 @@ export namespace AuthSchemas {
 	// ========================================================================
 	// LOGIN / LOGOUT - Body y Schemas
 	// ========================================================================
-	
+
 	/** Body para login (email + password) */
 	export const LoginBody = Type.Object({
 		email: EmailField,
 		password: PasswordField
 	});
-	
+
 	/** Response: Login exitoso con tokens */
 	export const LoginSuccessResponse = Type.Object({
 		token: AccessTokenField,
 		refreshToken: RefreshTokenField,
 		user: LocalUserPayloadObject
 	});
-	
+
 	/** Response: Login pendiente, requiere verificación 2FA */
 	export const Login2FARequiredResponse = Type.Object({
 		twoFactorRequired: Type.Literal(true),
@@ -151,7 +69,7 @@ export namespace AuthSchemas {
 		provisionalToken: ProvisionalTokenField,
 		expiresIn: Type.Number()
 	});
-	
+
 	/** Schema completo de POST /auth/login */
 	export const LoginBodySchema = {
 		tags: ['Auth'],
@@ -161,17 +79,18 @@ export namespace AuthSchemas {
 				LoginSuccessResponse,
 				Login2FARequiredResponse
 			]),
-			401: UnauthorizedError
+			401: Unauthorized
 		}
 	};
 
 	/** Schema para logout sin body */
 	export const LogoutBodySchema = {
 		tags: ['Auth'],
-		response: { 
+		response: {
 			204: Type.Null(),
-			401: UnauthorizedError
-		}
+			401: Unauthorized
+		},
+		security: [{ bearerAuth: [] }]
 	}
 
 	export const LastLogoutAtBody = Type.Object({
@@ -184,16 +103,16 @@ export namespace AuthSchemas {
 		body: LastLogoutAtBody,
 		response: {
 			204: Type.Null(),
-			401: UnauthorizedError,
-			403: UnauthorizedError,
-			404: NotFoundResponse
+			401: Unauthorized,
+			403: Unauthorized,
+			404: NotFound
 		}
 	}
-	
+
 	// ========================================================================
 	// 2FA SETUP - Activar y Verificar 2FA
 	// ========================================================================
-	
+
 	/** Response de POST /auth/:id/enable-2fa
 	* Contiene QR code, setup token temporal y backup code
 	* Usuario DEBE guardar backupCode (última vez que lo ve en plaintext)
@@ -203,19 +122,20 @@ export namespace AuthSchemas {
 		backupCode: BackupCodeField,
 		qr: Type.String()
 	});
-	
+
 	/** Schema completo de POST /auth/:id/enable-2fa */
 	export const Enable2FABodySchema = {
 		tags: ['2FA'],
 		params: UserIdParams,
 		response: {
 			200: Enable2FAResponse,
-			401: UnauthorizedError,
-			404: NotFoundResponse,
-			409: ConflictErrorResponse
-		}
+			401: Unauthorized,
+			404: NotFound,
+			409: Conflict
+		},
+		security: [{ bearerAuth: [] }]
 	};
-	
+
 	/** Body de POST /auth/:id/verify-2fa-setup
 	* Cliente envía setupToken + código TOTP de Google Authenticator
 	*/
@@ -223,7 +143,7 @@ export namespace AuthSchemas {
 		setupToken: SetupTokenField,
 		totpCode: TotpCodeField
 	});
-	
+
 	/** Schema completo de POST /auth/:id/verify-2fa-setup */
 	export const Verify2FASetupBodySchema = {
 		tags: ['2FA'],
@@ -231,15 +151,16 @@ export namespace AuthSchemas {
 		body: Verify2FASetupBody,
 		response: {
 			200: LoginSuccessResponse,
-			401: UnauthorizedError,
-			404: NotFoundResponse
-		}
+			401: Unauthorized,
+			404: NotFound
+		},
+		security: [{ bearerAuth: [] }]
 	};
-	
+
 	// ========================================================================
 	// 2FA LOGIN - Verificar código TOTP en login
 	// ========================================================================
-	
+
 	/** Body de POST /auth/verify-2fa
 	* Completar login cuando usuario tiene 2FA activo
 	*/
@@ -247,21 +168,21 @@ export namespace AuthSchemas {
 		provisionalToken: ProvisionalTokenField,
 		totpCode: TotpCodeField
 	});
-	
+
 	/** Schema completo de POST /auth/verify-2fa */
 	export const LoginVerify2FABodySchema = {
 		tags: ['2FA'],
 		body: LoginVerify2FABody,
 		response: {
 			200: LoginSuccessResponse,
-			401: UnauthorizedError
+			401: Unauthorized
 		}
 	};
-	
+
 	// ========================================================================
 	// 2FA RECOVERY - Backup Code (último recurso)
 	// ========================================================================
-	
+
 	/** Body de POST /auth/verify-backup-code
 	* Alternativa a verify-2fa cuando usuario pierde acceso a TOTP
 	* IMPORTANTE: Al usarse, 2FA se desactiva automáticamente
@@ -270,28 +191,28 @@ export namespace AuthSchemas {
 		provisionalToken: ProvisionalTokenField,
 		backupCode: BackupCodeField
 	});
-	
+
 	/** Schema completo de POST /auth/verify-backup-code */
 	export const VerifyBackupCodeBodySchema = {
 		tags: ['2FA'],
 		body: VerifyBackupCodeBody,
 		response: {
 			200: LoginSuccessResponse,
-			401: UnauthorizedError
+			401: Unauthorized
 		}
 	};
-	
+
 	// ========================================================================
 	// 2FA DISABLE - Desactivar 2FA
 	// ========================================================================
-	
+
 	/** Body de POST /auth/:id/disable-2fa
 	* Requiere password actual para seguridad
 	*/
 	export const Disable2FABody = Type.Object({
 		password: PasswordField
 	});
-	
+
 	/** Schema completo de POST /auth/:id/disable-2fa */
 	export const Disable2FABodySchema = {
 		tags: ['2FA'],
@@ -299,9 +220,10 @@ export namespace AuthSchemas {
 		body: Disable2FABody,
 		response: {
 			200: LoginSuccessResponse,
-			401: UnauthorizedError,
-			404: NotFoundResponse
-		}
+			401: Unauthorized,
+			404: NotFound
+		},
+		security: [{ bearerAuth: [] }]
 	};
 
 	// ========================================================================
@@ -322,7 +244,7 @@ export namespace AuthSchemas {
 		body: RegisterBody,
 		response: {
 			201: LoginSuccessResponse,
-			409: ConflictErrorResponse
+			409: Conflict
 		}
 	};
 
@@ -342,10 +264,11 @@ export namespace AuthSchemas {
 		params: UserIdParams,
 		body: UpdatePasswordBody,
 		response: {
-			204: Type.Null(),
-			401: UnauthorizedError,
-			404: NotFoundResponse
-		}
+			200: LoginSuccessResponse,
+			401: Unauthorized,
+			404: NotFound
+		},
+		security: [{ bearerAuth: [] }]
 	};
 
 	// ========================================================================
@@ -385,54 +308,54 @@ export namespace AuthSchemas {
 	// ========================================================================
 	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================
-	
+
 	/** Body de POST /auth/refresh */
 	export const RefreshTokenBody = Type.Object({
 		refreshToken: RefreshTokenField
 	});
-	
+
 	/** Response de POST /auth/refresh (nuevo par de tokens) */
 	export const RefreshTokenResponse = Type.Object({
 		token: AccessTokenField,
 		refreshToken: RefreshTokenField,
 		user: LocalUserPayloadObject
 	});
-	
+
 	/** Schema completo de POST /auth/refresh */
 	export const RefreshTokenBodySchema = {
 		tags: ['Auth'],
 		body: RefreshTokenBody,
 		response: {
 			200: RefreshTokenResponse,
-			401: UnauthorizedError
+			401: Unauthorized
 		}
 	};
 
-    // ========================================================================
-    // ACCESS TOKEN PAYLOAD SCHEMA
-    // ========================================================================
+	// ========================================================================
+	// ACCESS TOKEN PAYLOAD SCHEMA
+	// ========================================================================
 
-    /**
-     * Schema base para el payload de un JWT estándar en el sistema
-     * Contiene los campos necesarios para authorizacion e identificación de usuario
-     */
-    export const AccessTokenPayloadSchema = Type.Object({
-        id: UuidField,
-        username: UsernameField,
-        email: EmailField,
+	/**
+	 * Schema base para el payload de un JWT estándar en el sistema
+	 * Contiene los campos necesarios para authorizacion e identificación de usuario
+	 */
+	export const AccessTokenPayloadSchema = Type.Object({
+		id: UuidField,
+		username: UsernameField,
+		email: EmailField,
 		has2FAEnabled: BooleanField,
 		is2FAVerified: BooleanField,
-        iat: Type.Optional(Type.Integer()),
-        exp: Type.Optional(Type.Integer())
-    });
+		iat: Type.Optional(Type.Integer()),
+		exp: Type.Optional(Type.Integer())
+	});
 
 	export const AccessTokenPayloadUntypedSchema = Type.Object({
 		id: Type.String(),
-        username: UsernameField,
-        email: Type.String(),
+		username: UsernameField,
+		email: Type.String(),
 		has2FAEnabled: BooleanField,
 		is2FAVerified: BooleanField,
-        iat: Type.Optional(Type.Integer()),
-        exp: Type.Optional(Type.Integer())
+		iat: Type.Optional(Type.Integer()),
+		exp: Type.Optional(Type.Integer())
 	})
 }

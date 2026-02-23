@@ -1,8 +1,8 @@
 import { FastifyPluginAsync } from "fastify";
-import type { Redis } from "ioredis";
 import { HealthController } from "../controllers/health.controller.js";
+import { UserAppDependencies } from "../app.js";
 
-export const healthRoutes: FastifyPluginAsync<{ redisClient: Redis | null }> = async (app, opts) => {
+export const healthRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
 	// Crear el controller con Redis client
 	const controller = new HealthController(opts.redisClient);
 

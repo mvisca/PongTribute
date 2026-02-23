@@ -69,7 +69,7 @@ export namespace AuthEnv {
 		_config = SharedEnv.build(); // puede lanzar error hacia server.ts
 	}
 
-	// Validación internan de que se ha llamado init()
+	// Validación interna de que se ha llamado init()
 	function cnf() {
 		if (!_config) 
 			throw new Error('AuthEnv.init() no llamado');
@@ -90,7 +90,7 @@ export namespace AuthEnv {
 	export function UNIQUE_SESSION(): boolean { return cnf().UNIQUE_SESSION; }
 	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
 	export function TOKEN_EXPIRY(): number { return cnf().TOKEN_EXPIRY; }
-	export function REFRESH_TOKEN_EXPIRY(): string { return cnf().REFRESH_TOKEN_EXPIRY; }
+	export function REFRESH_TOKEN_EXPIRY(): number { return cnf().REFRESH_TOKEN_EXPIRY; }
 	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
 	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
 	
@@ -99,10 +99,7 @@ export namespace AuthEnv {
 	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
 	export function REDIS_DB(): number { return cnf().REDIS_DB; }
 	
-	export function USER_SERVICE_URL(): string {
-		console.log("ESTA ES USER SERVIE URL" + cnf().USER_SERVICE_URL);
-		return cnf().USER_SERVICE_URL;
-	} // DEBUGGING
+	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
 	export function AUTH_SERVICE_URL(): string { return cnf().AUTH_SERVICE_URL; }
 	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
 	

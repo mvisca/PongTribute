@@ -3,108 +3,116 @@ import { UserTypes } from './user.types.js';
 import type { FriendshipStatus } from '../constants/friendship.constants.js';
 import { FriendshipSchemas } from '../schemas/friendship.schema.js';
 
-// ============================================================================
-// ENTIDAD DE DOMINIO
-// ============================================================================
+export namespace FriendshipTypes {
 
-/**
-* Amistad entre dos usuarios
-* Representa la relación y su estado actual
-*/
-export interface Friendship {
-	userId: UserTypes.UserId;
-	friendId: UserTypes.UserId;
-	initiatorId: UserTypes.UserId;
-	status: FriendshipStatus;
-	createdAt: Date;
-	updatedAt: Date;
-}
+	// ============================================================================
+	// ENTIDAD DE DOMINIO
+	// ============================================================================
 
-// ============================================================================
-// DTOs - INPUT (Crear / Actualizar)
-// ============================================================================
+	/**
+	* Amistad entre dos usuarios
+	* Representa la relación y su estado actual
+	*/
+	export interface Friendship {
+		userId: UserTypes.UserId;
+		friendId: UserTypes.UserId;
+		initiatorId: UserTypes.UserId;
+		status: FriendshipStatus;
+		createdAt: Date;
+		updatedAt: Date;
+	}
 
-/**
-* DTO IN - Crear amistad
-* Enviada por el backend al crear relación
-*/
-export interface CreateFriendshipData {
-	initiatorId: UserTypes.UserId;
-	friendId: UserTypes.UserId;
-	status: FriendshipStatus; // default 'pending'
-}
+	// ============================================================================
+	// DTOs - INPUT (Crear / Actualizar)
+	// ============================================================================
 
-/**
- * Body HTTP para crear una amistad (entrada API)
- */
-export type CreateFriendshipBody = Static<typeof FriendshipSchemas.CreateFriendshipBody>;
+	/**
+	* DTO IN - Crear amistad
+	* Enviada por el backend al crear relación
+	*/
+	export interface CreateFriendshipData {
+		initiatorId: UserTypes.UserId;
+		friendId: UserTypes.UserId;
+		status: FriendshipStatus; // default 'pending'
+	}
 
-/**
- * Query opcional para listar amistades (filtra por status)
- */
-export type ListFriendshipsQuery = Static<typeof FriendshipSchemas.ListFriendshipsQuery>;
+	/**
+	 * Body HTTP para crear una amistad (entrada API)
+	 */
+	export type CreateFriendshipBody = Static<typeof FriendshipSchemas.CreateFriendshipBody>;
 
-/**
- * Respuesta HTTP para listar amistades del usuario autenticado
- */
-export type ListFriendshipsResponse = Static<typeof FriendshipSchemas.ListFriendshipsSchema.response[200]>;
+	/**
+	 * Query opcional para listar amistades (filtra por status)
+	 */
+	export type ListFriendshipsQuery = Static<typeof FriendshipSchemas.ListFriendshipsQuery>;
 
-/**
- * Params HTTP para actualizar (aceptar/rechazar) una amistad pendiente
- */
-export type UpdateFriendshipParams = Static<typeof FriendshipSchemas.UpdateFriendshipParams>;
+	/**
+	 * Respuesta HTTP para listar amistades del usuario autenticado
+	 */
+	export type ListFriendshipsResponse = Static<typeof FriendshipSchemas.ListFriendshipsSchema.response[200]>;
 
-/**
- * Body HTTP para actualizar (aceptar/rechazar) una amistad pendiente
- */
-export type UpdateFriendshipBody = Static<typeof FriendshipSchemas.UpdateFriendshipBody>;
+	/**
+	 * Params HTTP para actualizar (aceptar/rechazar) una amistad pendiente
+	 */
+	export type UpdateFriendshipParams = Static<typeof FriendshipSchemas.UpdateFriendshipParams>;
 
-/**
- * Alias de compatibilidad mientras migran las capas superiores
- */
-export type AcceptFriendshipParams = UpdateFriendshipParams;
-export type AcceptFriendshipBody = UpdateFriendshipBody;
+	/**
+	 * Params HTTP para identificar amistad a eliminar (param + id de user en JWT)
+	 */
+	export type DeleteFriendshipParams = Static<typeof FriendshipSchemas.DeleteFriendshipParams>;
 
-/**
- * Status permitidos al decidir una solicitud pendiente (aceptada o rechazada)
- */
-export type FriendshipDecisionStatus = Extract<FriendshipStatus, 'accepted' | 'rejected'>;
+	/**
+	 * Body HTTP para actualizar (aceptar/rechazar) una amistad pendiente
+	 */
+	export type UpdateFriendshipBody = Static<typeof FriendshipSchemas.UpdateFriendshipBody>;
 
-/**
-* DTO IN - Actualizar amistad
-* Solo puede cambiar status y updatedAt
-*/
-export interface UpdateFriendshipData {
-	userId: UserTypes.UserId;
-	friendId: UserTypes.UserId;
-	status: FriendshipDecisionStatus;
-	updatedAt: Date;
-}
+	/**
+	 * Alias de compatibilidad mientras migran las capas superiores
+	 */
+	export type AcceptFriendshipParams = UpdateFriendshipParams;
+	export type AcceptFriendshipBody = UpdateFriendshipBody;
 
-// ============================================================================
-// REPRESENTACIÓN SQL (Snake_case)
-// ============================================================================
+	/**
+	 * Status permitidos al decidir una solicitud pendiente (aceptada o rechazada)
+	 */
+	export type FriendshipDecisionStatus = Extract<FriendshipStatus, 'accepted' | 'rejected'>;
 
-/**
-* Row exacta de tabla 'friendships'
-* Expresa keys snake_case con los tipos de la tabla
-*/
-export interface FriendshipRow {
-	user_id: UserTypes.UserId;      // UserId (UUID)
-	friend_id: UserTypes.UserId;    // UserId (UUID)
-	initiator_id: UserTypes.UserId; // UserId (UUID)
-	status: FriendshipStatus;       // FriendshipStatus
-	created_at: number;   // Unix timestamp
-	updated_at: number;   // Unix timestamp
-}
+	/**
+	* DTO IN - Actualizar amistad
+	* Solo puede cambiar status y updatedAt
+	*/
+	export interface UpdateFriendshipData {
+		userId: UserTypes.UserId;
+		friendId: UserTypes.UserId;
+		status: FriendshipDecisionStatus;
+		updatedAt: Date;
+	}
 
-/**
-* Row limitada para update parcial
-* Solo status y updated_at
-*/
-export interface UpdateFriendshipRow {
-	user_id: UserTypes.UserId;      // UserId (UUID)
-	friend_id: UserTypes.UserId;    // UserId (UUID)
-	status: FriendshipDecisionStatus;       // FriendshipStatus
-	updated_at: number;   // Unix timestamp
+	// ============================================================================
+	// REPRESENTACIÓN SQL (Snake_case)
+	// ============================================================================
+
+	/**
+	* Row exacta de tabla 'friendships'
+	* Expresa keys snake_case con los tipos de la tabla
+	*/
+	export interface FriendshipRow {
+		user_id: UserTypes.UserId;      // UserId (UUID)
+		friend_id: UserTypes.UserId;    // UserId (UUID)
+		initiator_id: UserTypes.UserId; // UserId (UUID)
+		status: FriendshipStatus;       // FriendshipStatus
+		created_at: number;   // Unix timestamp
+		updated_at: number;   // Unix timestamp
+	}
+
+	/**
+	* Row limitada para update parcial
+	* Solo status y updated_at
+	*/
+	export interface UpdateFriendshipRow {
+		user_id: UserTypes.UserId;      // UserId (UUID)
+		friend_id: UserTypes.UserId;    // UserId (UUID)
+		status: FriendshipDecisionStatus;       // FriendshipStatus
+		updated_at: number;   // Unix timestamp
+	}
 }

@@ -1,17 +1,34 @@
 //Este archivo es el que comunica directamente con la BD
 
-import { MatchTypes, SharedErrors } from '@transcendence/shared';
+import { MatchTypes, SharedErrors, MatchConstants } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
+import { MatchMapper } from '../mappers/MatchMapper.js';
+
 
 /**
  * MatchRepository
  * Capa de Persistencia (Data Access Layer).
  * Responsabilidad única: Traducir objetos de dominio a SQL y viceversa.
  * Patrón de errores: Bubble Up (los errores de DB suben limpios al Controller).
+ * * Abstracción de acceso a datos para las partidas.
+ * * NOTA DE ARQUITECTURA:
+ * Aunque 'better-sqlite3' es síncrono por naturaleza, todos los métodos de este
+ * repositorio se definen como 'async' (Devuelven Promise) intencionalmente.
+ * * MOTIVACIÓN:
+ * 1. Mantiene la consistencia con la interfaz de BD asíncrona estándar en Node.js.
+ * 2. Permite una migración futura a PostgreSQL/TypeORM/Prisma sin refactorizar
+ * la capa de Servicios (GameService), que ya espera Promesas ("await").
+ * * @see GameService
  */
 export class MatchRepository {
     // Instancia de better-sqlite3 lista para usar
-    private db = getDatabase();
+	// private db = getDatabase();
+    private db: ReturnType<typeof getDatabase>;
+    
+    constructor(db: ReturnType<typeof getDatabase>) {
+        this.db = db;
+    }
+
 
     // ========================================================================
     // ESCRITURA (COMMANDS)
@@ -29,13 +46,17 @@ export class MatchRepository {
         // SQL Directo. Sin try-catch. Si falla (Unique constraint, etc), explota hacia arriba.
         const stmt = this.db.prepare(`
             INSERT INTO matches (
-                id, status, player1_id, player1_username, player1_score, 
-				player2_id, player2_username, player2_score, winner_id, 
-				created_at, finished_at, game_mode, target_score
+                id, status, 
+				player1_id, player1_username, player1_avatar, player1_score, 
+				player2_id, player2_username, player2_avatar, player2_score,
+				winner_id, game_mode, target_score,
+				created_at, finished_at
             ) VALUES (
-                @id, @status, @player1_id, @player1_username, @player1_score,
-				 @player2_id, @player2_username, @player2_score, @winner_id, 
-				 @created_at, @finished_at, @game_mode, @target_score
+                @id, @status,
+				@player1_id, @player1_username, @player1_avatar, @player1_score,
+				@player2_id, @player2_username, @player2_avatar, @player2_score,
+				@winner_id, @game_mode, @target_score,
+				@created_at, @finished_at
             )
         `);
         
@@ -68,40 +89,92 @@ export class MatchRepository {
 	/**
 	 * Actualiza a 'expired' una partida privada 'pending' que no se aprobó ni rechazó..
 	 * La llama un cron si alcanza el timeout de 60 seg
-	 * @param thresholdTimestamp
 	 */
-	async expirePendingMatches(thresholdTimestamp: number): Promise<void> {
-		const stmt = this.db.prepare(`
-        	UPDATE matches
-			SET status = 'expired'
-			WHERE status = 'pending'
-			AND created_at < ?
-		`);
-		// Ejecutamos pasando el valor para sustituir el '?'
-		const info = stmt.run(thresholdTimestamp);
+	async expirePendingMatches(): Promise<
+		Array<{
+			matchId: string;
+			player1Id: string;
+			player2Id: string
+		}>
+	> {
+		const thresholdTimestamp = Date.now() - MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS;
 
-		// Opcional: Loguea cuántas filas se afectaron para control
-		if (info.changes > 0) {
-			console.log(`[MatchRepo] Han expirado ${info.changes} invitaciones privadas.`);
+		const affected = this.db.prepare(`
+        	SELECT id, player1_id, player2_id
+			FROM matches
+			WHERE status = ?
+			AND created_at < ?
+		`).all(
+			MatchConstants.MATCH_STATUS.PENDING,
+			thresholdTimestamp
+		) as Array<{ id: string; player1_id: string; player2_id: string }>;
+
+		if (affected.length === 0) {
+			return [];
 		}
+
+		// Expirar caducados
+		this.db.prepare(`
+			UPDATE matches
+			SET status = ?
+			WHERE status = ?
+			AND created_at < ?
+		`).run(
+			MatchConstants.MATCH_STATUS.EXPIRED,
+			MatchConstants.MATCH_STATUS.PENDING,
+			thresholdTimestamp
+		);
+
+		if (affected.length > 0) {
+			console.log(`[MATCH-REPO] Expired ${affected.length} private invitations.`);
+		}
+
+		return affected.map(row => ({
+			matchId: row.id,
+			player1Id: row.player1_id,
+			player2Id: row.player2_id
+		}));
     }
 
 	/**
      * updateUsernames
      * Actualiza los nombres desnormalizados cuando un usuario cambia su profile.
      */
-    async updateUsernames(userId: string, newUsername: string): Promise<void> {
+    async updateUser(userId: string, newUsername: string, newAvatar: string): Promise<void> {
         // 1. Preparar las sentencias
         const updateP1 = this.db.prepare(`
-            UPDATE matches SET player1_username = ? WHERE player1_id = ?
+            UPDATE matches 
+			SET player1_username = ?, player1_avatar = ?
+			WHERE player1_id = ?
         `);
         const updateP2 = this.db.prepare(`
-            UPDATE matches SET player2_username = ? WHERE player2_id = ?
+            UPDATE matches
+			SET player2_username = ?, player2_avatar = ?
+			WHERE player2_id = ?
         `);
 
         // 2. Ejecutar (Better-sqlite3 usa .run() para UPDATES)
-        updateP1.run(newUsername, userId);
-        updateP2.run(newUsername, userId);
+        updateP1.run(newUsername, newAvatar, userId);
+        updateP2.run(newUsername, newAvatar, userId);
+	}
+	
+	/**
+     * resetZombieMatches
+     * Se llama SOLO al inicio del servidor.
+     * Marca como 'expired' todas las partidas que quedaron 'active' 
+     * tras un reinicio inesperado.
+     */
+    async resetZombieMatches(): Promise<number> {
+        const stmt = this.db.prepare(
+            `UPDATE matches 
+             SET status = ?, 
+                 finished_at = ? 
+             WHERE status = ?`
+        );
+		const result = stmt.run('expired', Date.now(), 'active');
+		
+        // Retorna cuantas filas afectó
+        return result.changes; 
     }
 
 	/**
@@ -111,7 +184,7 @@ export class MatchRepository {
     async finishMatch(id: string, winnerId: string, p1Score: number, p2Score: number, finishedAt: number): Promise<void> {
         const stmt = this.db.prepare(`
             UPDATE matches
-            SET status = 'finished', 
+            SET status = ?, 
                 winner_id = ?, 
                 player1_score = ?, 
                 player2_score = ?, 
@@ -119,7 +192,7 @@ export class MatchRepository {
             WHERE id = ?
         `);
 
-        const result = stmt.run(winnerId, p1Score, p2Score, finishedAt, id);
+        const result = stmt.run(MatchConstants.MATCH_STATUS.FINISHED, winnerId, p1Score, p2Score, finishedAt, id);
 
         if (result.changes === 0) {
             throw new SharedErrors.NotFoundError(`Match with ID ${id} not found to finish.`);
@@ -138,9 +211,9 @@ export class MatchRepository {
         const result = stmt.run(matchId);
         
         if (result.changes > 0) {
-			console.log(`🗑️ [Repository] Partida ${matchId} eliminada correctamente.`);
+			console.log(`[MATCH-REPO] Match ${matchId} deleted successfully.`);
         } else {
-			console.warn(`⚠️ [Repository] Se intentó borrar partida ${matchId} pero no existía.`);
+			console.warn(`[MATCH-REPO] Attempted to delete match ${matchId} but it did not exist.`);
         }
     }
 		
@@ -155,18 +228,23 @@ export class MatchRepository {
 	 * Busca invitaciones privadas creadas por este usuario (Host/Player1)
 	 * que todavía están esperando respuesta (pending).
 	 */
-	async findPendingHostedByUser(userId: string): Promise<MatchTypes.MatchRow[]> {
+	async findPendingHostedByUser(userId: string): Promise<MatchTypes.Match[]> {
 		// Asumimos que quien invita siempre es guardado como player1_id
 		const stmt = this.db.prepare(`
 			SELECT * FROM matches
 			WHERE player1_id = ?
-			AND status = 'pending'
+			AND status = ?
 		`);
 
 		// Usamos .all() porque devuelve un array de objetos. 
 		// Si usara get(), solo devolvería la 1ª coincidencia.
-		// con el as le digo que lo que sale de aqui cumple con la interfaz MatchRow
-		return stmt.all(userId) as MatchTypes.MatchRow[];
+		// con el as le digo que lo que sale de aqui cumple con la interfaz Match
+		const rows = stmt.all(
+			userId,
+			MatchConstants.MATCH_STATUS.PENDING
+		) as MatchTypes.MatchRow[];
+
+		return rows.map(row => MatchMapper.toDomain(row));
 	}
 
 
@@ -174,45 +252,58 @@ export class MatchRepository {
      * findActiveMatchByUserId
      * Busca si el usuario ya está jugando o esperando.
      */
-    async findActiveMatchByUserId(userId: string): Promise<MatchTypes.MatchRow | null> {
+    async findActiveMatchByUserId(userId: string): Promise<MatchTypes.Match | null> {
         const stmt = this.db.prepare(`
             SELECT * FROM matches
             WHERE (player1_id = ? OR player2_id = ?)
-            AND status IN ('active', 'pending')
+            AND status IN (?, ?)
             LIMIT 1
         `);
         
-        const row = stmt.get(userId, userId);
-        return row ? (row as MatchTypes.MatchRow) : null;
+        const row = stmt.get(
+			userId,
+			userId,
+			MatchConstants.MATCH_STATUS.ACTIVE,
+			MatchConstants.MATCH_STATUS.PENDING
+		) as MatchTypes.MatchRow;
+        return row ? MatchMapper.toDomain(row) : null;
     }
 
     /**
      * findById
      * Búsqueda por PK.
      */
-    async findById(id: string): Promise<MatchTypes.MatchRow | null> {
+    async findById(id: string): Promise<MatchTypes.Match | null> {
         const stmt = this.db.prepare('SELECT * FROM matches WHERE id = ?');
-        const row = stmt.get(id);
-        return row ? (row as MatchTypes.MatchRow) : null;
+        const row = stmt.get(id) as MatchTypes.MatchRow;
+        return row ? MatchMapper.toDomain(row) : null;
 	}
 	
 	/**
      * findByUserId
      * Busca partidas terminadas donde user sea el Player1 o el Player2.
-     * RETORNO: un Array de objetos (MatchRow[]).
+     * RETORNO: un Array de objetos (Match[]).
      */
-    // El retorno es MatchRow[], nunca null (si no hay, es array vacío)
-    async findByUserId(userId: string, limit: number, offset: number): Promise<MatchTypes.MatchRow[]> {
+    // El retorno es Match[], nunca null (si no hay, es array vacío)
+    async findByUserId(userId: string, limit: number, offset: number): Promise<MatchTypes.Match[]> {
         const stmt = this.db.prepare(`
             SELECT * FROM matches
             WHERE (player1_id = ? OR player2_id = ?)
-            AND status = 'finished'
+            AND status = ?
             ORDER BY finished_at DESC
             LIMIT ? OFFSET ?
         `);
         
         // Usa .all() para devolver lista.
-        return stmt.all(userId, userId, limit, offset) as MatchTypes.MatchRow[];
+		const rows = stmt.all(
+			userId,
+			userId,
+			MatchConstants.MATCH_STATUS.FINISHED,
+			limit,
+			offset
+		) as MatchTypes.MatchRow[];
+
+		return rows.map(row => MatchMapper.toDomain(row));
     }
 }
 	

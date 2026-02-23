@@ -2,12 +2,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-// DUDA es consistente el manejo de variables de entorno / build()?
-
 // ==================================================
 // CARGAR .ENV DESDE RAÍZ
 // ==================================================
 
+// Busca el archivo .env subiendo directorios desde la ruta inicial hasta la raíz.
 export function findEnvFile(startPath: string): string | null {
 	// startPath should be provided by the caller (e.g. service's __dirname)
 	// We still provide a fallback to the current module dirname if needed
@@ -34,7 +33,7 @@ interface EnvVars {
 	AUTH_SERVICE_HOST: string;
 	JWT_SECRET: string;
 	TOKEN_EXPIRY: number;
-	REFRESH_TOKEN_EXPIRY: string;
+	REFRESH_TOKEN_EXPIRY: number;
 	BCRYPT_ROUNDS: number;
 	UNIQUE_SESSION: boolean;
 
@@ -46,25 +45,26 @@ interface EnvVars {
 	CLOUDINARY_API_KEY: string,
 	CLOUDINARY_API_SECRET: string,
 	CLOUDINARY_DEFAULT_AVATAR: string;
-	
+
 	GAME_SERVICE_URL: string;
 	GAME_SERVICE_PORT: number;
 	GAME_SERVICE_HOST: string;
 	GAME_SERVICE_DB_PATH: string;
 	GAME_SERVICE_DB_FILENAME: string;
 	GAME_SERVICE_DB_FULL_PATH: string;
-	
+
 	USER_SERVICE_URL: string;
 	USER_SERVICE_PORT: number;
 	USER_SERVICE_HOST: string;
 	USER_SERVICE_DB_PATH: string;
 	USER_SERVICE_DB_FILENAME: string;
 	USER_SERVICE_DB_FULL_PATH: string;
-	
+
 	FRONTEND_URL: string;
 	FRONTEND_PORT: number;
 	FRONTEND_HOST: string;
 
+<<<<<<< reset-password
 	// AUTH EMAIL (dev SMTP)
 	SMTP_HOST: string;
 	SMTP_PORT: number;
@@ -76,9 +76,11 @@ interface EnvVars {
 	RESET_URL_BASE: string;
 	RESET_TTL_SECONDS: number;
 	
+=======
+>>>>>>> main
 	NODE_ENV: string;
 	LOG_LEVEL: string;
-	
+
 	SERVICE_SECRET: string;
 	REDIS_HOST: string;
 	REDIS_PORT: number;
@@ -86,13 +88,18 @@ interface EnvVars {
 	REDIS_DB: number;
 };
 
-const DEFAULTS: EnvVars = {
+type DefaultVars = Omit<EnvVars, 'JWT_SECRET' | 'SERVICE_SECRET'> & {
+	JWT_SECRET: undefined;
+	SERVICE_SECRET: undefined;
+};
+
+const DEFAULTS: DefaultVars = {
 	AUTH_SERVICE_URL: 'http://localhost:3002',
 	AUTH_SERVICE_PORT: 3002,
 	AUTH_SERVICE_HOST: 'localhost',
-	JWT_SECRET: 'default_super_secret_key_CHANGE_THIS',
+	JWT_SECRET: undefined,
 	TOKEN_EXPIRY: 3600,
-	REFRESH_TOKEN_EXPIRY: '365d',
+	REFRESH_TOKEN_EXPIRY: 84600,
 	BCRYPT_ROUNDS: 10,
 	UNIQUE_SESSION: true,
 
@@ -104,58 +111,74 @@ const DEFAULTS: EnvVars = {
 	CLOUDINARY_CLOUD_NAME: 'Cloudinary_cloud_name',
 	CLOUDINARY_API_KEY: 'Cloudinary_api_key',
 	CLOUDINARY_API_SECRET: 'Cloudinary_api_secret',
-	
+
 	GAME_SERVICE_URL: 'http://localhost:3003',
 	GAME_SERVICE_PORT: 3003,
 	GAME_SERVICE_HOST: 'localhost',
 	GAME_SERVICE_DB_FILENAME: 'game.db',
 	GAME_SERVICE_DB_PATH: './packages/game',  //CAMBIO: lo pongo dentro del microservicio
 	GAME_SERVICE_DB_FULL_PATH: './packages/game/db-data/game.db',
-	
+
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
 	USER_SERVICE_HOST: 'localhost',
 	USER_SERVICE_DB_FILENAME: 'user.db',
 	USER_SERVICE_DB_PATH: '.', //CAMBIO: antes era './db-data' OJO DEBERIA VERIFICARSE
 	USER_SERVICE_DB_FULL_PATH: './db-data/user.db',
-	
+
 	FRONTEND_URL: 'http://localhost:5173',
 	FRONTEND_PORT: 5173,
 	FRONTEND_HOST: 'localhost',
 
+<<<<<<< reset-password
 	SMTP_HOST: 'mailhog',
 	SMTP_PORT: 1025,
 	SMTP_FROM: 'no-reply@transcendence.local',
 	RESET_URL_BASE: 'http://localhost:5173/reset-password',
 	RESET_TTL_SECONDS: 900,
 	
+=======
+>>>>>>> main
 	NODE_ENV: 'test',
 	LOG_LEVEL: 'info',
-	
-	SERVICE_SECRET: 'default_shared_secret_CHANGE_THIS',
+
+	SERVICE_SECRET: undefined,
 	REDIS_HOST: 'localhost',
 	REDIS_PORT: 6379,
 	REDIS_PASSWORD: 'create_a_supersafe_redis_password',
-	REDIS_DB: 0,	
+	REDIS_DB: 0,
 } as const;
 
-export type EnviromentVars = typeof DEFAULTS;
+export type EnvironmentVars = typeof DEFAULTS;
 
 // ==================================================
 // BUILDER
 // ==================================================
 
 export namespace SharedEnv {
-	
+
 	// DUDA Los llamados a build() están todos en try catch adecuados?
 
-	// Build configuration object from process.env (no side-effects)
+	// Construye y retorna el objeto de configuración leyendo variables de entorno.
 	export function build() {
 		const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 		const isTest = process.env.NODE_ENV === 'test';
 		const isProduction = process.env.NODE_ENV === 'production';
-		
-		// Helper: usar default solo en development
+
+		// Retorna el valor de la variable de entorno parseado, o el default en desarrollo; falla en producción si no está definida.
+		// Requiere un secret obligatorio sin fallback en ningún entorno.
+		function requireSecret(envValue: string | undefined, varName: string): string {
+			if (envValue !== undefined && envValue.trim() !== '') {
+				return envValue;
+			}
+			console.error('\n[CONFIG] FATAL: SECRET NOT DEFINED\n');
+			console.error(`[CONFIG] Variable: ${varName}`);
+			console.error(`[CONFIG] This secret is REQUIRED in ALL environments (development, test, production).`);
+			console.error(`[CONFIG] Fix: define ${varName} in your .env file or environment variables.`);
+			console.error(`[CONFIG] Hint: cp .env.example .env  — then fill in real values.\n`);
+			process.exit(1);
+		}
+
 		function envOr<T>(
 			envValue: string | undefined,
 			defaultValue: T,
@@ -166,39 +189,40 @@ export namespace SharedEnv {
 				if (typeof defaultValue === 'number') {
 					const n = Number(envValue);
 					if (isNaN(n)) {
-						console.error('\nERROR DE CONFIGURACIÓN\n');
-						console.error(`Variable: ${varName || 'desconocida'}`);
-						console.error(`Valor recibido: "${envValue}"`);
-						console.error(`Tipo esperado: number`);
-						console.error(`\nCTRL+C para terminar\n`);
-						
+						console.error('\n[CONFIG] CONFIGURATION ERROR\n');
+						console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
+						console.error(`[CONFIG] Value received: "${envValue}"`);
+						console.error('[CONFIG] Expected type: number');
+						console.error('\n[CONFIG] Press CTRL+C to exit\n');
+
 						process.exit(1);
 					}
 					return n as T;
 				}
 				if (typeof defaultValue === 'boolean') {
-					if (envValue === 'true') 
+					if (envValue === 'true')
 						return true as T;
 					if (envValue === 'false')
 						return false as T;
-					
-					console.error('\nERROR DE CONFIGURACIÓN\n');
-					console.error(`Variable: ${varName || 'desconocida'}`);
-					console.error(`Valor recibido: "${envValue}"`);
-					console.error(`Tipo esperado: boolean`);
-					console.error(`\nValores válidos: true, false\n`);
-					console.error(`\nCTRL+C para terminar\n`);
-					
+
+					console.error('\n[CONFIG] CONFIGURATION ERROR\n');
+					console.error(`[CONFIG] Variable: ${varName || 'unknown'}`);
+					console.error(`[CONFIG] Value received: "${envValue}"`);
+					console.error('[CONFIG] Expected type: boolean');
+					console.error('\n[CONFIG] Valid values: true, false\n');
+					console.error('\n[CONFIG] Press CTRL+C to exit\n');
+
 					process.exit(1);
 				}
 				return envValue as T; // String
 			}
 			if (isDevelopment)
 				return defaultValue;
-			console.error(`${varName}: Variable de entorno requerida no encontrada`);
+			console.error(`[CONFIG] ${varName}: required environment variable not found`);
 			process.exit(1);
 		};
 
+<<<<<<< reset-password
 		function envMaybeString(envValue: string | undefined): string | undefined {
 			if (envValue === undefined) return undefined;
 			const trimmed = envValue.trim();
@@ -218,6 +242,24 @@ export namespace SharedEnv {
 			process.exit(1);
 		}
 		
+=======
+		// Lanza error si el valor numérico está fuera del rango [min, max].
+		function validateRange(
+			value: number,
+			min: number,
+			max: number,
+			varName: string
+		): number {
+			if (value < min || value > max) {
+				throw new Error(
+					`${varName} debe estar entre ${min} y ${max}`
+				);
+			}
+			return value;
+		}
+
+		// Lanza error si el puerto no es un número válido en el rango 1024-65535.
+>>>>>>> main
 		function validatePort(port: number | undefined, context: string): void {
 			if (!port || isNaN(port) || port < 1024 || port > 65535) {
 				throw new Error(
@@ -226,6 +268,7 @@ export namespace SharedEnv {
 			}
 		}
 
+<<<<<<< reset-password
 		/**
 		 * Validación de puerto para conexiones salientes (cliente).
 		 * A diferencia de validatePort(), aquí se permiten puertos <1024 (ej: SMTP 587/465),
@@ -239,6 +282,9 @@ export namespace SharedEnv {
 			}
 		}
 		
+=======
+		// Lanza error si NODE_ENV no es uno de los valores permitidos: development, production, test.
+>>>>>>> main
 		function validateNodeEnv(env: string | undefined): void {
 			const validEnvs = ['development', 'production', 'test'];
 			if (!env || !validEnvs.includes(env)) {
@@ -247,52 +293,61 @@ export namespace SharedEnv {
 				);
 			}
 		}
-		
+
+		// Lanza error si el valor es undefined, null o string vacío.
 		function validateRequired<T>(value: T | undefined, name: string): void {
 			if (value === undefined || value === null)
 				throw new Error(`Variable requerida faltante: ${name}`);
-			
+
 			if (typeof value === 'string' && value.trim() === '')
 				throw new Error(`Variable ${name} no puede estar vacía`);
 		}
-		
-		function validateSecrets(secrets: Record<string, string | undefined>, isProduction: boolean): void {
+
+		// Verifica que los secrets estén definidos y, en producción, que no usen valores por defecto.
+		// Valida secrets en TODOS los entornos (defense-in-depth).
+		function validateSecrets(secrets: Record<string, string | undefined>): void {
 			const missing: string[] = [];
-			
+
+			const KNOWN_INSECURE_DEFAULTS = [
+				'default_super_secret_key_CHANGE_THIS',
+				'default_shared_secret_CHANGE_THIS',
+			];
+
 			Object.entries(secrets).forEach(([key, value]) => {
 				if (!value) {
 					missing.push(`${key} no está definido`);
 					return;
 				}
-				
-				if (isProduction) {
-					const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
-					if (value === defaultValue) {
-						missing.push(`${key} usa valor default (INSEGURO en producción)`);
-					}
+
+				// Comprobar contra defaults inseguros conocidos en CUALQUIER entorno
+				const defaultValue = DEFAULTS[key as keyof typeof DEFAULTS];
+				if (value === defaultValue || KNOWN_INSECURE_DEFAULTS.includes(value)) {
+					missing.push(`${key} usa valor default inseguro — CAMBIAR antes de ejecutar`);
 				}
 			});
-			
+
 			if (missing.length > 0) {
-				console.error('ERRORES DE CONFIGURACIÓN:');
-				missing.forEach(issue => console.error(`   - ${issue}`));
-				console.error('\nSolución: cp .env.example .env');
+				console.error('[CONFIG] CONFIGURATION ERRORS:');
+				missing.forEach(issue => console.error(`[CONFIG]    - ${issue}`));
+				console.error('\n[CONFIG] Fix: cp .env.example .env');
 				process.exit(1);
 			}
 		}
-		
+
+		// Retorna el directorio base del proyecto según el entorno (desarrollo/test vs producción).
 		function getBaseDir(): string {
 			if (isDevelopment || isTest) {
-				console.log('DEVELOPMENT envirnoment: cargando...');
+				console.log('[CONFIG] DEVELOPMENT environment: loading...');
 				const __filename = fileURLToPath(import.meta.url);
 				const __dirname = path.dirname(__filename);
-				
+
 				return path.resolve(__dirname, '../../../../');
 			}
-			console.log('PRODUCTION environment: cargando...');
+			console.log('[CONFIG] PRODUCTION environment: loading...');
 			return '/app'; // path fijo para contenedor
 		};
-		
+
+		// Resuelve y valida que el directorio de base de datos esté dentro de BASE_DIR.
 		function safeDbDir(envPath: string, baseDir: string) {
 			const resolved = path.resolve(baseDir, envPath);
 			const normalized = path.normalize(resolved);
@@ -301,7 +356,8 @@ export namespace SharedEnv {
 			}
 			return normalized;
 		}
-		
+
+		// Valida que el nombre de archivo de base de datos no contenga rutas relativas o prefijos peligrosos.
 		function safeDbFilename(name: string) {
 			const base = path.basename(name);
 			if (base !== name || base.startsWith('.') || base.includes('..')) {
@@ -309,51 +365,63 @@ export namespace SharedEnv {
 			}
 			return base;
 		}
-		
+
+		// Combina directorio y nombre de archivo validados para obtener la ruta completa segura de la BD.
 		function safeFullPath(filename: string, dir: string, baseDir: string) {
 			const safeDir = safeDbDir(dir, baseDir);
 			const safeFile = safeDbFilename(filename);
 			return path.join(safeDir, safeFile);
 		}
-		
-		// Parser de CLOUDINARY_URL: cloudinary://KEY:SECRET@CLOUD
-		function parseCloudinaryUrl(CLOUDINARY_URL: string, CLOUDINARY_API_KEY: string, CLOUDINARY_API_SECRET: string, CLOUDINARY_CLOUD_NAME: string): { 
-			cloudName: string; 
-			apiKey: string; 
-			apiSecret: string; 
+
+		// Verifica formato y coherencia entre CLOUDINARY_URL vs. las credenciales individuales, devuelve los valores parseados.
+		function parseCloudinaryUrl(
+			CLOUDINARY_URL: string,
+			CLOUDINARY_API_KEY: string,
+			CLOUDINARY_API_SECRET: string,
+			CLOUDINARY_CLOUD_NAME: string
+		): {
+			cloudName: string;
+			apiKey: string;
+			apiSecret: string;
 		} {
-/*			const regex = /^cloudinary:\/\/([a-zA-Z0-9_]+):([a-zA-Z0-9_]+)@([a-zA-Z0-9_-]+)$/;
-			const match = url.match(regex);			
-			if (!match) {
-				throw new Error(
-					`CLOUDINARY_URL mal formada. Esperado: cloudinary://KEY:SECRET@CLOUD_NAME\n` +
-					`Recibido: ${url}`
-				);
-			}
-			*/ // DUDA evaluar estrategia de validacion de url de cloudinary
+			// Valida formato
+			const regex = /^cloudinary:\/\/([\w-]+):([\w-]+)@([\w-]+)$/;
+			const match = CLOUDINARY_URL.match(regex);
+
+			// Verifica coherencia de datos
 			const confirmUrl = `cloudinary://${CLOUDINARY_API_KEY}:${CLOUDINARY_API_SECRET}@${CLOUDINARY_CLOUD_NAME}`;
-			if (confirmUrl !== CLOUDINARY_URL)
-				throw new Error(
-					`CLOUDINARY_URL mal formada.` //\nFormado: ${confirmUrl}\nRecibido: ${CLOUDINARY_URL}`
-				);
+
+			if (!match || confirmUrl !== CLOUDINARY_URL)
+				throw new Error(`CLOUDINARY_URL mal formada.`);
+
 			return {
-				apiKey: CLOUDINARY_API_KEY,
-				apiSecret: CLOUDINARY_API_SECRET,
-				cloudName: CLOUDINARY_URL
+				apiKey: match[1],
+				apiSecret: match[2],
+				cloudName: match[3]
 			};
 		}
-		
+
 		const config: EnvVars = {
 			// AUTH SERVICE
 			AUTH_SERVICE_URL: envOr(process.env.AUTH_SERVICE_URL, DEFAULTS.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL'),
 			AUTH_SERVICE_PORT: envOr(process.env.AUTH_SERVICE_PORT, DEFAULTS.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT'),
 			AUTH_SERVICE_HOST: envOr(process.env.AUTH_SERVICE_HOST, DEFAULTS.AUTH_SERVICE_HOST, 'AUTH_SERVICE_HOST'),
-			JWT_SECRET: envOr(process.env.JWT_SECRET, DEFAULTS.JWT_SECRET, 'JWT_SECRET'),
-			TOKEN_EXPIRY: envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
-			REFRESH_TOKEN_EXPIRY: envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
+			JWT_SECRET: requireSecret(process.env.JWT_SECRET, 'JWT_SECRET'),
+			TOKEN_EXPIRY: validateRange(
+				envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
+				300, // 5 minutos
+				86400, // 24 horas
+				'TOKEN_EXPIRY'
+			),
+			REFRESH_TOKEN_EXPIRY: validateRange(
+				envOr(process.env.REFRESH_TOKEN_EXPIRY, DEFAULTS.REFRESH_TOKEN_EXPIRY, 'REFRESH_TOKEN_EXPIRY'),
+				300, // 5 min
+				31536000, // 365 días
+				'REFRESH_TOKEN_EXPIRY'
+			),
 			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, 'BCRYPT_ROUNDS'),
 			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION, 'UNIQUE_SESSION'),
-			
+
 			// IMAGE SERVICE
 			IMAGE_SERVICE_HOST: envOr(process.env.IMAGE_SERVICE_HOST, DEFAULTS.IMAGE_SERVICE_HOST, 'IMAGE_SERVICE_HOST'),
 			IMAGE_SERVICE_PORT: envOr(process.env.IMAGE_SERVICE_PORT, DEFAULTS.IMAGE_SERVICE_PORT, 'IMAGE_SERVICE_PORT'),
@@ -376,25 +444,24 @@ export namespace SharedEnv {
 				getBaseDir()
 			),
 
-
-
 			// USER SERVICE
 			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL, 'USER_SERVICE_URL'),
 			USER_SERVICE_PORT: envOr(process.env.USER_SERVICE_PORT, DEFAULTS.USER_SERVICE_PORT, 'USER_SERVICE_PORT'),
 			USER_SERVICE_HOST: envOr(process.env.USER_SERVICE_HOST, DEFAULTS.USER_SERVICE_HOST, 'USER_SERVICE_HOST'),
 			USER_SERVICE_DB_FILENAME: envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME'),
-			USER_SERVICE_DB_PATH: envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_FILENAME'),
+			USER_SERVICE_DB_PATH: envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH'),
 			USER_SERVICE_DB_FULL_PATH: safeFullPath(
 				envOr(process.env.USER_SERVICE_DB_FILENAME, DEFAULTS.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME'),
 				envOr(process.env.USER_SERVICE_DB_PATH, DEFAULTS.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH'),
 				getBaseDir()
 			),
-			
+
 			// FRONTEND
 			FRONTEND_URL: envOr(process.env.FRONTEND_URL, DEFAULTS.FRONTEND_URL, 'FRONTEND_URL'),
 			FRONTEND_PORT: envOr(process.env.FRONTEND_PORT, DEFAULTS.FRONTEND_PORT, 'FRONTEND_PORT'),
 			FRONTEND_HOST: envOr(process.env.FRONTEND_HOST, DEFAULTS.FRONTEND_HOST, 'FRONTEND_HOST'),
 
+<<<<<<< reset-password
 			// AUTH EMAIL (dev smtp)
 			SMTP_HOST: envOr(process.env.SMTP_HOST, DEFAULTS.SMTP_HOST, 'SMTP_HOST'),
 			SMTP_PORT: envOr(process.env.SMTP_PORT, DEFAULTS.SMTP_PORT, 'SMTP_PORT'),
@@ -406,27 +473,29 @@ export namespace SharedEnv {
 			RESET_URL_BASE: envOr(process.env.RESET_URL_BASE, DEFAULTS.RESET_URL_BASE, 'RESET_URL_BASE'),
 			RESET_TTL_SECONDS: envOr(process.env.RESET_TTL_SECONDS, DEFAULTS.RESET_TTL_SECONDS, 'RESET_TTL_SECONDS'),
 			
+=======
+>>>>>>> main
 			// GLOBAL
 			NODE_ENV: envOr(process.env.NODE_ENV, DEFAULTS.NODE_ENV, 'NODE_EV'),
 			LOG_LEVEL: envOr(process.env.LOG_LEVEL, DEFAULTS.LOG_LEVEL, 'LOG_LEVEL'),
-			
+
 			// INTER-SERVICE COMMUNICATION
-			SERVICE_SECRET: envOr(process.env.SERVICE_SECRET, DEFAULTS.SERVICE_SECRET, 'SERVICE_SECRET'),
-			
+			SERVICE_SECRET: requireSecret(process.env.SERVICE_SECRET, 'SERVICE_SECRET'),
+
 			// REDIS 
 			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST, 'REDIS_HOST'),
 			REDIS_PORT: envOr(process.env.REDIS_PORT, DEFAULTS.REDIS_PORT, 'REDIS_PORT'),
 			REDIS_PASSWORD: envOr(process.env.REDIS_PASSWORD, DEFAULTS.REDIS_PASSWORD, 'REDIS_PASSWORD'),
 			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_DB, 'REDIS_DB'),
 		};
-		
+
 		// ==================================================
 		// VALIDACIONES
 		// ==================================================
-		
+
 		// NODE_ENV (siempre requerido)
 		validateNodeEnv(config.NODE_ENV);
-		
+
 		// Puertos (siempre requeridos)
 		validatePort(config.AUTH_SERVICE_PORT, 'AUTH_SERVICE_PORT');
 		validatePort(config.IMAGE_SERVICE_PORT, 'IMAGE_SERVICE_PORT');
@@ -434,8 +503,12 @@ export namespace SharedEnv {
 		validatePort(config.GAME_SERVICE_PORT, 'GAME_SERVICE_PORT');
 		validatePort(config.FRONTEND_PORT, 'FRONTEND_PORT');
 		validatePort(config.REDIS_PORT, 'REDIS_PORT');
+<<<<<<< reset-password
 		validateClientPort(config.SMTP_PORT, 'SMTP_PORT');
 		
+=======
+
+>>>>>>> main
 		// Siempre requeridos
 		validateRequired(config.AUTH_SERVICE_URL, 'AUTH_SERVICE_URL');
 		validateRequired(config.IMAGE_SERVICE_URL, 'IMAGE_SERVICE_URL');
@@ -443,6 +516,7 @@ export namespace SharedEnv {
 		validateRequired(config.GAME_SERVICE_URL, 'GAME_SERVICE_URL');
 		validateRequired(config.FRONTEND_URL, 'FRONTEND_URL');
 
+<<<<<<< reset-password
 		validateRequired(config.SMTP_HOST, 'SMTP_HOST');
 		validateRequired(config.SMTP_FROM, 'SMTP_FROM');
 		validateRequired(config.RESET_URL_BASE, 'RESET_URL_BASE');
@@ -457,6 +531,8 @@ export namespace SharedEnv {
 			throw new Error(`Configuración SMTP inválida: SMTP_USER y SMTP_PASS deben venir ambos o ninguno`);
 		}
 		
+=======
+>>>>>>> main
 		validateRequired(config.CLOUDINARY_DEFAULT_AVATAR, 'CLOUDINARY_DEFAULT_AVATAR');
 		validateRequired(config.CLOUDINARY_URL, 'CLOUDINARY_URL');
 		const cloudinaryParse = parseCloudinaryUrl(config.CLOUDINARY_URL, config.CLOUDINARY_API_KEY, config.CLOUDINARY_API_SECRET, config.CLOUDINARY_CLOUD_NAME);
@@ -467,20 +543,20 @@ export namespace SharedEnv {
 		validateRequired(config.USER_SERVICE_DB_PATH, 'USER_SERVICE_DB_PATH');
 		validateRequired(config.USER_SERVICE_DB_FILENAME, 'USER_SERVICE_DB_FILENAME');
 		validateRequired(config.USER_SERVICE_DB_FULL_PATH, 'USER_SERVICE_DB_FULL_PATH');
-		
+
 		validateRequired(config.REDIS_HOST, 'REDIS_HOST');
 		validateRequired(config.REDIS_DB, 'REDIS_DB');
-		
+
 		// Secrets (requeridos + no defaults en producción)
 		validateSecrets({
 			SERVICE_SECRET: config.SERVICE_SECRET,
 			JWT_SECRET: config.JWT_SECRET,
 			REDIS_PASSWORD: config.REDIS_PASSWORD,
 			CLOUDINARY_URL: config.CLOUDINARY_URL
-		}, isProduction);
-		
+		});
+
 		return config;
 	}
-	
+
 	export type Config = ReturnType<typeof build>;
 }

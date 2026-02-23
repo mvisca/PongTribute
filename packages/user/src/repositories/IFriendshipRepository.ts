@@ -1,5 +1,4 @@
-import { FriendshipStatus, UserTypes } from '@transcendence/shared'; 
-import * as FriendshipTypes from '@transcendence/shared';
+import { FriendshipStatus, FriendshipTypes, UserTypes } from '@transcendence/shared';
 
 /**
  * Interfaz que define el contrato para el repositorio de Friendship.

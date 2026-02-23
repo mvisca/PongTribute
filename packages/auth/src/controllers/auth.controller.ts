@@ -1,29 +1,13 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import type { Redis } from "ioredis";
 import { AuthTypes, SharedErrors } from "@transcendence/shared";
 import { AuthService } from "../index.js";
-
-interface HealthCheckDependency {
-	status: string;
-	error?: string;
-}
-
-interface HealthCheckResponse {
-	status: 'ok' | 'degraded';
-	service: string;
-	timestamp: string;
-	uptime: number;
-	dependencies: Record<string, HealthCheckDependency>;
-}
 
 export class AuthController {
 
 	private authService: AuthService;
-	private redisClient: Redis | null;
 
-	constructor(redisClient: Redis | null = null) {
-		this.authService = new AuthService();
-		this.redisClient = redisClient;
+	constructor(authService: AuthService) {
+		this.authService = authService;
 	}
 
 	// ============================================================================
@@ -215,15 +199,16 @@ export class AuthController {
 			const { id } = request.params as AuthTypes.UserIdParams;
 			const { oldPassword, newPassword } = request.body as AuthTypes.UpdatePasswordBody;
 
-			await this.authService.changePassword(id, oldPassword, newPassword);
+			const tokens = await this.authService.changePassword(id, oldPassword, newPassword);
 
-			return reply.code(204).send();
+			return reply.code(200).send(tokens);
 
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
 
+<<<<<<< reset-password
 	/** Solicitar email de reset de password (siempre 204, no filtra existencia) */
 	async passwordResetRequest(
 		request: FastifyRequest,
@@ -289,4 +274,6 @@ export class AuthController {
 		};
 	}
 
+=======
+>>>>>>> main
 }

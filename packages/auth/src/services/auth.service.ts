@@ -1,7 +1,6 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
-import ms from 'ms';
 import QRcode from 'qrcode';
 import speakeasy from 'speakeasy';
 import {
@@ -12,27 +11,34 @@ import {
 	SharedErrors,
 } from '@transcendence/shared';
 import { AuthEnv } from '../index.js';
+<<<<<<< reset-password
 import { REDIS_CHANNELS, UserLoginEvent, UserLogoutEvent } from '@transcendence/shared';
 import { redisClient } from '../app.js';
 import { sendPasswordReset } from './email.service.js';
+=======
+import { 
+	TRANSCENDENCE_CHANNEL,
+	TRANSCENDENCE_EVENTS,
+	TranscendenceEventsTypes } from '@transcendence/shared';
+import type { Redis } from 'ioredis';
+>>>>>>> main
 
 export class AuthService {
-	
+
 	// ========================================================================
 	// PROPIEDADES
 	// ========================================================================
 	private setupCache: RedisCache<AuthTypes.SetupTokenData>;
-	
+	private redisClient: Redis;
+
 	// ========================================================================
 	// CONSTRUCTOR
 	// ========================================================================
-	constructor() {
-		if (!redisClient)
-			throw new Error('Cliente Redis no está inicializado en Auth Service');
-		
+	constructor(redisClient: Redis) {
+		this.redisClient = redisClient;
 		this.setupCache = new RedisCache<AuthTypes.SetupTokenData>(
-			redisClient,
-			'2fa:setup:' // Prefix para todas las keys ( '2fa:setup:{setupToken}' )
+			redisClient,	// Instancia de Redis inyectada
+			'2fa:setup:'	// Prefix para todas las keys ( '2fa:setup:{setupToken}' )
 		);
 	}
 	
@@ -83,39 +89,37 @@ export class AuthService {
 		user: UserTypes.UserInternal,
 		is2FAVerified: boolean = false
 	): Promise<AuthTypes.LoginSuccessResponse> {
-		
-		// Guard: Redis disponible?
-		if (!redisClient) {
-			throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-		}
-		
+
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION() === true) {
 			await this.deleteRefreshTokensById(user.id);
 			await this.updateLastLogoutAt(user.id);
 		}
-		
+
 		// establecer usuario online
 		await this.setUserIsOnline(user.id, true);
-		
+
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
-		const loginEvent: UserLoginEvent = {
-			type: REDIS_CHANNELS.USER_LOGIN,
-			timestamp: Date.now(),
-			source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+		const loginEvent: TranscendenceEventsTypes.UserLoginEvent = {
+			type: TRANSCENDENCE_EVENTS.USER_LOGIN,
 			targetUserId: user.id,
+			source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+			timestamp: Date.now(),
 			payload: {
+				userId: user.id,
 				username: user.username,
 				avatar: user.avatar,
-				email: user.email
+				email: user.email,
+				lastLogoutAt: user.lastLogoutAt,
+				isOnline: user.isOnline
 			}
-		};
-		
+		} satisfies TranscendenceEventsTypes.UserLoginEvent;
+
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
-		redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(loginEvent))
-		.catch(err => {
-			console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
+		this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(loginEvent))
+			.catch(err => {
+				console.error(`[AUTH-SERVICE] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN} to Redis:`, err);
 		});
 		
 		// Crear user payload y par tokens
@@ -183,10 +187,9 @@ export class AuthService {
 		
 		// hashear con sha-256 (64 caracteres)
 		const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
-		
-		//TODO verificar que Token Expiry tiene las validaciones necesarias, ponerle un rango en build sharedEnv
-		// calcula expiración usando REFRESH_TOKEN_EXPIRY (formato: "7d", "24h", etc.)
-		const expiresAt = new Date(Date.now() + ms(AuthEnv.REFRESH_TOKEN_EXPIRY() as any));
+
+		// Calcula expiración (REFRESH_TOKEN_EXPIRY en segundos, convierte a ms)
+		const expiresAt = new Date(Date.now() + AuthEnv.REFRESH_TOKEN_EXPIRY() * 1000);
 		
 		// almacenar record refresh token
 		const response = await fetch(
@@ -257,8 +260,6 @@ export class AuthService {
 		return await verified.json() as AuthTypes.RefreshTokenRecord;
 	}
 	
-	// ELIMINAR TODOS LOS REFRESH TOKENS DEL USUARIO CADUCADOS O POR ROTACIÓN
-	
 	/** Elimina todos los refresh token del usuario */
 	private async deleteRefreshTokensById(userId: string): Promise<void> {
 		const response = await fetch(`${AuthEnv.USER_SERVICE_URL()}/internal/tokens/user/${userId}`, {
@@ -297,13 +298,10 @@ export class AuthService {
 		});
 	}
 	
-	// ELIMINAR UN REFRESH TOKEN EN PARTICULAR
-	/* Mas granular para manejo de múltiples sesiones simultaneas. */
-	
 	// LOGOUT 
 	
 	/** Actualiza el lastLogoutAt del usuario con timestamp generado por el servicio Auth que también generar el timestamp del JWT */
-	private async updateLastLogoutAt(userId: string) { // DUDA Tipar retorno
+	private async updateLastLogoutAt(userId: string): Promise<void> {
 		const body = { lastLogoutAt: Math.floor(Date.now() / 1000)  };
 		
 		const response = await fetch(
@@ -321,7 +319,7 @@ export class AuthService {
 		
 		if (response.ok) return;
 		if (response.status === 404) {
-			console.debug(`Logout 404 para userId: ${userId}`);
+			console.debug(`[AUTH-SERVICE] Logout 404 for userId: ${userId}`);
 			return;
 		} 
 		
@@ -425,7 +423,7 @@ export class AuthService {
 		
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-			console.error('Error updating 2FA status:', {
+			console.error('[AUTH-SERVICE] Error updating 2FA status:', {
 				status: response.status,
 				errorData,
 				requestBody: { has2FAEnabled: has2FAEnabled, totpSecret, backupCodeHash }
@@ -560,7 +558,7 @@ export class AuthService {
 			return data.url;
 		} catch (err) {
 			if (err instanceof SharedErrors.AppError) throw err;  // Re-throw validation errors
-			console.error('Fallo subiendo avatar: ', err);
+			console.error('[AUTH-SERVICE] Failed to upload avatar: ', err);
 			// Fallback a default avatar (similar a user.service)
 			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -574,7 +572,7 @@ export class AuthService {
 		try {
 			return await this.uploadAvatarToCloudinary(base64Image, oldAvatarUrl);
 		} catch (err) {
-			console.error('Fallo uploadAvatarToCloudinary, usando fallback: ', err);
+			console.error('[AUTH-SERVICE] Avatar upload failed, using fallback: ', err);
 			// Mantener avatar anterior si existe, sino default
 			return oldAvatarUrl || AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -593,22 +591,11 @@ export class AuthService {
 		
 		let avatarUrl = AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		
-		// Si existe avatar, validarlo y subirlo a cloudinary
-		if (avatar && avatar.trim() !== "") {
-			if (!this.validateAvatar(avatar)) {
-				throw new SharedErrors.ValidationError(
-					'Avatar inválido',
-					'avatar',
-					{
-						operation: 'register',
-						receivedFormat: avatar.substring(0, 50),
-						expectedFormat: 'base64 data:image/...'
-					}
-				);
-			}
+		// Si existe avatar ya ha sido validado por ajv, subirlo a Cloudinary
+		if (avatar) {
 			avatarUrl = await this.uploadAvatarWithFallback(avatar);
 		}
-		
+
 		// Crear usuario en User Service
 		const response = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users`,
@@ -755,12 +742,12 @@ export class AuthService {
 		await this.deleteRefreshTokensById(user.id);
 		if (AuthEnv.UNIQUE_SESSION() === false && AuthEnv.NODE_ENV() === 'development') {
 			console.warn(
-				'⚠️  ROTACIÓN DE REFRESH TOKENS NO IMPLEMENTADA PARA MULTI-SESIÓN.\n' +
-				'Con UNIQUE_SESSION=false, los refreshTokens de todas las sesiones se invalidan.\n' +
-				'Esto protege de vulnerabilidad de reuso de refreshTokens ya usados a costa del UX/UI (sesiones cerradas).\n' +
-				'Soluciones:\n' +
-				'  1. Usar UNIQUE_SESSION=true (recomendado)\n' +
-				'  2. Implementar rotación granular por tokenId\n'
+				'[AUTH-SERVICE] REFRESH TOKEN ROTATION NOT IMPLEMENTED FOR MULTI-SESSION.\n' +
+				'With UNIQUE_SESSION=false, all session refresh tokens are invalidated on logout.\n' +
+				'This protects against refresh token reuse at the cost of UX (all sessions closed).\n' +
+				'Solutions:\n' +
+				'  1. Use UNIQUE_SESSION=true (recommended)\n' +
+				'  2. Implement granular rotation per tokenId\n'
 			);
 		}
 		
@@ -773,9 +760,9 @@ export class AuthService {
 		
 		await this.deleteRefreshTokensById(userId);
 		await this.updateLastLogoutAt(userId);
-		
+
 		try {
-			
+			// Recuperar usuario actualizado
 			const user = await this.fetchUserById(userId);
 			
 			if (!user) {
@@ -785,35 +772,35 @@ export class AuthService {
 					attemptedId: userId
 				});
 			}
-			
+
 			// Setear user ofline
 			await this.setUserIsOnline(userId, false);
-
+						
 			// Preparar objeto para notificaciones
-			const logoutEvent: UserLogoutEvent = {
-				type: REDIS_CHANNELS.USER_LOGOUT,
-				timestamp: Date.now(),
-				source: 'auth-service', // Este campo extra nos dirá quien disparó el event (para logs)
+			const logoutEvent: TranscendenceEventsTypes.UserLogoutEvent = {
+				type: TRANSCENDENCE_EVENTS.USER_LOGOUT,
 				targetUserId: userId,
+				source: 'auth-service',
+				timestamp: Date.now(),
 				payload: {
-					lastLogoutAt: user.lastLogoutAt
+					userId: user.id,
+					username: user.username,
+					email: user.email,
+					avatar: user.avatar,
+					lastLogoutAt: user.lastLogoutAt,
+					isOnline: false
 				}
-			}
-			
-			// Guard de Redis disponible
-			if (!redisClient) {
-				throw new SharedErrors.ServiceError('redis', 'Redis client not available');
-			}
+			} satisfies TranscendenceEventsTypes.UserLogoutEvent;
 
 			// PUBLICACIÓN EN REDIS
-			// Si no hay redis se completa el logout sin notificaciones y sin ropmer
-			redisClient.publish(REDIS_CHANNELS.EVENTS, JSON.stringify(logoutEvent))
-			.catch(err => {
-				console.error(`[Redis] Failed to publish ${REDIS_CHANNELS.USER_LOGIN}:`, err);
+			// Si no hay redis se completa el logout sin notificaciones y sin romper
+			this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(logoutEvent))
+				.catch(err => {
+					console.error(`[AUTH-SERVICE] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT} to Redis:`, err);
 			});
 
 		} catch (err) {
-			console.error(`Fallo al actualizar el estado online del usuario: ${userId}`, err);
+			console.error(`[AUTH-SERVICE] Failed to update online status for user: ${userId}`, err);
 		}
 	}
 	
@@ -866,7 +853,11 @@ export class AuthService {
 	// PUBLIC API - CHANGE PASSWORD
 	//=========================================================================
 	
-	async changePassword(userId: string, oldPassword: string, newPassword: string):Promise<void> {
+	async changePassword(
+		userId: string,
+		oldPassword: string,
+		newPassword: string
+	):Promise<AuthTypes.UpdatePasswordResponse> {
 		const user = await this.fetchUserById(userId);
 		
 		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
@@ -878,7 +869,7 @@ export class AuthService {
 			});
 		}
 		
-		const newPasswordHash = await bcrypt.hash(newPassword, 10);
+		const passwordHash = await bcrypt.hash(newPassword, 10);
 		
 		const updateResponse = await fetch(
 			`${AuthEnv.USER_SERVICE_URL()}/internal/users/${user.id}/password`,
@@ -888,7 +879,7 @@ export class AuthService {
 					'Content-Type': 'application/json',
 					'X-Service-Secret': `${AuthEnv.SERVICE_SECRET()}`
 				},
-				body: JSON.stringify({newPasswordHash}),
+				body: JSON.stringify({passwordHash}),
 				signal: AbortSignal.timeout(5000)
 			}
 		);
@@ -902,6 +893,14 @@ export class AuthService {
 				userId: user.id
 			});
 		}
+
+		// Invalidar sesiones anteriores
+		await this.deleteRefreshTokensById(userId);
+		await this.updateLastLogoutAt(userId);
+
+		// Generar nuevos tokens para la sesion actual
+		const updateUser = await this.fetchUserById(userId);
+		return this.generateTokenPair(updateUser, true);
 	}
 
 	//=========================================================================
@@ -1099,7 +1098,7 @@ export class AuthService {
 		
 		// Conseguir usuario para pasarlo como parametro
 		// Generar nuevo par de tokens
-		const user = await this.fetchUserById(setupData.userId); // DUDA se está pasando demasiada info con este user creo... que se necesita realmente... se puede obtenerdel jwtPayload? es esta una buena via? ya esta aregando una apicall más
+		const user = await this.fetchUserById(setupData.userId);
 		return await this.generateTokenPair(user, true);
 	}
 	
