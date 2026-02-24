@@ -15,7 +15,7 @@
     "jsx": "react-jsx",
 	"types": ["vite/client"]
   },
-  "include": ["src2/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"],
   "references": [
     { "path": "../shared" }
