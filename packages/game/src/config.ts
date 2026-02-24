@@ -73,34 +73,32 @@ export namespace GameEnv {
 		return _config;
 	}
 
-	// =====================================================
-	// GETTERS
-	// =====================================================
-
+	// GLOBAL
 	export function NODE_ENV(): string { return cnf().NODE_ENV; }
-
-	export function PORT(): number { return cnf().GAME_SERVICE_PORT; }
-	export function HOST(): string { return cnf().GAME_SERVICE_HOST; }
-
 	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
 
+	// GAME SERVICE
+	export function PORT(): number { return cnf().GAME_SERVICE_PORT; }
+	export function HOST(): string { return cnf().GAME_SERVICE_HOST; }
+	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
 	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
+	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
 	export function GAME_SERVICE_DB_FULL_PATH(): string { return cnf().GAME_SERVICE_DB_FULL_PATH; }
 
+	// USER SERVICE
 	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
 
+	// IMAGE SERVICE
 	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
 
-	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
-	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
-
+	// REDIS
 	export function REDIS_HOST(): string { return cnf().REDIS_HOST; }
 	export function REDIS_PORT(): number { return cnf().REDIS_PORT; }
 	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
 	export function REDIS_DB(): number { return cnf().REDIS_DB; }
 
 	// =====================================================
-	// EXPORTS - FUNCIONES HELPER
+	// HELPERS
 	// =====================================================
 
 	export function serverConfig(): ServiceConfig {

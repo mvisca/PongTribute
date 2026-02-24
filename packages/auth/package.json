@@ -11,6 +11,7 @@
 		"test:jwt-api": "tsx ./test/test-jwt-auth-e2e.ts"
 	},
 	"dependencies": {
+		"@fastify/cookie": "11.0.2",
 		"@fastify/helmet": "13.0.2",
 		"@fastify/jwt": "8.0.0",
 		"@fastify/rate-limit": "10.3.0",
@@ -26,16 +27,16 @@
 		"node-cron": "4.2.1",
 		"node-fetch": "3.3.2",
 		"nodemailer": "6.9.16",
+		"pino-pretty": "13.1.2",
 		"qrcode": "1.5.4",
-		"speakeasy": "2.0.0",
-		"pino-pretty": "13.1.2"
+		"speakeasy": "2.0.0"
 	},
 	"devDependencies": {
 		"@types/bcryptjs": "3.0.0",
 		"@types/jsonwebtoken": "9.0.10",
 		"@types/ms": "2.1.0",
-		"@types/nodemailer": "6.4.17",
 		"@types/node": "24.7.2",
+		"@types/nodemailer": "6.4.17",
 		"@types/qrcode": "1.5.6",
 		"@types/speakeasy": "2.0.10",
 		"tsx": "4.20.6",

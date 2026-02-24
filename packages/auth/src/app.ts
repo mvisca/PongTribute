@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from "fastify";
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
+import cookie from '@fastify/cookie';
 import type { Redis } from 'ioredis';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
@@ -30,6 +31,11 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 		nameSpace: 'rl:auth:',
 		skipOnError: true // No bloquear si Redis falla
 	});
+
+	/** 1.6. Plugin oficial para manejo de cookies */
+	app.register(cookie, {
+		secret: AuthEnv.COOKIE_SECRET(), // TODO crear un COOKIE_SECRET para cookies firmadas
+	})
 
 	/** 2. Plugin de seguridad */
 	app.register(helmet, {

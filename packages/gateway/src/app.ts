@@ -31,7 +31,7 @@ function normalizeHeaderValue(value: undefined | string | string[]): string | un
 	return Array.isArray(value) ? value[0] : value;
 }
 
-function parseAllowedOrigins(): Set<string> {
+function parseWsAllowedOrigins(): Set<string> {
 	const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
 	const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
 	return new Set(list.map((s) => s.trim()).filter(Boolean));
@@ -47,7 +47,7 @@ function getClientIp(req: FastifyRequest): string {
 export function buildApp(): FastifyInstance {
 	const app = Fastify(getFastifyConfig());
 	
-	const wsAllowedOrigins = parseAllowedOrigins();
+	const wsAllowedOrigins = parseWsAllowedOrigins();
 	const wsConnectionCountsByIp = new Map<string, number>();
 	let wsTotalConnections = 0;
 	
@@ -68,7 +68,10 @@ export function buildApp(): FastifyInstance {
 	
 	// CORS only at the gateway
 	app.register(cors, {
-		origin: GatewayEnv.CORS_ORIGIN,
+		origin: GatewayEnv.CORS_ORIGIN
+			.split(',')
+			.map(s => s.trim())
+			.filter(Boolean),
 		credentials: true
 	});
 	

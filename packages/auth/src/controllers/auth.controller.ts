@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { AuthTypes, SharedErrors } from "@transcendence/shared";
-import { AuthService } from "../index.js";
+import type { TokenPair } from "../types.js";
+import { AuthService, AuthEnv } from "../index.js";
 
 export class AuthController {
 
@@ -8,6 +9,20 @@ export class AuthController {
 
 	constructor(authService: AuthService) {
 		this.authService = authService;
+	}
+
+
+	// ============================================================================
+	// HELPER DE SETEO DE COOKIE
+	// ============================================================================
+	private setTokenCookie(reply: FastifyReply, refreshToken: string): void {
+		reply.setCookie('refreshToken', refreshToken, {
+			httpOnly: true,
+			secure: AuthEnv.NODE_ENV() === 'production',
+			sameSite: 'strict',
+			path: '/',
+			maxAge: AuthEnv.REFRESH_TOKEN_EXPIRY()
+		});
 	}
 
 	// ============================================================================
@@ -28,8 +43,12 @@ export class AuthController {
 				// 202 ACCEPTED => autenticación parcial, requiere paso adicional 
 				return reply.code(202).send(result);
 			
+			// Token Pair
+			const { accessToken, refreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, refreshToken);
+
 			// 200 OK = Login exitoso sin 2FA
-			return reply.code(200).send(result);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
@@ -42,10 +61,24 @@ export class AuthController {
 		reply: FastifyReply
 	): Promise<void> {
 		try {
-			const { refreshToken } = request.body as AuthTypes.RefreshTokenBody;
+			const refreshToken = request.cookies?.refreshToken;
 
+			if (!refreshToken) {
+				throw new SharedErrors.UnauthorizedError('Refresh token missing', {
+	                operation: 'refreshAccessToken'
+				});
+			}
+
+			// Genera nuevo token pair con el refresh token válido
 			const result = await this.authService.refreshAccessToken(refreshToken);
 
+			// Desestructura los tokens y payload para tratarlos por seprado
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+
+			// Establece el nuevo refresh token como cookie
+			this.setTokenCookie(reply, newRefreshToken);
+
+			// Envía en la response el access token y el payload
 			return reply.code(200).send(result);
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
@@ -61,8 +94,9 @@ export class AuthController {
 			const { id } = request.user!;
 			await this.authService.logout(id);
 
+			reply.clearCookie('refreshToken', { path: '/' });
+
 			return reply.code(204).send();
-			
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
@@ -81,8 +115,9 @@ export class AuthController {
 			const { provisionalToken, totpCode } = request.body as AuthTypes.LoginVerify2FABody;
 			const result = await this.authService.verify2FAWithToken(provisionalToken, totpCode);
 
-			return reply.code(200).send(result);
-
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, newRefreshToken);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
@@ -98,7 +133,9 @@ export class AuthController {
 			const { provisionalToken, backupCode } = request.body as AuthTypes.VerifyBackupCodeBody;
 			const result = await this.authService.verifyBackupCode(provisionalToken, backupCode);
 			
-			return reply.code(200).send(result);
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, newRefreshToken);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
@@ -120,7 +157,6 @@ export class AuthController {
 			const result = await this.authService.enable2FA(id);
 			
 			return reply.code(200).send(result);
-
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
@@ -133,9 +169,11 @@ export class AuthController {
 	): Promise<void> {
 		try {
 			const { setupToken, totpCode } = request.body as AuthTypes.Verify2FASetupBody;
-			const tokens = await this.authService.verify2FASetup(setupToken, totpCode);
+			const result = await this.authService.verify2FASetup(setupToken, totpCode);
 
-			return reply.code(200).send(tokens);
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, newRefreshToken);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
@@ -151,9 +189,11 @@ export class AuthController {
 			const { id } = request.params as AuthTypes.UserIdParams;
 			const { password } = request.body as AuthTypes.Disable2FABody;
 			
-			const tokens = await this.authService.disable2FA(id, password);
+			const result = await this.authService.disable2FA(id, password);
 
-			return reply.code(200).send(tokens);
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, newRefreshToken);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
@@ -179,8 +219,9 @@ export class AuthController {
 				
 			const result = await this.authService.register(username, email, password, avatar);
 			
-			return reply.code(201).send(result);
-
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, newRefreshToken);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
@@ -199,10 +240,11 @@ export class AuthController {
 			const { id } = request.params as AuthTypes.UserIdParams;
 			const { oldPassword, newPassword } = request.body as AuthTypes.UpdatePasswordBody;
 
-			const tokens = await this.authService.changePassword(id, oldPassword, newPassword);
+			const result = await this.authService.changePassword(id, oldPassword, newPassword);
 
-			return reply.code(200).send(tokens);
-
+			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
+			this.setTokenCookie(reply, newRefreshToken);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}

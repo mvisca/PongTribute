@@ -73,37 +73,34 @@ export namespace UserEnv {
 		return _config;
 	}
 
-	// =====================================================
-	// GETTERS
-	// =====================================================
-
+	// GLOBAL
 	export function NODE_ENV(): string { return cnf().NODE_ENV; }
-
-	export function PORT(): number { return cnf().USER_SERVICE_PORT; }
-	export function HOST(): string { return cnf().USER_SERVICE_HOST; }
-
 	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
 
+	// USER SERVICE
+	export function PORT(): number { return cnf().USER_SERVICE_PORT; }
+	export function HOST(): string { return cnf().USER_SERVICE_HOST; }
+	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
 	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
-	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
+	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
 	export function USER_SERVICE_DB_FULL_PATH(): string { return cnf().USER_SERVICE_DB_FULL_PATH; }
 
-	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
-	export function BCRYPT_ROUNDS(): number { return cnf().BCRYPT_ROUNDS; }
-
+	// IMAGE SERVICE
+	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
 	export function CLOUDINARY_URL(): string { return cnf().CLOUDINARY_URL; }
+	export function CLOUDINARY_CLOUD_NAME(): string { return cnf().CLOUDINARY_CLOUD_NAME; }
 	export function CLOUDINARY_API_KEY(): string { return cnf().CLOUDINARY_API_KEY; }
 	export function CLOUDINARY_API_SECRET(): string { return cnf().CLOUDINARY_API_SECRET; }
-	export function CLOUDINARY_CLOUD_NAME(): string { return cnf().CLOUDINARY_CLOUD_NAME; }
 	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
 
+	// REDIS
 	export function REDIS_HOST(): string { return cnf().REDIS_HOST; }
 	export function REDIS_PORT(): number { return cnf().REDIS_PORT; }
 	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
 	export function REDIS_DB(): number { return cnf().REDIS_DB; }
 
 	// =====================================================
-	// EXPORTS - FUNCIONES HELPER
+	// HELPERS
 	// =====================================================
 
 	export function serverConfig(): ServiceConfig {

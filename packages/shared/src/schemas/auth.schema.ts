@@ -58,7 +58,6 @@ export namespace AuthSchemas {
 	/** Response: Login exitoso con tokens */
 	export const LoginSuccessResponse = Type.Object({
 		token: AccessTokenField,
-		refreshToken: RefreshTokenField,
 		user: LocalUserPayloadObject
 	});
 
@@ -309,24 +308,11 @@ export namespace AuthSchemas {
 	// REFRESH TOKEN - Cliente HTTP
 	// ========================================================================
 
-	/** Body de POST /auth/refresh */
-	export const RefreshTokenBody = Type.Object({
-		refreshToken: RefreshTokenField
-	});
-
-	/** Response de POST /auth/refresh (nuevo par de tokens) */
-	export const RefreshTokenResponse = Type.Object({
-		token: AccessTokenField,
-		refreshToken: RefreshTokenField,
-		user: LocalUserPayloadObject
-	});
-
 	/** Schema completo de POST /auth/refresh */
 	export const RefreshTokenBodySchema = {
 		tags: ['Auth'],
-		body: RefreshTokenBody,
 		response: {
-			200: RefreshTokenResponse,
+			200: LoginSuccessResponse,
 			401: Unauthorized
 		}
 	};

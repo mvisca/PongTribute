@@ -76,37 +76,35 @@ export namespace AuthEnv {
 		return _config;
 	}
 
-	// =====================================================
-	// GETTERS
-	// =====================================================
-
+	// GLOBAL
 	export function NODE_ENV(): string { return cnf().NODE_ENV; }
-	
+	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
+
+	// AUTH SERVICE
 	export function PORT(): number { return cnf().AUTH_SERVICE_PORT; }
 	export function HOST(): string { return cnf().AUTH_SERVICE_HOST; }
-	
-	export function LOG_LEVEL(): string { return cnf().LOG_LEVEL; }
-	
-	export function UNIQUE_SESSION(): boolean { return cnf().UNIQUE_SESSION; }
+	export function AUTH_SERVICE_URL(): string { return cnf().AUTH_SERVICE_URL; }
 	export function JWT_SECRET(): string { return cnf().JWT_SECRET; }
+	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
+	export function COOKIE_SECRET(): string { return cnf().COOKIE_SECRET; }
 	export function TOKEN_EXPIRY(): number { return cnf().TOKEN_EXPIRY; }
 	export function REFRESH_TOKEN_EXPIRY(): number { return cnf().REFRESH_TOKEN_EXPIRY; }
-	export function SERVICE_SECRET(): string { return cnf().SERVICE_SECRET; }
+	export function UNIQUE_SESSION(): boolean { return cnf().UNIQUE_SESSION; }
+
+	// USER SERVICE
+	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
+
+	// IMAGE SERVICE
+	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
 	export function CLOUDINARY_DEFAULT_AVATAR(): string { return cnf().CLOUDINARY_DEFAULT_AVATAR; }
-	
+
+	// REDIS
 	export function REDIS_HOST(): string { return cnf().REDIS_HOST; }
 	export function REDIS_PORT(): number { return cnf().REDIS_PORT; }
 	export function REDIS_PASSWORD(): string { return cnf().REDIS_PASSWORD; }
 	export function REDIS_DB(): number { return cnf().REDIS_DB; }
-	
-	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
-	export function AUTH_SERVICE_URL(): string { return cnf().AUTH_SERVICE_URL; }
-	export function IMAGE_SERVICE_URL(): string { return cnf().IMAGE_SERVICE_URL; }
-	
-	// =====================================================
-	// EMAIL (DEV SMTP) + PASSWORD RESET
-	// =====================================================
-	
+
+	// MAILER
 	export function SMTP_HOST(): string { return cnf().SMTP_HOST; }
 	export function SMTP_PORT(): number { return cnf().SMTP_PORT; }
 	export function SMTP_FROM(): string { return cnf().SMTP_FROM; }
@@ -116,9 +114,9 @@ export namespace AuthEnv {
 	export function SMTP_REQUIRE_TLS(): boolean | undefined { return cnf().SMTP_REQUIRE_TLS; }
 	export function RESET_URL_BASE(): string { return cnf().RESET_URL_BASE; }
 	export function RESET_TTL_SECONDS(): number { return cnf().RESET_TTL_SECONDS; }
-	
+
 	// =====================================================
-	// EXPORTS - FUNCIONES HELPER
+	// HELPERS
 	// =====================================================
 	
 	export function serverConfig(): ServiceConfig {

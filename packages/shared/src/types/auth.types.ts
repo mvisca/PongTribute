@@ -112,17 +112,7 @@ export namespace AuthTypes {
 	
 	/** Body de POST /auth/password-reset/confirm */
 	export type PasswordResetConfirmBody = Static<typeof AuthSchemas.PasswordResetConfirmBody>;
-	
-	// ========================================================================
-	// REFRESH TOKEN - Cliente HTTP
-	// ========================================================================
-	
-	/** Body de POST /auth/refresh */
-	export type RefreshTokenBody = Static<typeof AuthSchemas.RefreshTokenBody>;
-	
-	/** Response de POST /auth/refresh */
-	export type RefreshTokenResponse = Static<typeof AuthSchemas.RefreshTokenResponse>;
-	
+
 	// ========================================================================
 	// REFRESH TOKEN - Auth CONSUME desde User service
 	// ========================================================================

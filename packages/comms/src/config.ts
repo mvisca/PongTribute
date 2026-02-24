@@ -95,48 +95,56 @@ export namespace CommsEnv {
 	// Inicializar configuración
 	export function init(): void {
 		config = {
-			port: parseInt(process.env.COMMS_PORT || '3005', 10),
-			host: process.env.COMMS_HOST || '0.0.0.0',
 			nodeEnv: (process.env.NODE_ENV as any) || 'development',
 			logLevel: (process.env.LOG_LEVEL as any) || 'info',
 
-			redisHost: process.env.REDIS_HOST || 'localhost',
-			redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
-			redisPassword: process.env.REDIS_PASSWORD,
+			port: parseInt(process.env.COMMS_PORT || '3005', 10),
+			host: process.env.COMMS_HOST || '0.0.0.0',
+			jwtSecret: requireCommsSecret(process.env.JWT_SECRET, 'JWT_SECRET'),
+			serviceSecret: requireCommsSecret(process.env.SERVICE_SECRET, 'SERVICE_SECRET'),
 
 			userServiceUrl: process.env.USER_SERVICE_URL || 'http://localhost:3001',
-			serviceSecret: requireCommsSecret(process.env.SERVICE_SECRET, 'SERVICE_SECRET'),
-			jwtSecret: requireCommsSecret(process.env.JWT_SECRET, 'JWT_SECRET'),
 
 			wsPingIntervalMs: parseInt(process.env.WS_PING_INTERVAL_MS || '30000', 10),
 			wsPongTimeoutMs: parseInt(process.env.WS_PONG_TIMEOUT_MS || '5000', 10),
 			wsMaxConnections: parseInt(process.env.WS_MAX_CONNECTIONS || '10000', 10),
 			wsMaxConnectionsPerUser: parseInt(process.env.WS_MAX_CONNECTIONS_PER_USER || '5', 10),
+
+			redisHost: process.env.REDIS_HOST || 'localhost',
+			redisPort: parseInt(process.env.REDIS_PORT || '6379', 10),
+			redisPassword: process.env.REDIS_PASSWORD,
 		};
 
 		console.log('[CommsEnv] Configuración cargada');
 	}
 
-	// Getters
-	export function PORT(): number { return cnf().port; }
-	export function HOST(): string { return cnf().host; }
+	// GLOBAL
 	export function NODE_ENV(): string { return cnf().nodeEnv; }
 	export function LOG_LEVEL(): string { return cnf().logLevel; }
 
-	export function REDIS_HOST(): string { return cnf().redisHost; }
-	export function REDIS_PORT(): number { return cnf().redisPort; }
-	export function REDIS_PASSWORD(): string | undefined { return cnf().redisPassword; }
-
-	export function USER_SERVICE_URL(): string { return cnf().userServiceUrl; }
-	export function SERVICE_SECRET(): string { return cnf().serviceSecret; }
+	// COMMS SERVICE
+	export function PORT(): number { return cnf().port; }
+	export function HOST(): string { return cnf().host; }
 	export function JWT_SECRET(): string { return cnf().jwtSecret; }
+	export function SERVICE_SECRET(): string { return cnf().serviceSecret; }
 
+	// USER SERVICE
+	export function USER_SERVICE_URL(): string { return cnf().userServiceUrl; }
+
+	// COMMS SERVICE (WS)
 	export function WS_PING_INTERVAL_MS(): number { return cnf().wsPingIntervalMs; }
 	export function WS_PONG_TIMEOUT_MS(): number { return cnf().wsPongTimeoutMs; }
 	export function WS_MAX_CONNECTIONS(): number { return cnf().wsMaxConnections; }
 	export function WS_MAX_CONNECTIONS_PER_USER(): number { return cnf().wsMaxConnectionsPerUser; }
 
-	// Config de Redis (pattern de otros servicios)
+	// REDIS
+	export function REDIS_HOST(): string { return cnf().redisHost; }
+	export function REDIS_PORT(): number { return cnf().redisPort; }
+	export function REDIS_PASSWORD(): string | undefined { return cnf().redisPassword; }
+
+	// =====================================================
+	// HELPERS
+	// =====================================================
 	export function getRedisConfig(): RedisConfig {
 		const redisConfig: RedisConfig = {
 			host: REDIS_HOST(),
