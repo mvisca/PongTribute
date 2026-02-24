@@ -16,7 +16,7 @@ import {
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes } from '@transcendence/shared';
 import type { Redis } from 'ioredis';
-import { sendPasswordReset } from './email.service.js';
+import { MailerService } from './mailer.service.js';
 
 export class AuthService {
 
@@ -25,16 +25,21 @@ export class AuthService {
 	// ========================================================================
 	private setupCache: RedisCache<AuthTypes.SetupTokenData>;
 	private redisClient: Redis;
+	private mailerService: MailerService;
 
 	// ========================================================================
 	// CONSTRUCTOR
 	// ========================================================================
-	constructor(redisClient: Redis) {
+	constructor(
+		redisClient: Redis,
+		mailerService: MailerService
+	) {
 		this.redisClient = redisClient;
 		this.setupCache = new RedisCache<AuthTypes.SetupTokenData>(
 			redisClient,	// Instancia de Redis inyectada
 			'2fa:setup:'	// Prefix para todas las keys ( '2fa:setup:{setupToken}' )
-		);
+		); // TODO 2fa:setup debe ser constante
+		this.mailerService = mailerService;
 	}
 	
 	// ========================================================================
@@ -920,7 +925,7 @@ export class AuthService {
 
 		try {
 			const link = `${AuthEnv.RESET_URL_BASE()}?token=${token}`;
-			await sendPasswordReset(user.email, link);
+			await this.mailerService.sendPasswordReset(user.email, link);
 		} catch (err) {
 			// Si falla el envío, limpiar el token para no dejar resets “fantasma”
 			await this.redisClient.del(key).catch(() => undefined);

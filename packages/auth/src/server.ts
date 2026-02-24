@@ -5,10 +5,13 @@ import { buildApp } from './app.js';
 import { AuthEnv } from './config.js';
 import { AuthService } from './services/auth.service.js';
 import { TokenCleanupService } from './services/token-cleanup.service.js';
+import { MailerService } from './services/mailer.service.js';
+import { createMailerClient } from './utils/mailer.js';
 
 let app: FastifyInstance | null = null;
 let cleanupService: TokenCleanupService | null = null;
 let redisClient: Redis | null = null;
+let mailerService: MailerService | null = null;
 
 async function start() {
 	try {
@@ -24,11 +27,20 @@ async function start() {
 			process.exit(1);
 		}
 
+		try {
+			const mailerTransporter = createMailerClient();
+			mailerService = new MailerService(mailerTransporter);
+			console.log('[AUTH] Mailer client created');
+		} catch(err) {
+			console.error('[AUTH] Error connecting to Mailer client: ', err);
+			process.exit(1);
+		}
+
 		// Crear AuthService con Redis inyectado
-		const authService = new AuthService(redisClient!);
+		const authService = new AuthService(redisClient, mailerService);
 
 		// Construir app
-		app = buildApp({ redisClient: redisClient!, authService });
+		app = buildApp({ redisClient, authService, mailerService });
 
 		// Arrancar el servidor
 		await app.listen({
