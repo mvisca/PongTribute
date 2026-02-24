@@ -12,9 +12,10 @@
     "composite": true,
     "noEmit": true,
     "outDir": "./dist",
-      "jsx": "react-jsx"
+    "jsx": "react-jsx",
+	"types": ["vite/client"]
   },
-  "include": ["src/**/*"],
+  "include": ["src2/**/*"],
   "exclude": ["node_modules", "dist"],
   "references": [
     { "path": "../shared" }
