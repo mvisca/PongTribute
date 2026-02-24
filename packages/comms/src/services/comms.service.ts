@@ -84,8 +84,8 @@ export class CommsService implements IEventService {
 			]);
 			this.logger.log('[Comms] Clientes Redis conectados');
 			
-			// Suscribirse a canale de applicacion.
-			// Se filtratá por eventType
+			// Suscribirse a canal de aplicacion.
+			// Se filtrará por eventType
 			await this.redisSub.subscribe(TRANSCENDENCE_CHANNEL);
 			this.logger.log(`[Comms] Suscrito a ${TRANSCENDENCE_CHANNEL}\n`);
 			

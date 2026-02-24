@@ -6,7 +6,6 @@
 import { WebSocket } from 'ws';
 import { Redis } from 'ioredis';
 import { MatchRepository } from '../repositories/MatchRepository.js';
-
 import {
 	GameConstants,
 	GameTypes,
@@ -279,7 +278,7 @@ export class GameService {
 			}
 			
 			// B. Física: Delegamos cálculo, recibimos veredicto
-			const winnerId = this.updatePhysics(session);  // Ahora devuelve string | null
+			const winnerId = this.updatePhysics(session);  // devuelve string | null
 			
 			// C. Evaluación
 			if (winnerId) {
@@ -297,7 +296,7 @@ export class GameService {
 	/**
 	* Helper para limpiar el intervalo de NodeJS y liberar la referencia.
 	*/
-	// Limpia el interval de forma segura. Si el estado NO es PLAYING mata el loop y sal
+	// Limpia el interval de forma segura. Si el estado NO es PLAYING mata el loop y sale
 	private stopGameLoop(session: GameSession) {
 		if (session.loopId) {
 			clearInterval(session.loopId);
@@ -352,12 +351,14 @@ export class GameService {
 			paddleRight.score++;
 			// Capturamos el retorno. Si hay ganador, lo devolvemos inmediatamente.
 			const winner = this.checkScoreOrReset(session, 'paddleRight');
-			if (winner) return winner; 
+			if (winner)
+				return winner; 
 		} else if (ball.x > config.width) {
 			paddleLeft.score++;
 			// Idem para el otro lado.
 			const winner = this.checkScoreOrReset(session, 'paddleLeft');
-			if (winner) return winner;
+			if (winner)
+				return winner;
 		}
 		
 		return null; // Si no hay ganador, el juego sigue
@@ -616,7 +617,7 @@ export class GameService {
 			).catch(e => console.error('[GAME-SERVICE] Error:', e));
 		}
 		
-		// Notificar clientes		
+		// Notificar a los 2 clientes, via websocket event		
 		const msg = {
 			type: WEBSOCKET_EVENTS.GAME_OVER,
 			timestamp: Date.now(),
@@ -625,7 +626,7 @@ export class GameService {
 		const str = JSON.stringify(msg);
 		session.socketP1?.send(str);
 		session.socketP2?.send(str);
-		
+	
 		//Limpieza final de memoria
 		this.activeMatches.delete(session.matchId);
 	}
@@ -642,7 +643,7 @@ export class GameService {
 		const winnerId = (session.player1Id === loserId) ? session.player2Id : session.player1Id;
 		const winnerSocket = (session.player1Id === loserId) ? session.socketP2 : session.socketP1;
 		
-		// Notificar game over
+		// Notificar game over al cliente vivo via websocket event.
 		const msg = {
 			type: WEBSOCKET_EVENTS.GAME_OVER,
 			timestamp: Date.now(),
