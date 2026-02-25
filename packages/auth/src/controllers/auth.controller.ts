@@ -79,7 +79,7 @@ export class AuthController {
 			this.setTokenCookie(reply, newRefreshToken);
 
 			// Envía en la response el access token y el payload
-			return reply.code(200).send(result);
+			return reply.code(200).send({ token: accessToken, user: userPayload });
 		} catch(err) {
 			SharedErrors.handleError(err, reply);
 		}
