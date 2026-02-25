@@ -63,7 +63,10 @@ export namespace TranscendenceEventsTypes {
 	export interface UserDisconnectedEvent extends EventsTypes.BaseEvent {
 		type: typeof TRANSCENDENCE_EVENTS.USER_DISCONNECTED;
 		targetUserId: UserTypes.UserId;
-		payload: UserInfoPayload;
+		//payload: UserInfoPayload;
+		payload: {
+			userId: string;
+		}
 	}
 
 	// ── Friendship ──────────────────────────────────────────────────────────

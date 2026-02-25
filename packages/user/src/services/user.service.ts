@@ -184,6 +184,7 @@ export class UserService {
 		});
 		
 		const oldUsername = user.username;
+		const oldAvatar = user.avatar;
 		
 		if (data.avatar !== undefined) {
 			
@@ -228,8 +229,9 @@ export class UserService {
 		
 		const updatedUser = await this.userRepo.update(id, data);
 		
-		if (updatedUser.username !== oldUsername) {
-			console.log(`[USER-SERVICE] Username changed: ${oldUsername} -> ${updatedUser.username}`);
+		// Verificamos cambios en username o avatar
+		if (updatedUser.username !== oldUsername || updatedUser.avatar !== oldAvatar) {
+			console.log(`[USER-SERVICE] Profile updated for ${id}. (User: ${oldUsername}->${updatedUser.username}, Avatar: ${oldAvatar}->${updatedUser.avatar})`);
 			
 			const eventPayload: TranscendenceEventsTypes.UserProfileUpdatedEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,

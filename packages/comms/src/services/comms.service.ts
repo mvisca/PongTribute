@@ -9,6 +9,7 @@ import {
 	IEventService,
 	TranscendenceEventsTypes,
 	WebSocketEventsTypes,
+	TRANSCENDENCE_EVENTS,
 	TRANSCENDENCE_CHANNEL,
 	UserTypes
 } from '@transcendence/shared';
@@ -346,15 +347,29 @@ export class CommsService implements IEventService {
 	
 	private handleDisconnect(ws: ExtendedWebSocket, userId: string): void {
 		const sockets = this.connections.get(userId);
+
 		if (sockets) {
 			sockets.delete(ws);
 			this.totalConnections--;
-			
-			if (sockets.size === 0) {
-				this.connections.delete(userId);
-				// Opcional: Notificar desconexión completa a otros servicios o amigos
-				this.logger.log(`[Comms] Usuario ${userId} totalmente desconectado.`);
-			}
+		}
+
+		// Si ya no quedan sockets para este usuario, porque cerró la ultima pestaña
+		if (!sockets || sockets.size === 0) {
+			this.connections.delete(userId); // Limpieza local
+
+			console.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
+
+			// Publicar evento para limpieza INMEDIATA en Game/User
+			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
+				type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
+				timestamp: Date.now(),
+				source: 'comms-service',
+				targetUserId: userId, // Esto es lo que lee Game
+				payload: { userId }
+			};
+
+			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
+				.catch(err => console.error('[COMMS] Error publishing disconnected event:', err));
 		}
 	}
 	
