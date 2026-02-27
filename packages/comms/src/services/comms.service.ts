@@ -368,6 +368,7 @@ export class CommsService implements IEventService {
 				payload: { userId }
 			};
 
+			// El servicio 'game' esta subscrito a esta publicacion
 			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
 				.catch(err => console.error('[COMMS] Error publishing disconnected event:', err));
 		}

@@ -5,7 +5,7 @@ import { UserAppDependencies } from '../app.js';
 
 export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (app, opts) => {
 	const controller = new UserController(opts.userService, opts.friendshipService);
-	const friendshipController = new FriendshipController(opts.userService, opts.friendshipService, opts.redisClient);
+	const friendshipController = new FriendshipController(opts.friendshipService);
 
 	const validateJWT = AuthMiddleware.createValidateJWT(opts.userService);
 	app.addHook('preHandler', validateJWT);

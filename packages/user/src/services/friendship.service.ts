@@ -1,19 +1,106 @@
+
+import type { Redis } from 'ioredis';
 import {
 	SharedErrors,
+	TRANSCENDENCE_CHANNEL,
+	TRANSCENDENCE_EVENTS,
+	TranscendenceEventsTypes,
 	FRIENDSHIP_STATUS,
 	FriendshipStatus,
 	UserTypes,
 	FriendshipTypes
 } from '@transcendence/shared';
-import {
-	IFriendshipRepository
-} from '../index.js';
+import { IFriendshipRepository, UserService } from '../index.js';
 
 export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
+	private userService: UserService;
+	private redisClient: Redis;
 
-	constructor(friendshipRepo: IFriendshipRepository) {
+	constructor(
+		friendshipRepo: IFriendshipRepository,
+		userService: UserService,
+		redisClient: Redis
+	) {
 		this.friendshipRepo = friendshipRepo;
+		this.userService = userService;
+		this.redisClient = redisClient;
+	}
+
+	// ============================================================================
+	// PRIVATE HELPERS
+	// ============================================================================
+
+	private async publishFriendRequest(
+		senderId: string,
+		senderUsername: string,
+		receiverId: string
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		// Conseguir avatar del sender (no está en el JWT)
+		const sender = await this.userService.findUserById(senderId);
+
+		const event: TranscendenceEventsTypes.FriendRequestEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REQUEST,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				senderId,
+				senderUsername,
+				senderAvatar: sender.avatar,
+				receiverId,
+			},
+		};
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		console.log(`[FRIENDSHIP] FRIEND_REQUEST published: from ${senderId} to ${receiverId}`);
+	}
+
+	private async publishFriendAccepted(
+		acceptorId: UserTypes.UserId,
+		acceptorUsername: string,
+		requesterId: string
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		// Conseguir avatar del acceptor (no está en JWT)
+		const acceptor = await this.userService.findUserById(acceptorId);
+
+		const event: TranscendenceEventsTypes.FriendAcceptedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_ACCEPT,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				acceptorId,
+				acceptorUsername,
+				acceptorAvatar: acceptor.avatar,
+				requesterId,
+			},
+		};
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		console.log(`[FRIENDSHIP] FRIEND_ACCEPT published: from ${acceptorId} to ${requesterId}`);
+	}
+
+	private async publishFriendRemoved(
+		removerId: UserTypes.UserId,
+		removedId: UserTypes.UserId
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		const event: TranscendenceEventsTypes.FriendRemovedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REMOVE,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				removerId,
+				removedId,
+			},
+		} satisfies TranscendenceEventsTypes.FriendRemovedEvent;
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		console.log(`[FRIENDSHIP] FRIEND_REMOVE published: ${removerId} removed ${removedId}`);
 	}
 
 	private isFriendshipStatus(value: unknown): value is FriendshipStatus {
@@ -28,8 +115,10 @@ export class FriendshipService {
 			: [friendId, userId];
 	}
 
+
 	async createFriendship(
 		initiatorId: UserTypes.UserId,
+		initiatorUsername: string,
 		data: FriendshipTypes.CreateFriendshipBody
 	): Promise<FriendshipTypes.Friendship> {
 
@@ -53,15 +142,23 @@ export class FriendshipService {
 				existingStatus: existing.status
 			});
 
-		return await this.friendshipRepo.create({
-			initiatorId,
-			friendId,
-			status: FRIENDSHIP_STATUS.PENDING
-		});
+		// 1. Guardar en Base de Datos PRIMERO
+        const newFriendship = await this.friendshipRepo.create({
+            initiatorId,
+            friendId,
+            status: FRIENDSHIP_STATUS.PENDING
+        });
+		
+		// 2. Notificar DESPUES
+		this.publishFriendRequest(initiatorId, initiatorUsername, friendId)			
+			.catch(err => console.error('[FriendshipService] Error publishing request:',err));
+			
+		return newFriendship;
 	}
 
 	async updateFriendshipStatus(
 		currentUserId: UserTypes.UserId,
+		currentUsername: string,
 		friendId: UserTypes.UserId,
 		accepted: boolean
 	): Promise<FriendshipTypes.Friendship> {
@@ -95,17 +192,28 @@ export class FriendshipService {
 				}
 			);
 
+		
 		const status: FriendshipTypes.FriendshipDecisionStatus = accepted
 			? FRIENDSHIP_STATUS.ACCEPTED
 			: FRIENDSHIP_STATUS.REJECTED;
 
-		return await this.friendshipRepo.update({
-			userId: sortedUserId,
-			friendId: sortedFriendId,
-			status,
-			updatedAt: new Date()
-		});
+		// 1. Actualizar BD
+        const updatedFriendship = await this.friendshipRepo.update({
+            userId: sortedUserId,
+            friendId: sortedFriendId,
+            status,
+            updatedAt: new Date()
+        });
+
+        // 2. Disparar evento SOLO si aceptó
+        if (accepted) {
+            this.publishFriendAccepted(currentUserId, currentUsername, friendship.initiatorId)
+                .catch(err => console.error('[FriendshipService] Error publishing accept:', err));
+        }
+
+        return updatedFriendship;
 	}
+
 
 	async listFriendships(
 		userId: UserTypes.UserId,
@@ -128,6 +236,7 @@ export class FriendshipService {
 
 		return await this.friendshipRepo.findByUser(userId);
 	}
+
 
 	async deleteFriendship(
 		currentUserId: UserTypes.UserId,
@@ -153,7 +262,12 @@ export class FriendshipService {
 			});
 		}
 
-		await this.friendshipRepo.delete(sortedUserId, sortedFriendId);
+		// 1. Borrar de BD
+        await this.friendshipRepo.delete(sortedUserId, sortedFriendId);
+
+        // 2. Disparar evento
+        this.publishFriendRemoved(currentUserId, friendId)
+            .catch(err => console.error('[FriendshipService] Error publishing remove:', err));
 	}
 }
 

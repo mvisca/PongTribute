@@ -38,7 +38,7 @@ async function start() {
 
 		// Crear services con dependencias inyectadas
 		const userService = new UserService(redisClient!, userRepo);
-		const friendshipService = new FriendshipService(friendshipRepo);
+		const friendshipService = new FriendshipService(friendshipRepo, userService, redisClient);
 		const tokenService = new TokenService(tokenRepo);
 
 		// Construir app con todas las deps
