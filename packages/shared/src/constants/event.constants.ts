@@ -44,9 +44,14 @@ export const WEBSOCKET_EVENTS = {
 	//Sala de espera
 	MATCH_JOINED: 'match:joined',
 	// Notificaciones de partida
+	MATCH_FOUND: 'match:found',
+	MATCH_QUEUE_TIMEOUT: 'match:queue_timeout',
+	MATCH_STARTED: 'match:started',
 	MATCH_INVITE: 'match:invite',
 	MATCH_CANCELLED: 'match:cancelled',
-	MATCH_REJECTED: 'match:rejected'
+	MATCH_REJECTED: 'match:rejected',
+
+
 } as const;
 
 

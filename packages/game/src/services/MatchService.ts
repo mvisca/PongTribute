@@ -328,6 +328,8 @@ export class MatchService {
 					payload: {
 						matchId: newMatch.id,
 						inviterId: userId,
+						inviterUsername: p1Data.username,
+						inviterAvatar: p1Data.avatar,
 						inviteeId: opponentId,
 						gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
 						expiresAt: newMatch.created_at + MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS

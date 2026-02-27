@@ -201,7 +201,7 @@ export class GameService {
 	// -------------------------------------------------------------------
 	
 	/**
-	* Gestiona la pérdida de conexión WebSocket.
+	* Gestiona la pérdida de conexión WebSocket (no intencionada).
 	* Pausa el juego y comienza una cuenta atrás para declarar forfeit.
 	*/
 	public async handleDisconnect(userId: string, matchId?: string): Promise<void> {

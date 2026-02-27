@@ -229,7 +229,7 @@ export class CommsService implements IEventService {
 	}	
 	
 	// ==========================================================================
-	// MANEJO DE EVENTOS DE OTROS SERVICIOS (REDIS)
+	// MANEJO DE EVENTOS (REDIS) DE OTROS SERVICIOS
 	// ==========================================================================
 	
 	private async handleRedisMessage(
@@ -244,7 +244,7 @@ export class CommsService implements IEventService {
 			this.logger.log(`[Comms] Evento recibido: ${event.type}`);
 			
 			// Buscar el handler adecuado en el array de handlers importado
-			// Nota: Esto asume que tienes implementado el patrón Strategy en ./events/index.ts
+			// Nota: Esto asume que tenemos implementado el patrón Strategy en ./events/index.ts
 			const handler = EVENT_HANDLERS.find(h => h.eventTypes.includes(event.type));
 			
 			if (handler) {
@@ -359,7 +359,7 @@ export class CommsService implements IEventService {
 
 			console.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
 
-			// Publicar evento para limpieza INMEDIATA en Game/User
+			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
 			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
 				timestamp: Date.now(),
