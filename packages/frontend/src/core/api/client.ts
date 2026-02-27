@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_GATEWAY_URL ?? 'http://localhost/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost/api';
 const DEBUG = import.meta.env.VITE_DEBUG  === 'true';
 
 type RequestOptions = {

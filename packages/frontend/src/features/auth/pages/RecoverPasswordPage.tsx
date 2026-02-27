@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Validators, validate } from '@transcendence/shared';
 import { confirmPasswordReset } from '../api/authApi';
-
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export default function RecoverPasswordPage() {
 	const navigate = useNavigate();
@@ -36,8 +35,8 @@ export default function RecoverPasswordPage() {
 			return;
 		}
 
-		if (!passwordRegex.test(password)) {
-			setError('Password must be at least 8 characters and include uppercase, lowercase and numbers'); // TODO Checkear que es match exacto con politica del backend
+		if (!validate(password, Validators.password)) {
+			setError(Validators.password.message);
 			return;
 		}
 
@@ -46,13 +45,8 @@ export default function RecoverPasswordPage() {
 			return;
 		}
 
-		if (!token) {
-			setError('Missing token');
-			return;
-		}
-
 		try {
-			await confirmPasswordReset(token, password);
+			await confirmPasswordReset(token!, password);
 			setSuccess(true);
 			setTimeout(() => navigate('/login'), 2000);
 		} catch (err: any) {
@@ -76,7 +70,7 @@ export default function RecoverPasswordPage() {
 		<div className='retro-bg flex items-center justify-center'>
 			<div className='bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg'>
 				<h1 className='text-2xl font-bold text-center mb-4'>
-					Nwe Password
+					New Password
 				</h1>
 
 				{error && (

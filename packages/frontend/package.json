@@ -17,20 +17,21 @@
 	"dependencies": {
 		"@transcendence/shared": "workspace:*",
 		"babylonjs": "8.31.0",
-		"react": "^19.2.3",
-		"react-dom": "^19.2.3",
+		"react": "19.2.3",
+		"react-dom": "19.2.3",
 		"react-router-dom": "7.13.1",
 		"vite": "7.1.9",
 		"zustand": "5.0.11"
 	},
 	"devDependencies": {
-		"@tailwindcss/postcss": "^4.1.17",
-		"@types/react": "^19.2.7",
-		"@types/react-dom": "^19.2.3",
+		"@tailwindcss/postcss": "4.1.17",
+		"@types/react": "19.2.7",
+		"@types/react-dom": "19.2.3",
 		"@types/react-router-dom": "5.3.3",
-		"autoprefixer": "^10.4.22",
-		"postcss": "^8.5.6",
-		"tailwindcss": "^4.1.17",
+		"autoprefixer": "10.4.22",
+		"postcss": "8.5.6",
+		"postcss-nested": "7.0.2",
+		"tailwindcss": "4.1.17",
 		"typescript": "5.9.3"
 	}
 }

@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Validators, validate } from '@transcendence/shared';
 import { login } from '../api/authApi';
-import { AuthTypes } from '@transcendence/shared';
 import { useAuth } from '../../../core/auth/AuthContext';
-
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export default function LoginPage() {
 	const navigate = useNavigate();
@@ -23,13 +20,13 @@ export default function LoginPage() {
 			return;
 		}
 
-		if (!emailRegex.test(email)) {
-			setError('Invalid email format');
+		if (!validate(email, Validators.email)) {
+			setError(Validators.email.message);
 			return;
 		}
 
-		if (!passwordRegex.test(password)) {
-			setError('Invalid password format');
+		if (!validate(password, Validators.password)) {
+			setError(Validators.password.message);
 			return;
 		}
 
@@ -48,8 +45,8 @@ export default function LoginPage() {
 	}
 
 	return (
-		<div className='retro-bg flex flex-col items-center justify-center'>
-			<h1 className='"retro-title mb-10'>
+		<div className='retro-bg flex flex-col items-center justify-center min-h-screen'>
+			<h1 className='retro-title mb-10'>
 				WELCOME TO <br />PING-PONG
 			</h1>
 

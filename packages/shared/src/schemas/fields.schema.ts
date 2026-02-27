@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { ValidationConstants as VC } from '../constants/validation.constants.js';
 
 // ============================================================================
 // DEFINICIONES DE CAMPOS REUTILIZABLES — FUENTE ÚNICA DE VERDAD
@@ -16,9 +17,9 @@ export namespace SchemaFields {
 	});
 
 	export const UsernameField = Type.String({
-		minLength: 3,
-		maxLength: 20,
-		pattern: '^[a-zA-Z0-9_-]+$',
+		minLength: VC.USERNAME_MIN_LENGTH,
+		maxLength: VC.USERNAME_MAX_LENGTH,
+		pattern:   VC.USERNAME_PATTERN,
 	});
 
 	export const EmailField = Type.String({
@@ -33,9 +34,9 @@ export namespace SchemaFields {
 	 *  Prohíbe espacios para evitar errores de copypaste.
 	 */
 	export const PasswordField = Type.String({
-		minLength: 8,
-		maxLength: 32,
-		pattern: '^(?=.*[a-z])(?=.*\\d)[^\\s]+$',
+		minLength: VC.PASSWORD_MIN_LENGTH,
+		maxLength: VC.PASSWORD_MAX_LENGTH,
+		pattern:   VC.PASSWORD_PATTERN,
 	});
 
 	/** Hash bcrypt almacenado en DB (60 chars fijos). */
@@ -53,8 +54,8 @@ export namespace SchemaFields {
 	export const AvatarFieldBase64 = Type.Optional(
 		Type.String({
 			minLength: 1,
-			maxLength: 13_300_000,
-			pattern: '^data:image\\/(png|jpg|jpeg|webp);base64,[A-Za-z0-9+/=]+$'
+			maxLength: VC.AVATAR_BASE64_MAX_LENGTH,
+			pattern:   VC.AVATAR_BASE64_PATTERN,
 		})
 	);
 
@@ -96,15 +97,15 @@ export namespace SchemaFields {
 	});
 
 	export const TotpCodeField = Type.String({
-		minLength: 6,
-		maxLength: 6,
-		pattern: '^[0-9]{6}$'
+		minLength: VC.TOTP_CODE_LENGTH,
+		maxLength: VC.TOTP_CODE_LENGTH,
+		pattern:   VC.TOTP_CODE_PATTERN,
 	});
 
 	export const BackupCodeField = Type.String({
 		minLength: 9,
 		maxLength: 9,
-		pattern: '^[A-F0-9]{4}-[A-F0-9]{4}$'
+		pattern:   VC.BACKUP_CODE_PATTERN,
 	});
 
 	// ====================================================================

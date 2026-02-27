@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Validators, validate } from '@transcendence/shared';
 import { requestPasswordReset } from '../api/authApi';
-
-const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordPage() {
 	const navigate = useNavigate();
@@ -19,8 +18,8 @@ export default function ForgotPasswordPage() {
 			return;
 		}
 
-		if (!emailRegex.test(email)) {
-			setError('Invalid email format');
+		if (!validate(email, Validators.email)) {
+			setError(Validators.email.message);
 			return;
 		}
 
