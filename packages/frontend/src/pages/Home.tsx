@@ -6,9 +6,10 @@ type Props = {
   user: User;
   token: string;
   onLogoutSuccess: () => void;
+  onNavigate: (page: string) => void;
 };
 
-export default function Home({ user, onLogoutSuccess }: Props) {
+export default function Home({ user, onLogoutSuccess, onNavigate }: Props) {
   const [showProfile, setShowProfile] = useState(false);
 
   return (
@@ -43,17 +44,23 @@ export default function Home({ user, onLogoutSuccess }: Props) {
       <div className="arcade-frame mt-16">
         <div className="arcade-screen">
           <div className="arcade-menu">
-            <button className="arcade-btn px-10 py-2">
-              PLAY
-            </button>
+           <button
+              className="arcade-btn px-10 py-2"
+              onClick={() => onNavigate("online-modes")}
+              >
+               PLAY ONLINE
+          </button>
 
-            <button className="arcade-btn px-6 py-2 text-sm">
-              Play vs Bot
-            </button>
+          <button className="arcade-btn px-6 py-2 text-sm">
+            Play vs Bot
+          </button>
 
-            <button className="arcade-btn px-6 py-2 text-sm">
-              Play with Friends
-            </button>
+          <button
+            className="arcade-btn px-6 py-2 text-sm"
+            onClick={() => onNavigate("local-setup")}
+          >
+            Local Match
+          </button>
           </div>
         </div>
       </div>
