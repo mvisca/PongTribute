@@ -217,6 +217,14 @@ export namespace WebSocketEventsTypes {
 		};
 	}
 
+	export interface FriendProfileUpdated extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_PROFILE_UPDATED;
+		payload: {
+			userId: string;
+			username: string;
+			avatar: string;
+		};
+	}
 	// ── Notificaciones de amistad ───────────────────────────────────────────
 
 	export interface FriendRequest extends EventsTypes.BaseEvent {
@@ -347,6 +355,7 @@ export namespace WebSocketEventsTypes {
 	export type AnyWsMessage =
 		| FriendOnline
 		| FriendOffline
+		| FriendProfileUpdated
 		| FriendRequest
 		| FriendAccepted
 		| FriendRemoved

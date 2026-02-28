@@ -39,6 +39,7 @@ export const WEBSOCKET_EVENTS = {
 	// --Presencia social--
 	FRIEND_ONLINE: 'friend:online',
 	FRIEND_OFFLINE: 'friend:offline',
+	FRIEND_PROFILE_UPDATED: 'friend:profile_updated',
 
 	// --Notificaciones de amistad--
 	FRIEND_REQUEST: 'friend:request', 
