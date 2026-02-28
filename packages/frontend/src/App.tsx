@@ -1,30 +1,20 @@
-
 import { useState } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Home from "./pages/Home";
-import OnlineModes from "./pages/OnlineModes";
-import Matchmaking from "./pages/Matchmaking";
-import LocalMatchSetup from "./pages/LocalMatchSetup";
 import { User } from "./types/User";
 
 type Page =
   | "login"
   | "register"
   | "forgot"
-  | "home"
-  | "online-modes"
-  | "matchmaking"
-  | "local-setup";
+  | "home";
 
 export default function App() {
   const [page, setPage] = useState<Page>("login");
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
-
-  // 👇 Guardamos el modo seleccionado
-  const [selectedMode, setSelectedMode] = useState<string>("Classic");
 
   return (
     <>
@@ -46,7 +36,7 @@ export default function App() {
         <Register onBack={() => setPage("login")} />
       )}
 
-      {/* FORGOT */}
+      {/* FORGOT PASSWORD */}
       {page === "forgot" && (
         <ForgotPassword onBack={() => setPage("login")} />
       )}
@@ -61,42 +51,6 @@ export default function App() {
             setToken(null);
             setPage("login");
           }}
-          onNavigate={(nextPage) => setPage(nextPage as Page)}
-        />
-      )}
-
-      {/* ONLINE MODE SELECT */}
-      {page === "online-modes" && (
-        <OnlineModes
-          onSelectMode={(mode) => {
-            setSelectedMode(mode);
-            setPage("matchmaking");
-          }}
-          onBack={() => setPage("home")}
-        />
-      )}
-
-      {/* MATCHMAKING */}
-      {page === "matchmaking" && (
-        <Matchmaking
-          mode={selectedMode}
-          onCancel={() => setPage("home")}
-          onBot={() => {
-            // Más adelante irá a game vs bot
-            alert("Bot match starting...");
-          }}
-        />
-      )}
-
-      {/* LOCAL MATCH SETUP */}
-      {page === "local-setup" && (
-        <LocalMatchSetup
-          onStart={(mode, scoreLimit) => {
-            alert(
-              `Local Match Starting\nMode: ${mode}\nScore Limit: ${scoreLimit}`
-            );
-          }}
-          onBack={() => setPage("home")}
         />
       )}
     </>
