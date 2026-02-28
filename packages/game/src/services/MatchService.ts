@@ -140,7 +140,7 @@ export class MatchService {
 			// Notificar al oponente vía Redis Pub/Sub (match_found vs mi_username)			
 			// Defino el evento con tipado estricto. Si falta 'timestamp' o 'payload' está mal, falla.
 			const event: TranscendenceEventsTypes.MatchFoundEvent = {
-				type: TRANSCENDENCE_EVENTS.MATCH_FOUND, // Usa la constante ('match:found')
+				type: TRANSCENDENCE_EVENTS.MATCH_FOUND, // Usa la constante ('redis:match:found')
 				timestamp: Date.now(),
 				source: 'game-service', // Opcional, pero útil para debugar
 				payload: {  // al definir este obj, TypeScrpit busca las variables en el ambito local.

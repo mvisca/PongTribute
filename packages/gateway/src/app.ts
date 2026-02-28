@@ -141,228 +141,195 @@ export function buildApp(): FastifyInstance {
 	// HTTP proxy routes
 	const proxy = createProxyHandler(app);
 	
-	// WS proxy (debug logs with console.* so they always show)
-	app.get('/api/game/ws', { websocket: true }, (connection, req) => {
-		const client = (connection as any).socket as WebSocket;
-		const requestId = (req as any).gatewayRequestId as string | undefined;
-		const clientIp = getClientIp(req);
-		
-		// --- Security: Origin check (WS is not covered by CORS) ---
-		const origin = normalizeHeaderValue(req.headers.origin);
-		if (origin && !wsAllowedOrigins.has(origin)) {
-			app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
-			closeWithFallback(client, 1008, 'Origin not allowed', 200);
-			return;
-		}
-		
-		// --- Basic connection limiting (global + per IP) ---
-		const currentIpCount = wsConnectionCountsByIp.get(clientIp) ?? 0;
-		if (wsTotalConnections >= GatewayEnv.WS_MAX_CONNECTIONS || currentIpCount >= GatewayEnv.WS_MAX_CONNECTIONS_PER_IP) {
-			app.log.warn(
-				{ requestId, clientIp, wsTotalConnections, currentIpCount },
-				'ws rejected: too many connections'
-			);
-			closeWithFallback(client, 1013, 'Try again later', 200);
-			return;
-		}
-		
-		wsTotalConnections += 1;
-		wsConnectionCountsByIp.set(clientIp, currentIpCount + 1);
-		
-		const wsBase = GatewayEnv.GAME_SERVICE_URL.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:').replace(/\/$/, '');
-		const rawUrl = req.raw.url ?? '/api/game/ws';
-		const query = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?')) : '';
-		const upstreamUrl = `${wsBase}/api/game/ws${query}`;
-		
-		const clientProtocolsRaw = normalizeHeaderValue(req.headers['sec-websocket-protocol']);
-		const clientProtocols = clientProtocolsRaw
-		? clientProtocolsRaw
-		.split(',')
-		.map((p) => p.trim())
-		.filter(Boolean)
-		: undefined;
-		
-		app.log.info(
-			{ requestId, clientIp, origin, upstreamUrl, hasProtocols: Boolean(clientProtocols?.length) },
-			'ws accepted: opening upstream'
-		);
-		
-		const upstream = new WebSocket(upstreamUrl, clientProtocols);
-		
-		let cleanedUp = false;
-		const queuedClientMessages: WebSocket.RawData[] = [];
-		let queuedBytes = 0;
-		
-		const upstreamOpenTimeout = setTimeout(() => {
-			app.log.warn({ requestId, upstreamUrl }, 'ws upstream open timeout');
-			closeWithFallback(client, 1011, 'Upstream not available', 200);
-			closeWithFallback(upstream, 1011, 'Upstream open timeout', 200);
-			cleanup();
-		}, GatewayEnv.WS_UPSTREAM_OPEN_TIMEOUT_MS);
-		
-		let clientAlive = true;
-		let upstreamAlive = true;
-		let pingInterval: NodeJS.Timeout | null = null;
-		let pongTimeout: NodeJS.Timeout | null = null;
-		
-		function scheduleHeartbeatCheck() {
-			if (pongTimeout) clearTimeout(pongTimeout);
-			pongTimeout = setTimeout(() => {
-				if (!clientAlive) {
-					app.log.warn({ requestId, clientIp }, 'ws client heartbeat failed');
-					closeWithFallback(client, 1002, 'Client heartbeat failed', 200);
-				}
-				if (!upstreamAlive) {
-					app.log.warn({ requestId, upstreamUrl }, 'ws upstream heartbeat failed');
-					closeWithFallback(upstream, 1002, 'Upstream heartbeat failed', 200);
-				}
-				cleanup();
-			}, GatewayEnv.WS_PONG_TIMEOUT_MS);
-		}
-		
-		function startHeartbeat() {
-			if (pingInterval) return;
-			pingInterval = setInterval(() => {
-				clientAlive = false;
-				upstreamAlive = false;
-				
-				try {
-					if (client.readyState === WebSocket.OPEN) client.ping();
-				} catch {}
-				try {
-					if (upstream.readyState === WebSocket.OPEN) upstream.ping();
-				} catch {}
-				
-				scheduleHeartbeatCheck();
-			}, GatewayEnv.WS_PING_INTERVAL_MS);
-		}
-		
-		function cleanup() {
-			if (cleanedUp) return;
-			cleanedUp = true;
-			
-			clearTimeout(upstreamOpenTimeout);
-			if (pingInterval) clearInterval(pingInterval);
-			if (pongTimeout) clearTimeout(pongTimeout);
-			
-			// Remove listeners to prevent leaks.
-			try {
-				client.removeAllListeners();
-			} catch {}
-			try {
-				upstream.removeAllListeners();
-			} catch {}
-			
-			// Decrement counters exactly once.
-			wsTotalConnections = Math.max(0, wsTotalConnections - 1);
-			const prev = wsConnectionCountsByIp.get(clientIp) ?? 1;
-			const next = prev - 1;
-			if (next <= 0) wsConnectionCountsByIp.delete(clientIp);
-			else wsConnectionCountsByIp.set(clientIp, next);
-		}
-		
-		client.on('pong', () => {
-			clientAlive = true;
-		});
-		upstream.on('pong', () => {
-			upstreamAlive = true;
-		});
-		
-		upstream.on('open', () => {
-			clearTimeout(upstreamOpenTimeout);
-			app.log.info({ requestId, upstreamUrl }, 'ws upstream open');
-			
-			// Flush buffered messages client->upstream
-			for (const data of queuedClientMessages) {
-				if (upstream.readyState !== WebSocket.OPEN) break;
-				upstream.send(data);
-			}
-			queuedClientMessages.length = 0;
-			queuedBytes = 0;
-			
-			startHeartbeat();
-		});
-		
-		upstream.on('message', (data: WebSocket.RawData) => {
-			if (client.readyState !== WebSocket.OPEN) {
-				closeWithFallback(upstream, 1000, 'client not open', 200);
-				return;
-			}
-			
-			if (client.bufferedAmount > GatewayEnv.WS_MAX_BUFFERED_AMOUNT_BYTES) {
-				app.log.warn({ requestId, bufferedAmount: client.bufferedAmount }, 'ws backpressure: closing client');
-				closeWithFallback(client, 1013, 'Client too slow', 200);
-				closeWithFallback(upstream, 1013, 'Client too slow', 200);
-				cleanup();
-				return;
-			}
-			
-			client.send(data);
-		});
-		
-		upstream.on('close', (code, reason) => {
-			app.log.info({ requestId, code, reason: reason.toString() }, 'ws upstream close');
-			closeWithFallback(client, code, reason.toString(), 500);
-			cleanup();
-		});
-		
-		upstream.on('error', (err) => {
-			app.log.error({ requestId, err }, 'ws upstream error');
-			closeWithFallback(client, 1011, 'Upstream error', 500);
-			cleanup();
-		});
-		
-		client.on('message', (data: WebSocket.RawData) => {
-			if (upstream.readyState === WebSocket.OPEN) {
-				if (upstream.bufferedAmount > GatewayEnv.WS_MAX_BUFFERED_AMOUNT_BYTES) {
-					app.log.warn(
-						{ requestId, bufferedAmount: upstream.bufferedAmount },
-						'ws backpressure: closing upstream'
-					);
-					closeWithFallback(client, 1013, 'Upstream busy', 200);
-					closeWithFallback(upstream, 1013, 'Upstream busy', 200);
-					cleanup();
-					return;
-				}
-				upstream.send(data);
-				return;
-			}
-			
-			// Buffer until OPEN, within limits
-			if (upstream.readyState === WebSocket.CONNECTING) {
-				const bytes = Buffer.byteLength(data as any);
-				if (
-					queuedClientMessages.length + 1 > GatewayEnv.WS_MAX_BUFFERED_MESSAGES ||
-					queuedBytes + bytes > GatewayEnv.WS_MAX_BUFFERED_BYTES
-				) {
-					app.log.warn({ requestId, queuedMessages: queuedClientMessages.length, queuedBytes }, 'ws buffer overflow');
-					closeWithFallback(client, 1013, 'Upstream not ready', 200);
-					closeWithFallback(upstream, 1013, 'Client sent too early', 200);
-					cleanup();
-					return;
-				}
-				
-				queuedClientMessages.push(data);
-				queuedBytes += bytes;
-				return;
-			}
-			
-			closeWithFallback(client, 1011, 'Upstream not open', 200);
-			cleanup();
-		});
-		
-		client.on('close', (code, reason) => {
-			app.log.info({ requestId, code, reason: reason.toString() }, 'ws client close');
-			closeWithFallback(upstream, code, reason.toString(), 500);
-			cleanup();
-		});
-		
-		client.on('error', (err) => {
-			app.log.error({ requestId, err }, 'ws client error');
-			closeWithFallback(upstream, 1011, 'Client error', 500);
-			cleanup();
-		});
-	});
+	
+	// =========================================================================
+	// HELPER: Proxy WebSocket dinámico
+	// Aisla la lógica compleja de los websockets en una unica función mantenible
+    // =========================================================================
+	function registerWsProxy(route: string, targetServiceUrl: string) {
+		// Le decimos a Fastify que intercepte la ruta dinámica (route) y que active el soporte para WebSockets.
+        app.get(route, { websocket: true }, (connection, req) => {
+            const client = (connection as any).socket as WebSocket;
+            const requestId = (req as any).gatewayRequestId as string | undefined;
+            const clientIp = getClientIp(req);
+            
+            // --- Security: Origin check (WS is not covered by CORS) ---
+            const origin = normalizeHeaderValue(req.headers.origin);
+            if (origin && !wsAllowedOrigins.has(origin)) {
+                app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
+                closeWithFallback(client, 1008, 'Origin not allowed', 200);
+                return;
+            }
+            
+            // --- Basic connection limiting (global + per IP) ---
+            const currentIpCount = wsConnectionCountsByIp.get(clientIp) ?? 0;
+            if (wsTotalConnections >= GatewayEnv.WS_MAX_CONNECTIONS || currentIpCount >= GatewayEnv.WS_MAX_CONNECTIONS_PER_IP) {
+                app.log.warn({ requestId, clientIp, wsTotalConnections, currentIpCount }, 'ws rejected: too many connections');
+                closeWithFallback(client, 1013, 'Try again later', 200);
+                return;
+            }
+            
+            wsTotalConnections += 1;
+            wsConnectionCountsByIp.set(clientIp, currentIpCount + 1);
+            
+			// Transformamos la URL base (http -> ws) e inyectamos la ruta dinámica
+			// Para abrir un websocket, Node.js necesita que la URL empiece por ws://
+            const wsBase = targetServiceUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:').replace(/\/$/, '');
+            const rawUrl = req.raw.url ?? route;
+			const query = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?')) : '';
+			// Construimos la URL final hacia donde el Gateway enviará los datos en 
+			// la red interna de Docker (Ej: ws://game:3003/api/game/ws?token=123).
+            const upstreamUrl = `${wsBase}${route}${query}`;
+            
+            const clientProtocolsRaw = normalizeHeaderValue(req.headers['sec-websocket-protocol']);
+            const clientProtocols = clientProtocolsRaw
+                ? clientProtocolsRaw.split(',').map((p) => p.trim()).filter(Boolean)
+                : undefined;
+            
+            app.log.info({ requestId, clientIp, origin, upstreamUrl }, 'ws accepted: opening upstream');
+            
+            const upstream = new WebSocket(upstreamUrl, clientProtocols);
+            
+            let cleanedUp = false;
+            const queuedClientMessages: WebSocket.RawData[] = [];
+            let queuedBytes = 0;
+            
+            const upstreamOpenTimeout = setTimeout(() => {
+                closeWithFallback(client, 1011, 'Upstream not available', 200);
+                closeWithFallback(upstream, 1011, 'Upstream open timeout', 200);
+                cleanup();
+            }, GatewayEnv.WS_UPSTREAM_OPEN_TIMEOUT_MS);
+            
+            let clientAlive = true;
+            let upstreamAlive = true;
+            let pingInterval: NodeJS.Timeout | null = null;
+            let pongTimeout: NodeJS.Timeout | null = null;
+            
+            function scheduleHeartbeatCheck() {
+                if (pongTimeout) clearTimeout(pongTimeout);
+                pongTimeout = setTimeout(() => {
+                    if (!clientAlive) closeWithFallback(client, 1002, 'Client heartbeat failed', 200);
+                    if (!upstreamAlive) closeWithFallback(upstream, 1002, 'Upstream heartbeat failed', 200);
+                    cleanup();
+                }, GatewayEnv.WS_PONG_TIMEOUT_MS);
+            }
+            
+            function startHeartbeat() {
+                if (pingInterval) return;
+                pingInterval = setInterval(() => {
+                    clientAlive = false;
+                    upstreamAlive = false;
+                    try { if (client.readyState === WebSocket.OPEN) client.ping(); } catch {}
+                    try { if (upstream.readyState === WebSocket.OPEN) upstream.ping(); } catch {}
+                    scheduleHeartbeatCheck();
+                }, GatewayEnv.WS_PING_INTERVAL_MS);
+            }
+            
+            function cleanup() {
+                if (cleanedUp) return;
+                cleanedUp = true;
+                clearTimeout(upstreamOpenTimeout);
+                if (pingInterval) clearInterval(pingInterval);
+                if (pongTimeout) clearTimeout(pongTimeout);
+                try { client.removeAllListeners(); } catch {}
+                try { upstream.removeAllListeners(); } catch {}
+                
+                wsTotalConnections = Math.max(0, wsTotalConnections - 1);
+                const prev = wsConnectionCountsByIp.get(clientIp) ?? 1;
+                const next = prev - 1;
+                if (next <= 0) wsConnectionCountsByIp.delete(clientIp);
+                else wsConnectionCountsByIp.set(clientIp, next);
+            }
+            
+            client.on('pong', () => { clientAlive = true; });
+            upstream.on('pong', () => { upstreamAlive = true; });
+            
+            upstream.on('open', () => {
+                clearTimeout(upstreamOpenTimeout);
+                for (const data of queuedClientMessages) {
+                    if (upstream.readyState !== WebSocket.OPEN) break;
+                    upstream.send(data);
+                }
+                queuedClientMessages.length = 0;
+                queuedBytes = 0;
+                startHeartbeat();
+            });
+            
+            upstream.on('message', (data: WebSocket.RawData) => {
+                if (client.readyState !== WebSocket.OPEN) {
+                    closeWithFallback(upstream, 1000, 'client not open', 200);
+                    return;
+                }
+                if (client.bufferedAmount > GatewayEnv.WS_MAX_BUFFERED_AMOUNT_BYTES) {
+                    closeWithFallback(client, 1013, 'Client too slow', 200);
+                    closeWithFallback(upstream, 1013, 'Client too slow', 200);
+                    cleanup();
+                    return;
+                }
+                client.send(data);
+            });
+            
+            upstream.on('close', (code, reason) => {
+                closeWithFallback(client, code, reason.toString(), 500);
+                cleanup();
+            });
+            
+            upstream.on('error', () => {
+                closeWithFallback(client, 1011, 'Upstream error', 500);
+                cleanup();
+            });
+            
+            client.on('message', (data: WebSocket.RawData) => {
+                if (upstream.readyState === WebSocket.OPEN) {
+                    if (upstream.bufferedAmount > GatewayEnv.WS_MAX_BUFFERED_AMOUNT_BYTES) {
+                        closeWithFallback(client, 1013, 'Upstream busy', 200);
+                        closeWithFallback(upstream, 1013, 'Upstream busy', 200);
+                        cleanup();
+                        return;
+                    }
+                    upstream.send(data);
+                    return;
+                }
+                
+                if (upstream.readyState === WebSocket.CONNECTING) {
+                    const bytes = Buffer.byteLength(data as any);
+                    if (queuedClientMessages.length + 1 > GatewayEnv.WS_MAX_BUFFERED_MESSAGES || queuedBytes + bytes > GatewayEnv.WS_MAX_BUFFERED_BYTES) {
+                        closeWithFallback(client, 1013, 'Upstream not ready', 200);
+                        closeWithFallback(upstream, 1013, 'Client sent too early', 200);
+                        cleanup();
+                        return;
+                    }
+                    queuedClientMessages.push(data);
+                    queuedBytes += bytes;
+                    return;
+                }
+                
+                closeWithFallback(client, 1011, 'Upstream not open', 200);
+                cleanup();
+            });
+            
+            client.on('close', (code, reason) => {
+                closeWithFallback(upstream, code, reason.toString(), 500);
+                cleanup();
+            });
+            
+            client.on('error', () => {
+                closeWithFallback(upstream, 1011, 'Client error', 500);
+                cleanup();
+            });
+        });
+    }
+
+    // =========================================================================
+    // REGISTRO DE RUTAS WEBSOCKET
+    // =========================================================================
+    // Llamamos a la función inyectando la ruta de "Game".
+	registerWsProxy('/api/game/ws', GatewayEnv.GAME_SERVICE_URL);
+	// Reutilizamos toda la lógica de seguridad y backpressure para "Comms".
+	registerWsProxy('/api/comms/ws', GatewayEnv.COMMS_SERVICE_URL);
+	
+
+
 	
 	const authProxy = proxy(GatewayEnv.AUTH_SERVICE_URL);
 	app.all('/api/auth', authProxy);

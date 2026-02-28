@@ -158,19 +158,6 @@ export namespace TranscendenceEventsTypes {
 		};
 	}
 
-	// ── Game ────────────────────────────────────────────────────────────────
-	// YA NO EXISTE
-	// export interface GameOverEvent extends EventsTypes.BaseEvent {
-	// 	type: typeof TRANSCENDENCE_EVENTS.GAME_OVER;
-	// 	payload: {
-	// 		matchId: string;
-	// 		playerIds: string [];
-	// 		winnerId: string;
-	// 		player1Score: number;
-	// 		player2Score: number;
-	// 		reason?: GameConstants.GameOverReason;
-	// 	};
-	// }
 
 	// ── Union ────────────────────────────────────────────────────────────────
 
