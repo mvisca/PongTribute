@@ -17,17 +17,17 @@ all: up_build
 
 help:
 	@echo "Targets:"
-	@echo "  make / make all   - up_build (requires .env, no-op if stack already running)"
-	@echo "  make build        - docker compose build (requires .env)"
-	@echo "  make up           - up -d only if stack is not already running (requires .env)"
-	@echo "  make up_build     - up -d --build only if stack is not already running (requires .env)"
-	@echo "  make debug        - docker compose up --build (no -d, requires .env)"
-	@echo "  make down         - docker compose down"
-	@echo "  make clean        - down --rmi local "
-	@echo "  make fclean       - down -v --rmi local "
-	@echo "  make logs         - docker compose logs -f (requires .env)"
-	@echo "  make ps           - docker compose ps (requires .env)"
-
+	@echo "  make / make all   - Start stack (build + up). No-op if already running. Requires .env"
+	@echo "  make build        - Build images only. Requires .env"
+	@echo "  make up           - Start containers only (no build). No-op if already running. Requires .env"
+	@echo "  make up_build     - Build and start. No-op if already running. Requires .env"
+	@echo "  make debug        - Build and start in foreground (logs in terminal). Requires .env"
+	@echo "  make down         - Stop and remove containers and network. Keeps images and volumes"
+	@echo "  make clean        - Down + remove locally built images. Keeps volumes (data)"
+	@echo "  make fclean       - Down + remove local images + remove volumes (full reset, data lost)"
+	@echo "  make logs         - Follow compose logs. Requires .env"
+	@echo "  make ps           - List compose containers. Requires .env"
+	
 check-env:
 	@test -f "$(ENV_FILE)" || (echo "Error: $(ENV_FILE) is missing. Create your .env before running Docker, You can use .env.example as a template." && exit 1)
 
