@@ -1,0 +1,30 @@
+Privacy Policy — Transcendence
+
+Transcendence is a project developed for educational purposes as part of the project ft_trascendence belonging 
+to the common core of school 42 barcelona. This policy describes in simple terms how we handle data in the application.
+
+What data we collect
+- Email, username, and password (stored encrypted) to create and manage your account.
+- Avatar (optional), stored via an external image hosting service.
+- Game usage data (matches, results, friends) needed for the application to work.
+
+What we use it for
+- To allow registration, login, and password recovery.
+- To display your profile (username, avatar) and manage your friends list.
+- To enable online matches, matchmaking, and local play.
+
+Who we share it with
+- Data is used within the project. We do not sell or give your data to third parties for commercial purposes.
+- Your avatar may be stored with an image hosting provider (e.g. Cloudinary).
+- In an academic context, the project may be reviewed by teaching staff for assessment purposes.
+
+How we protect it
+- Passwords are stored with secure hashing; communication uses HTTPS; we offer optional two-factor verification (2FA).
+
+Your rights
+You can request access, correction, or deletion of your data by contacting: pong.42.barcelona@gmail.com.
+
+If you delete your account, your email and associated data are permanently removed from our systems.
+
+Contact
+For questions about this policy: pong.42.barcelona@gmail.com.
