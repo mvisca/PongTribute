@@ -15,7 +15,8 @@ export class UserEventHandler implements CommsEventHandler {
 
 	eventTypes = [
 		TRANSCENDENCE_EVENTS.USER_LOGIN,
-		TRANSCENDENCE_EVENTS.USER_LOGOUT
+		TRANSCENDENCE_EVENTS.USER_LOGOUT,
+		TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED
 	
 	];
 
@@ -32,6 +33,10 @@ export class UserEventHandler implements CommsEventHandler {
 
 			case TRANSCENDENCE_EVENTS.USER_LOGOUT:
 				await this.handleLogout(userEvent as TranscendenceEventsTypes.UserLogoutEvent, commsService);
+				break;
+			
+			case TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED:
+				await this.handleProfileUpdated(userEvent as TranscendenceEventsTypes.UserProfileUpdatedEvent, commsService);
 				break;
 		}
 	}
@@ -103,6 +108,37 @@ export class UserEventHandler implements CommsEventHandler {
 			console.error(`[UserHandler] Error en logout:`, err);
 		}
 	}
+
+	private async handleProfileUpdated(
+        event: TranscendenceEventsTypes.UserProfileUpdatedEvent,
+        commsService: CommsService
+    ): Promise<void> {
+        console.log(`[UserHandler] ${event.targetUserId} profile updated`);
+
+        try {
+            const friends = await this.getUserFriends(event.targetUserId);
+            
+            if (friends.length > 0) {
+                commsService.broadcastToUsers(friends, {
+                    type: WEBSOCKET_EVENTS.FRIEND_PROFILE_UPDATED,
+                    timestamp: event.timestamp,
+                    payload: {
+                        userId: event.payload.userId,
+                        username: event.payload.username,
+                        avatar: event.payload.avatar,
+					},
+				// 'satisfies': Verifica que el objeto literal que le pasamos a broadcastToUsers 
+				// cumpla estrictamente con la interfaz que hemos creado en shared sin forzar 
+				// un casteo inseguro como hace 'as'.
+                } satisfies WebSocketEventsTypes.FriendProfileUpdated);
+                
+                console.log(`[UserHandler] Notificado cambio de perfil a ${friends.length} amigos`);
+            }
+        } catch (err) {
+            console.error(`[UserHandler] Error en profile update:`, err);
+        }
+	}
+	
 
 	private async getUserFriends(userId: string): Promise<string[]> {
 		try {

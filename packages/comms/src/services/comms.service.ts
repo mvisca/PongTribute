@@ -9,6 +9,7 @@ import {
 	IEventService,
 	TranscendenceEventsTypes,
 	WebSocketEventsTypes,
+	TRANSCENDENCE_EVENTS,
 	TRANSCENDENCE_CHANNEL,
 	UserTypes
 } from '@transcendence/shared';
@@ -84,8 +85,8 @@ export class CommsService implements IEventService {
 			]);
 			this.logger.log('[Comms] Clientes Redis conectados');
 			
-			// Suscribirse a canale de applicacion.
-			// Se filtratá por eventType
+			// Suscribirse a canal de aplicacion.
+			// Se filtrará por eventType
 			await this.redisSub.subscribe(TRANSCENDENCE_CHANNEL);
 			this.logger.log(`[Comms] Suscrito a ${TRANSCENDENCE_CHANNEL}\n`);
 			
@@ -228,7 +229,7 @@ export class CommsService implements IEventService {
 	}	
 	
 	// ==========================================================================
-	// MANEJO DE EVENTOS DE OTROS SERVICIOS (REDIS)
+	// MANEJO DE EVENTOS (REDIS) DE OTROS SERVICIOS
 	// ==========================================================================
 	
 	private async handleRedisMessage(
@@ -243,7 +244,7 @@ export class CommsService implements IEventService {
 			this.logger.log(`[Comms] Evento recibido: ${event.type}`);
 			
 			// Buscar el handler adecuado en el array de handlers importado
-			// Nota: Esto asume que tienes implementado el patrón Strategy en ./events/index.ts
+			// Nota: Esto asume que tenemos implementado el patrón Strategy en ./events/index.ts
 			const handler = EVENT_HANDLERS.find(h => h.eventTypes.includes(event.type));
 			
 			if (handler) {
@@ -346,15 +347,30 @@ export class CommsService implements IEventService {
 	
 	private handleDisconnect(ws: ExtendedWebSocket, userId: string): void {
 		const sockets = this.connections.get(userId);
+
 		if (sockets) {
 			sockets.delete(ws);
 			this.totalConnections--;
-			
-			if (sockets.size === 0) {
-				this.connections.delete(userId);
-				// Opcional: Notificar desconexión completa a otros servicios o amigos
-				this.logger.log(`[Comms] Usuario ${userId} totalmente desconectado.`);
-			}
+		}
+
+		// Si ya no quedan sockets para este usuario, porque cerró la ultima pestaña
+		if (!sockets || sockets.size === 0) {
+			this.connections.delete(userId); // Limpieza local
+
+			console.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
+
+			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
+			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
+				type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
+				timestamp: Date.now(),
+				source: 'comms-service',
+				targetUserId: userId, // Esto es lo que lee Game
+				payload: { userId }
+			};
+
+			// El servicio 'game' esta subscrito a esta publicacion
+			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
+				.catch(err => console.error('[COMMS] Error publishing disconnected event:', err));
 		}
 	}
 	

@@ -63,7 +63,10 @@ export namespace TranscendenceEventsTypes {
 	export interface UserDisconnectedEvent extends EventsTypes.BaseEvent {
 		type: typeof TRANSCENDENCE_EVENTS.USER_DISCONNECTED;
 		targetUserId: UserTypes.UserId;
-		payload: UserInfoPayload;
+		//payload: UserInfoPayload;
+		payload: {
+			userId: string;
+		}
 	}
 
 	// ── Friendship ──────────────────────────────────────────────────────────
@@ -119,6 +122,8 @@ export namespace TranscendenceEventsTypes {
 		payload: {
 			matchId: string;
 			inviterId: string;
+			inviterUsername: string;
+			inviterAvatar: string;
 			inviteeId: string;
 			gameMode: GameConstants.GameModeType;
 			expiresAt: number;
@@ -153,19 +158,6 @@ export namespace TranscendenceEventsTypes {
 		};
 	}
 
-	// ── Game ────────────────────────────────────────────────────────────────
-
-	export interface GameOverEvent extends EventsTypes.BaseEvent {
-		type: typeof TRANSCENDENCE_EVENTS.GAME_OVER;
-		payload: {
-			matchId: string;
-			playerIds: string [];
-			winnerId: string;
-			player1Score: number;
-			player2Score: number;
-			reason?: GameConstants.GameOverReason;
-		};
-	}
 
 	// ── Union ────────────────────────────────────────────────────────────────
 
@@ -180,7 +172,7 @@ export namespace TranscendenceEventsTypes {
 		| MatchStartedEvent
 		| MatchRejectedEvent
 		| MatchCancelledEvent
-		| GameOverEvent
+		//| GameOverEvent
 		| FriendRequestEvent
 		| FriendAcceptedEvent
 		| FriendRemovedEvent;
@@ -203,7 +195,7 @@ export namespace WebSocketEventsTypes {
 			gameState: GameTypes.GameDynamicState;
 			updateType: GameConstants.GameUpdateType;
 		};
-	} // Omitie campos internos del match que el frontend no necesita
+	} // Omite campos internos del match que el frontend no necesita
 	
 	// ── Presencia social ─────────────────────────────────────────────────────
 
@@ -225,6 +217,14 @@ export namespace WebSocketEventsTypes {
 		};
 	}
 
+	export interface FriendProfileUpdated extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_PROFILE_UPDATED;
+		payload: {
+			userId: string;
+			username: string;
+			avatar: string;
+		};
+	}
 	// ── Notificaciones de amistad ───────────────────────────────────────────
 
 	export interface FriendRequest extends EventsTypes.BaseEvent {
@@ -255,6 +255,28 @@ export namespace WebSocketEventsTypes {
 
 	// ── Notificaciones de partida ───────────────────────────────────────────
 
+	export interface MatchFound extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.MATCH_FOUND;
+		payload: {
+			matchId: string;
+		};
+	}
+
+	export interface MatchQueueTimeout extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.MATCH_QUEUE_TIMEOUT;
+		payload: {
+			reason: string;
+		};
+	}
+
+	export interface MatchStarted extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.MATCH_STARTED;
+		payload: {
+			matchId: string;
+		};
+	}
+	
+	
 	export interface MatchInvite extends EventsTypes.BaseEvent {
 		type: typeof WEBSOCKET_EVENTS.MATCH_INVITE;
 		payload: {
@@ -333,9 +355,13 @@ export namespace WebSocketEventsTypes {
 	export type AnyWsMessage =
 		| FriendOnline
 		| FriendOffline
+		| FriendProfileUpdated
 		| FriendRequest
 		| FriendAccepted
 		| FriendRemoved
+		| MatchFound
+		| MatchQueueTimeout
+		| MatchStarted
 		| MatchInvite
 		| MatchCancelled
 		| MatchRejected

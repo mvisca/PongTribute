@@ -5,7 +5,7 @@ import {
 	WEBSOCKET_EVENTS,
 	EventsTypes,
 	TranscendenceEventsTypes,
-	WebSocketEventsTypes,
+	WebSocketEventsTypes
 } from '@transcendence/shared';
 
 type FriendshipEvent = 
