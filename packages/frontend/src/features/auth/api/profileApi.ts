@@ -1,5 +1,5 @@
 import { apiRequest } from '../../../core/api/client';
-import type { UserTypes } from '@transcendence/shared';
+import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 
 /**
  * Obtiene el perfil de un usuario.

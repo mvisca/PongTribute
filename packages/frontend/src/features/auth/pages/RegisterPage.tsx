@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Validators, validate } from '@transcendence/shared';
+import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { register } from '../api/authApi';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { useAvatarUpload } from '../../../shared/hooks/useAvatarUpload';
@@ -60,7 +60,7 @@ export default function RegisterPage() {
 		try {
 			const data = await register(username, email, password, base64 ?? undefined);
 			authLogin(data.user, data.token);
-			navigate('/home');
+			navigate('/profile');
 		} catch (err: any) {
 			setError(err?.message ?? 'Register failed');
 		}

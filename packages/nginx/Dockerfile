@@ -7,8 +7,9 @@ RUN corepack enable
 COPY . .
 
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @transcendence/frontend build
 
+RUN pnpm --filter @transcendence/shared build
+RUN pnpm --filter @transcendence/frontend build
 
 FROM nginx:1.27-alpine
 

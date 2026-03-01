@@ -1,5 +1,5 @@
 import { apiRequest } from "../../../core/api/client";
-import type { AuthTypes } from '@transcendence/shared';
+import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 
 /** Llamado al endpoint login */
 export async function login(

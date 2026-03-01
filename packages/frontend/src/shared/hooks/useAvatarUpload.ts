@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Validators } from '@transcendence/shared';
+import { Validators } from '@transcendence/shared/utils/validators.js';
 
 type AvatarState = {
 	preview: string | null; // Base64 para mostrar

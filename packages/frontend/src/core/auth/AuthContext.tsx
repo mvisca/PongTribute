@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AuthTypes } from '@transcendence/shared';
+import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 
 type AuthState = { 
 	user: AuthTypes.AccessTokenPayload | null;

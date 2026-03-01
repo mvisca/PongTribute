@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Validators, validate } from '@transcendence/shared';
+import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { login } from '../api/authApi';
 import { useAuth } from '../../../core/auth/AuthContext';
 
@@ -38,7 +38,7 @@ export default function LoginPage() {
 			}
 
 			authLogin(data.user, data.token);
-			navigate('/home');
+			navigate('/profile');
 		} catch(err: any) {
 			setError(err?.message ?? 'Login failed');
 		}

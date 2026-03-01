@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Validators, validate } from '@transcendence/shared';
+import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { confirmPasswordReset } from '../api/authApi';
 
 export default function RecoverPasswordPage() {
