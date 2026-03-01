@@ -1,6 +1,10 @@
 DC       = docker compose
 ENV_FILE = .env
 
+
+USER_SERVICE_DB_PATH := $(shell grep -E '^USER_SERVICE_DB_PATH=' .env 2>/dev/null | sed 's/^USER_SERVICE_DB_PATH=//')
+GAME_SERVICE_DB_PATH := $(shell grep -E '^GAME_SERVICE_DB_PATH=' .env 2>/dev/null | sed 's/^GAME_SERVICE_DB_PATH=//')
+
 define check_running_and_up
 	RUNNING=$$($(DC) ps -q 2>/dev/null | wc -l); \
 	EXPECTED=$$($(DC) config --services 2>/dev/null | wc -l); \
@@ -11,7 +15,7 @@ define check_running_and_up
 	fi
 endef
 
-.PHONY: all help check-env build up up_build debug down clean fclean logs ps
+.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke
 
 all: up_build
 
@@ -27,7 +31,9 @@ help:
 	@echo "  make fclean       - Down + remove local images + remove volumes (full reset, data lost)"
 	@echo "  make logs         - Follow compose logs. Requires .env"
 	@echo "  make ps           - List compose containers. Requires .env"
-	
+	@echo "  make stop         - Stop containers (no remove). Use 'make up' to start again"
+	@echo "  make nuke         - Remove DB files (from .env paths), then docker system prune -a -f --volumes. Requires .env"
+
 check-env:
 	@test -f "$(ENV_FILE)" || (echo "Error: $(ENV_FILE) is missing. Create your .env before running Docker, You can use .env.example as a template." && exit 1)
 
@@ -43,9 +49,26 @@ up_build: check-env
 debug: check-env
 	@$(DC) up --build
 
-down:
+down: 
 	@$(DC) down
 
+stop: check-env
+	@$(DC) stop
+
+nuke: check-env
+	@echo "WARNING: All images, volumes, and DB files (from .env paths) will be deleted."
+	@echo -n "Continue? [y/N] "; read -r answer; \
+	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
+		if [ -n "$(USER_SERVICE_DB_PATH)" ]; then rm -f $(USER_SERVICE_DB_PATH)/*.db; fi; \
+		if [ -n "$(GAME_SERVICE_DB_PATH)" ]; then rm -f $(GAME_SERVICE_DB_PATH)/*.db; fi; \
+		$(DC) down -v 2>/dev/null || true; \
+		docker system prune -a -f --volumes; \
+		echo "Done."; \
+	else \
+		echo "Aborted."; \
+		exit 1; \
+	fi
+	
 clean: 
 	@$(DC) down --rmi local
 
