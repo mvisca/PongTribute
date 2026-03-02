@@ -1,13 +1,35 @@
-import { useTransition } from "react"
-import { apiRequest } from "../../../core/api/client"
-import type { UserTypes } from "@transcendence/shared"
+import { apiRequest } from '../../../core/api/client';
+import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 
-export function getProfile(userId: string, token: string) {
-	return apiRequest<UserTypes.UserPublic>(`/api/users/${userId}`, { token });
+/**
+ * Obtiene el perfil de un usuario.
+ * @param userId - ID del usuario.
+ * @param token - Token de autenticación.
+ * @returns Promesa que resuelve con los datos del perfil del usuario.
+ */
+export async function getProfile(
+	userId: string,
+	token: string
+): Promise<UserTypes.UserPublic> {
+	return await apiRequest<UserTypes.UserPublic>(`/users/${userId}`, {
+		method: 'GET',
+		token
+	});
 }
 
-export function updateProfile(userId: string, body: UserTypes.UpdateUserBody, token: string) {
-	return apiRequest<UserTypes.UserPublic>(`/api/users/${userId}`, {
+/**
+ * Actualiza el perfil de un usuario.
+ * @param userId - ID del usuario.
+ * @param body - Datos del perfil a actualizar.
+ * @param token - Token de autenticación.
+ * @returns Promesa que resuelve con los datos actualizados del perfil del usuario.
+ */
+export async function updateProfile(
+	userId: string,
+	body: UserTypes.UpdateUserBody,
+	token: string
+): Promise<UserTypes.UserPublic> {
+	return await apiRequest<UserTypes.UserPublic>(`/users/${userId}`, {
 		method: 'PUT',
 		body,
 		token,

@@ -15,6 +15,7 @@ export default function LoginPage() {
 	async function handleLogin() {
 		setError('');
 
+		console.log('start.login');
 		if (!email || !password) {
 			setError('Email and password are required');
 			return;
@@ -30,12 +31,19 @@ export default function LoginPage() {
 			return;
 		}
 
+		console.log('validations.login.ok');
 		try{
+			
+			console.log('inside.try.block');
+
 			const data = await login(email, password);
 			if ('twoFactorRequired' in data) {
 				navigate('/verify-2fa', { state: { provisionalToken: data.provisionalToken } });
 				return;
 			}
+
+			console.log('[Login] data.user:', JSON.stringify(data.user));
+			console.log('[Login] data.token:', data.token?.substring(0, 30));
 
 			authLogin(data.user, data.token);
 			navigate('/profile');
@@ -61,7 +69,7 @@ export default function LoginPage() {
 					className='input'
 					placeholder='Email'
 					value={email}
-					onChange={ (e) => { setEmail(e.target.value); setError(''); } }
+					onChange={ (e) => {setEmail(e.target.value); setError(''); }}
 				/>
 
 				<input
@@ -69,7 +77,7 @@ export default function LoginPage() {
 					className='input'
 					placeholder='Password'
 					value={password}
-					onChange={(e) => { setPassword(e.target.value); setError(''); } }
+					onChange={ (e) => {setPassword(e.target.value); setError(''); }}
 				/>
 
 				<button onClick={handleLogin} className='arcade-btn w-full mt-4'>

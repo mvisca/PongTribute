@@ -6,7 +6,7 @@ export async function login(
 	email: string,
 	password: string
 ): Promise<AuthTypes.LoginResponse> {
-	return apiRequest<AuthTypes.LoginResponse>('/auth/login', {
+	return await apiRequest<AuthTypes.LoginResponse>('/auth/login', {
 		method: 'POST',
 		body: { email, password },
 	});
@@ -19,7 +19,7 @@ export async function register(
 	password: string,
 	avatar?: string
 ): Promise<AuthTypes.LoginSuccessResponse> {
-	return apiRequest<AuthTypes.LoginSuccessResponse>('/auth/register', {
+	return await apiRequest<AuthTypes.LoginSuccessResponse>('/auth/register', {
 		method: 'POST',
 		body: { username, email, password, avatar }
 	});
@@ -27,7 +27,7 @@ export async function register(
 
 /** Llamado a logout */
 export async function logout(accessToken: string): Promise<void> {
-	return apiRequest<void>('/auth/logout', {
+	return await apiRequest<void>('/auth/logout', {
 		method: 'POST',
 		token: accessToken,
 	});
@@ -35,14 +35,14 @@ export async function logout(accessToken: string): Promise<void> {
 
 /** Llamado a refreshAccessToken() */
 export async function refreshAccessToken(): Promise<AuthTypes.LoginSuccessResponse> {
-	return apiRequest('/auth/refresh', {
+	return await apiRequest('/auth/refresh', {
 		method: 'POST',
 	});
 }
 
 /** Llamado a requestPasswordReset() */
 export async function requestPasswordReset(email: string): Promise<void> {
-	return apiRequest<void>('/auth/password-reset/request', {
+	return await apiRequest<void>('/auth/password-reset/request', {
 		method: 'POST',
 		body: { email },
 	});
@@ -50,7 +50,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
 
 /** Llamado a confirmPasswordReset */
 export async function confirmPasswordReset(token: string, newPassword: string): Promise<void> {
-	return apiRequest('/auth/password-reset/confirm', {
+	return await apiRequest('/auth/password-reset/confirm', {
 		method: 'POST',
 		body: { token, newPassword },
 	});

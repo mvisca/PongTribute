@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { useAuth } from '../../../core/auth/AuthContext';
-import { updateProfile } from '../api/profileApi';
+import { updateProfile } from '../../profile/api/profileApi';
 import { useAvatarUpload } from '../../../shared/hooks/useAvatarUpload';
 
 type ErrorsState = {
@@ -12,14 +12,17 @@ type ErrorsState = {
 
 export default function EditProfilePage() {
 	const navigate = useNavigate();
-	const { userId, token, user } = useAuth((state) => ({
-		userId: state.user?.id,
-		token: state.accessToken,
-		user: state.user,
-	}));
-	const { preview, base64, error: avatarError, handleFile } = useAvatarUpload();
-	const [username, setUsername] = useState('');
-	const [email, setEmail] = useState('');
+
+	const userId = useAuth((state) => state.user?.id);
+	const token = useAuth((state) => state.accessToken);
+	const username = useAuth((state) => state.user?.username);
+	const email = useAuth((state) => state.user?.email);
+	const user = useAuth((state) => state.user);
+
+	const { preview, base64, error: avatarError, handleFile} = useAvatarUpload();
+
+	const [usernameInput, setUsername] = useState(user?.username ?? '');
+	const [emailInput, setEmail] = useState(user?.email ?? '');
 	const [errors, setErrors] = useState<ErrorsState>({
 		username: '',
 		email: '',
@@ -29,11 +32,11 @@ export default function EditProfilePage() {
 	const validateInputs = () => {
 		setError('');
 		
-		const usernameError = validate(username, Validators.username)
+		const usernameError = validate(username!, Validators.username)
 		? ''
 		: Validators.username.message;
 		
-		const emailError = validate(email, Validators.email)
+		const emailError = validate(email!, Validators.email)
 		? ''
 		: Validators.email.message;
 		
@@ -42,11 +45,11 @@ export default function EditProfilePage() {
 		const isValid = !usernameError && !emailError;
 		
 		if (!isValid) {
-			setError('Invalid fiel in form');
+			setError('Invalid field in form');
 		}
 		
 		return isValid;
-	};	
+	};
 	
 	const handleSubmit = async () => {
 		if (!validateInputs()) {
@@ -54,14 +57,14 @@ export default function EditProfilePage() {
 		}
 		
 		try {
-			await updateProfile(userId!, { 
+			const updatedUser = await updateProfile(userId!, { 
 				username,
 				email,
 				...(base64 && { avatar: base64 }),
 			}, token!);
 			navigate('/profile');
 		} catch(err: any) {
-			console.error('Error updating profile:', err);
+			setError(err?.message ?? 'Update failed');
 		} 
 	};
 	
@@ -75,7 +78,7 @@ export default function EditProfilePage() {
 		
 				{error && <p className='alert-error'>{error}</p>}
 		
-				{ /* Avatar */ }
+				{/* Avatar */ }
 				<div className='mb-4'>
 					{preview
 						? <img src={preview} className='avatar-preview' alt='Avatar preview' />
@@ -123,7 +126,6 @@ export default function EditProfilePage() {
 						UPDATE PROFILE
 					</button>
 				</div>
-				{error && <p className="alert-error">{error} </p> }
 		
 				<div className="mt-6 text-right text-sm text-purple-300">
 					<button 

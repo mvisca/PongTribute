@@ -12,7 +12,7 @@ export function AppRouter() {
 		<BrowserRouter>
 			<Routes>
 				{/* Rutas públicas */}
-				<Route path="/login"    element={<LoginPage />} />
+				<Route path="/login" element={<LoginPage />} />
 				<Route path="/register" element={<RegisterPage />} />
 				<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
 				<Route path="/forgot" element={<ForgotPasswordPage />} />

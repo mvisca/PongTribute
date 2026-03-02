@@ -124,7 +124,7 @@ class RedisEventCollector {
 			try {
 				const event = JSON.parse(message) as TranscendenceEventsTypes.SystemEvent;
 				this.events.push(event);
-			} catch { /* ignorar mensajes no-JSON */ }
+			} catch {/* ignorar mensajes no-JSON */}
 		});
 		this.connected = true;
 		console.log(`${c.b}📡 Redis Event Collector escuchando en canal: ${TRANSCENDENCE_CHANNEL}${c.R}`);

@@ -14,7 +14,7 @@ type ErrorsState = {
 export default function RegisterPage() {
 	const navigate = useNavigate();
 	const authLogin = useAuth((state) => state.login);
-	const { preview, base64, error: avatarError, handleFile, clear: clearAvatar } = useAvatarUpload();
+	const { preview, base64, error: avatarError, handleFile } = useAvatarUpload();
 	const [username, setUsername] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -67,7 +67,7 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<div className="retro-bg flex items-center justify-center">
+		<div className="retro-bg flex items-center justify-center min-h-screen">
 			<div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
 				<h1 className="text-2xl font-bold text-center mb-4">
 					Create Account
@@ -84,7 +84,6 @@ export default function RegisterPage() {
 					placeholder="Username"
 					value={username}
 					onChange={(e) => { setUsername(e.target.value); setErrors({...errors, username: ''}); }}
-					onBlur={validateInputs}
 				/>
 				{errors.username && <p className="alert-error">{errors.username}</p>}
 
@@ -93,7 +92,6 @@ export default function RegisterPage() {
 					placeholder="Email"
 					value={email}
 					onChange={(e) => { setEmail(e.target.value); setErrors({...errors, email: ''}); }}
-					onBlur={validateInputs}
 				/>
 				{errors.email && <p className="alert-error">{errors.email}</p>}
 
@@ -117,7 +115,6 @@ export default function RegisterPage() {
 					placeholder="Password"
 					value={password}
 					onChange={(e) => { setPassword(e.target.value); setErrors({...errors, password: ''}); }}
-					onBlur={validateInputs}
 				/>
 				{errors.password && <p className="alert-error">{errors.password}</p>}
 
@@ -130,7 +127,6 @@ export default function RegisterPage() {
 						REGISTER
 					</button>
 				</div>
-				{error && <p className="alert-error">{error} </p> }
 
 				<div className="mt-6 text-right text-sm text-purple-300">
 					<button onClick={() => navigate('/login')} className="hover:underline">
