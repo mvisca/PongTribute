@@ -4,6 +4,7 @@ import { Validators, validate } from '@transcendence/shared/utils/validators.js'
 import { useAuth } from '../../../core/auth/AuthContext';
 import { updateProfile } from '../../profile/api/profileApi';
 import { useAvatarUpload } from '../../../shared/hooks/useAvatarUpload';
+import { UserTypes } from '@transcendence/shared';
 
 type ErrorsState = {
 	username: string,
@@ -13,30 +14,32 @@ type ErrorsState = {
 export default function EditProfilePage() {
 	const navigate = useNavigate();
 
-	const userId = useAuth((state) => state.user?.id);
-	const token = useAuth((state) => state.accessToken);
-	const username = useAuth((state) => state.user?.username);
-	const email = useAuth((state) => state.user?.email);
-	const user = useAuth((state) => state.user);
+	const userId	= useAuth((state) => state.user?.id);
+	const token		= useAuth((state) => state.accessToken);
+	const username	= useAuth((state) => state.user?.username);
+	const email		= useAuth((state) => state.user?.email);
+	const currentUser = useAuth((state) => state.user);
+	const setUser	= useAuth((state) => state.setUser);
 
 	const { preview, base64, error: avatarError, handleFile} = useAvatarUpload();
-
-	const [usernameInput, setUsername] = useState(user?.username ?? '');
-	const [emailInput, setEmail] = useState(user?.email ?? '');
+	
+	const [usernameInput, setUsername] = useState(username ?? '');
+	const [emailInput, setEmail] = useState(email ?? '');
 	const [errors, setErrors] = useState<ErrorsState>({
 		username: '',
 		email: '',
 	});
 	const [error, setError] = useState('');
 	
+	
 	const validateInputs = () => {
 		setError('');
 		
-		const usernameError = validate(username!, Validators.username)
+		const usernameError = validate(usernameInput!, Validators.username)
 		? ''
 		: Validators.username.message;
 		
-		const emailError = validate(email!, Validators.email)
+		const emailError = validate(emailInput!, Validators.email)
 		? ''
 		: Validators.email.message;
 		
@@ -58,10 +61,15 @@ export default function EditProfilePage() {
 		
 		try {
 			const updatedUser = await updateProfile(userId!, { 
-				username,
-				email,
+				username: usernameInput,
+				email: emailInput,
 				...(base64 && { avatar: base64 }),
 			}, token!);
+			setUser({
+				...currentUser!,
+				username: usernameInput,
+				email: emailInput
+			});
 			navigate('/profile');
 		} catch(err: any) {
 			setError(err?.message ?? 'Update failed');
@@ -78,7 +86,6 @@ export default function EditProfilePage() {
 		
 				{error && <p className='alert-error'>{error}</p>}
 		
-				{/* Avatar */ }
 				<div className='mb-4'>
 					{preview
 						? <img src={preview} className='avatar-preview' alt='Avatar preview' />
@@ -93,24 +100,22 @@ export default function EditProfilePage() {
 					{avatarError && <p className='alert-error'>{avatarError}</p>}
 				</div>
 		
-				{/* Username */}
 				<div className="mb-4">
 					<input
 						className="input"
 						placeholder="Username"
-						value={username}
+						value={usernameInput}
 						onChange={(e) => { setUsername(e.target.value); setErrors({...errors, username: ''}); }}
 						onBlur={validateInputs}
 					/>
 					{errors.username && <p className="alert-error">{errors.username}</p>}
 				</div>
 		
-				{/* Email */}
 				<div className='mb-4'>
 					<input
 						className='input'
 						placeholder='Email'
-						value={email}
+						value={emailInput}
 						onChange={(e) => { setEmail(e.target.value); setErrors({...errors, email: ''}); }}
 						onBlur={validateInputs}
 					/>

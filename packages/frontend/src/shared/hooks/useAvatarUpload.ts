@@ -41,6 +41,7 @@ export function useAvatarUpload() {
 			
 			setState({ preview: result, base64: result, error: '' });
 		};
+		reader.readAsDataURL(file);
 	}
 	
 	function clear() {
