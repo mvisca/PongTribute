@@ -29,5 +29,6 @@ COPY --from=build /app/packages/game/dist ./dist
 COPY --from=build /app/packages/game/package.json ./package.json
 COPY --from=build /app/packages/shared/dist ./node_modules/@transcendence/shared/dist
 
+RUN chmod -R a+rX /app
 EXPOSE 3003
 CMD ["node", "dist/server.js"]

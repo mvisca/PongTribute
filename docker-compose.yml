@@ -51,6 +51,7 @@ services:
         context: .
         dockerfile: ./packages/user/Dockerfile
       container_name: ft_transcendence_user
+      user: "${UID:?UID required}:${GID:?GID required}"
       restart: on-failure
       env_file:
         - .env
@@ -80,6 +81,7 @@ services:
         context: .
         dockerfile: ./packages/game/Dockerfile
       container_name: ft_transcendence_game
+      user: "${UID:?UID required}:${GID:?GID required}"
       restart: on-failure
       env_file:
         - .env

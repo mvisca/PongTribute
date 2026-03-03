@@ -1,6 +1,10 @@
 DC       = docker compose
 ENV_FILE = .env
 
+# Export host user UID/GID so compose runs containers as you (DB files owned by you, no sudo to delete).
+UID := $(shell id -u)
+GID := $(shell id -g)
+export UID GID
 
 USER_SERVICE_DB_PATH := $(shell grep -E '^USER_SERVICE_DB_PATH=' .env 2>/dev/null | sed 's/^USER_SERVICE_DB_PATH=//')
 GAME_SERVICE_DB_PATH := $(shell grep -E '^GAME_SERVICE_DB_PATH=' .env 2>/dev/null | sed 's/^GAME_SERVICE_DB_PATH=//')
