@@ -7,6 +7,7 @@ import ForgotPasswordPage 	from '../../features/auth/pages/ForgotPasswordPage';
 import RecoverPasswordPage 	from '../../features/auth/pages/RecoverPasswordPage';
 import ProfilePage 			from '../../features/profile/pages/ProfilePage';
 import EditProfilePage 		from '../../features/auth/pages/EditProfilePage';
+import ChangePasswordPage	from '../../features/auth/pages/ChangePasswordPage';
 
 export function AppRouter() {
 	return (
@@ -33,6 +34,12 @@ export function AppRouter() {
 				<Route path='/profile/edit' element={
 					<ProtectedRoute>
 						<EditProfilePage />
+					</ProtectedRoute>
+				} />
+
+				<Route path='/profile/password' element={
+					<ProtectedRoute>
+						< ChangePasswordPage />
 					</ProtectedRoute>
 				} />
 
