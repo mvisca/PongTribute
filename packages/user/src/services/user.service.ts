@@ -207,7 +207,7 @@ export class UserService {
 			}
 		}
 		
-		if (data.email && data.email !== user.email) {
+		if (data.email && data.email.toLowerCase() !== user.email.toLowerCase()) {
 			const isEmailTaken = await this.userRepo.isEmailTaken(data.email);
 			if (isEmailTaken)
 				throw new SharedErrors.ConflictError('El email ya está en uso', 'email', {
