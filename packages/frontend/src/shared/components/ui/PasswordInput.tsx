@@ -26,7 +26,7 @@ export default function PasswordInput({ value, onChange, placeholder = 'Password
           onClick={() => setShow(s => !s)}
           className='absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-200 text-xs'
         >
-          {show ? 'HIDE' : 'SHOW'}
+          {show ? 'Hide' : 'Show'}
         </button>
       </div>
       <AlertError message={error ?? ''} />

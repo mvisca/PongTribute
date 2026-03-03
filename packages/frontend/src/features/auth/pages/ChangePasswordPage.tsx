@@ -91,7 +91,7 @@ export default function ChangePasswordPage() {
 				<PasswordInput
 					value={confirmPasseord}
 					onChange={(v) => { setConfirm(v); setError(''); }}
-					placeholder='Confirm new password'
+					placeholder='Confirm password'
 				/>
 
 				<div className='flex justify-center mt-6'>
