@@ -1,2 +1,2 @@
 export * from './health.routes.js';
-export * from './image.Routes.js';
+export * from './image.routes.js';

@@ -1,8 +1,9 @@
 import { SharedErrors } from '@transcendence/shared';
 import { v2 as cloudinary } from 'cloudinary';
 import { ImagesEnv } from '../config.js';
+import { IImageStorageService } from '../ports/IImageStorageService.js';
 
-export class CloudinaryService {
+export class CloudinaryService implements IImageStorageService {
 	private static readonly ALLOWED_MIMES = new Set([
 		'image/png',
 		'image/jpg',

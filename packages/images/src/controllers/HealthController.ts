@@ -1,11 +1,11 @@
 import type { FastifyRequest, FastifyReply } from 'fastify';
 import type { HealthCheckDependency, HealthCheckResponse } from '@transcendence/shared';
-import { CloudinaryService } from '../services/CloudinaryService.js';
+import { IImageStorageService } from '../ports/IImageStorageService.js';
 
 export class HealthController {
-	private cloudinaryService: CloudinaryService | null;
+	private cloudinaryService: IImageStorageService | null;
 
-	constructor(cloudinaryService: CloudinaryService | null = null) {
+	constructor(cloudinaryService: IImageStorageService | null = null) {
 		this.cloudinaryService = cloudinaryService;
 	}
 

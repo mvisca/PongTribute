@@ -1,44 +1,35 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { SharedErrors } from '@transcendence/shared';
-import { CloudinaryService } from '../services/CloudinaryService.js';
-
-interface UploadBody {
-	base64: string;
-	old_avatar?: string;
-}
-
-interface DeleteBody {
-	url: string;
-}
+import { ImageSchemas, SharedErrors } from '@transcendence/shared';
+import { IImageStorageService } from '../ports/IImageStorageService.js';
 
 export class ImagesController {
-	constructor(private readonly cloudinaryService: CloudinaryService) {}
+	constructor(private readonly cloudinaryService: IImageStorageService) {}
 
 	async upload(
-		request: FastifyRequest<{ Body: UploadBody }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
-		const { base64, old_avatar } = request.body ?? {};
-
-		if (!base64) {
-			throw new SharedErrors.ValidationError('base64 required', 'base64');
+		try {
+			const body = request.body as ImageSchemas.ImageUploadRequestType;
+			const { base64, old_avatar } = body;
+			const url = await this.cloudinaryService.uploadAvatar(base64, old_avatar);
+			reply.status(200).send({ url });
+		} catch (error) {
+			return SharedErrors.handleError(error, reply);
 		}
-
-		const url = await this.cloudinaryService.uploadAvatar(base64, old_avatar);
-		reply.status(200).send({ url });
 	}
 
 	async delete(
-		request: FastifyRequest<{ Body: DeleteBody }>,
+		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
-		const { url } = request.body ?? {};
-
-		if (!url) {
-			throw new SharedErrors.ValidationError('url required', 'url');
+		try {
+			const body = request.body as ImageSchemas.ImageDeleteRequestType;
+			const { url } = body;
+			await this.cloudinaryService.deleteAvatar(url);
+			reply.status(204).send();
+		} catch (error) {
+			return SharedErrors.handleError(error, reply);
 		}
-
-		await this.cloudinaryService.deleteAvatar(url);
-		reply.status(204).send();
 	}
 }
