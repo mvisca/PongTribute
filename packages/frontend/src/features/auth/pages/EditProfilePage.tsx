@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
+import { updateProfile, getProfile } from '../../profile/api/profileApi';
 import { useAuth } from '../../../core/auth/AuthContext';
-import { updateProfile } from '../../profile/api/profileApi';
 import { useAvatarUpload } from '../../../shared/hooks/useAvatarUpload';
 
 type ErrorsState = {
@@ -18,29 +18,39 @@ export default function EditProfilePage() {
 	const username	= useAuth((state) => state.user?.username);
 	const email		= useAuth((state) => state.user?.email);
 	const currentUser = useAuth((state) => state.user);
+	const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
 	const setUser	= useAuth((state) => state.setUser);
 
 	const { preview, base64, error: avatarError, handleFile} = useAvatarUpload();
 	
 	const [usernameInput, setUsername] = useState(username ?? '');
+
 	const [emailInput, setEmail] = useState(email ?? '');
 	const [errors, setErrors] = useState<ErrorsState>({
 		username: '',
 		email: '',
 	});
 	const [error, setError] = useState('');
-	
-	
+
+	// Load avatar
+	useEffect(() => {
+		if (!userId || !token) return;
+		getProfile(userId, token)
+			.then(profile => setCurrentAvatar(profile.avatar))
+			.catch(() => {});
+	}, []);
+
+	// Valida inputs
 	const validateInputs = () => {
 		setError('');
 		
 		const usernameError = validate(usernameInput!, Validators.username)
-		? ''
-		: Validators.username.message;
+			? ''
+			: Validators.username.message;
 		
 		const emailError = validate(emailInput!, Validators.email)
-		? ''
-		: Validators.email.message;
+			? ''
+			: Validators.email.message;
 		
 		setErrors({ username: usernameError, email: emailError });
 		
@@ -53,23 +63,26 @@ export default function EditProfilePage() {
 		return isValid;
 	};
 	
+	// Maneja el envío de datos
 	const handleSubmit = async () => {
-		if (!validateInputs()) {
-			return;
-		}
+		if (!validateInputs()) return;
 		
 		try {
+			
 			await updateProfile(userId!, { 
 				username: usernameInput,
 				email: emailInput,
 				...(base64 && { avatar: base64 }),
 			}, token!);
+			
 			setUser({
 				...currentUser!,
 				username: usernameInput,
 				email: emailInput
 			});
+
 			navigate('/profile');
+
 		} catch(err: any) {
 			setError(err?.message ?? 'Update failed');
 		} 
@@ -86,8 +99,8 @@ export default function EditProfilePage() {
 				{error && <p className='alert-error'>{error}</p>}
 		
 				<div className='mb-4'>
-					{preview
-						? <img src={preview} className='avatar-preview' alt='Avatar preview' />
+					{(preview ?? currentAvatar)
+						? <img src={(preview ?? currentAvatar)!} className='avatar-preview' alt='Avatar preview' />
 						: <div className='avatar-placeholder'>👤</div>
 					}
 					<input 
