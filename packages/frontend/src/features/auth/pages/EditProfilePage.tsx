@@ -4,7 +4,6 @@ import { Validators, validate } from '@transcendence/shared/utils/validators.js'
 import { useAuth } from '../../../core/auth/AuthContext';
 import { updateProfile } from '../../profile/api/profileApi';
 import { useAvatarUpload } from '../../../shared/hooks/useAvatarUpload';
-import { UserTypes } from '@transcendence/shared';
 
 type ErrorsState = {
 	username: string,
@@ -60,7 +59,7 @@ export default function EditProfilePage() {
 		}
 		
 		try {
-			const updatedUser = await updateProfile(userId!, { 
+			await updateProfile(userId!, { 
 				username: usernameInput,
 				email: emailInput,
 				...(base64 && { avatar: base64 }),
@@ -144,3 +143,4 @@ export default function EditProfilePage() {
 		</div>
 	);
 }
+// TODO que hacer con la estrategia de componentes y sections... implmentar urgente, antes de avanzar mucho más
