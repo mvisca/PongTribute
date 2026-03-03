@@ -4,6 +4,7 @@ packages:
   - packages/user
   - packages/auth
   - packages/game
+  - packages/images
   - packages/gateway
   - packages/comms
 

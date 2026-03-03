@@ -168,8 +168,8 @@ services:
     # =====================
     images:
       build:
-        context: ./packages/images
-        dockerfile: Dockerfile
+        context: .
+        dockerfile: ./packages/images/Dockerfile
       container_name: ft_transcendence_images
       restart: on-failure
       expose:
@@ -178,10 +178,6 @@ services:
         - .env
       environment:
         PORT: "3004"
-        RAILS_ENV: "production"
-        RAILS_LOG_TO_STDOUT: "true"
-      volumes:
-        - ./packages/shared/contracts:/app/contracts:ro
       deploy:
         resources:
           limits:
