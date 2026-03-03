@@ -1,5 +1,4 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost/api';
-const DEBUG = import.meta.env.VITE_DEBUG  === 'true';
 
 type RequestOptions = {
 	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -31,15 +30,19 @@ export async function apiRequest<T>(
 	);
 
 	if (!response.ok) {
-		if (DEBUG) {
-			console.log(`[API] ${method} ${path} -> ${response.status}`);
+		// Fallback para errores de infraestructura
+		// Nginx los envía como HTML y deben parsearse a JSON
+		// Los otros errores son enviados por backend como JSON, no hace falta parsearlos
+		const errorMessages: Record<number, string> = {
+        413: 'File too large. Please use an image under 10MB.',
+        502: 'Server unavailable. Please try again later.',
+        504: 'Request timed out. Please try again.',		
 		}
-		const error = await response.json().catch(() => ({ message: response.statusText }));
-		throw new Error(error.message ?? 'Request failed');
-	}
 
-	if (DEBUG) {
-		console.log(`[API] ${method} ${path} -> ${response.status}`);
+		const error = await response.json().catch(() => ({
+			message: errorMessages[response.status] ?? response.statusText }));
+		
+		throw new Error(error.message ?? 'Request failed');
 	}
 
 	// 204 no content

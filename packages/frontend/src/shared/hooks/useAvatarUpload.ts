@@ -32,14 +32,30 @@ export function useAvatarUpload() {
 		const reader = new FileReader();
 		reader.onload = (e) => {
 			const result = e.target?.result as string;
-			
-			// Validar pattern base64
+
 			if (!Validators.avatarBase64.pattern.test(result)) {
-				setState(s => ({ ...s, error: 'Invalida image format' }));
+				setState(s => ({ ...s, error: 'Invalid image format' }));
 				return;
 			}
-			
-			setState({ preview: result, base64: result, error: '' });
+
+			// Comprimir/redimensionar a máximo 800x800 usando canvas
+			const img = new Image();
+			img.onload = () => {
+				const MAX = 800;
+				const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+				const w = Math.round(img.width * scale);
+				const h = Math.round(img.height * scale);
+
+				const canvas = document.createElement('canvas');
+				canvas.width = w;
+				canvas.height = h;
+				const ctx = canvas.getContext('2d')!;
+				ctx.drawImage(img, 0, 0, w, h);
+
+				const compressed = canvas.toDataURL('image/webp', 0.85);
+				setState({ preview: compressed, base64: compressed, error: '' });
+			};
+			img.src = result;
 		};
 		reader.readAsDataURL(file);
 	}
