@@ -8,10 +8,12 @@ import RecoverPasswordPage 	from '../../features/auth/pages/RecoverPasswordPage'
 import ProfilePage 			from '../../features/profile/pages/ProfilePage';
 import EditProfilePage 		from '../../features/auth/pages/EditProfilePage';
 import ChangePasswordPage	from '../../features/auth/pages/ChangePasswordPage';
+import Navbar				from '../../shared/components/Navbar';
 
 export function AppRouter() {
 	return (
 		<BrowserRouter>
+			<Navbar />
 			<Routes>
 				{/* Rutas públicas */}
 				<Route path="/login" element={<LoginPage />} />
