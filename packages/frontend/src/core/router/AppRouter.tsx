@@ -1,11 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
-import LoginPage    from '../../features/auth/pages/LoginPage';
-import RegisterPage from '../../features/auth/pages/RegisterPage';
-import ForgotPasswordPage from '../../features/auth/pages/ForgotPasswordPage';
-import RecoverPasswordPage from '../../features/auth/pages/RecoverPasswordPage';
-import ProfilePage from '../../features/profile/pages/ProfilePage';
-import EditProfilePage from '../../features/auth/pages/EditProfilePage';
+
+import LoginPage    		from '../../features/auth/pages/LoginPage';
+import RegisterPage 		from '../../features/auth/pages/RegisterPage';
+import ForgotPasswordPage 	from '../../features/auth/pages/ForgotPasswordPage';
+import RecoverPasswordPage 	from '../../features/auth/pages/RecoverPasswordPage';
+import ProfilePage 			from '../../features/profile/pages/ProfilePage';
+import EditProfilePage 		from '../../features/auth/pages/EditProfilePage';
 
 export function AppRouter() {
 	return (
