@@ -2,6 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { requestPasswordReset } from '../api/authApi';
+import { 
+	PageContainer,
+	FormCard,
+	FormInput, 
+	ArcadeButton, 
+	LinkButton, 
+	AlertError, 
+	AlertSuccess 
+} from '../../../shared/components/ui';
 
 export default function ForgotPasswordPage() {
 	const navigate = useNavigate();
@@ -32,43 +41,20 @@ export default function ForgotPasswordPage() {
 	}
 
 	return (
-		<div className="retro-bg flex items-center justify-center">
-			<div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
-				<h1 className="text-2xl font-bold text-center mb-4">
-					Forgot Password
-				</h1>
+		<PageContainer>
+			<FormCard title='FORGOT PASSWORD'>
+				<AlertSuccess message={message} />
+				<AlertError message={error} />
+				<FormInput value={email} onChange={(v) => { setEmail(v); setError(''); }} placeholder='Email' error={''} />
 
-				{message && (
-					<div className="mb-4 p-2 bg-green-800 text-green-100 text-sm text-center rounded">
-						{message}
-					</div>
-				)}
-
-				{error && (
-					<div className="mb-4 p-2 bg-purple-900 text-purple-200 text-sm text-center rounded">
-						{error}
-					</div>
-				)}
-
-				<input
-					className="input"
-					placeholder="Email"
-					value={email}
-					onChange={(e) => { setEmail(e.target.value); setError(''); }}
-				/>
-
-				<div className="flex justify-center mt-6">
-					<button onClick={handleReset} className="arcade-btn px-8 py-2 text-sm">
-						SEND RECOVERY EMAIL
-					</button>
+				<div className='flex justify-center mt-6'>
+					<ArcadeButton onClick={handleReset}>SEND RECOVERY EMAIL</ArcadeButton>
 				</div>
 
-				<div className="mt-6 text-right text-sm text-purple-300">
-					<button onClick={() => navigate('/login')} className="hover:underline">
-						← Back to login
-					</button>
+				<div className='mt-6 text-right'>
+					<LinkButton onClick={() => navigate('/login')}>← Back to login</LinkButton>
 				</div>
-			</div>
-		</div>
+			</FormCard>
+		</PageContainer>
 	);
 }

@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { confirmPasswordReset } from '../api/authApi';
+import {
+	PageContainer,
+	FormCard,
+	PasswordInput,
+	ArcadeButton,
+	LinkButton,
+	AlertError,
+} from '../../../shared/components/ui';
 
 export default function RecoverPasswordPage() {
 	const navigate = useNavigate();
@@ -16,14 +24,12 @@ export default function RecoverPasswordPage() {
 	// Sin el token el link es inválido
 	if (!token) {
 		return (
-			<div className='retro-bg flex items-center justify-center'>
+			<PageContainer>
 				<div className='bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg text-center'>
 					<p className='text-purple-200 mb-4'>Invalid or expired recovery link.</p>
-					<button onClick={() => navigate('/forgot') } className='arcade-btn px-6 py-2 text-sm'>
-						REQUEST NEW LINK
-					</button>
+					<ArcadeButton onClick={() => navigate('/forgot')}>REQUEST NEW LINK</ArcadeButton>
 				</div>
-			</div>
+			</PageContainer>
 		);
 	}
 
@@ -56,57 +62,40 @@ export default function RecoverPasswordPage() {
 
 	if (success) {
 		return (
-			<div className='retro-bg flex items-center justify-center'>
+			<PageContainer>
 				<div className='bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg text-center'>
 					<p className='text-green-300 mb-2'>Password update successfully.</p>
 					<p className='text-purple-300 text-sm'>Redirecting to login...</p>
 				</div>
-			</div>
+			</PageContainer>
 		);
 	}
 
-	// Recover failed
 	return (
-		<div className='retro-bg flex items-center justify-center'>
-			<div className='bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg'>
-				<h1 className='text-2xl font-bold text-center mb-4'>
-					New Password
-				</h1>
+		<PageContainer>
+			<FormCard title='NEW PASSWORD'>
+				<AlertError message={error} />
 
-				{error && (
-					<div className='mb-4 p-2 bg-purple-900 text-purple-200 text-sm text-center rounded'>
-						{error}
-					</div>
-				)}
-
-				<input
-					type="password"
-					className='input'
-					placeholder='New password'
+				<PasswordInput
 					value={password}
-					onChange={(e) => { setPassword(e.target.value); setError(''); }}
+					onChange={(v) => { setPassword(v); setError(''); }}
+					placeholder='New password'
 				/>
 
-				<input
-					type="password"
-					className='input'
-					placeholder='Confirm password'
+				<PasswordInput
 					value={confirm}
-					onChange={(e) => { setConfirm(e.target.value); setError(''); }}
+					onChange={(v) => { setConfirm(v); setError(''); }}
+					placeholder='Confirm password'
 				/>
 
 				<div className='flex justify-center mt-6'>
-					<button onClick={handleConfirm} className='arcade-btn px-8 py-2 text-sm'>
-						SET PASSWORD
-					</button>
+					<ArcadeButton onClick={handleConfirm}>SET PASSWORD</ArcadeButton>
 				</div>
 
-				<div className='mt-6 text-right text-sm text-purple-300'>
-					<button onClick={() => navigate('/login')} className='hover:underline'>
-						← Back to login
-					</button>
+				<div className='mt-6 text-right'>
+					<LinkButton onClick={() => navigate('/login')}>← Back to login</LinkButton>
 				</div>
-			</div>
-		</div>
+			</FormCard>
+		</PageContainer>
 	);
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../../core/auth/AuthContext';
 import { logout as logoutApi } from '../../features/auth/api/authApi';
+import { AvatarDisplay } from './ui';
 
 type NavItem = {
 	icon: string;
@@ -57,9 +58,10 @@ export default function Navbar() {
 				</button>
 
 				<div className='flex items-center gap-4'>
-					<span className='text-sm text-purple-300 hidden sm:block'>
-						{username}
-					</span>
+					<div className='hidden sm:flex items-center gap-2'>
+						<AvatarDisplay src={null} size='sm' />
+						<span className='text-sm text-purple-300'>{username}</span>
+					</div>
 
 					<button
 						onClick={() => setMenuOpen(true)}

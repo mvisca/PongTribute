@@ -3,7 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { register } from '../api/authApi';
 import { useAuth } from '../../../core/auth/AuthContext';
-import { useAvatarUpload } from '../../../shared/hooks/useAvatarUpload';
+import {
+	PageContainer,
+	FormCard,
+	FormInput,
+	PasswordInput,
+	ArcadeButton,
+	LinkButton,
+	AlertError,
+	AvatarUploader,
+} from '../../../shared/components/ui';
 
 type ErrorsState = {
 	username: string,
@@ -14,7 +23,7 @@ type ErrorsState = {
 export default function RegisterPage() {
 	const navigate = useNavigate();
 	const authLogin = useAuth((state) => state.login);
-	const { preview, base64, error: avatarError, handleFile } = useAvatarUpload();
+	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
 	const [username, setUsername] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -37,7 +46,7 @@ export default function RegisterPage() {
 		const passwordError = validate(password, Validators.password)
 		? ''
 		: Validators.password.message;
-		
+
 		setErrors({ username: usernameError, email: emailError, password: passwordError });
 
 		const isValid = !usernameError && !emailError && !passwordError;
@@ -58,7 +67,7 @@ export default function RegisterPage() {
 		}
 
 		try {
-			const data = await register(username, email, password, base64 ?? undefined);
+			const data = await register(username, email, password, avatarBase64 ?? undefined);
 			authLogin(data.user, data.token);
 			navigate('/profile');
 		} catch (err: any) {
@@ -67,73 +76,46 @@ export default function RegisterPage() {
 	}
 
 	return (
-		<div className="retro-bg flex items-center justify-center min-h-screen">
-			<div className="bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg">
-				<h1 className="text-2xl font-bold text-center mb-4">
-					Create Account
-				</h1>
+		<PageContainer>
+			<FormCard title='REGISTER'>
+				<AlertError message={error} />
 
-				{error && (
-					<div className="mb-4 p-2 bg-purple-900 text-purple-200 text-sm text-center rounded">
-						{error}
-					</div>
-				)}
-				
-				<input
-					className="input"
-					placeholder="Username"
+				<FormInput
 					value={username}
-					onChange={(e) => { setUsername(e.target.value); setErrors({...errors, username: ''}); }}
+					onChange={(v) => { setUsername(v); setErrors({...errors, username: ''}); }}
+					placeholder='Username'
+					error={errors.username}
 				/>
-				{errors.username && <p className="alert-error">{errors.username}</p>}
 
-				<input
-					className="input"
-					placeholder="Email"
+				<FormInput
 					value={email}
-					onChange={(e) => { setEmail(e.target.value); setErrors({...errors, email: ''}); }}
+					onChange={(v) => { setEmail(v); setErrors({...errors, email: ''}); }}
+					placeholder='Email'
+					error={errors.email}
 				/>
-				{errors.email && <p className="alert-error">{errors.email}</p>}
 
-				<div className='mb-4'>
-					{preview
-						? <img src={preview} className='avatar-preview' alt='Avatar preview' />
-						: <div className='avatar-placeholder'>👤</div>
-					}
-					<input
-						type='file'
-						accept='image/png,image/jpeg,image/jpg,image/webp'
-						onChange={(e) => handleFile(e.target.files?.[0])}
-						className='block text-sm text-purpule-300 mt-2'
-					/>
-					{avatarError && <p className='alert-error'>{avatarError}</p>}
-				</div>
+				<AvatarUploader currentSrc={null} onFileChange={setAvatarBase64} />
 
-				<input
-					type="password"
-					className="input"
-					placeholder="Password"
+				<PasswordInput
 					value={password}
-					onChange={(e) => { setPassword(e.target.value); setErrors({...errors, password: ''}); }}
+					onChange={(v) => { setPassword(v); setErrors({...errors, password: ''}); }}
+					placeholder='Password'
+					error={errors.password}
 				/>
-				{errors.password && <p className="alert-error">{errors.password}</p>}
 
-				<div className="flex justify-center mt-6">
-					<button
+				<div className='flex justify-center mt-6'>
+					<ArcadeButton
 						onClick={handleRegister}
-						className="arcade-btn px-8 py-2 text-sm"
 						disabled={!!error || Object.values(errors).some(err => err !== '')}
 					>
 						REGISTER
-					</button>
+					</ArcadeButton>
 				</div>
 
-				<div className="mt-6 text-right text-sm text-purple-300">
-					<button onClick={() => navigate('/login')} className="hover:underline">
-						← Back to login
-					</button>
+				<div className='mt-6 text-right'>
+					<LinkButton onClick={() => navigate('/login')}>← Back to login</LinkButton>
 				</div>
-			</div>
-		</div>
+			</FormCard>
+		</PageContainer>
 	);
 }

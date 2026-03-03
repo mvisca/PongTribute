@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { apiRequest } from '../../../core/api/client';
 import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
+import {
+	PageContainer,
+	FormCard,
+	PasswordInput,
+	ArcadeButton,
+	LinkButton,
+	AlertError,
+} from '../../../shared/components/ui';
 
 export default function ChangePasswordPage() {
 	const navigate = useNavigate();
@@ -54,62 +62,48 @@ export default function ChangePasswordPage() {
 
 	if (success) {
 		return (
-			<div className='retro-bg flex items-center justify-center min-h-screen'>
+			<PageContainer>
 				<div className='bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg text-center'>
 					<p className='text-green-300 mb-2'>Password updated successfully.</p>
 					<p className='text-purple-300 text-sm'>Redirecting...</p>
 				</div>
-			</div>
+			</PageContainer>
 		);
 	}
 
 	return (
-		<div className='retro-bg flex items-center jusify-center min-h-screen'>
-			<div className='bg-purple-800 p-8 rounded-xl w-[420px] shadow-lg text-center'>
-				<h1 className='text-2xl font-bold text-center mb-6'>CHANGE PASSWORD</h1>
+		<PageContainer>
+			<FormCard title='CHANGE PASSWORD'>
+				<AlertError message={error} />
 
-				{error && <p className='alert-error'>{error}</p>}
+				<PasswordInput
+					value={oldPassword}
+					onChange={(v) => { setOldPassword(v); setError(''); }}
+					placeholder='Current password'
+				/>
 
-				<div className='mb-4'>
-					<input 
-						type='password'
-						className='input'
-						placeholder='Current password'
-						value={oldPassword}
-						onChange={(e) => { setOldPassword(e.target.value); setError('');}}
-					/>
-				</div>
+				<PasswordInput
+					value={newPassword}
+					onChange={(v) => { setNewPassword(v); setError(''); }}
+					placeholder='New password'
+				/>
 
-				<div className='mb-4'>
-					<input
-						type='password'
-						className='input'
-						placeholder='New password'
-						value={newPassword}
-						onChange={(e) => { setNewPassword(e.target.value); setError('');}}
-					/>
-				</div>
-
-				<div>
-					<input
-						type='password'
-						className='input'
-						placeholder='COnfirm new password'
-						value={confirmPasseord}
-						onChange={(e) => { setConfirm(e.target.value); setError('');}}
-					/>
-				</div>
+				<PasswordInput
+					value={confirmPasseord}
+					onChange={(v) => { setConfirm(v); setError(''); }}
+					placeholder='Confirm new password'
+				/>
 
 				<div className='flex justify-center mt-6'>
-					<button
-						onClick={handleSubmit}
-						className='arcade-btn px-8 py-2 text-sm'
-						disabled={!!error}
-					>
+					<ArcadeButton onClick={handleSubmit} disabled={!!error}>
 						UPDATE PASSWORD
-					</button>
+					</ArcadeButton>
 				</div>
-			</div>
-		</div>
+
+				<div className='mt-6 text-right'>
+					<LinkButton onClick={() => navigate('/profile')}>← Back to profile</LinkButton>
+				</div>
+			</FormCard>
+		</PageContainer>
 	);
 }
