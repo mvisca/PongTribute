@@ -23,7 +23,7 @@ export default function ChangePasswordPage() {
 
 	const [oldPassword, setOldPassword] = useState('');
 	const [newPassword, setNewPassword] = useState('');
-	const [confirmPasseord, setConfirm] = useState('');
+	const [confirmPassword, setConfirm] = useState('');
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState(false);
 
@@ -35,7 +35,7 @@ export default function ChangePasswordPage() {
 			return;
 		}
 
-		if (newPassword !== confirmPasseord) {
+		if (newPassword !== confirmPassword) {
 			setError('Passwords do not match');
 			return;
 		}
@@ -54,7 +54,7 @@ export default function ChangePasswordPage() {
 			setUser({ ...currentUser!, ...data.user });
 			setAccessToken(data.token);
 			setSuccess(true);
-			setTimeout(() => navigate('/profle'), 1500);
+			setTimeout(() => navigate('/profile'), 1500);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to change password');
 		}
@@ -89,7 +89,7 @@ export default function ChangePasswordPage() {
 				/>
 
 				<PasswordInput
-					value={confirmPasseord}
+					value={confirmPassword}
 					onChange={(v) => { setConfirm(v); setError(''); }}
 					placeholder='Confirm password'
 				/>
