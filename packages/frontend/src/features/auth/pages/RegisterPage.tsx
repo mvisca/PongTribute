@@ -52,6 +52,11 @@ export default function RegisterPage() {
 		return !usernameError && !emailError && !passwordError;
 	};
 
+	const clearErrors = () => {
+		setErrors({ username: '', email: '', password: ''});
+		setError('');
+	}
+
 	async function handleRegister() {
 		setError('');
 
@@ -62,7 +67,7 @@ export default function RegisterPage() {
 			const data = await register(username, email, password, avatarBase64 ?? undefined);
 			authLogin(data.user, data.token);
 			navigate('/profile');
-			
+
 		} catch (err: any) {
 			setError(err?.message ?? 'Register failed');
 		}
@@ -75,14 +80,14 @@ export default function RegisterPage() {
 
 				<FormInput
 					value={username}
-					onChange={(v) => { setUsername(v); setErrors({...errors, username: ''}); setError('');}}
+					onChange={(value) => { setUsername(value); clearErrors();}}
 					placeholder='Username'
 					error={errors.username}
 				/>
 
 				<FormInput
 					value={email}
-					onChange={(v) => { setEmail(v); setErrors({...errors, email: ''}); setError('');}}
+					onChange={(value) => { setEmail(value); clearErrors();}}
 					placeholder='Email'
 					error={errors.email}
 				/>
@@ -91,7 +96,7 @@ export default function RegisterPage() {
 
 				<PasswordInput
 					value={password}
-					onChange={(v) => { setPassword(v); setErrors({...errors, password: ''}); setError('');}}
+					onChange={(value) => { setPassword(value); clearErrors();}}
 					placeholder='Password'
 					error={errors.password}
 				/>

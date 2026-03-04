@@ -284,7 +284,10 @@ export namespace UserSchemas {
 	export const UpdateUserBody = Type.Object({
 		username: Type.Optional(UsernameField),
 		email: Type.Optional(EmailField),
-		avatar: Type.Optional(AvatarFieldBase64)
+		avatar: Type.Optional(Type.Union([
+			AvatarFieldBase64,
+			Type.Null()	
+		]))
 	}, {
 		minProperties: 1
 	});

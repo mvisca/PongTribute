@@ -176,6 +176,7 @@ export class UserService {
 	async updateUser(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 		
 		const user = await this.userRepo.findUserByIdInternal(id);
+		
 		if (!user || user.isDeleted)
 			throw new SharedErrors.NotFoundError('El usuario no existe', 'user', {
 			userId: id,
@@ -187,22 +188,26 @@ export class UserService {
 		const oldAvatar = user.avatar;
 		
 		if (data.avatar !== undefined) {
+
+			// Fallback a url de default avatar
+			if (data.avatar === null || data.avatar === '') { 
+				data.avatar = UserEnv.CLOUDINARY_DEFAULT_AVATAR();
+			}
 			
-			if (data.avatar === '') {
-				// Si es string vacío, borrar
-				delete data.avatar;
-				
-			} else if (data.avatar.startsWith('data:image/')) {
-				// Es base64, validar formato
-				if (this.validateAvatar(data.avatar)) {
-					// Base64 válido, subir a Cloudinary
-					data.avatar = await this.uploadAvatarToCloudinary(data.avatar, user.avatar);
-				} else {
-					// Inválido, borrar
+			// Es base64, validar formato y converit a url de cloudinary
+			else if (data.avatar!.startsWith('data:image/')) { 
+			
+				// Base64 válido, subir a Cloudinary
+				if (this.validateAvatar(data.avatar)) { 
+					data.avatar = await this.uploadAvatarToCloudinary(data.avatar!, user.avatar);
+
+				// Es inválido, borrar
+				} else { 
 					delete data.avatar;
 				}
+
+			// Es undefined, borrar
 			} else {
-				// Es undefined, borrar
 				delete data.avatar;
 			}
 		}

@@ -60,14 +60,13 @@ export default function EditProfilePage() {
 
 		setErrors({ username: usernameError, email: emailError });
 
-		const isValid = !usernameError && !emailError;
-
-		if (!isValid) {
-			setError('Invalid field in form');
-		}
-
-		return isValid;
+		return !usernameError && !emailError;
 	};
+
+	const clearErrors = () => {
+		setErrors({ username: '', email: ''});
+		setError('');
+	}
 
 	// Maneja el envío de datos
 	const handleSubmit = async () => {
@@ -105,14 +104,14 @@ export default function EditProfilePage() {
 
 				<FormInput
 					value={usernameInput}
-					onChange={(v) => { setUsername(v); setErrors({...errors, username: ''}); }}
+					onChange={(v) => { setUsername(v); clearErrors(); }}
 					placeholder='Username'
 					error={errors.username}
 				/>
 
 				<FormInput
 					value={emailInput}
-					onChange={(v) => { setEmail(v); setErrors({...errors, email: ''}); }}
+					onChange={(v) => { setEmail(v); clearErrors(); }}
 					placeholder='Email'
 					error={errors.email}
 				/>
