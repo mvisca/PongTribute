@@ -3,6 +3,8 @@ import { ProtectedRoute } from '../auth/ProtectedRoute';
 
 import Navbar				from '../../shared/components/Navbar';
 
+import PublicHomePage from '../../features/home/pages/PublicHomePage';
+
 import RegisterPage 		from '../../features/auth/pages/RegisterPage';
 import LoginPage    		from '../../features/auth/pages/LoginPage';
 import ForgotPasswordPage 	from '../../features/auth/pages/ForgotPasswordPage';
@@ -15,7 +17,7 @@ export function AppRouter() {
 	return (
 		<BrowserRouter>
 			<Navbar />
-			<div>
+			<div className='pt-14'>
 				<Routes>
 					{/* Rutas públicas */}
 					<Route path="/login" element={<LoginPage />} />
@@ -23,6 +25,9 @@ export function AppRouter() {
 					<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
 					<Route path="/forgot" element={<ForgotPasswordPage />} />
 					<Route path="/recover" element={<RecoverPasswordPage />} />
+					<Route path="/privacy" element={<div> PRIVACY </div>} />
+					<Route path="/terms" element={<div> TERMS </div>} />
+					<Route path="/" element={<PublicHomePage />} />
 
 					{/* Rutas protegidas */}
 					<Route path="/home" element={
@@ -34,20 +39,15 @@ export function AppRouter() {
 					} />
 
 					<Route path='/profile/edit' element={
-						<ProtectedRoute>
-							<EditProfilePage />
-						</ProtectedRoute>
+						<ProtectedRoute><EditProfilePage /></ProtectedRoute>
 					} />
 
 					<Route path='/profile/password' element={
-						<ProtectedRoute>
-							< ChangePasswordPage />
-						</ProtectedRoute>
+						<ProtectedRoute>< ChangePasswordPage /></ProtectedRoute>
 					} />
 
 					{/* Raíz y 404 */}
-					<Route path="/"  element={<Navigate to="/login" replace />} />
-					<Route path="*"  element={<Navigate to="/login" replace />} />
+					<Route path="*"  element={<Navigate to="/" replace />} />
 				</Routes>
 			</div>
 		</BrowserRouter>
