@@ -21,21 +21,21 @@ type ErrorsState = {
 export default function EditProfilePage() {
 	const navigate = useNavigate();
 
-	const userId	= useAuth((state) => state.user?.id);
 	const token		= useAuth((state) => state.accessToken);
+	const currentUser = useAuth((state) => state.user);
+	const userId	= useAuth((state) => state.user?.id);
 	const username	= useAuth((state) => state.user?.username);
 	const email		= useAuth((state) => state.user?.email);
-	const currentUser = useAuth((state) => state.user);
+
 	const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
 	const setUser	= useAuth((state) => state.setUser);
 
-	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
 	const [usernameInput, setUsername] = useState(username ?? '');
 	const [emailInput, setEmail] = useState(email ?? '');
-	const [errors, setErrors] = useState<ErrorsState>({
-		username: '',
-		email: '',
-	});
+	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
+	const [avatarRemoved, setAvatarRemoved] = useState(false);
+
+	const [errors, setErrors] = useState<ErrorsState>({ username: '', email: ''	});
 	const [error, setError] = useState('');
 
 	// Load avatar
@@ -76,7 +76,7 @@ export default function EditProfilePage() {
 			await updateProfile(userId!, {
 				username: usernameInput,
 				email: emailInput,
-				...(avatarBase64 && { avatar: avatarBase64 }),
+				avatar: avatarBase64 ?? (avatarRemoved ? null : undefined),
 			}, token!);
 
 			setUser({
@@ -99,7 +99,8 @@ export default function EditProfilePage() {
 
 				<AvatarUploader
 					currentSrc={currentAvatar}
-					onFileChange={(b64) => setAvatarBase64(b64)}
+					onFileChange={(b64) => { setAvatarBase64(b64); setAvatarRemoved(b64 === null); }}
+					onError={(msg) => setError(msg)}
 				/>
 
 				<FormInput

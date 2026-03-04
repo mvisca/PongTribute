@@ -92,7 +92,11 @@ export default function RegisterPage() {
 					error={errors.email}
 				/>
 
-				<AvatarUploader currentSrc={null} onFileChange={setAvatarBase64} />
+				<AvatarUploader 
+					currentSrc={null}
+					onFileChange={setAvatarBase64}
+					onError={(msg) => setError(msg)}
+				/>
 
 				<PasswordInput
 					value={password}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Validators } from '@transcendence/shared/utils/validators.js';
 
 type AvatarState = {

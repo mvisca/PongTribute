@@ -79,8 +79,8 @@ export class UserMapper {
 		const update: Partial<UserTypes.UserRow> = {};
 		
 		if (data.username !== undefined) update.username = data.username;
-		if (data.avatar !== undefined) update.avatar = data.avatar;
 		if (data.email !== undefined) update.email = data.email;
+		if (data.avatar !== undefined && data.avatar !== null) update.avatar = data.avatar;
 		
 		return update;
 	}
