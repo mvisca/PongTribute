@@ -49,27 +49,20 @@ export default function RegisterPage() {
 
 		setErrors({ username: usernameError, email: emailError, password: passwordError });
 
-		const isValid = !usernameError && !emailError && !passwordError;
-
-		if (!isValid) {
-			setError('Invalid data in the registration form');
-		}
-
-		return isValid;
+		return !usernameError && !emailError && !passwordError;
 	};
 
 	async function handleRegister() {
 		setError('');
 
 		// Validar inputs antes de enviar
-		if (!validateInputs()) {
-			return;
-		}
+		if (!validateInputs()) return;
 
 		try {
 			const data = await register(username, email, password, avatarBase64 ?? undefined);
 			authLogin(data.user, data.token);
 			navigate('/profile');
+			
 		} catch (err: any) {
 			setError(err?.message ?? 'Register failed');
 		}
@@ -82,14 +75,14 @@ export default function RegisterPage() {
 
 				<FormInput
 					value={username}
-					onChange={(v) => { setUsername(v); setErrors({...errors, username: ''}); }}
+					onChange={(v) => { setUsername(v); setErrors({...errors, username: ''}); setError('');}}
 					placeholder='Username'
 					error={errors.username}
 				/>
 
 				<FormInput
 					value={email}
-					onChange={(v) => { setEmail(v); setErrors({...errors, email: ''}); }}
+					onChange={(v) => { setEmail(v); setErrors({...errors, email: ''}); setError('');}}
 					placeholder='Email'
 					error={errors.email}
 				/>
@@ -98,7 +91,7 @@ export default function RegisterPage() {
 
 				<PasswordInput
 					value={password}
-					onChange={(v) => { setPassword(v); setErrors({...errors, password: ''}); }}
+					onChange={(v) => { setPassword(v); setErrors({...errors, password: ''}); setError('');}}
 					placeholder='Password'
 					error={errors.password}
 				/>
