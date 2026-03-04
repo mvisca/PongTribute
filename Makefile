@@ -19,7 +19,7 @@ define check_running_and_up
 	fi
 endef
 
-.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke
+.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke env-export ensure-db-dirs
 
 all: up_build
 
@@ -37,6 +37,7 @@ help:
 	@echo "  make ps           - List compose containers. Requires .env"
 	@echo "  make stop         - Stop containers (no remove). Use 'make up' to start again"
 	@echo "  make nuke         - Remove DB files (from .env paths), then docker system prune -a -f --volumes. Requires .env"
+	@echo "  make env-export   - Exports GUI to the father env with eval <dollar>(make env-export)"
 
 check-env:
 	@test -f "$(ENV_FILE)" || (echo "Error: $(ENV_FILE) is missing. Create your .env before running Docker, You can use .env.example as a template." && exit 1)
@@ -44,13 +45,19 @@ check-env:
 build: check-env
 	@$(DC) build
 
-up: check-env
+ensure-db-dirs:
+	@mkdir -p $(USER_SERVICE_DB_PATH)
+	@mkdir -p $(GAME_SERVICE_DB_PATH)
+	@chmod 755 $(USER_SERVICE_DB_PATH)
+	@chmod 755 $(GAME_SERVICE_DB_PATH)
+
+up: check-env ensure-db-dirs
 	@$(call check_running_and_up,up -d)
 
-up_build: check-env
+up_build: check-env ensure-db-dirs
 	@$(call check_running_and_up,up -d --build)
 
-debug: check-env
+debug: check-env ensure-db-dirs
 	@$(DC) up --build
 
 down: 
@@ -84,3 +91,6 @@ logs: check-env
 
 ps: check-env
 	@$(DC) ps
+
+env-export:
+	@echo "export GID=$(shell id -g)"
