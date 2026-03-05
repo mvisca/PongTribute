@@ -12,7 +12,8 @@ import {
 	WEBSOCKET_EVENTS,
 	WebSocketEventsTypes,
 	MatchConstants,
-	Utils
+	Utils,
+	BOT_USER_ID
 } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
 
@@ -68,56 +69,67 @@ export class GameService {
 		if (!session) {
 			const match = await this.matchRepo.findById(matchId);
 			
-			if (match) {
-				// MATCH Existe en BD, es juego remoto
-				if (match.status === MatchConstants.MATCH_STATUS.FINISHED) {
-					socket.close(1008, "Match finished");
-					return null;
+			// Re-check tras await: una llamada concurrente al mismo matchId puede haber
+			// creado ya la sesión mientras esperábamos la respuesta de la BD.
+			session = this.activeMatches.get(matchId);
+			
+			if (!session) {
+				if (match) {
+					// MATCH Existe en BD, es juego remoto
+					if (match.status === MatchConstants.MATCH_STATUS.FINISHED) {
+						socket.close(1008, "Match finished");
+						return null;
+					}
+					session = {
+						matchId: matchId,
+						player1Id: match.player1.userId,
+						player1Username: match.player1.username,
+						player1Avatar: match.player1.avatar,
+						player2Id: match.player2?.userId ?? Utils.generateUserId(),
+						player2Username: match.player2?.username ?? 'Guest',
+						player2Avatar: match.player2?.avatar ?? GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
+						isLocal: false,
+						socketP1: null,
+						socketP2: null,
+						loopId: null,
+						gameState: this.createInitialState(matchId, match.targetScore, match.gameMode)
+					} satisfies GameSession;
+					this.activeMatches.set(matchId, session);
+				} else {
+					// MATCH No Existe en DB, es juego local
+					const raw = await this.redis.get(`match:local:${matchId}`);
+					
+					// Re-check tras el segundo await: misma protección para partidas locales.
+					session = this.activeMatches.get(matchId);
+					
+					if (!session) {
+						if (!raw) {
+							socket.close(1008, "Match don't exists");
+							return null;
+						}
+						
+						const local = JSON.parse(raw);
+						
+						await this.redis.del(`match:local:${matchId}`);
+						
+						session = {
+							matchId: matchId,
+							player1Id: local.player1.userId,
+							player1Username: local.player1.username,
+							player1Avatar: local.player1.avatar,
+							player2Id: local.player2?.userId ?? Utils.generateUserId(),
+							player2Username: local.player2?.username ?? 'Guest',
+							player2Avatar: local.player2?.avatar ?? GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
+							isLocal: true,
+							socketP1: null,
+							socketP2: null,
+							loopId: null,
+							gameState: this.createInitialState(matchId, local.targetScore, local.gameMode)
+						} satisfies GameSession;
+						this.activeMatches.set(matchId, session);
+					}
 				}
-				session = {
-					matchId: matchId,
-					player1Id: match.player1.userId,
-					player1Username: match.player1.username,
-					player1Avatar: match.player1.avatar,
-					player2Id: match.player2?.userId ?? Utils.generateUserId(),
-					player2Username: match.player2?.username ?? 'Guest',
-					player2Avatar: match.player2?.avatar ?? GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
-					isLocal: false,
-					socketP1: null,
-					socketP2: null,
-					loopId: null,
-					gameState: this.createInitialState(matchId, match.targetScore, match.gameMode)
-				} satisfies GameSession;
-			} else {
-				// MATCH No Existe en DB, es juego local
-				const raw = await this.redis.get(`match:local:${matchId}`);
-				
-				if (!raw) {
-					socket.close(1008, "Match don't exists");
-					return null;
-				}
-				
-				const local = JSON.parse(raw);
-				
-				await this.redis.del(`match:local:${matchId}`);
-				
-				session = {
-					matchId: matchId,
-					player1Id: local.player1.userId,
-					player1Username: local.player1.username,
-					player1Avatar: local.player1.avatar,
-					player2Id: local.player2?.userId ?? Utils.generateUserId(),
-					player2Username: local.player2?.username ?? 'Guest',
-					player2Avatar: local.player2?.avatar ?? GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
-					isLocal: true,
-					socketP1: null,
-					socketP2: null,
-					loopId: null,
-					gameState: this.createInitialState(matchId, local.targetScore, local.gameMode)
-				} satisfies GameSession;
-			} 
-			// Guardar en redis la session
-			this.activeMatches.set(matchId, session);
+			}
 		}
 		
 		// BLOQUE 2: ASIGNACION DE SOCKET		
@@ -130,13 +142,16 @@ export class GameService {
 			return null;
 		}
 		
-		// Asigna sockets para jugador en partida remota o ambos en partida local 
-		if (session.isLocal) {
+		// Asigna sockets para jugador en partida local (humano-humano), en remota o 
+		// con bot (humano - bot) 
+		if (session.isLocal && userId !== BOT_USER_ID) {
+			// Partida local humano vs humano: mismo socket para ambos jugadores
 			session.socketP1 = socket;
-			session.socketP2 = socket; 
+			session.socketP2 = socket;
 		} else if (isPlayer1) {
-			session.socketP1 = socket	
+			session.socketP1 = socket;
 		} else {
+			// Partida local vs bot: el bot conecta con su propio socket separado
 			session.socketP2 = socket;
 		}
 		

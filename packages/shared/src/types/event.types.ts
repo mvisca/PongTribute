@@ -158,6 +158,13 @@ export namespace TranscendenceEventsTypes {
 		};
 	}
 
+	export interface MatchBotRequestedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.MATCH_BOT_REQUESTED;
+		payload: {
+			matchId: string;
+			gameMode: GameConstants.GameModeType;
+		};
+	}
 
 	// ── Union ────────────────────────────────────────────────────────────────
 
@@ -172,7 +179,7 @@ export namespace TranscendenceEventsTypes {
 		| MatchStartedEvent
 		| MatchRejectedEvent
 		| MatchCancelledEvent
-		//| GameOverEvent
+		| MatchBotRequestedEvent
 		| FriendRequestEvent
 		| FriendAcceptedEvent
 		| FriendRemovedEvent;

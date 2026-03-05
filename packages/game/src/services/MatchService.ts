@@ -10,7 +10,9 @@ import {
 	TRANSCENDENCE_CHANNEL,
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
-	Utils
+	Utils,
+	BOT_USER_ID,
+	BOT_USERNAME
 } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
 
@@ -59,6 +61,9 @@ export class MatchService {
 			return this.createLocalMatch(userId, body);
 		}
 		
+		if (matchType === 'bot') {
+    		return this.createBotMatch(userId, body);
+		}
 		// 3. DEFAULT: PRIVATE
 		// Si llegamos aquí, sabemos que opponentId existe gracias al paso 1.
 		// El signo ! le dice a TS: "Confía en mí, esto no es null".
@@ -288,439 +293,494 @@ export class MatchService {
 			}
 		);
 			
-			// 2. Obtener Nombres (Pre-Fetch a User)
-			// Necesitamos los nombres ANTES de crear la fila en SQL.
-			// Usamos Promise.all para que sea paralelo y rápido (los 2 players).
-			const [p1Data, p2Data] = await Promise.all([
-				this.fetchUserProfile(userId),
-				this.fetchUserProfile(opponentId)
-			]);
+		// 2. Obtener Nombres (Pre-Fetch a User)
+		// Necesitamos los nombres ANTES de crear la fila en SQL.
+		// Usamos Promise.all para que sea paralelo y rápido (los 2 players).
+		const [p1Data, p2Data] = await Promise.all([
+			this.fetchUserProfile(userId),
+			this.fetchUserProfile(opponentId)
+		]);
 			
-			// 3. Construcción de la Entidad (El Servicio decide ID y Estado)
-			const newMatch: MatchTypes.MatchRow = {
-				id: randomUUID(),           // ID generado en lógica de negocio
-				status: MatchConstants.MATCH_STATUS.PENDING,          // Nace pendiente de aceptación
-				player1_id: userId,
-				player1_username: p1Data.username, // <--- Usamos el dato del objeto
-				player1_avatar: p1Data.avatar,
-				player1_score: 0,
-				player2_id: opponentId,
-				player2_username: p2Data.username, // <--- Usamos el dato del objeto
-				player2_avatar: p2Data.avatar,
-				player2_score: 0,
-				winner_id: null,
-				created_at: Date.now(),
-				finished_at: null,
-				game_mode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
-				target_score: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
-			};
-			
-			// 4. Persistencia (Bubble Up de errores SQL)
-			await this.matchRepo.create(newMatch); // Usamos el create genérico
-			// TODO debería recibir un domain y mapear a row dentro del repositorio
-			
-			try {
-				// 6. Notificar invitación
-				const event: TranscendenceEventsTypes.MatchInviteEvent = {
-					type: TRANSCENDENCE_EVENTS.MATCH_INVITE,
-					timestamp: Date.now(),
-					source: 'game-service',
-					payload: {
-						matchId: newMatch.id,
-						inviterId: userId,
-						inviterUsername: p1Data.username,
-						inviterAvatar: p1Data.avatar,
-						inviteeId: opponentId,
-						gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
-						expiresAt: newMatch.created_at + MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS
-					}
-				} satisfies TranscendenceEventsTypes.MatchInviteEvent;
-				
-				await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-				
-				const match = await this.matchRepo.findById(newMatch.id);
-				
-				if (!match) {
-					throw new SharedErrors.NotFoundError(
-						'Match not found',
-						'Match Service.createPrivateMatch',
-						{ matchId: newMatch.id }
-					);
+		// 3. Construcción de la Entidad (El Servicio decide ID y Estado)
+		const newMatch: MatchTypes.MatchRow = {
+			id: randomUUID(),           // ID generado en lógica de negocio
+			status: MatchConstants.MATCH_STATUS.PENDING,          // Nace pendiente de aceptación
+			player1_id: userId,
+			player1_username: p1Data.username, // <--- Usamos el dato del objeto
+			player1_avatar: p1Data.avatar,
+			player1_score: 0,
+			player2_id: opponentId,
+			player2_username: p2Data.username, // <--- Usamos el dato del objeto
+			player2_avatar: p2Data.avatar,
+			player2_score: 0,
+			winner_id: null,
+			created_at: Date.now(),
+			finished_at: null,
+			game_mode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
+			target_score: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
+		};
+		
+		// 4. Persistencia (Bubble Up de errores SQL)
+		await this.matchRepo.create(newMatch); // Usamos el create genérico
+		// TODO debería recibir un domain y mapear a row dentro del repositorio
+		
+		try {
+			// 6. Notificar invitación
+			const event: TranscendenceEventsTypes.MatchInviteEvent = {
+				type: TRANSCENDENCE_EVENTS.MATCH_INVITE,
+				timestamp: Date.now(),
+				source: 'game-service',
+				payload: {
+					matchId: newMatch.id,
+					inviterId: userId,
+					inviterUsername: p1Data.username,
+					inviterAvatar: p1Data.avatar,
+					inviteeId: opponentId,
+					gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC,
+					expiresAt: newMatch.created_at + MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS
 				}
-
-				return match;
-			} catch (error) {
-				console.error(`[MATCH-SERVICE] CRITICAL: Post-creation failure. ROLLBACK.`, error);
-				
-				// ROLLBACK/REVIERTE ESTADO: Borra la partida física al fallar la notificación
-				await this.matchRepo.deleteMatch(newMatch.id);
-				
-				throw new SharedErrors.ServiceError(
-					'redis',
-					'Error al enviar mensaje para iniciar partida privada.',
-					{
-						newMatchId: newMatch.id,
-						player1Id: newMatch.player1_id,
-						player2Id: newMatch.player2_id
-					}
+			} satisfies TranscendenceEventsTypes.MatchInviteEvent;
+			
+			await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+			
+			const match = await this.matchRepo.findById(newMatch.id);
+			
+			if (!match) {
+				throw new SharedErrors.NotFoundError(
+					'Match not found',
+					'Match Service.createPrivateMatch',
+					{ matchId: newMatch.id }
 				);
 			}
-		}
-		
-		/**
-		* createLocalMatch
-		* Crea un "ticket" de partida en Redis. No toca la DB SQL.
-		* TTL: 15 segundos (tiempo suficiente para que el front conecte el WS).
-		*/
-		async createLocalMatch(userId: string, config?: Partial<MatchTypes.CreateMatchBody>): Promise<MatchTypes.Match> {
+			return match;
+		} catch (error) {
+			console.error(`[MATCH-SERVICE] CRITICAL: Post-creation failure. ROLLBACK.`, error);
 			
-			// 1. Generar ID y Datos
-			const matchId = randomUUID();
-			const p1Data = await this.fetchUserProfile(userId); // Reutilizamos tu helper
+			// ROLLBACK/REVIERTE ESTADO: Borra la partida física al fallar la notificación
+			await this.matchRepo.deleteMatch(newMatch.id);
 			
-			// 2. Crear Objeto Match (Cumpliendo el Schema, pero sin ID de DB real)
-			const localMatch: MatchTypes.Match = {
-				id: matchId,
-				status: 'active', // Nace activa para que el front entre directo
-				gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC, // O lo que venga en config
-				targetScore: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT,
-				player1: {
-					userId: userId,
-					username: p1Data.username,
-					avatar: p1Data.avatar,
-					score: 0,
-					isWinner: false
-				},
-				player2: {
-					userId: Utils.generateUserId(),
-					username: 'Guest Player', // El front puede sobreescribir esto visualmente
-					avatar: GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
-					score: 0,
-					isWinner: false
-				},
-				winnerId: null,
-				createdAt: new Date().toISOString()
-			};
-			
-			// 3. Guardar en REDIS (Persistencia Efímera)
-			// Clave: "match:local:{uuid}"
-			const REDIS_KEY = `match:local:${matchId}`;
-			
-			// Serializamos el objeto completo para recuperarlo en GameService
-			// 'EX', 15 -> Expira en 15 segundos
-			await this.redis.set(REDIS_KEY, JSON.stringify(localMatch), 'EX', 15);
-			
-			console.log(`[MATCH-SERVICE] Local match ticket created: ${matchId}`);
-			
-			return localMatch;
-		}
-		
-		
-		async getMatchHistory(
-			userId: string,
-			offset: number = 0
-		): Promise<MatchTypes.Match[]> {
-			const limit = 20;
-			return await this.matchRepo.findByUserId(userId, limit, offset);
-		}
-		
-		
-		// ========================================================================
-		// MÉTODOS HELPERS
-		// ========================================================================
-		
-		/**
-		* handleUsernameChange
-		* Coordina la actualización masiva de nombres en el historial
-		* cuando un usuario actualiza su perfil.
-		*/
-		async handleUserUpdate(userId: string, newUsername: string, newAvatar: string): Promise<void> {
-			console.log(`[MATCH-SERVICE] Syncing username for user ${userId} -> ${newUsername}`);
-			await this.matchRepo.updateUser(userId, newUsername, newAvatar);
-		}
-		
-		/**
-		* acceptMatch
-		* Confirma una partida privada, cambia su estado y notifica.
-		*/
-		async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
-			
-			// 1. Obtener la partida
-			const match = await this.matchRepo.findById(matchId); 
-			
-			// 2. Guards
-			if (!match)
-				throw new SharedErrors.NotFoundError('Partida no encontrada');
-			
-			if (match.status !== MatchConstants.MATCH_STATUS.PENDING)
-				throw new SharedErrors.ValidationError('Partida no está pendiente');
-			
-			if (match.player2?.userId !== userId)
-				throw new SharedErrors.ForbiddenError('No eres el jugador invitado');
-			
-			// 3. Actualizar estado en DB
-			await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.ACTIVE);
-			
-			try {
-				// Forzamos el estado a 'active' en el objeto en memoria porque toDomain usa el dato viejo
-				match.status = MatchConstants.MATCH_STATUS.ACTIVE;
-				
-				// VALIDACIÓN
-				// Si el mapper nos devuelve player2 undefined, algo grave pasa.
-				if (!match.player2) {
-					throw new SharedErrors.ServiceError('game', 'Match data corrupted: Player 2 missing');
+			throw new SharedErrors.ServiceError(
+				'redis',
+				'Error al enviar mensaje para iniciar partida privada.',
+				{
+					newMatchId: newMatch.id,
+					player1Id: newMatch.player1_id,
+					player2Id: newMatch.player2_id
 				}
-				
-				// 5. Notificar inicio de partida (Redis)
-				const event: TranscendenceEventsTypes.MatchStartedEvent = {
-					type: TRANSCENDENCE_EVENTS.MATCH_STARTED,
-					timestamp: Date.now(),
-					source: 'game-service',
-					payload: {
-						matchId: match.id,
-						// Accedemos a la estructura anidada que definimos en el Mapper
-						playerIds: [match.player1.userId, match.player2.userId] // Seguro gracias al if anterior
-					}
-				} satisfies TranscendenceEventsTypes.MatchStartedEvent;
-				
-				await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-				
-				return match;
-			} catch (error) {
-				console.error(`[MATCH-SERVICE] CRITICAL: Failed to start match. ROLLBACK to PENDING.`, error);
-				
-				// COMPENSACIÓN: Revertir estado si falla la notificación/hidratación
-				// Si falló el inicio, devolvemos la invitación a "pendiente" para que puedan reintentar.
-				await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
-				
-				throw new SharedErrors.ServiceError('game', 'Error al iniciar la partida. Por favor intenta aceptar de nuevo.');
-			}
+			);
 		}
+	}
 		
-		/**
-		* rejectMatch
-		* Rechaza una partida privada, cambia su estado y notifica.
-		*/
-		async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
-			
-			// 1. Obtener la partida cruda (Row)
-			const match = await this.matchRepo.findById(matchId);
-			
-			// 2. Guards
-			if (!match) throw new SharedErrors.NotFoundError('Match not found');
-			if (match.status !== MatchConstants.MATCH_STATUS.PENDING) throw new SharedErrors.ValidationError('Match is not pending');
-			if (match.player2?.userId !== userId) throw new SharedErrors.ForbiddenError('Only the invited player can reject');
-			
-			// 3. Actualizar estado en DB
-			await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.REJECTED);
-			
-			try {
-				match.status = MatchConstants.MATCH_STATUS.REJECTED; // Actualizacion manual en memoria
-				
-				// 5. Notificar rechazo (Redis)
-				const event: TranscendenceEventsTypes.MatchRejectedEvent = {
-					type: TRANSCENDENCE_EVENTS.MATCH_REJECTED,
-					timestamp: Date.now(),
-					source: 'game-service',
-					payload: {
-						matchId: match.id,
-						rejectorId: userId,              // El que rechaza (player2)
-						inviterId: match.player1.userId   // El creador (player1)
-					}
-				} satisfies TranscendenceEventsTypes.MatchRejectedEvent;
-				
-				await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-				
-				return match;
-			} catch (error) {
-				console.error(`[MATCH-SERVICE] CRITICAL: Post-reject failure.`, error);
-				// En rechazo, el rollback es menos crítico, pero idealmente revertimos
-				await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
-				throw new SharedErrors.ServiceError('game', 'Error rejecting match.');
+	/**
+	* createLocalMatch
+	* Crea un "ticket" de partida en Redis. No toca la DB SQL.
+	* TTL: 15 segundos (tiempo suficiente para que el front conecte el WS).
+	*/
+	async createLocalMatch(userId: string, config?: Partial<MatchTypes.CreateMatchBody>): Promise<MatchTypes.Match> {
+		
+		// 1. Generar ID y Datos
+		const matchId = randomUUID();
+		const p1Data = await this.fetchUserProfile(userId); // Reutilizamos tu helper
+		
+		// 2. Crear Objeto Match (Cumpliendo el Schema, pero sin ID de DB real)
+		const localMatch: MatchTypes.Match = {
+			id: matchId,
+			status: 'active', // Nace activa para que el front entre directo
+			gameMode: config?.gameMode || GameConstants.GAME_MODE.CLASSIC, // O lo que venga en config
+			targetScore: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT,
+			player1: {
+				userId: userId,
+				username: p1Data.username,
+				avatar: p1Data.avatar,
+				score: 0,
+				isWinner: false
+			},
+			player2: {
+				userId: Utils.generateUserId(),
+				username: 'Guest Player', // El front puede sobreescribir esto visualmente
+				avatar: GameEnv.CLOUDINARY_DEFAULT_AVATAR(),
+				score: 0,
+				isWinner: false
+			},
+			winnerId: null,
+			createdAt: new Date().toISOString()
+		};
+		
+		// 3. Guardar en REDIS (Persistencia Efímera)
+		// Clave: "match:local:{uuid}"
+		const REDIS_KEY = `match:local:${matchId}`;
+		
+		// Serializamos el objeto completo para recuperarlo en GameService
+		// 'EX', 15 -> Expira en 15 segundos
+		await this.redis.set(REDIS_KEY, JSON.stringify(localMatch), 'EX', 15);
+		
+		console.log(`[MATCH-SERVICE] Local match ticket created: ${matchId}`);
+		
+		return localMatch;
+	}
+	
+	
+	/**
+	 * createBotMatch
+	 * Crea un ticket de partida contra el bot en Redis.
+	 * Igual que createLocalMatch pero con BOT_USER_ID como player2.
+	 * No toca la DB SQL. TTL: 30 segundos (el bot necesita
+	 * más tiempo que el frontend para conectarse).
+	 */
+	async createBotMatch(
+		userId: string,
+		config?: Partial<MatchTypes.CreateMatchBody>
+	): Promise<MatchTypes.Match> {
+
+		const matchId = randomUUID();
+		const p1Data  = await this.fetchUserProfile(userId);
+
+		const botMatch: MatchTypes.Match = {
+			id: matchId,
+			status: 'active',
+			gameMode: config?.gameMode ?? GameConstants.GAME_MODE.CLASSIC,
+			targetScore: config?.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT,
+			player1: {
+				userId:   userId,
+				username: p1Data.username,
+				avatar:   p1Data.avatar,
+				score:    0,
+				isWinner: false
+			},
+			player2: {
+				userId:   BOT_USER_ID,   // ID fijo del bot
+				username: BOT_USERNAME,
+				avatar:   '',
+				score:    0,
+				isWinner: false
+			},
+			winnerId:  null,
+			createdAt: new Date().toISOString()
+		};
+
+		// Guardamos con la misma clave que las partidas locales.
+		// GameService.joinMatch() ya sabe leer este formato.
+		const REDIS_KEY = `match:local:${matchId}`;
+		await this.redis.set(REDIS_KEY, JSON.stringify(botMatch), 'EX', 30);
+
+		console.log(`[MATCH-SERVICE] Bot match ticket created: ${matchId}`);
+
+		// Publicamos el evento para que el servicio bot lo reciba
+		const event: TranscendenceEventsTypes.MatchBotRequestedEvent = {
+			type:      TRANSCENDENCE_EVENTS.MATCH_BOT_REQUESTED,
+			timestamp: Date.now(),
+			source:    'game-service',
+			payload: {
+				matchId,
+				gameMode: botMatch.gameMode
 			}
-		}
+		};
+		await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+
+		return botMatch;
+	}
+
+
+	async getMatchHistory(
+		userId: string,
+		offset: number = 0
+	): Promise<MatchTypes.Match[]> {
+		const limit = 20;
+		return await this.matchRepo.findByUserId(userId, limit, offset);
+	}
+	
+	
+	// ========================================================================
+	// MÉTODOS HELPERS
+	// ========================================================================
+	
+	/**
+	* handleUsernameChange
+	* Coordina la actualización masiva de nombres en el historial
+	* cuando un usuario actualiza su perfil.
+	*/
+	async handleUserUpdate(userId: string, newUsername: string, newAvatar: string): Promise<void> {
+		console.log(`[MATCH-SERVICE] Syncing username for user ${userId} -> ${newUsername}`);
+		await this.matchRepo.updateUser(userId, newUsername, newAvatar);
+	}
+	
+	/**
+	* acceptMatch
+	* Confirma una partida privada, cambia su estado y notifica.
+	*/
+	async acceptMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
 		
+		// 1. Obtener la partida
+		const match = await this.matchRepo.findById(matchId); 
 		
-		/**
-		* Limpia partidas privadas que estan en 'pending' en DB cuando el invitador se fue y 
-		* el invitado aún no las rechazo ni acepto. 
-		* Evita que los invitados acepten partidas fantasma.
-		**/
-		async cancelPendingMatches(userId: string): Promise<void> {
+		// 2. Guards
+		if (!match)
+			throw new SharedErrors.NotFoundError('Partida no encontrada');
+		
+		if (match.status !== MatchConstants.MATCH_STATUS.PENDING)
+			throw new SharedErrors.ValidationError('Partida no está pendiente');
+		
+		if (match.player2?.userId !== userId)
+			throw new SharedErrors.ForbiddenError('No eres el jugador invitado');
+		
+		// 3. Actualizar estado en DB
+		await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.ACTIVE);
+		
+		try {
+			// Forzamos el estado a 'active' en el objeto en memoria porque toDomain usa el dato viejo
+			match.status = MatchConstants.MATCH_STATUS.ACTIVE;
 			
-			// 1. Buscamos las partidas creadas por este usuario que sigan PENDING
-			const pendingMatches = await this.matchRepo.findPendingHostedByUser(userId);
+			// VALIDACIÓN
+			// Si el mapper nos devuelve player2 undefined, algo grave pasa.
+			if (!match.player2) {
+				throw new SharedErrors.ServiceError('game', 'Match data corrupted: Player 2 missing');
+			}
 			
-			if (pendingMatches.length === 0) return;
-			
-			console.log(`[MATCH-SERVICE] Cleaning ${pendingMatches.length} pending matches for disconnected user ${userId}`);
-			
-			const promises = pendingMatches.map(async (match) => {
-				// 1. Borrado físico (DB)
-				await this.matchRepo.deleteMatch(match.id);
-				
-				// 2. TYPE GUARD
-				// Si la DB dice que player2_id es null, no podemos enviar el evento.
-				// Esto filtra datos corruptos.
-				if (!match.player2?.userId) {
-					console.warn(`[MATCH-SERVICE] Pending match ${match.id} missing player2_id. Skipping notification.`);
-					return; 
+			// 5. Notificar inicio de partida (Redis)
+			const event: TranscendenceEventsTypes.MatchStartedEvent = {
+				type: TRANSCENDENCE_EVENTS.MATCH_STARTED,
+				timestamp: Date.now(),
+				source: 'game-service',
+				payload: {
+					matchId: match.id,
+					// Accedemos a la estructura anidada que definimos en el Mapper
+					playerIds: [match.player1.userId, match.player2.userId] // Seguro gracias al if anterior
 				}
-				
-				// Ahora TypeScript sabe que targetId es 'string' (no null)
-				const targetId: string = match.player2.userId;
-				
-				// 3. Construir evento
-				const event: TranscendenceEventsTypes.MatchCancelledEvent = {
-					type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
-					timestamp: Date.now(),
-					source: 'game-service',
-					payload: {
-						matchId: match.id,
-						cancelledById: match.player1.userId,  // El creador (cleanup automático)
-						notifiedUserIds: [match.player1.userId, targetId ],         // El invitado (player2)
-						reason: GameConstants.MATCH_CANCELLED_REASON.HOST_DISCONNECTED
-					}
-				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
-				
-				// 4. Publicamos el evento usando la instancia inyectada
-				return this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-			});
+			} satisfies TranscendenceEventsTypes.MatchStartedEvent;
 			
-			// Ejecutamos todas las notificaciones en paralelo
-			// Promise.allSettled es mejor aquí por si falla un publish, que no pare los demás borrados
-			await Promise.allSettled(promises);
+			await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+			
+			return match;
+		} catch (error) {
+			console.error(`[MATCH-SERVICE] CRITICAL: Failed to start match. ROLLBACK to PENDING.`, error);
+			
+			// COMPENSACIÓN: Revertir estado si falla la notificación/hidratación
+			// Si falló el inicio, devolvemos la invitación a "pendiente" para que puedan reintentar.
+			await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
+			
+			throw new SharedErrors.ServiceError('game', 'Error al iniciar la partida. Por favor intenta aceptar de nuevo.');
 		}
+	}
+	
+	/**
+	* rejectMatch
+	* Rechaza una partida privada, cambia su estado y notifica.
+	*/
+	async rejectMatch(userId: string, matchId: string): Promise<MatchTypes.Match> {
 		
+		// 1. Obtener la partida cruda (Row)
+		const match = await this.matchRepo.findById(matchId);
 		
+		// 2. Guards
+		if (!match) throw new SharedErrors.NotFoundError('Match not found');
+		if (match.status !== MatchConstants.MATCH_STATUS.PENDING) throw new SharedErrors.ValidationError('Match is not pending');
+		if (match.player2?.userId !== userId) throw new SharedErrors.ForbiddenError('Only the invited player can reject');
 		
-		/**
-		* Limpia partidas privadas que estan en 'pending' mas 
-		* de 60 seg y las pone como 'expired' en DB. El invitado no
-		* las rechazo ni acepto. 
-		**/
-		async prunePrivateInvites(): Promise<void> {
-			// Obtiene todas las invitaciones (partidas que están 'pending') y caducadas
-			// Cambia su status a 'expired'
-			const expired = await this.matchRepo.expirePendingMatches();
-
-			// Si no hay invitaciones caducadas termina
-			if (expired.length === 0) return;
-
-			// Para cada invitación caducada, crea un evento y lo publica en Redis 
-			const promises = expired.map(({ matchId, player1Id, player2Id }) => {
-				// Construye el nuevo evento que notificará al sistema
-				const event: TranscendenceEventsTypes.MatchCancelledEvent = {
-					type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
-					timestamp: Date.now(),
-					source: 'game-service',
-					payload: {
-						matchId,
-						cancelledById: 'system',
-						notifiedUserIds: [ player1Id, player2Id ],
-						reason: GameConstants.MATCH_CANCELLED_REASON.INVITATION_EXPIRED
-					}
-				} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
-
-				// Publica el evento al canal transcendence:events
-				return this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event)); 
-			});
-
-			// Espera que todas las publicaciones terminen sin fallar si alguna falla
-
-			await Promise.allSettled(promises);
+		// 3. Actualizar estado en DB
+		await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.REJECTED);
+		
+		try {
+			match.status = MatchConstants.MATCH_STATUS.REJECTED; // Actualizacion manual en memoria
+			
+			// 5. Notificar rechazo (Redis)
+			const event: TranscendenceEventsTypes.MatchRejectedEvent = {
+				type: TRANSCENDENCE_EVENTS.MATCH_REJECTED,
+				timestamp: Date.now(),
+				source: 'game-service',
+				payload: {
+					matchId: match.id,
+					rejectorId: userId,              // El que rechaza (player2)
+					inviterId: match.player1.userId   // El creador (player1)
+				}
+			} satisfies TranscendenceEventsTypes.MatchRejectedEvent;
+			
+			await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+			
+			return match;
+		} catch (error) {
+			console.error(`[MATCH-SERVICE] CRITICAL: Post-reject failure.`, error);
+			// En rechazo, el rollback es menos crítico, pero idealmente revertimos
+			await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
+			throw new SharedErrors.ServiceError('game', 'Error rejecting match.');
 		}
+	}
+	
+	
+	/**
+	* Limpia partidas privadas que estan en 'pending' en DB cuando el invitador se fue y 
+	* el invitado aún no las rechazo ni acepto. 
+	* Evita que los invitados acepten partidas fantasma.
+	**/
+	async cancelPendingMatches(userId: string): Promise<void> {
 		
-		/**
-		* cancelPrivateMatch
-		* Permite al creador (P1) revocar la invitación antes de que sea aceptada.
-		*/
-		async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
+		// 1. Buscamos las partidas creadas por este usuario que sigan PENDING
+		const pendingMatches = await this.matchRepo.findPendingHostedByUser(userId);
+		
+		if (pendingMatches.length === 0) return;
+		
+		console.log(`[MATCH-SERVICE] Cleaning ${pendingMatches.length} pending matches for disconnected user ${userId}`);
+		
+		const promises = pendingMatches.map(async (match) => {
+			// 1. Borrado físico (DB)
+			await this.matchRepo.deleteMatch(match.id);
 			
-			console.log(`[MATCH-SERVICE] Cancelling invitation ${matchId} by user ${userId}`);
-			
-			// 1. Obtener la partida
-			const matchRow = await this.matchRepo.findById(matchId);
-			
-			// 2. Guards (Validaciones)
-			if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
-			// Solo se puede cancelar si no ha empezado
-			if (matchRow.status !== MatchConstants.MATCH_STATUS.PENDING) {
-				throw new SharedErrors.ValidationError('Cannot cancel a match that is not pending');
-			}
-			// SEGURIDAD: Solo el creador (Player 1) puede cancelar SU invitación
-			if (matchRow.player1.userId !== userId) {
-				throw new SharedErrors.ForbiddenError('You are not the creator of this match');
+			// 2. TYPE GUARD
+			// Si la DB dice que player2_id es null, no podemos enviar el evento.
+			// Esto filtra datos corruptos.
+			if (!match.player2?.userId) {
+				console.warn(`[MATCH-SERVICE] Pending match ${match.id} missing player2_id. Skipping notification.`);
+				return; 
 			}
 			
-			// Si es una partida privada "pending", TIENE que haber un player2_id.
-			// Si no lo hay, la base de datos está corrupta o la lógica falló.
-			if (!matchRow.player2?.userId) {
-				throw new SharedErrors.ValidationError('Cannot cancel a match without an opponent');
-			}
+			// Ahora TypeScript sabe que targetId es 'string' (no null)
+			const targetId: string = match.player2.userId;
 			
-			// 3. Borrar de la DB (Hard Delete porque nunca ocurrió)
-			// Al borrarla, liberamos a ambos usuarios del bloqueo de "Active Match".
-			await this.matchRepo.deleteMatch(matchId);
-			
-			// 4. Notificar al invitado (Player 2)
-			// Es importante para que su interfaz se limpie si tenía el popup abierto.
+			// 3. Construir evento
 			const event: TranscendenceEventsTypes.MatchCancelledEvent = {
 				type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
 				timestamp: Date.now(),
 				source: 'game-service',
 				payload: {
-					matchId: matchId,
-					cancelledById: userId,               // El creador que cancela
-					notifiedUserIds: [ matchRow.player1.userId, matchRow.player2.userId ], // El invitado
-					reason: GameConstants.MATCH_CANCELLED_REASON.HOST_CANCELLED
+					matchId: match.id,
+					cancelledById: match.player1.userId,  // El creador (cleanup automático)
+					notifiedUserIds: [match.player1.userId, targetId ],         // El invitado (player2)
+					reason: GameConstants.MATCH_CANCELLED_REASON.HOST_DISCONNECTED
 				}
 			} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
 			
-			await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+			// 4. Publicamos el evento usando la instancia inyectada
+			return this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		});
+		
+		// Ejecutamos todas las notificaciones en paralelo
+		// Promise.allSettled es mejor aquí por si falla un publish, que no pare los demás borrados
+		await Promise.allSettled(promises);
+	}
+	
+	
+	
+	/**
+	* Limpia partidas privadas que estan en 'pending' mas 
+	* de 60 seg y las pone como 'expired' en DB. El invitado no
+	* las rechazo ni acepto. 
+	**/
+	async prunePrivateInvites(): Promise<void> {
+		// Obtiene todas las invitaciones (partidas que están 'pending') y caducadas
+		// Cambia su status a 'expired'
+		const expired = await this.matchRepo.expirePendingMatches();
+		// Si no hay invitaciones caducadas termina
+		if (expired.length === 0) return;
+		// Para cada invitación caducada, crea un evento y lo publica en Redis 
+		const promises = expired.map(({ matchId, player1Id, player2Id }) => {
+			// Construye el nuevo evento que notificará al sistema
+			const event: TranscendenceEventsTypes.MatchCancelledEvent = {
+				type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
+				timestamp: Date.now(),
+				source: 'game-service',
+				payload: {
+					matchId,
+					cancelledById: 'system',
+					notifiedUserIds: [ player1Id, player2Id ],
+					reason: GameConstants.MATCH_CANCELLED_REASON.INVITATION_EXPIRED
+				}
+			} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
+			// Publica el evento al canal transcendence:events
+			return this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event)); 
+		});
+		// Espera que todas las publicaciones terminen sin fallar si alguna falla
+		await Promise.allSettled(promises);
+	}
+	
+	/**
+	* cancelPrivateMatch
+	* Permite al creador (P1) revocar la invitación antes de que sea aceptada.
+	*/
+	async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
+		
+		console.log(`[MATCH-SERVICE] Cancelling invitation ${matchId} by user ${userId}`);
+		
+		// 1. Obtener la partida
+		const matchRow = await this.matchRepo.findById(matchId);
+		
+		// 2. Guards (Validaciones)
+		if (!matchRow) throw new SharedErrors.NotFoundError('Match not found');
+		// Solo se puede cancelar si no ha empezado
+		if (matchRow.status !== MatchConstants.MATCH_STATUS.PENDING) {
+			throw new SharedErrors.ValidationError('Cannot cancel a match that is not pending');
+		}
+		// SEGURIDAD: Solo el creador (Player 1) puede cancelar SU invitación
+		if (matchRow.player1.userId !== userId) {
+			throw new SharedErrors.ForbiddenError('You are not the creator of this match');
 		}
 		
-		/**
-		* fetchUserProfile
-		* Helper para la comunicación S2S (Service-to-Service)
-		* (pide al modulo User por HTTP el username del userId)
-		*/
-		private async fetchUserProfile(
-			userId: string
-		): Promise<{
-			username: string,
-			avatar: string
-		}>{
-			// 1. Obtener URL Base
-			const baseUrl = GameEnv.USER_SERVICE_URL();
-			
-			// Usamos la ruta interna, no la pública (/api)
-			// Esta ruta interna esta protegida por el SERVICE_SECRET en lugar del JWT
-			const targetUrl = `${baseUrl}/internal/users/by-id/${userId}`;
-			
-			try {
-				const response = await fetch(targetUrl, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json',
-						'x-service-secret': GameEnv.SERVICE_SECRET()
-					}
-				});
-				
-				// 3. Manejo de errores HTTP
-				if (!response.ok) {
-					console.warn(`[MATCH-SERVICE] User Service responded ${response.status} for ${userId}`);
-					return { username: 'Unknown', avatar: '' };
+		// Si es una partida privada "pending", TIENE que haber un player2_id.
+		// Si no lo hay, la base de datos está corrupta o la lógica falló.
+		if (!matchRow.player2?.userId) {
+			throw new SharedErrors.ValidationError('Cannot cancel a match without an opponent');
+		}
+		
+		// 3. Borrar de la DB (Hard Delete porque nunca ocurrió)
+		// Al borrarla, liberamos a ambos usuarios del bloqueo de "Active Match".
+		await this.matchRepo.deleteMatch(matchId);
+		
+		// 4. Notificar al invitado (Player 2)
+		// Es importante para que su interfaz se limpie si tenía el popup abierto.
+		const event: TranscendenceEventsTypes.MatchCancelledEvent = {
+			type: TRANSCENDENCE_EVENTS.MATCH_CANCELLED,
+			timestamp: Date.now(),
+			source: 'game-service',
+			payload: {
+				matchId: matchId,
+				cancelledById: userId,               // El creador que cancela
+				notifiedUserIds: [ matchRow.player1.userId, matchRow.player2.userId ], // El invitado
+				reason: GameConstants.MATCH_CANCELLED_REASON.HOST_CANCELLED
+			}
+		} satisfies TranscendenceEventsTypes.MatchCancelledEvent;
+		
+		await this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+	}
+	
+	/**
+	* fetchUserProfile
+	* Helper para la comunicación S2S (Service-to-Service)
+	* (pide al modulo User por HTTP el username del userId)
+	*/
+	private async fetchUserProfile(
+		userId: string
+	): Promise<{
+		username: string,
+		avatar: string
+	}>{
+		// 1. Obtener URL Base
+		const baseUrl = GameEnv.USER_SERVICE_URL();
+		
+		// Usamos la ruta interna, no la pública (/api)
+		// Esta ruta interna esta protegida por el SERVICE_SECRET en lugar del JWT
+		const targetUrl = `${baseUrl}/internal/users/by-id/${userId}`;
+		
+		try {
+			const response = await fetch(targetUrl, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					'x-service-secret': GameEnv.SERVICE_SECRET()
 				}
-				
-				// 4. Parsear respuesta
-				const userData = await response.json() as { username: string, avatar: string };
-				return { username: userData.username, avatar: userData.avatar };
-				
-			} catch (error) {
-				console.error(`[MATCH-SERVICE] Connection error with ${baseUrl}:`, error);
+			});
+			
+			// 3. Manejo de errores HTTP
+			if (!response.ok) {
+				console.warn(`[MATCH-SERVICE] User Service responded ${response.status} for ${userId}`);
 				return { username: 'Unknown', avatar: '' };
 			}
+			
+			// 4. Parsear respuesta
+			const userData = await response.json() as { username: string, avatar: string };
+			return { username: userData.username, avatar: userData.avatar };
+			
+		} catch (error) {
+			console.error(`[MATCH-SERVICE] Connection error with ${baseUrl}:`, error);
+			return { username: 'Unknown', avatar: '' };
 		}
 	}
+}
 	

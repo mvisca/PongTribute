@@ -23,7 +23,8 @@ export namespace MatchSchemas {
 	export const MatchTypeSchema = Type.Union([
 		Type.Literal('public'),
 		Type.Literal('private'),
-		Type.Literal('local')
+		Type.Literal('local'),
+		Type.Literal('bot')
 	]);
 	
 	export const GameModeSchema = Type.Union([

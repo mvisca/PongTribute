@@ -6,6 +6,7 @@ packages:
   - packages/game
   - packages/gateway
   - packages/comms
+  - packages/bot
 
 ignoredBuiltDependencies:
   - babylonjs

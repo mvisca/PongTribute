@@ -16,6 +16,7 @@ export const TRANSCENDENCE_EVENTS = {
 	MATCH_STARTED: 'redis:match:started',
 	MATCH_REJECTED: 'redis:match:rejected',
 	MATCH_CANCELLED: 'redis:match:cancelled',
+	MATCH_BOT_REQUESTED: 'redis:match:bot_requested',
 	
 	// --Friendship-- 
 	FRIEND_REQUEST: 'redis:friend:request',
