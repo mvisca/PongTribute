@@ -56,7 +56,7 @@ export function useAvatarUpload() {
 	}
 	
 	function clear() {
-		setState({ base64: null, error: '' });
+		setState({ base64: '', error: '' });
 	}
 	
 	return { ...state, handleFile, clear };

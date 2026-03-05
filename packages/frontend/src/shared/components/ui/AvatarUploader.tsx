@@ -29,7 +29,7 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 			
 			{showReset &&
 				<button
-					onClick={() => { clear(); onFileChange(null); }}
+					onClick={() => { clear(); }}
 				>
 					Reset
 				</button>
