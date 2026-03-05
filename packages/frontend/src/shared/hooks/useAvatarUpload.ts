@@ -2,17 +2,12 @@ import { useEffect, useState } from 'react';
 import { Validators } from '@transcendence/shared/utils/validators.js';
 
 type AvatarState = {
-	preview: string | null; // Base64 para mostrar
-	base64: string | null;
+	base64: string | null; // null=inicual - ''=reseteado - 'data:image/...'=seleccion de usuario
 	error: string;
 }
 
 export function useAvatarUpload() {
-	const [state, setState] = useState<AvatarState>({
-		preview: null,
-		base64: null,
-		error: '',
-	});
+	const [state, setState] = useState<AvatarState>({base64: null, error: ''});
 	
 	function handleFile(file: File | null | undefined) {
 		if (!file) return;
@@ -52,8 +47,8 @@ export function useAvatarUpload() {
 				const ctx = canvas.getContext('2d')!;
 				ctx.drawImage(img, 0, 0, w, h);
 
-				const compressed = canvas.toDataURL('image/webp', 0.85);
-				setState({ preview: compressed, base64: compressed, error: '' });
+				const compressed = canvas.toDataURL('image/webp', 0.85); // TODO detalle de funcion
+				setState({ base64: compressed, error: '' });
 			};
 			img.src = result;
 		};
@@ -61,7 +56,7 @@ export function useAvatarUpload() {
 	}
 	
 	function clear() {
-		setState({ preview: null, base64: null, error: '' });
+		setState({ base64: null, error: '' });
 	}
 	
 	return { ...state, handleFile, clear };

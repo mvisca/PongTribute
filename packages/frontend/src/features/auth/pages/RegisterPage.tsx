@@ -21,6 +21,7 @@ type ErrorsState = {
 }
 
 export default function RegisterPage() {
+	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
 	const navigate = useNavigate();
 	const authLogin = useAuth((state) => state.login);
 	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
@@ -92,8 +93,8 @@ export default function RegisterPage() {
 					error={errors.email}
 				/>
 
-				<AvatarUploader 
-					currentSrc={null}
+				<AvatarUploader
+					currentSrc={DEFAULT}
 					onFileChange={setAvatarBase64}
 					onError={(msg) => setError(msg)}
 				/>

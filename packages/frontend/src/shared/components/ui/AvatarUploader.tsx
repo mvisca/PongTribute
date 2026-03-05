@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useAvatarUpload } from '../../hooks/useAvatarUpload';
 import AvatarDisplay from './AvatarDisplay';
-import AlertError from './AlertError';
 
 interface Props {
 	currentSrc?: string | null;
@@ -10,11 +9,14 @@ interface Props {
 }
 
 export default function AvatarUploader({ onFileChange, onError, currentSrc }: Props) {
-	const { preview, base64, error, handleFile, clear } = useAvatarUpload();
-	const isDefault = currentSrc === import.meta.env.VITE_DEFAULT_AVATAR;
+	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
+	const isDefault = currentSrc === DEFAULT;
+	const { base64, error, handleFile, clear } = useAvatarUpload();
+	const displaySrc = base64 || (base64 === '' ? DEFAULT : currentSrc ?? DEFAULT)
+	const showReset = !!(base64 || (currentSrc && currentSrc !== DEFAULT))
 
 	useEffect(() => {
-		onFileChange(base64);
+		onFileChange(base64 === '' ? null : base64);
 	}, [base64]);
 
 	useEffect(() => {
@@ -23,9 +25,9 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 	
 	return (
 		<div className='mb-4 flex flex-col items-center gap-3'>
-			<AvatarDisplay src={preview ?? currentSrc ?? null} size='lg' />
+			<AvatarDisplay src={displaySrc} size='lg' />
 			
-			{(!isDefault || preview) &&
+			{showReset &&
 				<button
 					onClick={() => { clear(); onFileChange(null); }}
 				>
@@ -42,8 +44,6 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 				onChange={(e) => handleFile(e.target.files?.[0])}
 			/>
 			</label>
-			<p>ALERT DESDE EL AvatarUploader.ts</p>
-			<AlertError message={error} />
 		</div>
 	);
-} // TODO remover el AlertError si se duplica
+}
