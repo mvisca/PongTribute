@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { UserEnv } from './index.js';
 
-// ES Module compatibility: Recrear __dirname y __filename que no existen en ES Modules
+// ES Module compatibility: recreate __dirname and __filename which don't exist in ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -60,7 +60,7 @@ export function getDatabase(): Database.Database {
 		
 		console.log(`[USER-DB] Database initialized: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
 	}
-	// Si ya existe el Singleton lo retorna directamente
+	// If the Singleton already exists, return it directly
 	return db;
 }
 

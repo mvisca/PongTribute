@@ -13,22 +13,22 @@
 // 	});
 // };
 
-//Simplificado a un "Liveness Check" para permitir el arranque fluido
+// Simplified to a "Liveness Check" to allow smooth startup
 import { FastifyPluginAsync } from 'fastify';
 
 export const healthRoutes: FastifyPluginAsync = async (app) => {
     
 	// GET /health
-    // Liveness Probe: Responde rápido para decirle a Docker/K8s que el proceso está vivo.
-    // No verificamos downstream (microservicios) aquí para evitar bloqueos de arranque.
-    // Ruta simple para Docker y Nginx
+    // Liveness Probe: Responds quickly to tell Docker/K8s that the process is alive.
+    // We do not check downstream (microservices) here to avoid startup deadlocks.
+    // Simple route for Docker and Nginx
     app.get('/health', async (request, reply) => {
-        // Solo respondemos que el proceso Gateway está corriendo.
-        // No verificamos downstream aquí para evitar deadlocks de arranque.
-        return { 
-            status: 'ok', 
+        // Only respond that the Gateway process is running.
+        // We do not check downstream here to avoid startup deadlocks.
+        return {
+            status: 'ok',
 			service: 'gateway',
-			uptime: process.uptime(), // Útil para monitorización
+			uptime: process.uptime(), // Useful for monitoring
             timestamp: new Date().toISOString()
         };
     });

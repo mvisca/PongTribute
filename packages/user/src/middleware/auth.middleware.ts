@@ -17,7 +17,7 @@ export namespace AuthMiddleware {
 			const authHeader = request.headers.authorization;
 
 			if (!authHeader || !authHeader.startsWith('Bearer ')) {
-				throw new SharedErrors.UnauthorizedError('Authorization header faltante');
+				throw new SharedErrors.UnauthorizedError('Authorization header missing');
 			}
 
 			// Extraer el token
@@ -29,7 +29,7 @@ export namespace AuthMiddleware {
 
 				const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 				if (!isValid)
-					throw new SharedErrors.UnauthorizedError('Estructura de token inválida',
+					throw new SharedErrors.UnauthorizedError('Invalid token structure',
 					{
 						'context': 'User service, validateJWT middleware',
 						'payload': payload
@@ -40,12 +40,12 @@ export namespace AuthMiddleware {
 					const tokenIssuedAt = payload.iat!;
 					const userId = payload.id!;
 
-					// Validar lastLogoutAt
-					// Si el usuario no existe en la BD, el token es inválido
+					// Validate lastLogoutAt
+					// If the user does not exist in the DB, the token is invalid
 					const lastLogoutAt = await userService.getLastLogoutAt(userId);
 
 					if (tokenIssuedAt < lastLogoutAt) {
-						throw new SharedErrors.UnauthorizedError('Token invalidado por logout');
+						throw new SharedErrors.UnauthorizedError('Token invalidated by logout');
 					}
 
 					request.user = payload;
@@ -64,13 +64,13 @@ export namespace AuthMiddleware {
 		try {
 
 			if (!request.user) {
-				throw new SharedErrors.UnauthorizedError('Usuario no autenticado');
+				throw new SharedErrors.UnauthorizedError('User not authenticated');
 			}
 
 			const paramId = (request.params as UserTypes.UserIdParams).id;
 
 			if (paramId !== request.user.id) {
-				throw new SharedErrors.ForbiddenError('No tienes permiso para acceder a este recurso');
+				throw new SharedErrors.ForbiddenError('You do not have permission to access this resource');
 			}
 		} catch (err) {
 			throw SharedErrors.handleError(err, reply);

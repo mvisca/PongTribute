@@ -14,19 +14,19 @@ export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (a
 	// GET READ / CHECKS & GETS
 	// ============================================================================
 
-	// Obtener usuario por nombre de usuario
+	// Get user by username
 	app.get('/users/username/:username', {
 		schema: UserSchemas.getUserByUsernameSchema,
 		handler: controller.findUserByUsername.bind(controller)
 	});
 
-	// Obtener usuario por email
+	// Get user by email
 	app.get('/users/email/:email', {
 		schema: UserSchemas.getUserByEmailSchema,
 		handler: controller.findUserByEmail.bind(controller)
 	});
 
-	// Obtener usuario por ID
+	// Get user by ID
 	app.get('/users/:id', {
 			schema: UserSchemas.getUserByIdSchema,
 			handler: controller.findUserById.bind(controller)
@@ -37,14 +37,14 @@ export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (a
 	// PUT UPDATE
 	// ============================================================================
 
-	// Anonimizar datos de usuario (requiere verificación de ownership)
+	// Anonymize user data (requires ownership verification)
 	app.put('/users/:id/anonymize', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.anonymizeUserSchema,
 		handler: controller.anonymizeUser.bind(controller)
 	});
 
-	// Actualizar usuario (requiere verificación de ownership)
+	// Update user (requires ownership verification)
 	app.put('/users/:id', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.UpdateUserSchema,
@@ -55,7 +55,7 @@ export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (a
 	// DELETE
 	// ============================================================================
 
-	// Eliminar usuario (requiere verificación de ownership)
+	// Delete user (requires ownership verification)
 	app.delete('/users/:id', {
 		preHandler: [AuthMiddleware.verifyOwnership],
 		schema: UserSchemas.deleteUserSchema,

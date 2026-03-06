@@ -4,10 +4,12 @@ import { Validators, validate } from '@transcendence/shared/utils/validators.js'
 import { login } from '../api/authApi';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { PageContainer, FormCard, FormInput, PasswordInput, ArcadeButton, LinkButton, AlertError } from '../../../shared/components/ui';
+import { getProfile } from '../../profile/api/profileApi';
 
 export default function LoginPage() {
 	const navigate = useNavigate();
 	const authLogin = useAuth((state) => state.login);
+	const setAvatar = useAuth((state) => state.setAvatar);
 
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -16,7 +18,6 @@ export default function LoginPage() {
 	async function handleLogin() {
 		setError('');
 
-		console.log('start.login');
 		if (!email || !password) {
 			setError('Email and password are required');
 			return;
@@ -32,11 +33,7 @@ export default function LoginPage() {
 			return;
 		}
 
-		console.log('validations.login.ok');
 		try{
-
-			console.log('inside.try.block');
-
 			const data = await login(email, password);
 			if ('twoFactorRequired' in data) {
 				navigate('/verify-2fa', { state: { provisionalToken: data.provisionalToken } });
@@ -47,6 +44,12 @@ export default function LoginPage() {
 			console.log('[Login] data.token:', data.token?.substring(0, 30));
 
 			authLogin(data.user, data.token);
+			
+			// Fetch de avatar, no crítico, si falla será silencioso
+			await getProfile(data.user.id, data.token)
+				.then(profile => setAvatar(profile.avatar ?? null))
+				.catch(() => {});
+
 			navigate('/profile');
 		} catch(err: any) {
 			setError(err?.message ?? 'Login failed');

@@ -20,7 +20,7 @@ export const internalTokenRoutes: FastifyPluginAsync<UserAppDependencies> = asyn
 		handler: controller.createToken.bind(controller)
 	});
 
-	// Eliminar todos los tokens de un usuario
+	// Delete all tokens for a user
 	app.delete('/tokens/user/:id', {
 		schema: UserSchemas.DeleteRefreshTokenByUserSchema,
 		handler: controller.deleteByUserId.bind(controller)

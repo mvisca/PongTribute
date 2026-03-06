@@ -12,7 +12,7 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 	// POST CREATE
 	// ============================================================================
 
-	// Crear nuevo usuario
+	// Create new user
 	app.post('/users', {
 		schema: UserSchemas.createUserSchema,
 		handler: controller.createUser.bind(controller)
@@ -22,13 +22,13 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 	// GETTERS
 	// ============================================================================
 
-	// Obtener usuario por email (interno)
+	// Get user by email (internal)
 	app.get('/users/by-email/:email', {
 		schema: UserSchemas.getInternalUserByEmailSchema,
 		handler: controller.findUserByEmailInternal.bind(controller),
 	});
 
-	// Obtener usuario por ID (interno)
+	// Get user by ID (internal)
 	app.get('/users/by-id/:id', {
 		schema: UserSchemas.getInternalUserByIdSchema,
 		handler: controller.findUserByIdInternal.bind(controller)
@@ -40,7 +40,7 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 		handler: controller.getFriendsInternal.bind(controller)
 	});
 
-	// Obtener lastLogoutAt de usuario
+	// Get user lastLogoutAt
 	app.get('/users/:id/last-logout', {
 		schema: UserSchemas.getLastLogoutAtSchema,
 		handler: controller.getLastLogoutAt.bind(controller)
@@ -50,7 +50,7 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 	// SETTERS
 	// ============================================================================
 
-	// Actualizar el estado online del usuario (interno)
+	// Update user online status (internal)
 	app.patch('/users/:id/online-status', {
 		schema: UserSchemas.setOnlineStatusSchema,
 		handler: controller.setOnlineStatus.bind(controller)
@@ -60,7 +60,7 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 	// UPDATE 2FA
 	// ============================================================================
 	
-	// Actualizar status del 2FA, totpSecret y backupCode
+	// Update 2FA status, totpSecret and backupCode
 	app.patch('/users/:id/2fa-status', {
 		schema: UserSchemas.Update2FAStatusBodySchema,
 		handler: controller.update2FAStatus.bind(controller)
@@ -70,7 +70,7 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 	// UPDATE PASSWORD
 	// ============================================================================
 
-	// Actualizar contraseña de usuario (interno)
+	// Update user password (internal)
 	app.put('/users/:id/password', {
 		schema: UserSchemas.updatePasswordInternalSchema,
 		handler: controller.updatePassword.bind(controller)

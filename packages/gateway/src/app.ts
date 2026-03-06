@@ -41,7 +41,7 @@ function getClientIp(req: FastifyRequest): string {
 	// Prefer forwarded header (common in docker/nginx). Keep it simple + explainable.
 	const xff = normalizeHeaderValue(req.headers['x-forwarded-for']);
 	if (xff) return xff.split(',')[0].trim();
-	return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // joan: añado ? para evitar el crash si no existe
+	return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // added ? to avoid crash if socket is undefined
 }
 
 export function buildApp(): FastifyInstance {
@@ -60,7 +60,7 @@ export function buildApp(): FastifyInstance {
 	
 	app.register(websocket);
 	
-	// Agrega headers de seguridad (x-Content-Type-Options, X-Frame-Options, Script-Transport-Security) con 2 exclusiones
+	// Adds security headers (x-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) with 2 exclusions
 	app.register(helmet, {
 		contentSecurityPolicy: false, // Previene MIME Sniffing
 		crossOriginEmbedderPolicy: false
@@ -109,7 +109,7 @@ export function buildApp(): FastifyInstance {
 		done();
 	});
 
-	// Registrar health check route
+	// Register health check route
 	app.register(healthRoutes);
 
 	// Swagger UI (aggregator)
@@ -146,11 +146,11 @@ export function buildApp(): FastifyInstance {
 	
 	
 	// =========================================================================
-	// HELPER: Proxy WebSocket dinámico
-	// Aisla la lógica compleja de los websockets en una unica función mantenible
+	// HELPER: Dynamic WebSocket Proxy
+	// Isolates the complex WebSocket logic into a single maintainable function
     // =========================================================================
 	function registerWsProxy(route: string, targetServiceUrl: string) {
-		// Le decimos a Fastify que intercepte la ruta dinámica (route) y que active el soporte para WebSockets.
+		// Tell Fastify to intercept the dynamic route (route) and activate WebSocket support.
         app.get(route, { websocket: true }, (connection, req) => {
             const client = (connection as any).socket as WebSocket;
             const requestId = (req as any).gatewayRequestId as string | undefined;
@@ -175,13 +175,13 @@ export function buildApp(): FastifyInstance {
             wsTotalConnections += 1;
             wsConnectionCountsByIp.set(clientIp, currentIpCount + 1);
             
-			// Transformamos la URL base (http -> ws) e inyectamos la ruta dinámica
-			// Para abrir un websocket, Node.js necesita que la URL empiece por ws://
+			// Transform the base URL (http -> ws) and inject the dynamic route
+			// To open a WebSocket, Node.js needs the URL to start with ws://
             const wsBase = targetServiceUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:').replace(/\/$/, '');
             const rawUrl = req.raw.url ?? route;
 			const query = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?')) : '';
-			// Construimos la URL final hacia donde el Gateway enviará los datos en 
-			// la red interna de Docker (Ej: ws://game:3003/api/game/ws?token=123).
+			// Build the final URL where the Gateway will forward data
+			// on the internal Docker network (e.g. ws://game:3003/api/game/ws?token=123).
             const upstreamUrl = `${wsBase}${route}${query}`;
             
             const clientProtocolsRaw = normalizeHeaderValue(req.headers['sec-websocket-protocol']);
@@ -324,11 +324,11 @@ export function buildApp(): FastifyInstance {
     }
 
     // =========================================================================
-    // REGISTRO DE RUTAS WEBSOCKET
+    // WEBSOCKET ROUTE REGISTRATION
     // =========================================================================
-    // Llamamos a la función inyectando la ruta de "Game".
+    // Register Game WebSocket proxy route.
 	registerWsProxy('/api/game/ws', GatewayEnv.GAME_SERVICE_URL);
-	// Reutilizamos toda la lógica de seguridad y backpressure para "Comms".
+	// Reuse all security and backpressure logic for Comms.
 	registerWsProxy('/api/comms/ws', GatewayEnv.COMMS_SERVICE_URL);
 	
 

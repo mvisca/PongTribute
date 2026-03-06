@@ -13,6 +13,7 @@ import {
 	AlertError,
 	AvatarUploader,
 } from '../../../shared/components/ui';
+import { getProfile } from '../../profile/api/profileApi';
 
 type ErrorsState = {
 	username: string,
@@ -24,6 +25,8 @@ export default function RegisterPage() {
 	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
 	const navigate = useNavigate();
 	const authLogin = useAuth((state) => state.login);
+	const setAvatar = useAuth((state) => state.setAvatar);
+
 	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
 	const [username, setUsername] = useState('');
 	const [email, setEmail] = useState('');
@@ -61,12 +64,18 @@ export default function RegisterPage() {
 	async function handleRegister() {
 		setError('');
 
-		// Validar inputs antes de enviar
+		// Validate inputs before submitting
 		if (!validateInputs()) return;
 
 		try {
 			const data = await register(username, email, password, avatarBase64 ?? undefined);
+			
 			authLogin(data.user, data.token);
+
+			getProfile(data.user.id, data.token)
+				.then(profile => setAvatar(profile.avatar ?? null))
+				.catch(() => {});
+
 			navigate('/profile');
 
 		} catch (err: any) {

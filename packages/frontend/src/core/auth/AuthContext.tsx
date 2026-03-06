@@ -4,11 +4,13 @@ import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 
 type AuthState = { 
 	user: AuthTypes.AccessTokenPayload | null;
+	avatar: string | null;
 	accessToken: string | null;
 	isAuthenticated: boolean;
 	login: (user: AuthTypes.AccessTokenPayload, accessToken: string) => void;
 	logout: () => void;
 	setUser: (user: AuthTypes.AccessTokenPayload) => void;
+	setAvatar: (avatar: string | null) => void;
 	setAccessToken: (accessToken: string) => void;
 };
 
@@ -22,6 +24,7 @@ export const useAuth = create<AuthState>()(
 	persist(
 		(set) => ({
 			user: null,
+			avatar: null,
 			accessToken: null,
 			isAuthenticated: false,
 			
@@ -33,12 +36,13 @@ export const useAuth = create<AuthState>()(
 			
 			logout: () => set({
 				user: null,
+				avatar: null,
 				accessToken: null,
 				isAuthenticated: false,
 			}),
 			
 			setUser: (user) => set({ user }),
-			
+			setAvatar: (avatar) => set({ avatar }),
 			setAccessToken: (accessToken) => set({ accessToken }),
 		}),
 		{
@@ -46,6 +50,7 @@ export const useAuth = create<AuthState>()(
 			// Decide qué parte del estado se serializa
 			partialize: (state) => ({
 				user: state.user,
+				avatar: state.avatar,
 				accessToken: state.accessToken,
 				isAuthenticated: state.isAuthenticated,
 			}),

@@ -12,7 +12,7 @@ export const publicRoutes: FastifyPluginAsync<UserAppDependencies> = async (app,
 	// GET CHECKS
 	// ============================================================================
 
-	// Verificar disponibilidad de nombre de usuario
+	// Check username availability
 	app.get('/users/check-username/:username', {
 		schema: UserSchemas.checkUsernameSchema,
 		config: {

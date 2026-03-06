@@ -30,9 +30,9 @@ export async function apiRequest<T>(
 	);
 
 	if (!response.ok) {
-		// Fallback para errores de infraestructura
-		// Nginx los envía como HTML y deben parsearse a JSON
-		// Los otros errores son enviados por backend como JSON, no hace falta parsearlos
+		// Fallback for infrastructure errors
+		// Nginx sends them as HTML and they must be parsed as JSON
+		// Other errors are sent by the backend as JSON, no need to parse them
 		const errorMessages: Record<number, string> = {
         413: 'File too large. Please use an image under 10MB.',
         502: 'Server unavailable. Please try again later.',

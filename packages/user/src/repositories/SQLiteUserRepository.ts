@@ -10,15 +10,15 @@ export class SQLiteUserRepository implements IUserRepository {
 	
 
 	// ========================================================================
-	// MUTATIONS - Lanzan excepción si fallan
+	// MUTATIONS - Throw exception if they fail
 	// ========================================================================
 
-	/** 
-	* Crea un nuevo usuario\
-	* Responsbilidad:\
-	* - Generar ID y timestamp\
-	* - Normalizar datos\
-	* - Almacenar
+	/**
+	* Creates a new user\
+	* Responsibility:\
+	* - Generate ID and timestamp\
+	* - Normalize data\
+	* - Store
 	*/
 	async create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic> {
 		const now = new Date().toISOString();
@@ -42,7 +42,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		
 		const row = UserMapper.internalToRow(newUser);
 
-		// omite 'has2FAEnabled' & 'totpSecret' campos para que se use el valor default de la tabla
+		// omit 'has2FAEnabled' & 'totpSecret' fields so the table default values are used
 		this.db.prepare(`
 			INSERT INTO users (
 				id, username, email, password_hash, avatar,
@@ -55,12 +55,12 @@ export class SQLiteUserRepository implements IUserRepository {
 		const created = await this.findUserById(row.id);
 			
 		if (!created)
-			throw new SharedErrors.NotFoundError(`No se ha podido recuperar usuario: ${UserMapper.internalToResponse(newUser)}`);
+			throw new SharedErrors.NotFoundError(`Could not retrieve user: ${UserMapper.internalToResponse(newUser)}`);
 			
 		return created;
 	}
 
-	/** Actualizar usuario, lanza NotFoundError si no existe */
+	/** Update user, throws NotFoundError if not found */
 	async update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic> {
 		// Normalizar
 		const updateData: UserTypes.UpdateUserBody = {};
@@ -76,9 +76,9 @@ export class SQLiteUserRepository implements IUserRepository {
 			updateData.avatar = normalizedAvatar || UserEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
 		
-		// Validar que haya campos con valores válidos para actualizar
+		// Validate that there are valid fields to update
 		if (Object.values(updateData).filter(v => v !== undefined).length === 0)
-			throw new SharedErrors.ValidationError('No hay campos válidos para actualizar', 'body');
+			throw new SharedErrors.ValidationError('No valid fields to update', 'body');
 
 		// Mapea a row
 		const updateRow = UserMapper.updateToRow(updateData);
@@ -101,44 +101,44 @@ export class SQLiteUserRepository implements IUserRepository {
 				
 		// Verficar update
 		if (restult.changes === 0)
-			throw new SharedErrors.NotFoundError(`Usuario ${id} no encontrado`, 'user');
+			throw new SharedErrors.NotFoundError(`User ${id} not found`, 'user');
 			
 		const updated = await this.findUserById(id);
 				
 		if (!updated)
-			throw new Error(`No se ha podido recuperar usuario: ${id}`);
+			throw new Error(`Could not retrieve user: ${id}`);
 		
 		return updated;
 	}
 
-	/** Actualiza la contraseña (hash), lanza NotFoundError si no existe */
+	/** Updates the password (hash), throws NotFoundError if not found */
 	async updatePassword(id: string, passwordHash: string): Promise<UserTypes.UserPublic> {
 		const result = this.db.prepare(`
 			UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?
 		`).run(passwordHash, Date.now(), id);
 
 		if (result.changes === 0)
-			throw new SharedErrors.NotFoundError(`No se ha encontrado el usuario: ${id }`, 'user');
+			throw new SharedErrors.NotFoundError(`User not found: ${id}`, 'user');
 
 		const updated = await this.findUserById(id);
 
 		if (!updated)
-			throw new SharedErrors.NotFoundError(`No se ha podido recuperar usuario: ${id}`, 'user');
+			throw new SharedErrors.NotFoundError(`Could not retrieve user: ${id}`, 'user');
 
 		return updated;
 	}
 
-	/** Elimina un usuario por su ID */
+	/** Deletes a user by their ID */
 	async delete(id: string): Promise<void> {
 		const result = this.db.prepare(`
 			DELETE FROM users WHERE id = ?
 		`).run(id);
 
 		if (result.changes === 0)
-			throw new SharedErrors.NotFoundError(`No se ha encontrado el usuario: ${id}`, 'user');
+			throw new SharedErrors.NotFoundError(`User not found: ${id}`, 'user');
 	}
 
-	/** Anonimiza el usuario por su ID, lanza NotFoundError si no existe */
+	/** Anonymizes the user by their ID, throws NotFoundError if not found */
 	async anonymize(id: string): Promise<UserTypes.UserPublic> {
 		const now = Date.now();
 		const anonName = `anon_${now}`;
@@ -170,7 +170,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		);
 
 		if (restult.changes === 0)
-			throw new SharedErrors.NotFoundError(`No se ha podido modificar el record: ${id}`, 'user');
+			throw new SharedErrors.NotFoundError(`Could not modify record: ${id}`, 'user');
 
 		return {
 			id: id,
@@ -199,12 +199,12 @@ export class SQLiteUserRepository implements IUserRepository {
 		);
 									
 		if (result.changes === 0)
-			throw new SharedErrors.NotFoundError(`Usuario ${id} sin cambios`, 'user');
+			throw new SharedErrors.NotFoundError(`User ${id} had no changes`, 'user');
 
 		const updated = await this.findUserById(id);
 
 		if (!updated)
-			throw new Error(`No se ha podido recuperar el usuario: ${id}`);
+			throw new Error(`Could not retrieve user: ${id}`);
 
 		return updated;
 	}
@@ -225,7 +225,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		} else {
 			if (!totpSecret || !backupCodeHash) {
 				throw new SharedErrors.ValidationError(
-					'totpSecret y backupCodeHash son requeridos al activar 2FA',
+					'totpSecret and backupCodeHash are required when enabling 2FA',
 					'2fa_credentials'
 				);
 			}
@@ -254,14 +254,14 @@ export class SQLiteUserRepository implements IUserRepository {
 
 		if (!updated)
 			throw new Error(
-				`No se ha podido recuperar el usuario: ${userId}` +
-				`Esto no debería pasar. Posible race condition o DB corrupta.`
+				`Could not retrieve user: ${userId}` +
+				`This should not happen. Possible race condition or corrupted DB.`
 			);
 
 		return updated;
 	}
 
-	/** Actualizar lastLogoutAt para caducar tokens de acceso*/
+	/** Update lastLogoutAt to expire access tokens */
 	async updateLastLogoutAt(userId: string, lastLogoutAt: number): Promise<void> {
 		const last_logout_at = new Date(lastLogoutAt).getTime();
 		const now = Date.now();
@@ -279,7 +279,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		);
 
 		if (result.changes === 0) {
-			throw new SharedErrors.NotFoundError(`Usuario ${userId} sin cambios`, 'user');
+			throw new SharedErrors.NotFoundError(`User ${userId} had no changes`, 'user');
 		}
 	}
 
@@ -287,7 +287,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	// QUERIES - Retornan null si no encuentran
 	// ========================================================================
 
-	/** Busca por ID y retorna usuario public (sin campos privados) */
+	/** Search by ID and return public user (without private fields) */
 	async findUserById(id: string): Promise<UserTypes.UserPublic | null> {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE id = ?
@@ -296,7 +296,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToResponse(row) : null;
 	}
 
-	/** Busca por ID y retorna usuario internal (con campos privados) */
+	/** Search by ID and return internal user (with private fields) */
 	async findUserByIdInternal(id: string): Promise<UserTypes.UserInternal | null> {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE id = ?
@@ -305,7 +305,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
 
-	/** Busca por EMAIL y retorna usuario public (sin campos privados) */
+	/** Search by EMAIL and return public user (without private fields) */
 	async findUserByEmail(email: string): Promise<UserTypes.UserInternal | null> {
 		const normalizedEmail = Utils.UserNormalizer.email(email);
 		
@@ -316,7 +316,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
 
-	/** Busca por EMAIL y retorna usuario internal (con campos privados) */
+	/** Search by EMAIL and return internal user (with private fields) */
 	async findUserByEmailInternal(email: string): Promise<UserTypes.UserInternal | null> {
 		const normalizedEmail = Utils.UserNormalizer.email(email);
 		const row = this.db.prepare(`
@@ -325,7 +325,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
 	
-	/** Busca por USERNAME y retorna usuario public (sin campos privados) */
+	/** Search by USERNAME and return public user (without private fields) */
 	async findUserByUsername(username: string): Promise<UserTypes.UserPublic | null> {
 		const normalizedUsername = Utils.UserNormalizer.usernameForSearch(username);
 		
@@ -348,7 +348,7 @@ export class SQLiteUserRepository implements IUserRepository {
 	// CHECKERS - Retornan siempre un valor
 	// ========================================================================
 
-	/** Verifica si un nombre de usuario ya está en uso */
+	/** Check if a username is already in use */
 	async isUsernameTaken(username: string): Promise<boolean> {
 		const normalizedUsername = Utils.UserNormalizer.usernameForSearch(username);
 								
@@ -359,7 +359,7 @@ export class SQLiteUserRepository implements IUserRepository {
 		return isUsername.taken ? true : false;
 	}
 					
-	/** Verifica si un email ya está registrado */
+	/** Check if an email is already registered */
 	async isEmailTaken(email: string): Promise<boolean> {
 		const normalizedEmail = Utils.UserNormalizer.email(email);
 		
