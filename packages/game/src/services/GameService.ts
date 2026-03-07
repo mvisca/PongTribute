@@ -144,14 +144,16 @@ export class GameService {
 		
 		// Asigna sockets para jugador en partida local (humano-humano), en remota o 
 		// con bot (humano - bot) 
-		if (session.isLocal && userId !== BOT_USER_ID) {
+		const isBotMatch = session.player2Id === BOT_USER_ID;
+
+		if (session.isLocal && !isBotMatch) {
 			// Partida local humano vs humano: mismo socket para ambos jugadores
 			session.socketP1 = socket;
 			session.socketP2 = socket;
 		} else if (isPlayer1) {
 			session.socketP1 = socket;
 		} else {
-			// Partida local vs bot: el bot conecta con su propio socket separado
+			// Partida remota o local vs bot: socket independiente para P2
 			session.socketP2 = socket;
 		}
 		
@@ -174,9 +176,11 @@ export class GameService {
 		if (session.gameState.status === GameConstants.GAME_STATUS.PLAYING) {
 			this.handleReconnection(session, matchId, isPlayer1);
 		} else if (session.gameState.status === GameConstants.GAME_STATUS.WAITING) {
-			if (session.isLocal && session.socketP1) {
+			if (session.isLocal && !isBotMatch && session.socketP1) {
+				// Local humano vs humano: comparten socket, arranca con P1
 				this.startGameLoop(session);
-			} else if (!session.isLocal && session.socketP1 && session.socketP2) {
+			} else if (session.socketP1 && session.socketP2) {
+				// Remota o bot: ambos sockets deben estar conectados
 				this.startGameLoop(session);
 			}
 		}
@@ -233,6 +237,22 @@ export class GameService {
 		// Si es local, no hay reconexión ni rival remoto. Limpieza inmediata.
 		if (session.isLocal) {
 			this.stopGameLoop(session);
+			// Si es partida contra bot, notificarle y cerrar su socket
+			if (session.player2Id === BOT_USER_ID) {
+				const gameOverMsg = {
+					type: WEBSOCKET_EVENTS.GAME_OVER,
+					timestamp: Date.now(),
+					payload: {
+						matchId: targetMatchId,
+						winnerId: session.player2Id,
+						player1Score: session.gameState.paddleLeft.score,
+						player2Score: session.gameState.paddleRight.score,
+						reason: 'opponent_disconnected' as const
+					}
+				} satisfies WebSocketEventsTypes.GameOver;
+				session.socketP2?.send(JSON.stringify(gameOverMsg));
+				session.socketP2?.close();
+			}
 			this.activeMatches.delete(targetMatchId);
 			return;
 		}

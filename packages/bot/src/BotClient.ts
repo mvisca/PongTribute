@@ -1,5 +1,6 @@
 import { WebSocket } from 'ws';
 import jwt from 'jsonwebtoken';
+import type { FastifyBaseLogger } from 'fastify';
 import {
 	GameConstants,
 	WEBSOCKET_EVENTS,
@@ -31,6 +32,7 @@ export interface BotClientOptions {
 	botUserId: string;
 	botUsername: string;
 	jwtSecret: string;
+	logger: FastifyBaseLogger;
 	onDestroy: () => void;
 }
 
@@ -52,9 +54,11 @@ export class BotClient {
 	// Margen extra sobre waitSeconds del servidor antes de auto-destruir el bot:
 	// cubre latencia de red y pequeñas derivas de scheduling.
 	private readonly FORFEIT_BUFFER_MS = 5_000;
+	private readonly log: FastifyBaseLogger;
 
 	constructor(private options: BotClientOptions) {
 		this.difficulty = BOT_DIFFICULTY[options.gameMode];
+		this.log = options.logger.child({ component: 'BotClient', matchId: options.matchId });
 	}
 
 	// ── Conexión ──────────────────────────────────────────────────────────────
@@ -63,13 +67,13 @@ export class BotClient {
 		const token = this.generateToken();
 		const url = `${this.options.wsUrl}?matchId=${this.options.matchId}&token=${token}`;
 
-		console.log(`[BOT-CLIENT] Connecting to ${this.options.wsUrl} (match: ${this.options.matchId})`);
+		this.log.info({ wsUrl: this.options.wsUrl }, 'Connecting');
 
 		this.ws = new WebSocket(url);
 
 		this.ws.on('open', () => {
 			this.retryCount = 0;
-			console.log(`[BOT-CLIENT] Connected to match ${this.options.matchId}`);
+			this.log.info('Connected');
 		});
 
 		this.ws.on('message', (data: Buffer) => {
@@ -78,7 +82,7 @@ export class BotClient {
 
 		this.ws.on('close', (code: number, reason: Buffer) => {
 			const reasonStr = reason.toString();
-			console.log(`[BOT-CLIENT] Connection closed: ${code} ${reasonStr}`);
+			this.log.info({ code, reason: reasonStr }, 'Connection closed');
 
 			// Cierre de negocio (el servidor rechazó la conexión intencionalmente):
 			//   1008 → token inválido, matchId inexistente, jugador no autorizado
@@ -94,14 +98,14 @@ export class BotClient {
 			// Reintentar con backoff exponencial: 1s, 2s, 4s, 8s, 16s
 			const delay = this.BASE_RETRY_MS * Math.pow(2, this.retryCount);
 			this.retryCount++;
-			console.log(`[BOT-CLIENT] Retrying in ${delay}ms (attempt ${this.retryCount}/${this.MAX_RETRIES})`);
+			this.log.info({ delay, attempt: this.retryCount, max: this.MAX_RETRIES }, 'Retrying');
 			setTimeout(() => {
 				if (!this.destroyed) this.connect();
 			}, delay);
 		});
 
 		this.ws.on('error', (err: Error) => {
-			console.error(`[BOT-CLIENT] WebSocket error:`, err.message);
+			this.log.error({ err: err.message }, 'WebSocket error');
 		});
 	}
 
@@ -118,12 +122,12 @@ export class BotClient {
 					break;
 
 				case WEBSOCKET_EVENTS.GAME_OVER:
-					console.log(`[BOT-CLIENT] Game over for match ${this.options.matchId}`);
+					this.log.info('Game over');
 					this.destroy();
 					break;
 
 				case WEBSOCKET_EVENTS.MATCH_JOINED:
-					console.log(`[BOT-CLIENT] Joined match ${this.options.matchId}`);
+					this.log.info('Joined match');
 					break;
 
 				case WEBSOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED: {
@@ -132,10 +136,10 @@ export class BotClient {
 					// Si el servidor se cae antes de ese evento, arrancamos un timer de
 					// seguridad para liberar recursos y no dejar el bot corriendo ad-infinitum.
 					const { waitSeconds } = (msg as WebSocketEventsTypes.GameOpponentDisconnected).payload;
-					console.log(`[BOT-CLIENT] Opponent disconnected in match ${this.options.matchId}. Waiting ${waitSeconds}s for forfeit.`);
+					this.log.info({ waitSeconds }, 'Opponent disconnected, waiting for forfeit');
 					this.clearOpponentTimer();
 					this.opponentDisconnectedTimer = setTimeout(() => {
-						console.log(`[BOT-CLIENT] Forfeit safety timeout fired (${waitSeconds}s + buffer). Destroying bot.`);
+						this.log.info({ waitSeconds }, 'Forfeit safety timeout fired. Destroying bot');
 						this.destroy();
 					}, waitSeconds * 1000 + this.FORFEIT_BUFFER_MS);
 					break;
@@ -143,7 +147,7 @@ export class BotClient {
 
 				case WEBSOCKET_EVENTS.GAME_OPPONENT_RECONNECTED:
 					// El humano volvió — cancelamos el timer de seguridad y seguimos jugando.
-					console.log(`[BOT-CLIENT] Opponent reconnected in match ${this.options.matchId}. Resuming.`);
+					this.log.info('Opponent reconnected. Resuming');
 					this.clearOpponentTimer();
 					break;
 
@@ -151,7 +155,7 @@ export class BotClient {
 					break;
 			}
 		} catch (err) {
-			console.error(`[BOT-CLIENT] Failed to parse message:`, err);
+			this.log.error({ err }, 'Failed to parse message');
 		}
 	}
 
@@ -201,7 +205,7 @@ export class BotClient {
 			action = GameConstants.GAME_ACTION.STOP;
 		}
 
-		this.ws.send(JSON.stringify({ action }));
+		this.ws.send(JSON.stringify({ action, playerSide: 'right' }));
 	}
 
 	// ── Ciclo de vida ─────────────────────────────────────────────────────────

@@ -1,27 +1,26 @@
-//EL Controller
-
+import type { FastifyBaseLogger } from 'fastify';
 import { BotService } from '../services/BotService.js';
 
 
 export class BotController {
 
-	// Propiedad privada para almacenar el servicio inyectado
 	private botService: BotService;
+	private log: FastifyBaseLogger;
 
-	// Le pasamos la instancia ya creada desde fuera, en lugar de hacer new BotService
-	constructor(botService: BotService) {
+	constructor(botService: BotService, logger: FastifyBaseLogger) {
 		this.botService = botService;
+		this.log = logger.child({ component: 'BotController' });
 	}
 
 	async handleBotRequest(payload: { matchId: string, gameMode: string }) {
 
-		console.log("[BOT-CTRL] Received request: handleBotRequest");
+		this.log.info({ matchId: payload.matchId, gameMode: payload.gameMode }, 'Received bot request');
 		try {
 
 			await this.botService.spawnBot(payload.matchId, payload.gameMode);
-			
-    	} catch (err) {
-        	console.error(`[BOT-CTRL] Failed to spawn bot for match ${payload.matchId}:`, err);
-    	}
+
+		} catch (err) {
+			this.log.error({ err, matchId: payload.matchId }, 'Failed to spawn bot');
+		}
 	}
 }
