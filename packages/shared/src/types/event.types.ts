@@ -12,6 +12,7 @@ import { UserTypes } from './user.types.js';
 // TIPOS REUTILIZABLES
 // ============================================================================
 
+// Payload compartido por  UserLoginEvent, UserLogoutEvent y UserProfileUpdatedEvent
 export interface UserInfoPayload {
 	userId: UserTypes.UserId;
 	username: string;
@@ -19,6 +20,7 @@ export interface UserInfoPayload {
 	email: string;
 	lastLogoutAt: number;
 	isOnline: boolean;
+	friendsIds?: string[];
 }
 
 // ============================================================================

@@ -13,7 +13,7 @@ export const wsRoutes: FastifyPluginAsync<CommsAppDependencies> = async (app, op
 	// porque no hay respuesta HTTP — la comunicación es bidireccional vía socket.
 	app.get('/comms/ws', { 
 		websocket: true,
-		preHandler: [CommsMiddleware.validateJWT]
+		preHandler: [CommsMiddleware.validateJWT(opts.commsService.getRedisClient())]
 	}, 
 	(socket, request) => {
 		controller.handleWebSocketConnection(socket, request);

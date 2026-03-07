@@ -1,167 +1,109 @@
 import { CommsEventHandler } from "../base.handler.js";
 import { 
-	TRANSCENDENCE_EVENTS,
-	WEBSOCKET_EVENTS,
-	EventsTypes,
-	TranscendenceEventsTypes,
-	WebSocketEventsTypes } from '@transcendence/shared';
+    TRANSCENDENCE_EVENTS,
+    WEBSOCKET_EVENTS,
+    EventsTypes,
+    TranscendenceEventsTypes,
+    WebSocketEventsTypes } from '@transcendence/shared';
 import { CommsService } from '../../comms.service.js';
-import { CommsEnv } from '../../../config.js';
 
-// Union type local para el handler
+
 type UserEvent = TranscendenceEventsTypes.UserLoginEvent | TranscendenceEventsTypes.UserLogoutEvent;
 
 export class UserEventHandler implements CommsEventHandler {
 
-	eventTypes = [
-		TRANSCENDENCE_EVENTS.USER_LOGIN,
-		TRANSCENDENCE_EVENTS.USER_LOGOUT,
-		TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED
-	
-	];
+    eventTypes = [
+        TRANSCENDENCE_EVENTS.USER_LOGIN,
+        TRANSCENDENCE_EVENTS.USER_LOGOUT,
+        TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED
+    ];
 
-	async handle(
-		event: EventsTypes.BaseEvent,
-		commsService: CommsService
-	): Promise<void> {
-		const userEvent = event;
+    async handle(
+        event: EventsTypes.BaseEvent,
+        commsService: CommsService
+    ): Promise<void> {
+        switch (event.type) {
+            case TRANSCENDENCE_EVENTS.USER_LOGIN:
+                await this.handleLogin(event as TranscendenceEventsTypes.UserLoginEvent, commsService);
+                break;
+            case TRANSCENDENCE_EVENTS.USER_LOGOUT:
+                await this.handleLogout(event as TranscendenceEventsTypes.UserLogoutEvent, commsService);
+                break;
+            case TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED:
+                await this.handleProfileUpdated(event as TranscendenceEventsTypes.UserProfileUpdatedEvent, commsService);
+                break;
+        }
+    }
 
-		switch (userEvent.type) {
-			case TRANSCENDENCE_EVENTS.USER_LOGIN:
-				await this.handleLogin(userEvent as TranscendenceEventsTypes.UserLoginEvent, commsService);
-				break;
+    private async handleLogin(
+        event: TranscendenceEventsTypes.UserLoginEvent,
+        commsService: CommsService
+    ): Promise<void> {
+        console.log(`[UserHandler] ${event.targetUserId} online`);
 
-			case TRANSCENDENCE_EVENTS.USER_LOGOUT:
-				await this.handleLogout(userEvent as TranscendenceEventsTypes.UserLogoutEvent, commsService);
-				break;
-			
-			case TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED:
-				await this.handleProfileUpdated(userEvent as TranscendenceEventsTypes.UserProfileUpdatedEvent, commsService);
-				break;
-		}
-	}
+        const friends = event.payload.friendsIds ?? [];
 
-	private async handleLogin(
-		event: TranscendenceEventsTypes.UserLoginEvent,
-		commsService: CommsService
-	): Promise<void> {
-		console.log(`[UserHandler] ${event.targetUserId} online`)
+        if (friends.length > 0) {
+            commsService.broadcastToUsers(friends, {
+                type: WEBSOCKET_EVENTS.FRIEND_ONLINE,
+                timestamp: event.timestamp,
+                payload: {
+                    userId: event.payload.userId,
+                    username: event.payload.username,
+                    avatar: event.payload.avatar,
+                },
+            } satisfies WebSocketEventsTypes.FriendOnline);
+            console.log(`[UserHandler] Notificado ${friends.length} amigos`);
+        } else {
+            console.log(`[UserHandler] ${event.payload.username} no tiene amigos online`);
+        }
+    }
 
-		try {
-			// Todos los friends
-			const friends = await this.getUserFriends(event.targetUserId);
-			
-			// Ha de haber más de cero
-			if (friends.length > 0) {
-				commsService.broadcastToUsers(friends, {
-					type: WEBSOCKET_EVENTS.FRIEND_ONLINE,
-					timestamp: event.timestamp,
-					payload: {
-						userId: event.payload.userId,
-						username: event.payload.username,
-						avatar: event.payload.avatar,
-					},
-				} satisfies WebSocketEventsTypes.FriendOnline
-			);
-				console.log(`[UserHandler] Notificado ${friends.length} amigos`);
-			} else {
-				console.log(`[UserHandler] Los amigos de ${event.payload.username} no están online`);
-			}
+    private async handleLogout(
+        event: UserEvent,
+        commsService: CommsService
+    ): Promise<void> {
+        console.log(`[UserHandler] ${event.targetUserId} offline`);
 
-		} catch (err) {
-			console.error(`[UserHandler] Error en login:`, err);
-		}
-	}
+        commsService.closeUserConnection(event.targetUserId);
 
-	private async handleLogout(
-		event: UserEvent,
-		commsService: CommsService
-	): Promise<void> {
-		console.log(`[UserHandler] ${event.targetUserId} offline`);
+        const friends = event.payload.friendsIds ?? [];
 
-		// Cerrar la conexion
-		commsService.closeUserConnection(event.targetUserId);
+        if (friends.length > 0) {
+            commsService.broadcastToUsers(friends, {
+                type: WEBSOCKET_EVENTS.FRIEND_OFFLINE,
+                timestamp: event.timestamp,
+                payload: {
+                    userId: event.payload.userId,
+                    username: event.payload.username,
+                    avatar: event.payload.avatar,
+                },
+            } satisfies WebSocketEventsTypes.FriendOffline);
+            console.log(`[UserHandler] Notificado ${friends.length} amigos`);
+        } else {
+            console.log(`[UserHandler] ${event.payload.username} no tiene amigos online`);
+        }
+    }
 
-		try {
-			// Todos los friends
-			const friends = await this.getUserFriends(event.targetUserId);
-
-			// Ha de haber más de cero
-			if (friends.length > 0) {
-				// Mensaje a todos
-				commsService.broadcastToUsers(friends, {
-					type: WEBSOCKET_EVENTS.FRIEND_OFFLINE,
-					timestamp: event.timestamp,
-					payload: {
-						userId: event.payload.userId,
-						username: event.payload.username,
-						avatar: event.payload.avatar,
-					},
-				} satisfies WebSocketEventsTypes.FriendOffline
-			);
-				console.log(`[UserHandler] Notificado ${friends.length} amigos`);
-			} else {
-				console.log(`[UserHandler] Los amigos de ${event.payload.username} no están online`);
-			}
-
-		} catch (err) {
-			console.error(`[UserHandler] Error en logout:`, err);
-		}
-	}
-
-	private async handleProfileUpdated(
+    private async handleProfileUpdated(
         event: TranscendenceEventsTypes.UserProfileUpdatedEvent,
         commsService: CommsService
     ): Promise<void> {
         console.log(`[UserHandler] ${event.targetUserId} profile updated`);
 
-        try {
-            const friends = await this.getUserFriends(event.targetUserId);
-            
-            if (friends.length > 0) {
-                commsService.broadcastToUsers(friends, {
-                    type: WEBSOCKET_EVENTS.FRIEND_PROFILE_UPDATED,
-                    timestamp: event.timestamp,
-                    payload: {
-                        userId: event.payload.userId,
-                        username: event.payload.username,
-                        avatar: event.payload.avatar,
-					},
-				// 'satisfies': Verifica que el objeto literal que le pasamos a broadcastToUsers 
-				// cumpla estrictamente con la interfaz que hemos creado en shared sin forzar 
-				// un casteo inseguro como hace 'as'.
-                } satisfies WebSocketEventsTypes.FriendProfileUpdated);
-                
-                console.log(`[UserHandler] Notificado cambio de perfil a ${friends.length} amigos`);
-            }
-        } catch (err) {
-            console.error(`[UserHandler] Error en profile update:`, err);
+        const friends = event.payload.friendsIds ?? [];
+
+        if (friends.length > 0) {
+            commsService.broadcastToUsers(friends, {
+                type: WEBSOCKET_EVENTS.FRIEND_PROFILE_UPDATED,
+                timestamp: event.timestamp,
+                payload: {
+                    userId: event.payload.userId,
+                    username: event.payload.username,
+                    avatar: event.payload.avatar,
+                },
+            } satisfies WebSocketEventsTypes.FriendProfileUpdated);
+            console.log(`[UserHandler] Notificado cambio de perfil a ${friends.length} amigos`);
         }
-	}
-	
-
-	private async getUserFriends(userId: string): Promise<string[]> {
-		try {
-			const url = `${CommsEnv.USER_SERVICE_URL()}/internal/users/${userId}/friends`;
-			const response = await fetch(url, {
-				method: 'GET',
-				headers: {
-					'X-Service-Secret': CommsEnv.SERVICE_SECRET() || ''
-				},
-				signal: AbortSignal.timeout(5000)
-			});
-
-			if (!response.ok) {
-				console.log(`[UserHandler] User service retornó ${response.status} para ${userId}`);
-				return [];
-			}
-
-			const data = await response.json() as { friendsIds: string[] };
-			return data.friendsIds || [];
-
-		} catch (err) {
-			console.error(`[UserHandler] Error obteniendo amigos:`, err);
-			return [];
-		}
-	}
+    }
 }

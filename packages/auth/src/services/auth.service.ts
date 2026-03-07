@@ -84,6 +84,25 @@ export class AuthService {
 		return await response.json() as UserTypes.UserInternal;
 	}
 	
+	/** Fetch IDs de amigos aceptados desde user service */
+	private async fetchUserFriends(userId: string): Promise<string[]> {
+		try {
+			const response = await fetch(
+				`${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/friends`,
+				{
+					headers: { 'X-Service-Secret': AuthEnv.SERVICE_SECRET() },
+					signal: AbortSignal.timeout(5000)
+				}
+			);
+			if (!response.ok) return [];
+			const data = await response.json() as { friendsIds: string[] };
+			return data.friendsIds ?? [];
+		} catch {
+			return []; // No bloquear login/logout si falla
+		}
+	}
+	
+	
 	// LOGIN PROCESS - COMPLETAR LOGIN CON O SIN 2FA
 	
 	/** Completa el proceso de login generando tokens y seteando el usuario online */
@@ -99,7 +118,22 @@ export class AuthService {
 		
 		// establecer usuario online
 		await this.setUserIsOnline(user.id, true);
-		
+
+		// Obtener amigos para incluirlos en el evento
+		const friendsIds = await this.fetchUserFriends(user.id);
+
+		// Cachear lastLogoutAt para UNIQUE_SESSION=false
+		if (!AuthEnv.UNIQUE_SESSION()) {
+			await this.redisClient.set(
+				`cache:lastLogoutAt:${user.id}`,
+				String(user.lastLogoutAt),
+				'EX',
+				AuthEnv.REFRESH_TOKEN_EXPIRY()
+			).catch(err =>
+				console.error(`[AUTH-SERVICE] Error cacheando lastLogoutAt en Redis:`, err)
+			);
+		}
+			
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
 		const loginEvent: TranscendenceEventsTypes.UserLoginEvent = {
 			type: TRANSCENDENCE_EVENTS.USER_LOGIN,
@@ -318,7 +352,19 @@ export class AuthService {
 			}
 		);
 		
-		if (response.ok) return;
+		if (response.ok) {
+			// Cachear en Redis
+			await this.redisClient.set(
+				`cache:lastLogoutAt:${userId}`,
+				String(body.lastLogoutAt),
+				'EX',
+				AuthEnv.REFRESH_TOKEN_EXPIRY()   // TTL = máx duración de sesión
+			).catch(err =>
+				console.error(`[AUTH-SERVICE] Error cacheando lastLogoutAt en Redis:`, err)
+			);
+			return;
+		}
+		
 		if (response.status === 404) {
 			console.debug(`[AUTH-SERVICE] Logout 404 for userId: ${userId}`);
 			return;
@@ -779,6 +825,10 @@ export class AuthService {
 			// Setear user ofline
 			await this.setUserIsOnline(userId, false);
 			
+			// Obtener amigos para incluirlos en el evento
+        	const friendsIds = await this.fetchUserFriends(userId);
+
+
 			// Preparar objeto para notificaciones
 			const logoutEvent: TranscendenceEventsTypes.UserLogoutEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_LOGOUT,
@@ -791,7 +841,8 @@ export class AuthService {
 					email: user.email,
 					avatar: user.avatar,
 					lastLogoutAt: user.lastLogoutAt,
-					isOnline: false
+					isOnline: false,
+					friendsIds
 				}
 			} satisfies TranscendenceEventsTypes.UserLogoutEvent;
 			
