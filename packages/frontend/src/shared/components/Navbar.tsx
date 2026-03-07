@@ -39,7 +39,6 @@ export default function Navbar() {
         { icon: '👤', label: 'PROFILE',         path: '/profile' },
         { icon: '👥', label: 'FRIENDS',         path: '/friends' },
         { icon: '🕹️', label: 'PLAY',            path: '/lobby' },
-        { icon: '🔐', label: 'CHANGE PASSWORD', path: '/profile/password' },
     ];
 
 	const handleNav = (item: NavItem) => {
