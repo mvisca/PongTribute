@@ -94,10 +94,12 @@ EnvVars,
 | 'JWT_SECRET' 
 | 'SERVICE_SECRET'
 | 'COOKIE_SECRET'
+| 'REDIS_PASSWORD'
 > & {
 	JWT_SECRET: undefined;
 	SERVICE_SECRET: undefined;
 	COOKIE_SECRET: undefined;
+	REDIS_PASSWORD: undefined;
 };
 
 const DEFAULTS: DefaultVars = {
@@ -147,7 +149,7 @@ const DEFAULTS: DefaultVars = {
 	// REDIS
 	REDIS_HOST: 'localhost',
 	REDIS_PORT: 6379,
-	REDIS_PASSWORD: 'create_a_supersafe_redis_password',
+	REDIS_PASSWORD: undefined,
 	REDIS_DB: 0,
 
 	// MAILER
@@ -469,7 +471,7 @@ export namespace SharedEnv {
 			// REDIS
 			REDIS_HOST: envOr(process.env.REDIS_HOST, DEFAULTS.REDIS_HOST, 'REDIS_HOST'),
 			REDIS_PORT: envOr(process.env.REDIS_PORT, DEFAULTS.REDIS_PORT, 'REDIS_PORT'),
-			REDIS_PASSWORD: envOr(process.env.REDIS_PASSWORD, DEFAULTS.REDIS_PASSWORD, 'REDIS_PASSWORD'),
+			REDIS_PASSWORD: requireSecret(process.env.REDIS_PASSWORD, 'REDIS_PASSWORD'),
 			REDIS_DB: envOr(process.env.REDIS_DB, DEFAULTS.REDIS_DB, 'REDIS_DB'),
 
 			// MAILER
