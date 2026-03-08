@@ -60,10 +60,18 @@ export function buildApp(): FastifyInstance {
 
 	app.register(websocket);
 
-	// Agrega headers de seguridad (x-Content-Type-Options, X-Frame-Options, Script-Transport-Security) con 2 exclusiones
+	// Helmet: security headers (X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security).
+	// CSP activo con directivas mínimas — styleSrc unsafe-inline requerido por Swagger UI.
+	// COEP desactivado: sin uso de SharedArrayBuffer, no aplica.
 	app.register(helmet, {
-		contentSecurityPolicy: false, // Previene MIME Sniffing
-		crossOriginEmbedderPolicy: false
+		contentSecurityPolicy: {
+			directives: {
+				defaultSrc: ["'self'"],
+				scriptSrc:  ["'self'"],
+				styleSrc:   ["'self'", "'unsafe-inline'"],  // Swagger UI lo requiere
+			}
+		},
+		crossOriginEmbedderPolicy: false,  // Sin SharedArrayBuffer, legítimo dejarlo off
 	});
 
 	// CORS only at the gateway
