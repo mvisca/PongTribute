@@ -20,7 +20,7 @@ export const ImageDeleteRequestSchema = Type.Object({
 export const ImageUploadResponseSchema = Type.Object({
 	url: Type.String({
 		format: 'uri',
-		pattern: 'https://res\\.cloudinary\\.com/'
+		pattern: '^https://res\\.cloudinary\\.com/'
 	}),
 }, { additionalProperties: false });
 

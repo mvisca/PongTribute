@@ -13,7 +13,7 @@ export class ImagesController {
 			const body = request.body as ImageSchemas.ImageUploadRequestType;
 			const { base64, old_avatar } = body;
 			const url = await this.cloudinaryService.uploadAvatar(base64, old_avatar);
-			reply.status(200).send({ url });
+			reply.code(200).send({ url });
 		} catch (error) {
 			return SharedErrors.handleError(error, reply);
 		}
@@ -27,7 +27,7 @@ export class ImagesController {
 			const body = request.body as ImageSchemas.ImageDeleteRequestType;
 			const { url } = body;
 			await this.cloudinaryService.deleteAvatar(url);
-			reply.status(204).send();
+			reply.code(204).send();
 		} catch (error) {
 			return SharedErrors.handleError(error, reply);
 		}

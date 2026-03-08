@@ -6,7 +6,6 @@ import { IImageStorageService } from '../ports/IImageStorageService.js';
 export class CloudinaryService implements IImageStorageService {
 	private static readonly ALLOWED_MIMES = new Set([
 		'image/png',
-		'image/jpg',
 		'image/jpeg',
 		'image/webp'
 	]);
