@@ -23,3 +23,21 @@ export const ImageUploadResponseSchema = Type.Object({
 		pattern: 'https://res\\.cloudinary\\.com/'
 	}),
 }, { additionalProperties: false });
+
+export const ImageUploadRouteSchema = {
+	description: 'Sube una imagen de avatar a Cloudinary',
+	tags: ['Images'],
+	body: ImageUploadRequestSchema,
+	response: {
+		200: ImageUploadResponseSchema
+	}
+};
+
+export const ImageDeleteRouteSchema = {
+	description: 'Elimina una imagen de avatar de Cloudinary',
+	tags: ['Images'],
+	body: ImageDeleteRequestSchema,
+	response: {
+		204: Type.Null()
+	}
+};

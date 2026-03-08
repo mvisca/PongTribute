@@ -129,7 +129,8 @@ export function buildApp(): FastifyInstance {
 			urls: [
 				{ name: 'Auth Service', url: '/docs/auth.json' },
 				{ name: 'User Service', url: '/docs/user.json' },
-				{ name: 'Game Service', url: '/docs/game.json' }
+				{ name: 'Game Service', url: '/docs/game.json' },
+				{ name: 'Images Service', url: '/docs/images.json' }
 			],
 			docExpansion: 'list',
 			deepLinking: true
@@ -140,7 +141,8 @@ export function buildApp(): FastifyInstance {
 	app.get('/docs/auth.json', createOpenApiHandler(GatewayEnv.AUTH_SERVICE_URL, GatewayEnv.AUTH_OPENAPI_PATH));
 	app.get('/docs/user.json', createOpenApiHandler(GatewayEnv.USER_SERVICE_URL, GatewayEnv.USER_OPENAPI_PATH));
 	app.get('/docs/game.json', createOpenApiHandler(GatewayEnv.GAME_SERVICE_URL, GatewayEnv.GAME_OPENAPI_PATH));
-
+	app.get('/docs/images.json', createOpenApiHandler(GatewayEnv.IMAGE_SERVICE_URL, GatewayEnv.IMAGE_OPENAPI_PATH));
+	
 	// HTTP proxy routes
 	const proxy = createProxyHandler(app);
 

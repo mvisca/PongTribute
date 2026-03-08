@@ -1,23 +1,33 @@
-FROM ruby:3.2.9-alpine
-
-RUN apk add --no-cache \
-    build-base \
-    yaml-dev \
-    tzdata \
-    wget
+FROM node:20-bookworm-slim AS build
 
 WORKDIR /app
 
-COPY Gemfile Gemfile.lock ./
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ca-certificates \
+  python3 make g++ \
+  && rm -rf /var/lib/apt/lists/*
 
-# Instalar bundler nuevo (tendrá precedencia sobre el default)
-RUN gem install bundler -v 4.0.3 && \
-    bundle _4.0.3_ config set --local without 'development test' && \
-    bundle _4.0.3_ install -j4 --retry 3 && \
-    apk del build-base yaml-dev
-
+RUN corepack enable
 COPY . .
 
-EXPOSE 3004
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @transcendence/shared build
+RUN pnpm --filter @transcendence/images build
+RUN pnpm --filter @transcendence/images deploy --prod --legacy /deploy
 
-CMD ["bundle", "_4.0.3_", "exec", "puma", "-C", "config/puma.rb"]
+
+FROM node:20-bookworm-slim AS runtime
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /deploy/node_modules ./node_modules
+COPY --from=build /app/packages/images/dist ./dist
+COPY --from=build /app/packages/images/package.json ./package.json
+COPY --from=build /app/packages/shared/dist ./node_modules/@transcendence/shared/dist
+
+RUN chmod -R a+rX /app
+EXPOSE 3004
+CMD ["node", "dist/src/server.js"]
