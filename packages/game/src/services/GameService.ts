@@ -670,10 +670,11 @@ export class GameService {
 	* Finaliza la partida por abandono (Desconexión prolongada).
 	*/
 	private forfeitMatch(matchId: string, loserId: string) {
-		const session = this.activeMatches.get(matchId);
-		if (!session) return;
-		
+		// Limpiar siempre al inicio — evita entradas huérfanas si lanza excepción
 		this.disconnectTimeouts.delete(matchId);
+		
+		const session = this.activeMatches.get(matchId);
+		if (!session || session.gameState.status === GameConstants.GAME_STATUS.FINISHED) return;
 		
 		const winnerId = (session.player1Id === loserId) ? session.player2Id : session.player1Id;
 		const winnerSocket = (session.player1Id === loserId) ? session.socketP2 : session.socketP1;
