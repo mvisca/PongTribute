@@ -19,8 +19,8 @@ export namespace ValidationConstants {
 
 	export const PASSWORD_MIN_LENGTH = 8;
 	export const PASSWORD_MAX_LENGTH = 32;
-	/** Al menos una minúscula, al menos un dígito, sin espacios. */
-	export const PASSWORD_PATTERN    = '^(?=.*[a-z])(?=.*\\d)[^\\s]+$';
+	/** Al menos una mayuscula, una minúscula, un dígito, sin espacios. */
+	export const PASSWORD_PATTERN    = '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[^\\s]+$';
 
 	// ====================================================================
 	// AVATAR
