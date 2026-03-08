@@ -32,6 +32,10 @@ export class CommsService implements IEventService {
 	// Mapa: UserId -> Set de Sockets (Soporte multi-pestaña/dispositivo)
 	private connections: Map<string, Set<ExtendedWebSocket>> = new Map();
 	
+	// Constantes de classe
+	private readonly MAX_MESSAGE_SIZE_BYTES = 4_096;   // 4 KB
+	private readonly MAX_MESSAGES_PER_SECOND = 10;
+	
 	/*
 	Clientes Redis:
 	Uno para manejo de comandos redis
@@ -327,11 +331,33 @@ export class CommsService implements IEventService {
 			this.connections.get(user.id)!.add(extWs);
 			this.totalConnections++;
 			
+			const rateLimit = { count: 0, resetAt: Date.now() + 1000 };
+
+			// Guards contra flooding y payloads gigantes.
+			// Cierra con 1009 si supera MAX_MESSAGE_SIZE_BYTES (4KB).
+			// Cierra con 1008 si supera MAX_MESSAGES_PER_SECOND (10 msg/s, ventana deslizante por conexión).
+			extWs.on('message', (data) => {
+			// Guard 1 — tamaño
+			if (Buffer.byteLength(data as Buffer) > this.MAX_MESSAGE_SIZE_BYTES) {
+				extWs.close(1009, 'Message too large');
+				return;
+			}
+
+			// Guard 2 — frecuencia
+			const now = Date.now();
+			if (now > rateLimit.resetAt) {
+				rateLimit.count = 0;
+				rateLimit.resetAt = now + 1000;
+			}
+			if (++rateLimit.count > this.MAX_MESSAGES_PER_SECOND) {
+				extWs.close(1008, 'Rate limit exceeded');
+				return;
+			}
+
+			this.handleMessage(extWs, data.toString());
+			});
 			
-			
-			// Event listeners del socket
-			extWs.on('message', (data) => { this.handleMessage(extWs, data.toString());	});
-			
+			// Event listeners del socket			
 			extWs.on('pong', () => { extWs.isAlive = true });
 			
 			extWs.on('close', () => this.handleDisconnect(extWs, user.id));
