@@ -2,7 +2,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
-import { SWAGGER_THEME_CSS } from '@transcendence/shared';
+import { SWAGGER_THEME_CSS, SharedErrors } from '@transcendence/shared';
 import { ImagesEnv } from './config.js';
 import { ImagesAppDependencies } from './types.js';
 import { healthRoutes, imageRoutes } from './routes/index.js';
@@ -63,6 +63,10 @@ export function buildApp(deps: ImagesAppDependencies): FastifyInstance {
 	console.log('[IMAGES] Registering internal image routes');
 	app.register(imageRoutes, { prefix: '/internal', ...deps });
 
+	app.setErrorHandler((error, request, reply) => {
+    SharedErrors.handleError(error, reply);
+	});
+	
 	app.setNotFoundHandler((request, reply) => {
 		return reply.status(404).send({
 			error: 'Not found',
