@@ -34,7 +34,7 @@ function normalizeHeaderValue(value: undefined | string | string[]): string | un
 function parseWsAllowedOrigins(): Set<string> {
 	const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
 	const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
-	return new Set(list.map((s) => s.trim()).filter(Boolean));
+	return new Set(list.map((s) => s.trim().toLowerCase()).filter(Boolean));
 }
 
 function getClientIp(req: FastifyRequest): string {
@@ -171,7 +171,8 @@ export function buildApp(): FastifyInstance {
 
 			// --- Security: Origin check (WS is not covered by CORS) ---
 			const origin = normalizeHeaderValue(req.headers.origin);
-			if (origin && !wsAllowedOrigins.has(origin)) {
+			const normalizedOrigin = origin?.toLowerCase();
+			if (normalizedOrigin && !wsAllowedOrigins.has(normalizedOrigin)) {
 				app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
 				closeWithFallback(client, 1008, 'Origin not allowed', 200);
 				return;
