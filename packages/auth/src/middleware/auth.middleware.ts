@@ -41,20 +41,20 @@ const fetchLastLogoutAt = async (userId: string): Promise<number> => {
 			operation: 'fetchLastLogoutAt'
 		});
 	}
-	
+
 	const data = await response.json() as { lastLogoutAt: number };
 	return data.lastLogoutAt;
 };
 
 export namespace AuthMiddleware {
-	
+
 	export const validateJWT = async (
 		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> => {
 		// Extraer el authHeader
 		const authHeader = request.headers.authorization;
-		
+
 		// Verificar que exista y sea válidos
 		if (!authHeader || !authHeader.startsWith('Bearer ')) {
 			throw new SharedErrors.UnauthorizedError('Authorization header faltante o inválido', {
@@ -65,34 +65,34 @@ export namespace AuthMiddleware {
 				requestId: request.id
 			});
 		}
-		
+
 		// Extraer el token
 		const token = authHeader.replace('Bearer ', '');
 		//	console.log(`Token extraido: ${token}`);
-		
+
 		try {
 			// Verificar el access token con el jwt_secret
 			const payload = jwt.verify(token, AuthEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
-			
+
 			// Validación completa
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
-			console.log('[AUTH-MIDDLEWARE] Schema validation:', isValid);
-			if (!isValid) 
+			request.log.info({ isValid }, '[AUTH-MIDDLEWARE] Schema validation');
+			if (!isValid)
 				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
-				schemaValidation: isValid,
-				operation: 'validateJWT',
-				payloadKeys: Object.keys(payload),
-				requestId: request.id
-			});
-			
+					schemaValidation: isValid,
+					operation: 'validateJWT',
+					payloadKeys: Object.keys(payload),
+					requestId: request.id
+				});
+
 			// TypeScript ahora infiere payload como AccessTokenPayload
 			const tokenIssuedAt = payload.iat!;
 			const userId = payload.id;
-			
+
 			// Validar lastLogoutAt
 			// Si el usuario no existe, fetchLastLogoutAt lanzará UnauthorizedError
 			const lastLogoutAt = await fetchLastLogoutAt(userId);
-			
+
 			if (tokenIssuedAt < lastLogoutAt) {
 				throw new SharedErrors.UnauthorizedError('Token invalidado por logout', {
 					userId,
@@ -103,20 +103,20 @@ export namespace AuthMiddleware {
 					requestId: request.id
 				});
 			}
-			
+
 			request.user = payload;
 		} catch (err) {
 			return SharedErrors.handleError(err, reply);
 		}
-		
-		console.log('[AUTH-MIDDLEWARE] JWT valid');
+
+		request.log.info('[AUTH-MIDDLEWARE] JWT valid');
 	}
-	
+
 	export const verifyOwnership = async (
 		request: FastifyRequest, // usar tipo de schema params id
 		reply: FastifyReply
 	): Promise<void> => {
-		
+
 		try {
 			if (!request.user) {
 				throw new SharedErrors.UnauthorizedError('Usuario  no autenticado', {
@@ -125,9 +125,9 @@ export namespace AuthMiddleware {
 					userPresent: false
 				});
 			}
-			
+
 			const { id } = request.params as UserTypes.UserIdParams;
-			
+
 			if (id !== request.user.id) {
 				throw new SharedErrors.UnauthorizedError('No tienes permiso para acceder a este recurso', {
 					operation: 'verifyOwnership',

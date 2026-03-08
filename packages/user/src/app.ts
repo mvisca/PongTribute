@@ -102,23 +102,23 @@ export function buildApp(deps: UserAppDependencies): FastifyInstance {
 			return;
 
 		const url = route.url;
-		console.log(`[USER] [ROUTE] ${method.padEnd(7)} ${url}`);
+		app.log.info(`[USER] [ROUTE] ${method.padEnd(7)} ${url}`);
 	})
 
 
 	/** Registrar todas las rutas del servicio */
 	app.register(healthRoutes, { ...deps });
 	app.register(UserRoutes.internalTokenRoutes, { prefix: '/internal', ...deps });
-	console.log('[USER] Registering internal token routes');
+	app.log.info('[USER] Registering internal token routes');
 
 	app.register(UserRoutes.internalRoutes, { prefix: '/internal', ...deps });
-	console.log('[USER] Registering internal routes');
+	app.log.info('[USER] Registering internal routes');
 
 	app.register(UserRoutes.publicRoutes, { prefix: '/api', ...deps });
-	console.log('[USER] Registering public routes');
+	app.log.info('[USER] Registering public routes');
 
 	app.register(UserRoutes.protectedRoutes, { prefix: '/api', ...deps });
-	console.log('[USER] Registering protected routes');
+	app.log.info('[USER] Registering protected routes');
 
 
 	/** Manejo global de errores. Captura cualquier error no manejado */
@@ -129,6 +129,6 @@ export function buildApp(deps: UserAppDependencies): FastifyInstance {
 		});
 	});
 
-	console.log('[USER] App ready');
+	app.log.info('[USER] App ready');
 	return app;
 }

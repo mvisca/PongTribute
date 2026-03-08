@@ -41,12 +41,12 @@ export class RateLimitMiddleware {
 			const newCount = await this.redis.incr(key);
 
 			if (newCount === 1)
-				await this.redis.expire(key, Math.floor(this.config.windowMs/ 1000));
+				await this.redis.expire(key, Math.floor(this.config.windowMs / 1000));
 
 			reply.header('X-Rate-Limit', this.config.maxRequests.toString());
 			reply.header('X-RateLimit-Remaining', (this.config.maxRequests - newCount).toString());
-		} catch(err) {
-			console.error('[USER-MIDDLEWARE] Rate limit error: ', err);
+		} catch (err) {
+			request.log.error({ err }, '[USER-MIDDLEWARE] Rate limit error');
 		}
 	}
 

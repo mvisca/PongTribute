@@ -105,12 +105,12 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 			return;
 
 		const url = route.url;
-		console.log(`[AUTH] [ROUTE] ${method.padEnd(7)} ${url}`);
+		app.log.info(`[AUTH] [ROUTE] ${method.padEnd(7)} ${url}`);
 	})
 
 	/** 6. Registrar todas las rutas del servicio */
 	app.register(healthRoutes, { ...deps });
-	console.log('[AUTH] Registering public routes');
+	app.log.info('[AUTH] Registering public routes');
 	app.register(authRoutes, { prefix: '/api', ...deps });
 
 	/** 7. Manejo global de errores. Captura cualquier error no manejado */
@@ -125,6 +125,6 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 		});
 	});
 
-	console.log('[AUTH] App ready');
+	app.log.info('[AUTH] App ready');
 	return app;
 }

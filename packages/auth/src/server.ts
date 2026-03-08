@@ -31,7 +31,7 @@ async function start() {
 			const mailerTransporter = createMailerClient();
 			mailerService = new MailerService(mailerTransporter);
 			console.log('[AUTH] Mailer client created');
-		} catch(err) {
+		} catch (err) {
 			console.error('[AUTH] Error connecting to Mailer client: ', err);
 			process.exit(1);
 		}
@@ -48,8 +48,8 @@ async function start() {
 			host: AuthEnv.HOST()
 		});
 
-		console.log(`[AUTH] Log level: ${app.log.level}`);
-		console.log(`[AUTH] Service ready at ${AuthEnv.HOST()}:${AuthEnv.PORT()}`);
+		app.log.info(`[AUTH] Log level: ${app.log.level}`);
+		app.log.info(`[AUTH] Service ready at ${AuthEnv.HOST()}:${AuthEnv.PORT()}`);
 
 		cleanupService = new TokenCleanupService();
 		cleanupService.start();
@@ -81,9 +81,9 @@ async function gracefulShutdown(signal: string) {
 	if (app) {
 		try {
 			await app.close();
-			console.log('[AUTH] Fastify HTTP server closed');
+			app.log.info('[AUTH] Fastify HTTP server closed');
 		} catch (err) {
-			console.error('[AUTH] Error closing Fastify', err);
+			app.log.error({ err }, '[AUTH] Error closing Fastify');
 		}
 	}
 

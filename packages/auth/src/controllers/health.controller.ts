@@ -30,9 +30,9 @@ export class HealthController {
 		try {
 			await this.mailerService.verify();
 			checks.mailer = { status: 'ok' };
-		} catch(err: any) {
-			console.error('[AUTH] Service degraded, mailer down: ', err);
-			checks.mailer = { status: 'unreachable', error: err.message};
+		} catch (err: any) {
+			request.log.error(err, '[AUTH] Service degraded, mailer down');
+			checks.mailer = { status: 'unreachable', error: err.message };
 		}
 
 		const statusCode = allHealthy ? 200 : 503;

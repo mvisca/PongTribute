@@ -11,7 +11,7 @@ import {
 	SQLiteUserRepository,
 	SQLiteFriendshipRepository,
 	SQLiteTokenRepository
- } from './index.js';
+} from './index.js';
 
 let app: FastifyInstance | null = null;
 let redisClient: Redis | null = null;
@@ -21,7 +21,7 @@ async function start() {
 		// Inicializar config
 		UserEnv.init();
 
-		
+
 		// Crear Redis antes de buildApp
 		try {
 			redisClient = Utils.createRedisClient(UserEnv.getRedisConfig());
@@ -30,7 +30,7 @@ async function start() {
 			console.error('[USER] Error connecting to Redis: ', err);
 			process.exit(1);
 		}
-		
+
 		// Crear repos
 		const userRepo = new SQLiteUserRepository();
 		const friendshipRepo = new SQLiteFriendshipRepository();
@@ -50,19 +50,19 @@ async function start() {
 			host: UserEnv.HOST()
 		});
 
-		console.log(`[USER] Log level: ${app.log.level}`);
-		console.log(`[USER] Service ready at ${UserEnv.HOST()}:${UserEnv.PORT()}`);
-		console.log(`[USER] DB Path: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
+		app.log.info(`[USER] Log level: ${app.log.level}`);
+		app.log.info(`[USER] Service ready at ${UserEnv.HOST()}:${UserEnv.PORT()}`);
+		app.log.info(`[USER] DB Path: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
 
 		// Limpieza de tabla 'refresh_tokens' para development y production
 		if (UserEnv.NODE_ENV() !== 'test') {
 			setInterval(async () => {
 				try {
 					await tokenService.cleanExpired();
-					console.info(`[USER] Expired refresh tokens cleaned`);
+					app!.log.info('[USER] Expired refresh tokens cleaned');
 
-				} catch(err) {
-					console.error(err, '[USER] Error during expired refresh token cleanup');
+				} catch (err) {
+					app!.log.error({ err }, '[USER] Error during expired refresh token cleanup');
 				}
 			}, 1000 * 60 * 60);
 		}
@@ -88,9 +88,9 @@ async function gracefulShutdown(signal: string) {
 	if (app) {
 		try {
 			await app.close();
-			console.log('[USER] Fastify HTTP server closed');
+			app.log.info('[USER] Fastify HTTP server closed');
 		} catch (err) {
-			console.error('[USER] Error closing Fastify', err);
+			app.log.error({ err }, '[USER] Error closing Fastify');
 		}
 	}
 

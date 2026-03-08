@@ -14,21 +14,21 @@ export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 
 	// Inicializar Fastify con config
 	const app = Fastify(CommsEnv.getFastifyConfig());
-	
+
 	// Plugins de seguridad
 	app.register(helmet, {
 		contentSecurityPolicy: false,
 		crossOriginEmbedderPolicy: false
 	});
-	
+
 	// Pligin de websocket
 	app.register(fastifyWebsocket);
-	
+
 	// Hooks
 	app.addHook('onRoute', (route) => {
 		const method = route.method.toString();
 		if (method === 'HEAD') return;
-		
+
 		const icon = {
 			POST: '📤',
 			GET: '📖',
@@ -37,7 +37,7 @@ export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 			PATCH: '🔧'
 		}[method] || '📌';
 
-		console.log(`${icon} COMMS: ${method.padEnd(7)} ${route.url}`);
+		app.log.info(`${icon} COMMS: ${method.padEnd(7)} ${route.url}`);
 	});
 
 	// Registro de rutas
@@ -52,6 +52,6 @@ export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 		});
 	});
 
-	console.log('Returning App: COMMS');
+	app.log.info('[Comms] App ready');
 	return app;
 }

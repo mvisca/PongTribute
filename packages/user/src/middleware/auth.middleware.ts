@@ -30,32 +30,32 @@ export namespace AuthMiddleware {
 				const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 				if (!isValid)
 					throw new SharedErrors.UnauthorizedError('Estructura de token inválida',
-					{
-						'context': 'User service, validateJWT middleware',
-						'payload': payload
-					});
-					console.log('[USER-MIDDLEWARE] Schema validation:', isValid);
+						{
+							'context': 'User service, validateJWT middleware',
+							'payload': payload
+						});
+				request.log.info({ isValid }, '[USER-MIDDLEWARE] Schema validation');
 
-					// TypeScript ahora infiere payload como AccessTokenPayload
-					const tokenIssuedAt = payload.iat!;
-					const userId = payload.id!;
+				// TypeScript ahora infiere payload como AccessTokenPayload
+				const tokenIssuedAt = payload.iat!;
+				const userId = payload.id!;
 
-					// Validar lastLogoutAt
-					// Si el usuario no existe en la BD, el token es inválido
-					const lastLogoutAt = await userService.getLastLogoutAt(userId);
+				// Validar lastLogoutAt
+				// Si el usuario no existe en la BD, el token es inválido
+				const lastLogoutAt = await userService.getLastLogoutAt(userId);
 
-					if (tokenIssuedAt < lastLogoutAt) {
-						throw new SharedErrors.UnauthorizedError('Token invalidado por logout');
-					}
-
-					request.user = payload;
-				} catch (err) {
-					return SharedErrors.handleError(err, reply);
+				if (tokenIssuedAt < lastLogoutAt) {
+					throw new SharedErrors.UnauthorizedError('Token invalidado por logout');
 				}
 
-				console.log('[USER-MIDDLEWARE] JWT valid');
-			};
-		}
+				request.user = payload;
+			} catch (err) {
+				return SharedErrors.handleError(err, reply);
+			}
+
+			request.log.info('[USER-MIDDLEWARE] JWT valid');
+		};
+	}
 
 	export const verifyOwnership = async (
 		request: FastifyRequest,

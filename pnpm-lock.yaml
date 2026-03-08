@@ -109,18 +109,6 @@ importers:
 
   packages/bot:
     dependencies:
-      '@fastify/helmet':
-        specifier: 13.0.2
-        version: 13.0.2
-      '@fastify/jwt':
-        specifier: 8.0.0
-        version: 8.0.0
-      '@fastify/swagger':
-        specifier: 9.6.1
-        version: 9.6.1
-      '@fastify/swagger-ui':
-        specifier: 5.2.3
-        version: 5.2.3
       '@sinclair/typebox':
         specifier: 0.34.41
         version: 0.34.41

@@ -37,12 +37,12 @@ export class AuthController {
 		try {
 			const { email, password } = request.body as AuthTypes.LoginBody;
 			const result = await this.authService.login(email, password);
-			
+
 			// Login pide 2FA totpCode
 			if ('twoFactorRequired' in result)
 				// 202 ACCEPTED => autenticación parcial, requiere paso adicional 
 				return reply.code(202).send(result);
-			
+
 			// Token Pair
 			const { accessToken, refreshToken, userPayload } = result as TokenPair;
 			this.setTokenCookie(reply, refreshToken);
@@ -50,7 +50,7 @@ export class AuthController {
 			// 200 OK = Login exitoso sin 2FA
 			return reply.code(200).send({ token: accessToken, user: userPayload });
 
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -65,7 +65,7 @@ export class AuthController {
 
 			if (!refreshToken) {
 				throw new SharedErrors.UnauthorizedError('Refresh token missing', {
-	                operation: 'refreshAccessToken'
+					operation: 'refreshAccessToken'
 				});
 			}
 
@@ -80,7 +80,7 @@ export class AuthController {
 
 			// Envía en la response el access token y el payload
 			return reply.code(200).send({ token: accessToken, user: userPayload });
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -97,7 +97,7 @@ export class AuthController {
 			reply.clearCookie('refreshToken', { path: '/' });
 
 			return reply.code(204).send();
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -118,7 +118,7 @@ export class AuthController {
 			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
 			this.setTokenCookie(reply, newRefreshToken);
 			return reply.code(200).send({ token: accessToken, user: userPayload });
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -132,12 +132,12 @@ export class AuthController {
 
 			const { provisionalToken, backupCode } = request.body as AuthTypes.VerifyBackupCodeBody;
 			const result = await this.authService.verifyBackupCode(provisionalToken, backupCode);
-			
+
 			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
 			this.setTokenCookie(reply, newRefreshToken);
 			return reply.code(200).send({ token: accessToken, user: userPayload });
 
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -153,11 +153,11 @@ export class AuthController {
 	): Promise<void> {
 		try {
 
-			const { id }= request.params as AuthTypes.UserIdParams;
+			const { id } = request.params as AuthTypes.UserIdParams;
 			const result = await this.authService.enable2FA(id);
-			
+
 			return reply.code(200).send(result);
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -175,7 +175,7 @@ export class AuthController {
 			this.setTokenCookie(reply, newRefreshToken);
 			return reply.code(200).send({ token: accessToken, user: userPayload });
 
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -188,14 +188,14 @@ export class AuthController {
 		try {
 			const { id } = request.params as AuthTypes.UserIdParams;
 			const { password } = request.body as AuthTypes.Disable2FABody;
-			
+
 			const result = await this.authService.disable2FA(id, password);
 
 			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
 			this.setTokenCookie(reply, newRefreshToken);
 			return reply.code(200).send({ token: accessToken, user: userPayload });
 
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -211,18 +211,18 @@ export class AuthController {
 	): Promise<void> {
 		try {
 
-			const { 
+			const {
 				username,
 				email,
 				avatar,
 				password } = request.body as AuthTypes.RegisterBody;
-				
+
 			const result = await this.authService.register(username, email, password, avatar);
-			
+
 			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
 			this.setTokenCookie(reply, newRefreshToken);
 			return reply.code(200).send({ token: accessToken, user: userPayload });
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -245,7 +245,7 @@ export class AuthController {
 			const { accessToken, refreshToken: newRefreshToken, userPayload } = result as TokenPair;
 			this.setTokenCookie(reply, newRefreshToken);
 			return reply.code(200).send({ token: accessToken, user: userPayload });
-		} catch(err) {
+		} catch (err) {
 			SharedErrors.handleError(err, reply);
 		}
 	}
@@ -260,7 +260,7 @@ export class AuthController {
 			await this.authService.requestPasswordReset(email);
 		} catch (err) {
 			// Importante: no filtrar por errores (ni existencia de usuario)
-			console.error('Password reset request failed:', err);
+			request.log.error({ err }, 'Password reset request failed');
 		}
 		return reply.code(204).send();
 	}
