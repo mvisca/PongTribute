@@ -65,6 +65,22 @@ export class ForbiddenError extends AppError {
     }
 }
 
+export class TooManyRequestsError extends AppError {
+    readonly statusCode = 429;
+    readonly isOperational = true;
+
+    constructor(message: string, context?: Record<string, unknown>) {
+        super(message, context);
+    }
+
+    toJSON() {
+        return {
+            error: 'TooManyRequestsError',
+            message: this.message
+        };
+    }
+}
+
 export class NotFoundError extends AppError {
     readonly statusCode = 404;
     readonly isOperational = true;

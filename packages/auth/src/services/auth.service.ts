@@ -102,7 +102,27 @@ export class AuthService {
 		}
 	}
 	
+	// Bloqueo por cuenta: máx 20 intentos por email en ventana de 15 min.
+	// Complementa el rate limit global por IP — protege contra password spraying dirigido.
+	private async checkLoginAttempts(email: string): Promise<void> {
+		const key = `login:attempts:${email}`;
+		const attempts = await this.redisClient.incr(key);
+
+		if (attempts === 1) {
+			await this.redisClient.expire(key, 900);  // ventana 15 min
+		}
+
+		if (attempts > 20) {
+			throw new SharedErrors.TooManyRequestsError(
+				'Demasiados intentos de login. Intenta en 15 minutos.'
+			);
+		}
+	}
+
+
 	
+
+
 	// LOGIN PROCESS - COMPLETAR LOGIN CON O SIN 2FA
 	
 	/** Completa el proceso de login generando tokens y seteando el usuario online */
@@ -719,6 +739,7 @@ export class AuthService {
 		email: string,
 		password: string
 	): Promise<TokenPair | AuthTypes.Login2FARequiredResponse> {
+		await this.checkLoginAttempts(email);
 		const user = await this.fetchUserByEmail(email);
 		if (!user) {
 			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
