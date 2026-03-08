@@ -45,7 +45,7 @@ const DEFAULTS = {
 	LOG_LEVEL: 'info',
 
 	UPSTREAM_TIMEOUT_MS: 10_000,
-	BODY_LIMIT: 10 * 1024 * 1024, // 10MB
+	BODY_LIMIT: 14 * 1024 * 1024, // 14MB
 
 	// WebSocket defaults
 	WS_ALLOWED_ORIGINS: '',

@@ -44,6 +44,7 @@ export namespace AuthEnv {
 				};
 			};
 		} | boolean;
+		bodyLimit?: number;
 		ajv?: {
 			customOptions?: {
 				removeAdditional?: boolean | 'all' | 'failing';
@@ -147,6 +148,7 @@ export namespace AuthEnv {
 					}
 				})
 			},
+			bodyLimit: 14 * 1024 * 1024, // 14MB — base64 overhead: 10MB imagen → ~13.7MB JSON
 			ajv: {
 				customOptions: {
 					removeAdditional: false,

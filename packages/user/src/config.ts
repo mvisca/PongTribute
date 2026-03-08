@@ -41,6 +41,7 @@ export namespace UserEnv {
 				};
 			};
 		} | boolean;
+		bodyLimit?: number;
 		ajv?: {
 			customOptions?: {
 				removeAdditional?: boolean | 'all' | 'failing';
@@ -132,6 +133,7 @@ export namespace UserEnv {
 					}
 				})
 			},
+			bodyLimit: 14 * 1024 * 1024,
 			ajv: {
 				customOptions: {
 					removeAdditional: false,

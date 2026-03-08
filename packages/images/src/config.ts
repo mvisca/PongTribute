@@ -33,6 +33,7 @@ export namespace ImagesEnv {
 				};
 			};
 		} | boolean;
+		bodyLimit?: number; 
 		ajv?: {
 			customOptions?: {
 				removeAdditional?: boolean | 'all' | 'failing';
@@ -96,6 +97,7 @@ export namespace ImagesEnv {
 					}
 				})
 			},
+			bodyLimit: 14 * 1024 * 1024, // 14MB
 			ajv: {
 				customOptions: {
 					removeAdditional: false,
