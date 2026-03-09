@@ -31,7 +31,7 @@ export class HealthController {
 			await this.mailerService.verify();
 			checks.mailer = { status: 'ok' };
 		} catch (err: any) {
-			request.log.error(err, '[AUTH] Service degraded, mailer down');
+			request.log.error({ err }, '[AUTH] Service degraded, mailer down');
 			checks.mailer = { status: 'unreachable', error: err.message };
 		}
 

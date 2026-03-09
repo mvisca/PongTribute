@@ -1,6 +1,6 @@
 
 import type { Redis } from 'ioredis';
-import type { FastifyBaseLogger } from 'fastify';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import {
 	SharedErrors,
 	TRANSCENDENCE_CHANNEL,
@@ -17,27 +17,17 @@ export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
 	private userService: UserService;
 	private redisClient: Redis;
-	private log: FastifyBaseLogger;
+	private log: AppLogger;
 
 	constructor(
 		friendshipRepo: IFriendshipRepository,
 		userService: UserService,
-		redisClient: Redis,
-		logger?: FastifyBaseLogger
+		redisClient: Redis
 	) {
 		this.friendshipRepo = friendshipRepo;
 		this.userService = userService;
 		this.redisClient = redisClient;
-		// Le dice a TypeScript: "sé que console no es exactamente FastifyBaseLogger, 
-		// pero en este momento pre-setLogger solo se usaría si hay un bug de orden 
-		// en el arranque, y console tiene los métodos necesarios (info, warn, error)". 
-		// En la práctica, setLogger siempre se llama antes de cualquier request real, 
-		// así que este fallback nunca debería ejecutarse en producción.
-		this.log = (logger ?? console) as unknown as FastifyBaseLogger;
-	}
-
-	setLogger(logger: FastifyBaseLogger): void {
-		this.log = logger.child({ component: 'FriendshipService' });
+		this.log = createLogger('FriendshipService');
 	}
 
 	// ============================================================================

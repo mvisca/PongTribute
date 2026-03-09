@@ -8,6 +8,7 @@ import { TokenCleanupService } from './services/token-cleanup.service.js';
 import { MailerService } from './services/mailer.service.js';
 import { createMailerClient } from './utils/mailer.js';
 
+
 let app: FastifyInstance | null = null;
 let cleanupService: TokenCleanupService | null = null;
 let redisClient: Redis | null = null;
@@ -18,7 +19,7 @@ async function start() {
 		// Inicializar config
 		AuthEnv.init();
 
-		// Crear Redis antes de buildApp
+		// Redis y Mailer se crean ANTES de buildApp — console es el único recurso disponible aquí
 		try {
 			redisClient = Utils.createRedisClient(AuthEnv.getRedisConfig());
 			console.log('[AUTH] Redis client created');
@@ -37,6 +38,7 @@ async function start() {
 		}
 
 		// Crear AuthService con Redis inyectado
+		// Services construidos antes de buildApp (buildApp los necesita como deps)
 		const authService = new AuthService(redisClient, mailerService);
 
 		// Construir app
@@ -51,39 +53,46 @@ async function start() {
 		app.log.info(`[AUTH] Log level: ${app.log.level}`);
 		app.log.info(`[AUTH] Service ready at ${AuthEnv.HOST()}:${AuthEnv.PORT()}`);
 
+		// TokenCleanupService se crea DESPUÉS de app — recibe app.log directo
 		cleanupService = new TokenCleanupService();
 		cleanupService.start();
 
 	} catch (err) {
-		console.log(`[AUTH] Startup error:`, err instanceof Error ? err.message : err);
-		console.log('[AUTH] Check .env file - if missing, run: "cp .env.example .env"');
-		await gracefulShutdown('STARTUP ERROR');
+		const msg = err instanceof Error ? err.message : err;
+		if (app) {
+			app.log.error(err, '[AUTH] Startup error');
+		} else {
+			console.error('[AUTH] Startup error:', msg);
+			console.error('[AUTH] Check .env file - if missing, run: "cp .env.example .env"');
+		}
+		await gracefulShutdown('STARTUP_ERROR');
 	}
 }
 
 async function gracefulShutdown(signal: string) {
-	console.log(`\n[AUTH] ${signal} received. Starting graceful shutdown`);
+	const log = app?.log;
+	(log ?? console).info(`\n[AUTH] ${signal} received. Starting graceful shutdown`);
 
 	if (cleanupService) {
 		cleanupService.stop();
-		console.log('[AUTH] Cronjob stopped');
+		(log ?? console).info('[AUTH] Cronjob stopped');
 	}
 
 	if (redisClient) {
 		try {
 			await redisClient.quit();
-			console.log('[AUTH] Redis disconnected');
+			(log ?? console).info('[AUTH] Redis disconnected');
 		} catch (err) {
-			console.error('[AUTH] Error closing Redis', err);
+			(log ?? console).error(err, '[AUTH] Error closing Redis');
 		}
 	}
 
 	if (app) {
 		try {
 			await app.close();
-			app.log.info('[AUTH] Fastify HTTP server closed');
+			log!.info('[AUTH] Fastify HTTP server closed');
 		} catch (err) {
-			app.log.error({ err }, '[AUTH] Error closing Fastify');
+			log!.error({ err }, '[AUTH] Error closing Fastify');
 		}
 	}
 

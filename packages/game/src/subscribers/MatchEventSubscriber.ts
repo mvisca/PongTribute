@@ -8,6 +8,7 @@ import {
 	TRANSCENDENCE_EVENTS,
 	TranscendenceEventsTypes,
 } from '@transcendence/shared';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 
 
 export class MatchEventSubscriber {
@@ -15,6 +16,7 @@ export class MatchEventSubscriber {
 	private matchService: MatchService;
 	private gameService: GameService;
 	private connected: boolean = false;
+	private log: AppLogger = createLogger('MatchEventSubscriber');
 
 	constructor(matchService: MatchService, gameService: GameService, subscriberRedis: Redis) {
 		this.matchService = matchService;
@@ -24,7 +26,7 @@ export class MatchEventSubscriber {
 	
 	public async connect() {
 		try {
-			console.log('[MATCH-SUBSCRIBER] Connecting to Pub/Sub...');
+			this.log.info('Connecting to Pub/Sub...');
 			
 			// Nos suscribimos al canal de eventos definido en Shared
 			await this.subscriber.subscribe(TRANSCENDENCE_CHANNEL);
@@ -34,13 +36,13 @@ export class MatchEventSubscriber {
 					this.handleMessage(message);
 			});
 			
-			console.log('[MATCH-SUBSCRIBER] Ready. Listening on channel:', TRANSCENDENCE_CHANNEL);
+			this.log.info({ channel: TRANSCENDENCE_CHANNEL }, 'Ready — listening for events');
 			
 			this.connected = true;
 
 		} catch (error) {
 			this.connected = false;
-			console.error('[MATCH-SUBSCRIBER] Failed to subscribe:', error);
+			this.log.error({ err: error }, 'Failed to subscribe to Redis channel');
 		}
 	}
 	
@@ -62,7 +64,7 @@ export class MatchEventSubscriber {
 					const userId = disconnectedEvent.targetUserId;
 					
 					if (userId) {
-						console.log(`[MATCH-SUBSCRIBER] User disconnect: ${userId}`);
+						this.log.info({ userId }, 'User disconnected — cleaning up');
 						
 						// Si falla uno, no detiene a los otros
 						Promise.allSettled([
@@ -71,7 +73,7 @@ export class MatchEventSubscriber {
 							this.gameService.handleDisconnect(userId)
 						]);
 					} else {
-						console.warn('[MATCH-SUBSCRIBER] User disconnected event missing targetUserId', event);
+						this.log.warn({ event }, 'User disconnected event missing targetUserId');
 					}
 					break;
 				}
@@ -87,17 +89,18 @@ export class MatchEventSubscriber {
 					const avatar = updateEvent.payload?.avatar;
 					
 					if (userId && username && avatar) {
-						console.log(`[MATCH-SUBSCRIBER] Syncing profile for ${username} (${userId})`);
+						this.log.info({ userId, username }, 'Syncing profile update');
+
 						
 						// 1. Actualizar DB (Historial y registros persistentes)
 						this.matchService.handleUserUpdate(userId, username, avatar)
-							.catch(err => console.error('[MATCH-SUBSCRIBER] DB update error:', err));
+							.catch(err => this.log.error({ err }, 'DB update error on profile change'));
 						
 						// 2. Actualizar Memoria (Sesión activa en RAM)
 						this.gameService.updatePlayerInActiveMatch(userId, username, avatar);
 					} else {
 						// Log de advertencia si llega el evento pero sin los datos necesarios
-						if (!username) console.warn(`[MATCH-SUBSCRIBER] Profile update for ${userId} missing username`);
+						if (!username) this.log.warn({ userId }, 'Profile update event missing username');
 					}
 					break;
 				}
@@ -107,14 +110,14 @@ export class MatchEventSubscriber {
 				break;
 			}
 		} catch (error) {
-			console.error('[MATCH-SUBSCRIBER] Error parsing Redis message:', error);
+			this.log.error({ err: error }, 'Error parsing Redis message');
 		}
 	}
 	
 	// Cierra limpiamente la conexion Redis
 	public async disconnect() {
 		if (this.subscriber) {
-			console.log('[MATCH-SUBSCRIBER] Disconnecting...');
+			this.log.info('Disconnecting from Pub/Sub');
 			this.connected = false;
 			await this.subscriber.quit();
 		}

@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import type { Redis } from 'ioredis';
-import type { FastifyBaseLogger } from 'fastify';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import {
 	UserTypes,
 	Utils,
@@ -18,18 +18,14 @@ import {
 export class UserService {
 	private userRepo: IUserRepository;
 	private redisClient: Redis;
-	private log: FastifyBaseLogger;
+	private log: AppLogger;
 
-	constructor(redisClient: Redis, userRepo: IUserRepository, logger?: FastifyBaseLogger) {
+	constructor(redisClient: Redis, userRepo: IUserRepository) {
 		this.userRepo = userRepo;
 		this.redisClient = redisClient;
-		this.log = (logger ?? console) as unknown as FastifyBaseLogger;
+		this.log = createLogger('UserService');
 	}
 
-	setLogger(logger: FastifyBaseLogger): void {
-		this.log = logger.child({ component: 'UserService' });
-	}
-	
 	/** Validación de argumento avatar en updateUser */
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;

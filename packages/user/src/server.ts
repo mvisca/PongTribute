@@ -49,10 +49,6 @@ async function start() {
 		// 4. buildApp — necesita los services ya construidos
 		app = buildApp({ redisClient, userService, friendshipService, tokenService });
 
-		// 5. Ahora que app existe, inyectamos el logger en los services
-		userService.setLogger(app.log);
-		friendshipService.setLogger(app.log);
-
 		// 6. Listen. Arrancar el servidor
 		await app.listen({
 			port: UserEnv.PORT(),

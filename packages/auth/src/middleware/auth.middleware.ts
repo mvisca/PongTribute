@@ -68,7 +68,6 @@ export namespace AuthMiddleware {
 
 		// Extraer el token
 		const token = authHeader.replace('Bearer ', '');
-		//	console.log(`Token extraido: ${token}`);
 
 		try {
 			// Verificar el access token con el jwt_secret

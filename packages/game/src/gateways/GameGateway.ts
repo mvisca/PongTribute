@@ -13,11 +13,13 @@ import { Value } from '@sinclair/typebox/value';
 import { GameEnv } from '../config.js';
 import { GameService } from '../services/GameService.js';
 import { WEBSOCKET_EVENTS, AuthSchemas, AuthTypes } from '@transcendence/shared';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 
 // Clase que encapsula la logica de conexion.
 // Esto nos permitira en el futuro inyectarle dependencias (GameService, ...) limpiamente
 export class GameGateway {
-    
+	private log: AppLogger = createLogger('GameGateway');
+	
     /**
 	 * Al no soportar headers estándar en el handshake inicial del navegador, 
 	 * se implementa validación manual del token vía Query Param (`?token=...`).
@@ -54,7 +56,7 @@ export class GameGateway {
 
         // 3. VALIDACION DE ENTRADA
         if (!matchId || !token) {
-			console.log('[GATEWAY] Connection rejected: missing parameters');
+			this.log.info('Connection rejected: missing parameters');
 			// En protocolo WebSocket, los cierres tienen codigos numericos:
 			//  1000: "Normal"
 			//  1008: "Policy Violation". 
@@ -76,7 +78,7 @@ export class GameGateway {
 			// 4b. Validar estructura del payload con TypeBox (igual que middlewares HTTP)
 			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
 			if (!isValid) {
-				console.log('[GATEWAY] Connection rejected: invalid token structure');
+				this.log.info('Connection rejected: invalid token structure');
 				socket.close(1008, 'Invalid token structure');
 				return;
 			}
@@ -94,7 +96,7 @@ export class GameGateway {
 			);
 
 			if (!response.ok) {
-				console.log('[GATEWAY] Connection rejected: user validation failed');
+				this.log.info('Connection rejected: user validation failed');
 				socket.close(1008, 'User validation failed');
 				return;
 			}
@@ -103,14 +105,14 @@ export class GameGateway {
 
 			// Token es inválido si fue emitido ANTES del logout (revocado)
 			if (payload.iat! < lastLogoutAt) {
-				console.log('[GATEWAY] Connection rejected: token revoked (issued before last logout)');
+				this.log.info('Connection rejected: token revoked (issued before last logout)');
 				socket.close(1008, 'Token revoked');
 				return;
 			}
 
 			const userId = payload.id;
 
-            console.log(`[GATEWAY] Player connected: ${payload.username} (Match: ${matchId})`);
+            this.log.info({ matchId: payload.username }, 'Player connected');
 			
 			// CAPTURAR EL VALOR DE RETORNO
             // Guardamos el estado que nos devuelve el servicio
@@ -128,17 +130,17 @@ export class GameGateway {
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
-            socket.on('close', async () => {
-                console.log(`[GATEWAY] Player disconnected: ${payload.username}`);
+			socket.on('close', async () => {
+				this.log.info({ matchId: payload.username }, 'Player disconnected');
 				try {
 					await this.gameService.handleDisconnect(userId, matchId);
 				} catch (err) {
-					console.error(`[GATEWAY] Error in handleDisconnect:`, err);
+					this.log.error('Error in handleDisconnect');
 				}
 			});
 
         } catch (err) {
-            console.log('[GATEWAY] Connection rejected: invalid token');
+            this.log.info('Connection rejected: invalid token');
             socket.close(1008, 'Invalid Token');
 		}
     }

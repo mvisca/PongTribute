@@ -82,12 +82,12 @@ export function buildApp(
 		if (method == 'HEAD') return;
 
 		const url = route.url;
-		console.log(`[GAME] [ROUTE] ${method.padEnd(7)} ${url}`);
+		app.log.info({ method, url }, '[GAME] Route registered');
 	});
 
 	// 4. Registro de Rutas
 	app.register(healthRoutes, { ...deps });
-	console.log('[GAME] Registering game routes');
+	app.log.info('[GAME] Registering game routes');
 	app.register(gameRoutes, { prefix: '/api', ...deps });
 
 	// 6. Manejador de Errores Global
@@ -98,6 +98,6 @@ export function buildApp(
 		});
 	});
 
-	console.log('[GAME] App ready');
+	app.log.info('[GAME] App ready');
 	return app;
 }
