@@ -36,12 +36,11 @@ help:
 	@echo "  make logs         - Follow compose logs. Requires .env"
 	@echo "  make ps           - List compose containers. Requires .env"
 	@echo "  make stop         - Stop containers (no remove). Use 'make up' to start again"
-	@echo "  make nuke         - Remove DB files (from .env paths), then docker system prune -a -f --volumes. Requires .env"
-	@echo "  make env-export   - Exports GUI to the father env with eval <dollar>(make env-export)"
+	@echo "  make nuke         - Remove DB files (from .env paths), delete dev TLS certificates and then docker system prune -a -f --volumes. Requires .env"	@echo "  make env-export   - Exports GUI to the father env with eval <dollar>(make env-export)"
 	@echo "  make open-browser - Open http://localhost in your default browser"
 	@echo "  make rebuild      - Force docker compose up -d --build (rebuild stack). Requires .env"
 	@echo "  make re           - Rebuild stack (docker compose up -d --build) and open http://localhost in your default browser"
-	
+
 check-env:
 	@test -f "$(ENV_FILE)" || (echo "Error: $(ENV_FILE) is missing. Create your .env before running Docker, You can use .env.example as a template." && exit 1)
 
@@ -76,11 +75,11 @@ stop: check-env
 	@$(DC) stop
 
 nuke: check-env
-	@echo "WARNING: All images, volumes, and DB files (from .env paths) will be deleted."
-	@echo -n "Continue? [y/N] "; read -r answer; \
+	@echo "WARNING: All images, volumes, TLS certificates and DB files (from .env paths) will be deleted."	@echo -n "Continue? [y/N] "; read -r answer; \
 	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
 		if [ -n "$(USER_SERVICE_DB_PATH)" ]; then rm -f $(USER_SERVICE_DB_PATH)/*.db; fi; \
 		if [ -n "$(GAME_SERVICE_DB_PATH)" ]; then rm -f $(GAME_SERVICE_DB_PATH)/*.db; fi; \
+		if [ -d ./packages/nginx/certs ]; then rm -f ./packages/nginx/certs/tls.crt ./packages/nginx/certs/tls.key; fi; \	
 		$(DC) down -v 2>/dev/null || true; \
 		docker system prune -a -f --volumes; \
 		echo "Done."; \
