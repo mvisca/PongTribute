@@ -56,11 +56,11 @@ export function buildApp(deps: ImagesAppDependencies): FastifyInstance {
 		if (method === 'HEAD')
 			return;
 
-		console.log(`[IMAGES] [ROUTE] ${method.padEnd(7)} ${route.url}`);
+		app.log.info(`[IMAGES] [ROUTE] ${method.padEnd(7)} ${route.url}`);
 	});
 
 	app.register(healthRoutes, { ...deps });
-	console.log('[IMAGES] Registering internal image routes');
+	app.log.info('[IMAGES] Registering internal image routes');
 	app.register(imageRoutes, { prefix: '/internal', ...deps });
 
 	app.setErrorHandler((error, request, reply) => {
@@ -74,6 +74,6 @@ export function buildApp(deps: ImagesAppDependencies): FastifyInstance {
 		});
 	});
 
-	console.log('[IMAGES] App ready');
+	app.log.info('[IMAGES] App ready');
 	return app;
 }
