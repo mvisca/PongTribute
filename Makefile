@@ -19,7 +19,7 @@ define check_running_and_up
 	fi
 endef
 
-.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke env-export ensure-db-dirs open-browser
+.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke env-export ensure-db-dirs open-browser re
 
 all: up_build open-browser
 
@@ -39,7 +39,9 @@ help:
 	@echo "  make nuke         - Remove DB files (from .env paths), then docker system prune -a -f --volumes. Requires .env"
 	@echo "  make env-export   - Exports GUI to the father env with eval <dollar>(make env-export)"
 	@echo "  make open-browser - Open http://localhost in your default browser"
-
+	@echo "  make rebuild      - Force docker compose up -d --build (rebuild stack). Requires .env"
+	@echo "  make re           - Rebuild stack (docker compose up -d --build) and open http://localhost in your default browser"
+	
 check-env:
 	@test -f "$(ENV_FILE)" || (echo "Error: $(ENV_FILE) is missing. Create your .env before running Docker, You can use .env.example as a template." && exit 1)
 
@@ -57,6 +59,12 @@ up: check-env ensure-db-dirs
 
 up_build: check-env ensure-db-dirs
 	@$(call check_running_and_up,up -d --build)
+
+rebuild: check-env ensure-db-dirs
+	@$(DC) up -d --build
+
+re: rebuild open-browser
+
 
 debug: check-env ensure-db-dirs
 	@$(DC) up --build
@@ -97,4 +105,4 @@ env-export:
 	@echo "export GID=$(shell id -g)"
 
 open-browser:
-	@( xdg-open http://localhost || sensible-browser http://localhost || echo "Open http://localhost in your browser." ) >/dev/null  &
+	@nohup xdg-open http://localhost >/dev/null 2>&1 </dev/null &
