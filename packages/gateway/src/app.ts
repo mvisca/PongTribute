@@ -82,7 +82,38 @@ export function buildApp(): FastifyInstance {
 			.filter(Boolean),
 		credentials: true
 	});
+	// Basic Auth para proteger /docs
+	app.addHook('onRequest', async (request, reply) => {
+		// Solo proteger rutas de documentación
+		if (!request.url.startsWith('/docs')) {
+			return;
+		}
 
+		const authHeader = request.headers['authorization'];
+
+		// Si no hay cabecera Authorization o no es Basic, pedir credenciales
+		if (!authHeader || !authHeader.startsWith('Basic ')) {
+			reply.header('WWW-Authenticate', 'Basic realm="Docs"');
+			return reply.status(401).send({ error: 'Unauthorized' });
+		}
+
+		const base64Credentials = authHeader.slice('Basic '.length).trim();
+
+		let decoded: string;
+		try {
+			decoded = Buffer.from(base64Credentials, 'base64').toString('utf8');
+		} catch {
+			reply.header('WWW-Authenticate', 'Basic realm="Docs"');
+			return reply.status(401).send({ error: 'Unauthorized' });
+		}
+
+		const [user, pass] = decoded.split(':');
+
+		if (user !== GatewayEnv.DOCS_USER || pass !== GatewayEnv.DOCS_PASS) {
+			reply.header('WWW-Authenticate', 'Basic realm="Docs"');
+			return reply.status(401).send({ error: 'Unauthorized' });
+		}
+	});
 	// Request id + timing
 	app.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply, done) => {
 		const incoming = request.headers['x-request-id'] || request.headers['request-id'];
