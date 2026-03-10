@@ -134,13 +134,30 @@ export class FriendshipService {
 		const [sortedUserId, sortedFriendId] = this.sortIds(initiatorId, friendId);
 		const existing = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 
-		if (existing)
+		if (existing) {
+			// Permitir crear si fue rechazada
+			if (existing.status === FRIENDSHIP_STATUS.REJECTED) {
+				// Delete existing friendship
+				await this.friendshipRepo.delete(existing.userId, existing.friendId);
+				// Crear nueva friendship
+				const newFriendship = await this.friendshipRepo.create({
+					initiatorId,
+					friendId,
+					status: FRIENDSHIP_STATUS.PENDING
+				});
+				
+				this.publishFriendRequest(initiatorId, initiatorUsername, friendId)
+					.catch(err => console.error('[FriendshipService] Error publishing request:', err));
+				return newFriendship;
+			}
+
 			throw new SharedErrors.ConflictError('Friendship already exists', 'friendship', {
 				initiatorId,
 				friendId,
 				operation: 'createFriendship',
 				existingStatus: existing.status
 			});
+		}
 
 		// 1. Guardar en Base de Datos PRIMERO
         const newFriendship = await this.friendshipRepo.create({

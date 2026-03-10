@@ -60,7 +60,7 @@ export default function LoginPage() {
 		<PageContainer>
 			<div className='flex flex-col items-center'>
 				<h1 className='retro-title mb-10'>
-					WELCOME TO <br />PING-PONG
+					WELCOME TO <br /> PING🏓PONG
 				</h1>
 
 				<FormCard title='LOGIN'>

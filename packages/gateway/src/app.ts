@@ -12,152 +12,205 @@ import { createOpenApiHandler } from './openapi.js';
 import { healthRoutes } from './routes/health.routes.js';
 
 function closeWithFallback(ws: WebSocket, code = 1000, reason = 'closing', timeoutMs = 500) {
-	try {
-		if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-			ws.close(code, reason);
-		}
-	} catch {}
-	
-	// If the close handshake doesn't complete, force close the TCP socket
-	setTimeout(() => {
-		try {
-			if (ws.readyState !== WebSocket.CLOSED) ws.terminate();
-		} catch {}
-	}, timeoutMs);
+    try {
+        if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+            ws.close(code, reason);
+        }
+    } catch {}
+    
+    // If the close handshake doesn't complete, force close the TCP socket
+    setTimeout(() => {
+        try {
+            if (ws.readyState !== WebSocket.CLOSED) ws.terminate();
+        } catch {}
+    }, timeoutMs);
 }
 
 function normalizeHeaderValue(value: undefined | string | string[]): string | undefined {
-	if (value === undefined) return undefined;
-	return Array.isArray(value) ? value[0] : value;
+    if (value === undefined) return undefined;
+    return Array.isArray(value) ? value[0] : value;
 }
 
 function parseWsAllowedOrigins(): Set<string> {
-	const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
-	const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
-	return new Set(list.map((s) => s.trim()).filter(Boolean));
+    const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
+    const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
+    return new Set(list.map((s) => s.trim()).filter(Boolean));
 }
 
+// Helper to obtain IP from FastifyRequest (HTTP handler) Probably wrong!! TODO Remove if IncomingMessage works
 function getClientIp(req: FastifyRequest): string {
-	// Prefer forwarded header (common in docker/nginx). Keep it simple + explainable.
-	const xff = normalizeHeaderValue(req.headers['x-forwarded-for']);
-	if (xff) return xff.split(',')[0].trim();
-	return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // added ? to avoid crash if socket is undefined
+    // Prefer forwarded header (common in docker/nginx). Keep it simple + explainable.
+    const xff = normalizeHeaderValue(req.headers['x-forwarded-for']);
+    if (xff) return xff.split(',')[0].trim();
+    return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // added ? to avoid crash if socket is undefined
+}
+
+// Helper to obtain IP from IncomingMessage (WebSocket handler)
+function getClientIpFromIncomingMessage(req: any): string {
+    const xff = req.headers['x-forwarded-for'];
+    if (xff) {
+        const ip = Array.isArray(xff) ? xff[0] : xff;
+        return ip.split(',')[0].trim();
+    }
+    const xri = req.headers['x-real-ip'];
+    if (xri) return Array.isArray(xri) ? xri[0] : xri;
+    return req.socket?.remoteAddress || 'unknown';
 }
 
 export function buildApp(): FastifyInstance {
-	const app = Fastify(getFastifyConfig());
-	
-	const wsAllowedOrigins = parseWsAllowedOrigins();
-	const wsConnectionCountsByIp = new Map<string, number>();
-	let wsTotalConnections = 0;
-	
-	// Parse everything as Buffer to forward transparently
-	app.addContentTypeParser(
-		'*',
-		{ parseAs: 'buffer', bodyLimit: GatewayEnv.BODY_LIMIT },
-		(_request: FastifyRequest, payload: Buffer, done: (err: Error | null, body?: Buffer) => void) => done(null, payload)
-	);
-	
-	app.register(websocket);
-	
-	// Adds security headers (x-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) with 2 exclusions
-	app.register(helmet, {
-		contentSecurityPolicy: false, // Previene MIME Sniffing
-		crossOriginEmbedderPolicy: false
-	});
-	
-	// CORS only at the gateway
-	app.register(cors, {
-		origin: GatewayEnv.CORS_ORIGIN
-			.split(',')
-			.map(s => s.trim())
-			.filter(Boolean),
-		credentials: true
-	});
-	
-	// Request id + timing
-	app.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply, done) => {
-		const incoming = request.headers['x-request-id'] || request.headers['request-id'];
-		const normalizedIncoming = Array.isArray(incoming) ? incoming[0] : incoming;
-		const requestId = normalizedIncoming || randomUUID();
-		
-		(request as any).gatewayRequestId = requestId;
-		(request as any).gatewayStart = process.hrtime.bigint();
-		(request.headers as Record<string, string>)['x-request-id'] = requestId;
-		reply.header('x-request-id', requestId);
-		done();
-	});
-	
-	app.addHook('onResponse', (request, reply, done) => {
-		const target = (request as any).gatewayUpstream;
-		const start = (request as any).gatewayStart as bigint | undefined;
-		const durationMs = start ? Number((process.hrtime.bigint() - start) / 1_000_000n) : undefined;
-		const requestId = (request as any).gatewayRequestId;
-		
-		app.log.info(
-			{
-				requestId,
-				method: request.method,
-				url: request.url,
-				upstream: target,
-				statusCode: reply.statusCode,
-				durationMs,
-				hasAuthHeader: Boolean(request.headers['authorization'])
-			},
-			'proxy completed'
-		);
-		done();
-	});
+    const app = Fastify(getFastifyConfig());
+    
+    const wsAllowedOrigins = parseWsAllowedOrigins();
+    const wsConnectionCountsByIp = new Map<string, number>();
+    let wsTotalConnections = 0;
 
-	// Register health check route
-	app.register(healthRoutes);
+    // Declarar propiedades custom ANTES de usarlas — obligatorio en Fastify v5
+    app.decorateRequest('wsRawUrl', '');
+    app.decorateRequest('gatewayRequestId', '');
+    app.decorateRequest('gatewayStart', null);
+    app.decorateRequest('gatewayUpstream', '');
 
-	// Swagger UI (aggregator)
-	app.register(swagger, {
-		openapi: {
-			info: {
-				title: 'Gateway docs',
-				version: '1.0.0'
-			}
-		}
-	});
-	
-	app.register(swaggerUi, {
-		routePrefix: '/docs',
-		uiConfig: {
-			persistAuthorization: true,
-			urls: [
-				{ name: 'Auth Service', url: '/docs/auth.json' },
-				{ name: 'User Service', url: '/docs/user.json' },
-				{ name: 'Game Service', url: '/docs/game.json' }
-			],
-			docExpansion: 'list',
-			deepLinking: true
-		}
-	});
-	
-	// OpenAPI JSON endpoints served by the gateway (rewritten servers => gateway origin)
-	app.get('/docs/auth.json', createOpenApiHandler(GatewayEnv.AUTH_SERVICE_URL, GatewayEnv.AUTH_OPENAPI_PATH));
-	app.get('/docs/user.json', createOpenApiHandler(GatewayEnv.USER_SERVICE_URL, GatewayEnv.USER_OPENAPI_PATH));
-	app.get('/docs/game.json', createOpenApiHandler(GatewayEnv.GAME_SERVICE_URL, GatewayEnv.GAME_OPENAPI_PATH));
-	
-	// HTTP proxy routes
-	const proxy = createProxyHandler(app);
-	
-	
-	// =========================================================================
-	// HELPER: Dynamic WebSocket Proxy
-	// Isolates the complex WebSocket logic into a single maintainable function
+    // Parse everything as Buffer to forward transparently
+    app.addContentTypeParser(
+        '*',
+        { parseAs: 'buffer', bodyLimit: GatewayEnv.BODY_LIMIT },
+        (_request: FastifyRequest, payload: Buffer, done: (err: Error | null, body?: Buffer) => void) => done(null, payload)
+    );
+    
+    app.register(websocket);
+    
+    // Adds security headers (x-Content-Type-Options, X-Frame-Options, Strict-Transport-Security) with 2 exclusions
+    app.register(helmet, {
+        contentSecurityPolicy: false, // Previene MIME Sniffing
+        crossOriginEmbedderPolicy: false
+    });
+    
+    // CORS only at the gateway
+    app.register(cors, {
+        origin: GatewayEnv.CORS_ORIGIN
+            .split(',')
+            .map(s => s.trim())
+            .filter(Boolean),
+        credentials: true
+    });
+    
+    app.addHook('preHandler', (request: FastifyRequest, _reply: FastifyReply, done) => {
+        (request as any).wsRawUrl = request.url || '';
+        done();
+    })
+
+    // Request id + timing
+    app.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply, done) => {
+        const incoming = request.headers['x-request-id'] || request.headers['request-id'];
+        const normalizedIncoming = Array.isArray(incoming) ? incoming[0] : incoming;
+        const requestId = normalizedIncoming || randomUUID();
+        
+        (request as any).gatewayRequestId = requestId;
+        (request as any).gatewayStart = process.hrtime.bigint();
+        (request.headers as Record<string, string>)['x-request-id'] = requestId;
+        reply.header('x-request-id', requestId);
+
+        done();
+    });
+    
+    app.addHook('onResponse', (request, reply, done) => {
+        const target = (request as any).gatewayUpstream;
+        const start = (request as any).gatewayStart as bigint | undefined;
+        const durationMs = start ? Number((process.hrtime.bigint() - start) / 1_000_000n) : undefined;
+        const requestId = (request as any).gatewayRequestId;
+        
+        app.log.info(
+            {
+                requestId,
+                method: request.method,
+                url: request.url,
+                upstream: target,
+                statusCode: reply.statusCode,
+                durationMs,
+                hasAuthHeader: Boolean(request.headers['authorization'])
+            },
+            'proxy completed'
+        );
+        done();
+    });
+
+    // Register health check route
+    app.register(healthRoutes);
+
+    // Swagger UI (aggregator)
+    app.register(swagger, {
+        openapi: {
+            info: {
+                title: 'Gateway docs',
+                version: '1.0.0'
+            }
+        }
+    });
+    
+    app.register(swaggerUi, {
+        routePrefix: '/docs',
+        uiConfig: {
+            persistAuthorization: true,
+            urls: [
+                { name: 'Auth Service', url: '/docs/auth.json' },
+                { name: 'User Service', url: '/docs/user.json' },
+                { name: 'Game Service', url: '/docs/game.json' }
+            ],
+            docExpansion: 'list',
+            deepLinking: true
+        }
+    });
+    
+    // OpenAPI JSON endpoints served by the gateway (rewritten servers => gateway origin)
+    app.get('/docs/auth.json', createOpenApiHandler(GatewayEnv.AUTH_SERVICE_URL, GatewayEnv.AUTH_OPENAPI_PATH));
+    app.get('/docs/user.json', createOpenApiHandler(GatewayEnv.USER_SERVICE_URL, GatewayEnv.USER_OPENAPI_PATH));
+    app.get('/docs/game.json', createOpenApiHandler(GatewayEnv.GAME_SERVICE_URL, GatewayEnv.GAME_OPENAPI_PATH));
+    
+    // HTTP proxy routes
+    const proxy = createProxyHandler(app);
+    
+    
     // =========================================================================
-	function registerWsProxy(route: string, targetServiceUrl: string) {
-		// Tell Fastify to intercept the dynamic route (route) and activate WebSocket support.
+    // HELPER: Dynamic WebSocket Proxy
+    // Isolates the complex WebSocket logic into a single maintainable function
+    // =========================================================================
+    function registerWsProxy(
+        route: string,
+        targetServiceUrl: string
+    ) {
+
+        // Tell Fastify to intercept the dynamic route (route) and activate WebSocket support.
         app.get(route, { websocket: true }, (connection, req) => {
-            const client = (connection as any).socket as WebSocket;
-            const requestId = (req as any).gatewayRequestId as string | undefined;
-            const clientIp = getClientIp(req);
+   
+            // DIAGNÓSTICO TOTAL — borrar después
+            console.log('\n[WS-RAW-DIAG]', JSON.stringify({
+                'req.url':              (req as any).url,
+                'req.raw.url':          (req as any).raw?.url,
+                'x-original-uri':       (req as any).headers?.['x-original-uri'],
+                'x-forwarded-for':      (req as any).headers?.['x-forwarded-for'],
+                'req.query':            (req as any).query,
+            }));
+
+            console.log('\n[WS-RAW-DIAG]', {
+              'req.url': req.url,
+              'req.raw.url': req.raw?.url,
+              'x-original-uri': req.headers?.['x-original-uri'],
+              'x-forwarded-for': req.headers?.['x-forwarded-for'],
+              'req.query': req.query
+            });
+
+
+            const client = (connection as any).socket
+                ? (connection as any).socket as WebSocket
+                : connection as unknown as WebSocket;
+
+            const requestId = randomUUID();
+            const clientIp = getClientIpFromIncomingMessage(req);
             
             // --- Security: Origin check (WS is not covered by CORS) ---
-            const origin = normalizeHeaderValue(req.headers.origin);
+            const originRaw = (req as any).headers['origin'];
+            const origin = Array.isArray(originRaw) ? originRaw[0] : originRaw as string | undefined;
+
             if (origin && !wsAllowedOrigins.has(origin)) {
                 app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
                 closeWithFallback(client, 1008, 'Origin not allowed', 200);
@@ -175,24 +228,30 @@ export function buildApp(): FastifyInstance {
             wsTotalConnections += 1;
             wsConnectionCountsByIp.set(clientIp, currentIpCount + 1);
             
-			// Transform the base URL (http -> ws) and inject the dynamic route
-			// To open a WebSocket, Node.js needs the URL to start with ws://
+            // Transform the base URL (http -> ws) and inject the dynamic route
+            // To open a WebSocket, Node.js needs the URL to start with ws://
             const wsBase = targetServiceUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:').replace(/\/$/, '');
-            const rawUrl = req.raw.url ?? route;
-			const query = rawUrl.includes('?') ? rawUrl.slice(rawUrl.indexOf('?')) : '';
-			// Build the final URL where the Gateway will forward data
-			// on the internal Docker network (e.g. ws://game:3003/api/game/ws?token=123).
+
+            const upgradeReq = (client as any)._req;
+            const fullUrl = (req as any).wsRawUrl || route;
+
+            // REEMPLAZA el console.log del WS-RAW-DIAG por esto:
+            console.log('[WS-DIAG] upgradeReq:', upgradeReq);
+            console.log('[WS-DIAG] client._req:', (client as any)._req);
+            console.log('[WS-DIAG] wsRawUrl:', (req as any).wsRawUrl);
+            
+            let query = '';
+            const queryIndex = fullUrl.indexOf('?');
+            if (queryIndex !== -1) {
+                query = fullUrl.slice(queryIndex);
+            }
+
             const upstreamUrl = `${wsBase}${route}${query}`;
-            
-            const clientProtocolsRaw = normalizeHeaderValue(req.headers['sec-websocket-protocol']);
-            const clientProtocols = clientProtocolsRaw
-                ? clientProtocolsRaw.split(',').map((p) => p.trim()).filter(Boolean)
-                : undefined;
-            
-            app.log.info({ requestId, clientIp, origin, upstreamUrl }, 'ws accepted: opening upstream');
-            
-            const upstream = new WebSocket(upstreamUrl, clientProtocols);
-            
+
+            app.log.info({ requestId, fullUrl, query, upstreamUrl, hastToken: query.includes('token=') }, 'ws upstream url');
+
+            const upstream = new WebSocket(upstreamUrl);
+
             let cleanedUp = false;
             const queuedClientMessages: WebSocket.RawData[] = [];
             let queuedBytes = 0;
@@ -245,6 +304,7 @@ export function buildApp(): FastifyInstance {
             }
             
             client.on('pong', () => { clientAlive = true; });
+            
             upstream.on('pong', () => { upstreamAlive = true; });
             
             upstream.on('open', () => {
@@ -281,82 +341,97 @@ export function buildApp(): FastifyInstance {
                 closeWithFallback(client, 1011, 'Upstream error', 500);
                 cleanup();
             });
+
+            upstream.on('unexpected-response', (_req, res) => {
+                let reason = `Upstream rejected: ${res.statusCode}`;
+                const chunks: Buffer[] = [];
+                res.on('data', (chunk: Buffer) => chunks.push(chunk));
+                res.on('end', () => {
+                    try {
+                        const body = JSON.parse(Buffer.concat(chunks).toString());
+                        if (body.message) reason = body.message;
+                    } catch {}
+                    app.log.warn({ requestId, statusCode: res.statusCode, reason }, 'us upstream rejected');
+                    closeWithFallback(client, 1008, reason, 200);
+                    cleanup();
+                });
+            }
+        );
             
-            client.on('message', (data: WebSocket.RawData) => {
-                if (upstream.readyState === WebSocket.OPEN) {
-                    if (upstream.bufferedAmount > GatewayEnv.WS_MAX_BUFFERED_AMOUNT_BYTES) {
-                        closeWithFallback(client, 1013, 'Upstream busy', 200);
-                        closeWithFallback(upstream, 1013, 'Upstream busy', 200);
-                        cleanup();
-                        return;
-                    }
-                    upstream.send(data);
+        client.on('message', (data: WebSocket.RawData) => {
+            if (upstream.readyState === WebSocket.OPEN) {
+                if (upstream.bufferedAmount > GatewayEnv.WS_MAX_BUFFERED_AMOUNT_BYTES) {
+                    closeWithFallback(client, 1013, 'Upstream busy', 200);
+                    closeWithFallback(upstream, 1013, 'Upstream busy', 200);
+                    cleanup();
                     return;
                 }
-                
-                if (upstream.readyState === WebSocket.CONNECTING) {
-                    const bytes = Buffer.byteLength(data as any);
-                    if (queuedClientMessages.length + 1 > GatewayEnv.WS_MAX_BUFFERED_MESSAGES || queuedBytes + bytes > GatewayEnv.WS_MAX_BUFFERED_BYTES) {
-                        closeWithFallback(client, 1013, 'Upstream not ready', 200);
-                        closeWithFallback(upstream, 1013, 'Client sent too early', 200);
-                        cleanup();
-                        return;
-                    }
-                    queuedClientMessages.push(data);
-                    queuedBytes += bytes;
+                upstream.send(data);
+                return;
+            }
+            
+            if (upstream.readyState === WebSocket.CONNECTING) {
+                const bytes = Buffer.byteLength(data as any);
+                if (queuedClientMessages.length + 1 > GatewayEnv.WS_MAX_BUFFERED_MESSAGES || queuedBytes + bytes > GatewayEnv.WS_MAX_BUFFERED_BYTES) {
+                    closeWithFallback(client, 1013, 'Upstream not ready', 200);
+                    closeWithFallback(upstream, 1013, 'Client sent too early', 200);
+                    cleanup();
                     return;
                 }
-                
-                closeWithFallback(client, 1011, 'Upstream not open', 200);
-                cleanup();
-            });
+                queuedClientMessages.push(data);
+                queuedBytes += bytes;
+                return;
+            }
             
-            client.on('close', (code, reason) => {
-                closeWithFallback(upstream, code, reason.toString(), 500);
-                cleanup();
-            });
-            
-            client.on('error', () => {
-                closeWithFallback(upstream, 1011, 'Client error', 500);
-                cleanup();
-            });
+            closeWithFallback(client, 1011, 'Upstream not open', 200);
+            cleanup();
         });
+            
+        client.on('close', (code, reason) => {
+            closeWithFallback(upstream, code, reason.toString(), 500);
+            cleanup();
+        });
+        
+        client.on('error', () => {
+            closeWithFallback(upstream, 1011, 'Client error', 500);
+            cleanup();
+        });
+    });
     }
+
 
     // =========================================================================
     // WEBSOCKET ROUTE REGISTRATION
     // =========================================================================
     // Register Game WebSocket proxy route.
-	registerWsProxy('/api/game/ws', GatewayEnv.GAME_SERVICE_URL);
-	// Reuse all security and backpressure logic for Comms.
-	registerWsProxy('/api/comms/ws', GatewayEnv.COMMS_SERVICE_URL);
-	
+    app.register(async function wsRoutes(_fastify) {
+        registerWsProxy('/api/game/ws', GatewayEnv.GAME_SERVICE_URL);
+        registerWsProxy('/api/comms/ws', GatewayEnv.COMMS_SERVICE_URL);
+    });
+    
+    const authProxy = proxy(GatewayEnv.AUTH_SERVICE_URL);
+    app.all('/api/auth', authProxy);
+    app.all('/api/auth/*', authProxy);
+    
+    const userProxy = proxy(GatewayEnv.USER_SERVICE_URL);
+    app.all('/api/users', userProxy);
+    app.all('/api/users/*', userProxy);
+    app.all('/api/friendships', userProxy);
+    app.all('/api/friendships/*', userProxy);
+    
+    const gameProxy = proxy(GatewayEnv.GAME_SERVICE_URL);
+    app.all('/api/matches', gameProxy);
+    app.all('/api/matches/*', gameProxy);
+    
+    const commsProxy = proxy(GatewayEnv.COMMS_SERVICE_URL);
+    app.all('/api/comms/*', commsProxy);
 
-
-	
-	const authProxy = proxy(GatewayEnv.AUTH_SERVICE_URL);
-	app.all('/api/auth', authProxy);
-	app.all('/api/auth/*', authProxy);
-	
-	const userProxy = proxy(GatewayEnv.USER_SERVICE_URL);
-	app.all('/api/users', userProxy);
-	app.all('/api/users/*', userProxy);
-	app.all('/api/friendships', userProxy);
-	app.all('/api/friendships/*', userProxy);
-	
-	const gameProxy = proxy(GatewayEnv.GAME_SERVICE_URL);
-	app.all('/api/matches', gameProxy);
-	app.all('/api/matches/*', gameProxy);
-	
-	const commsProxy = proxy(GatewayEnv.COMMS_SERVICE_URL);
-	app.all('/api/comms/*', commsProxy);
-
-	app.setNotFoundHandler((_request: FastifyRequest, reply: FastifyReply) => {
-		reply.status(404).send({
-			error: 'Not Found',
-			message: 'Route not handled by gateway'
-		});
-	});
-	
-	return app;
+    app.setNotFoundHandler((_request: FastifyRequest, reply: FastifyReply) => {
+        reply.status(404).send({
+            error: 'Not Found',
+            message: 'Route not handled by gateway'
+        });
+    });
+    
+    return app;
 }

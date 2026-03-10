@@ -39,7 +39,14 @@ export namespace CommsMiddleware {
 		request: FastifyRequest,
 		reply: FastifyReply
 	): Promise<void> {
-		const query = request.query as { token?: string }; 
+
+		// LOGS DE VERIFICACION
+		console.log('[validateJWT] headers:', JSON.stringify(request.headers));
+		console.log('[validateJWT] query:', JSON.stringify(request.query));
+		console.log('[validateJWT] raw url:', request.raw.url);
+
+		// WS auth via query string token — captured in gateway onRequest hook
+		const query = request.query as { token?: string };
 		const { token } = query;
 
 		if (!token) {
@@ -54,7 +61,7 @@ export namespace CommsMiddleware {
 			const payload = jwt.verify(token, CommsEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 
 			// Type guard
-			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			if (!isValid) {
 				throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
 					operation: 'validateJWT',

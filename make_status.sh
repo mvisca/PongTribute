@@ -53,6 +53,7 @@ ALLOWED_EXTENSIONS=(
     "*.html"
     "*.sh"
     "*.rb"
+	"*.conf"
     "*.prisma"
     "*.env.example"
     ".gitignore"

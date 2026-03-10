@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost/api';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost';
 
 type RequestOptions = {
 	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -12,9 +12,11 @@ export async function apiRequest<T>(
 ): Promise<T> {
 	const { method = 'GET', body, token } = options;
 
-	const headers: Record<string, string> = {
-		'Content-Type': 'application/json',
-	};
+	const headers: Record<string, string> = {}
+
+	if (body) {
+		headers['Content-Type'] = 'application/json';
+	}
 
 	if (token) {
 		headers['Authorization'] = `Bearer ${token}`;

@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../core/auth/AuthContext';
 import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
@@ -23,7 +24,11 @@ import {
 	LoadingScreen
 } from '../../../shared/components/ui';
 
+import { useToastStore, TOAST_TYPE, TOAST_BUTTON_STYLE } from '../../../core/toasts'; //TEST
+
 export default function FriendsPage() {
+	const { info, success, error: toastError, action } = useToastStore(); //TEST
+
 	const token 					= useAuth((state) => state.accessToken);
 	const currentUserId				= useAuth((state) => state.user?.id);
 
@@ -75,7 +80,7 @@ export default function FriendsPage() {
 
 	const handleRespond = async (initiatorId: string, accepted: boolean) => {
 		if (!token) return;
-		
+
 		try {
 			await respondFriendRequest(initiatorId, accepted, token);
 			setPending(friendsList => friendsList.filter(
@@ -101,7 +106,7 @@ export default function FriendsPage() {
 				setSearchResult(user);
 			}
 		} catch {
-			setError('User not found');
+			setSearchError('User not found');
 		} finally {
 			setSearchLoading(false);
 		}
@@ -143,17 +148,32 @@ export default function FriendsPage() {
 					<div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
 						<div className='flex items-center gap-3'>
 							<AvatarDisplay src={searchResult.avatar} size='sm' />
+							<span className='text-sm text-purple-200'>{searchResult.username}</span>
 						</div>
 						<NeonButton onClick={() => handleSendRequest(searchResult.id)} >
 							ADD
 						</NeonButton>
 					</div>
-				)}				
+				)}
 			</FormCard>
 
-			{/*Pending incoming request*/}
+			{/*Pending requests*/}
+			{pending.length > 0 && (
+				<FormCard title={`REQUESTS (${pending.length})`}>
+					{pending.map(friendRequest => (
+						<PendingItem
+							key={friendRequest.initiatorId}
+							initiatorId={friendRequest.initiatorId}
+							token={token!}
+							onRespond={handleRespond}
+						/>
+					))}
+				</FormCard>
+			)}
+
+			{/*Friends list*/}
 			<FormCard title={`Friends (${friends.length})`}>
-				{friends.length === 0 
+				{friends.length === 0
 					? (
 						<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>
 					) : (
@@ -170,6 +190,25 @@ export default function FriendsPage() {
 					)
 				}
 			</FormCard>
+
+			{/*TEST DE TOAST}
+			<div className='flex gap-2 flex-wrap'>
+				<button onClick={() => info('Amigo conectado')}>Toast info</button>
+				<button onClick={() => success('Solicitud enviada')}>Toast success</button>
+				<button onClick={() => toastError('Error de red')}>Toast error</button>
+				<button onClick={() => action({
+					type: TOAST_TYPE.INFO,
+					message: 'quiere ser tu amigo',
+					duration: 0,
+					actions: [
+						{ label: 'Aceptar', onClick: () => console.log('aceptado'), style: TOAST_BUTTON_STYLE.PRIMARY },
+						{ label: 'Rechazar', onClick: () => console.log('rechazado'), style: TOAST_BUTTON_STYLE.DANGER },
+					],
+					expiresAt: Date.now() + 10000
+				})}>Toast action</button>
+			</div>
+			{/*FIN DE TEST DE TOAST*/}
+
 		</PageContainer>
 	);
 }
