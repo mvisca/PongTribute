@@ -1,12 +1,15 @@
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import { Transporter, SentMessageInfo } from 'nodemailer';
 
 export class MailerService {
 	private transporter: Transporter<SentMessageInfo>;
+	private log: AppLogger;
 
 	constructor(transporter: Transporter<SentMessageInfo>) {
 		this.transporter = transporter;
+		this.log = createLogger('MailerService');
 	}
-		
+
 	async sendPasswordReset(to: string, link: string): Promise<void> {
 		const info = await this.transporter.sendMail({
 			to,
@@ -19,8 +22,7 @@ export class MailerService {
 				`Link: ${link}`,
 			].join('\n'),
 		});
-		console.log(`[MAILER] Email sent to ${to} - messageId: ${info.messageId}`);
-		// Log solo para dev o stagging (evaluacion) remover en producciòn
+		this.log.info({ to, messageId: info.messageId }, 'Email sent');
 	}
 	
 	async verify(): Promise<void> {

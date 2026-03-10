@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import QRcode from 'qrcode';
 import speakeasy from 'speakeasy';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import {
 	AuthTypes,
 	AuthConstants,
@@ -28,6 +29,7 @@ export class AuthService {
 	private setupCache: RedisCache<AuthTypes.SetupTokenData>;
 	private redisClient: Redis;
 	private mailerService: MailerService;
+	private log: AppLogger;
 	
 	// ========================================================================
 	// CONSTRUCTOR
@@ -42,6 +44,7 @@ export class AuthService {
 			'2fa:setup:'	// Prefix para todas las keys ( '2fa:setup:{setupToken}' )
 		); // TODO 2fa:setup debe ser constante
 		this.mailerService = mailerService;
+		this.log = createLogger('AuthService');
 	}
 	
 	// ========================================================================
@@ -150,8 +153,7 @@ export class AuthService {
 				'EX',
 				AuthEnv.REFRESH_TOKEN_EXPIRY()
 			).catch(err =>
-				console.error(`[AUTH-SERVICE] Error cacheando lastLogoutAt en Redis:`, err)
-			);
+				this.log.error({ err }, 'Error caching lastLogoutAt in Redis'))
 		}
 			
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
@@ -173,8 +175,8 @@ export class AuthService {
 		// PUBLICACIÓN EN REDIS
 		// Usamos .catch para que un fallo en Redis NO impida el login del usuario (Resiliency)
 		this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(loginEvent))
-		.catch(err => {
-			console.error(`[AUTH-SERVICE] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGIN} to Redis:`, err);
+			.catch(err => {
+				this.log.error({ err, event: TRANSCENDENCE_EVENTS.USER_LOGIN }, 'Failed to publish event to Redis');
 		});
 		
 		// Crear user payload y par tokens
@@ -380,13 +382,13 @@ export class AuthService {
 				'EX',
 				AuthEnv.REFRESH_TOKEN_EXPIRY()   // TTL = máx duración de sesión
 			).catch(err =>
-				console.error(`[AUTH-SERVICE] Error cacheando lastLogoutAt en Redis:`, err)
-			);
+				this.log.error({ err, userId }, 'Error caching lastLogoutAt in Redis'))
+
 			return;
 		}
 		
 		if (response.status === 404) {
-			console.debug(`[AUTH-SERVICE] Logout 404 for userId: ${userId}`);
+			this.log.debug({ userId }, 'Logout 404 - user not found in User Service')
 			return;
 		} 
 		
@@ -490,11 +492,7 @@ export class AuthService {
 		
 		if (!response.ok) {
 			const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-			console.error('[AUTH-SERVICE] Error updating 2FA status:', {
-				status: response.status,
-				errorData,
-				requestBody: { has2FAEnabled: has2FAEnabled, totpSecret, backupCodeHash }
-			});
+			this.log.error({ status: response.status, errorData, requestBody: { has2FAEnabled, totpSecret, backupCodeHash } }, 'Error updating 2FA status');
 			throw new SharedErrors.ServiceError('user', `Fallo actualizando 2FA`, {
 				endpoint: `${AuthEnv.USER_SERVICE_URL()}/internal/users/${userId}/2fa-status`,
 				method: 'PATCH',
@@ -625,7 +623,7 @@ export class AuthService {
 			return data.url;
 		} catch (err) {
 			if (err instanceof SharedErrors.AppError) throw err;  // Re-throw validation errors
-			console.error('[AUTH-SERVICE] Failed to upload avatar: ', err);
+			this.log.error({ err }, 'Failed to upload avatar');
 			// Fallback a default avatar (similar a user.service)
 			return AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -639,7 +637,7 @@ export class AuthService {
 		try {
 			return await this.uploadAvatarToCloudinary(base64Image, oldAvatarUrl);
 		} catch (err) {
-			console.error('[AUTH-SERVICE] Avatar upload failed, using fallback: ', err);
+			this.log.error({ err }, 'Avatar upload failed, using fallback');
 			// Mantener avatar anterior si existe, sino default
 			return oldAvatarUrl || AuthEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -811,14 +809,7 @@ export class AuthService {
 		
 		await this.deleteRefreshTokensById(user.id);
 		if (AuthEnv.UNIQUE_SESSION() === false && AuthEnv.NODE_ENV() === 'development') {
-			console.warn(
-				'[AUTH-SERVICE] REFRESH TOKEN ROTATION NOT IMPLEMENTED FOR MULTI-SESSION.\n' +
-				'With UNIQUE_SESSION=false, all session refresh tokens are invalidated on logout.\n' +
-				'This protects against refresh token reuse at the cost of UX (all sessions closed).\n' +
-				'Solutions:\n' +
-				'  1. Use UNIQUE_SESSION=true (recommended)\n' +
-				'  2. Implement granular rotation per tokenId\n'
-			);
+			this.log.warn('REFRESH TOKEN ROTATION NOT IMPLEMENTED FOR MULTI-SESSION. Use UNIQUE_SESSION=true.');
 		}
 		
 		// Generar token pai y user payload
@@ -871,11 +862,11 @@ export class AuthService {
 			// Si no hay redis se completa el logout sin notificaciones y sin romper
 			this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(logoutEvent))
 			.catch(err => {
-				console.error(`[AUTH-SERVICE] Failed to publish ${TRANSCENDENCE_EVENTS.USER_LOGOUT} to Redis:`, err);
+				this.log.error({ err }, 'Failed to publish USER_LOGOUT to Redis');
 			});
 			
 		} catch (err) {
-			console.error(`[AUTH-SERVICE] Failed to update online status for user: ${userId}`, err);
+			this.log.error({ err, userId }, 'Failed to update online status');
 		}
 	}
 	

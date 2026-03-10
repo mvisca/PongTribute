@@ -22,7 +22,9 @@ async function start() {
 		UserEnv.init();
 
 
-		// Crear Redis antes de buildApp
+		// Redis se crea ANTES de buildApp porque buildApp lo necesita como dep.
+		// En este punto app aún no existe, console es el único recurso disponible.
+		// 1. Redis — antes de buildApp (necesario para rate-limit plugin)
 		try {
 			redisClient = Utils.createRedisClient(UserEnv.getRedisConfig());
 			console.log('[USER] Redis client created');
@@ -31,25 +33,29 @@ async function start() {
 			process.exit(1);
 		}
 
-		// Crear repos
+		// 2. Crear Repos — sin dependencias de logger
 		const userRepo = new SQLiteUserRepository();
 		const friendshipRepo = new SQLiteFriendshipRepository();
 		const tokenRepo = new SQLiteTokenRepository();
 
 		// Crear services con dependencias inyectadas
+		// 3. Services con logger provisional (console) — se actualizará tras buildApp
+		// Alternativa más limpia: hacer el logger opcional en el constructor con fallback
 		const userService = new UserService(redisClient!, userRepo);
 		const friendshipService = new FriendshipService(friendshipRepo, userService, redisClient);
 		const tokenService = new TokenService(tokenRepo);
 
 		// Construir app con todas las deps
+		// 4. buildApp — necesita los services ya construidos
 		app = buildApp({ redisClient, userService, friendshipService, tokenService });
 
-		// Arrancar el servidor
+		// 6. Listen. Arrancar el servidor
 		await app.listen({
 			port: UserEnv.PORT(),
 			host: UserEnv.HOST()
 		});
 
+		// A partir de aquí app existe — usamos app.log para todo
 		app.log.info(`[USER] Log level: ${app.log.level}`);
 		app.log.info(`[USER] Service ready at ${UserEnv.HOST()}:${UserEnv.PORT()}`);
 		app.log.info(`[USER] DB Path: ${UserEnv.USER_SERVICE_DB_FULL_PATH()}`);
@@ -67,38 +73,46 @@ async function start() {
 			}, 1000 * 60 * 60);
 		}
 	} catch (err) {
-		console.log(`[USER] Startup error:`, err instanceof Error ? err.message : err);
-		console.log('[USER] Check .env file - if missing, run: "cp .env.example .env"');
+		const msg = err instanceof Error ? err.message : err;
+		if (app) {
+			app.log.error(err, '[USER] Startup error');
+		} else {
+			console.error('[USER] Startup error:', msg);
+			console.error('[USER] Check .env file - if missing, run: "cp .env.example .env"');
+		}
 		await gracefulShutdown('STARTUP_ERROR');
 	}
 }
 
 async function gracefulShutdown(signal: string) {
-	console.log(`\n[USER] ${signal} received. Starting graceful shutdown`);
+	// Patrón (log ?? console): si app existe usa Pino, si no usa console como fallback
+	const log = app?.log;
+	(log ?? console).info(`\n[USER] ${signal} received. Starting graceful shutdown`);
+
 
 	if (redisClient) {
 		try {
 			await redisClient.quit();
-			console.log('[USER] Redis disconnected');
+			(log ?? console).info('[USER] Redis disconnected');
 		} catch (err) {
-			console.error('[USER] Error closing Redis', err);
+			(log ?? console).error(err, '[USER] Error closing Redis');
 		}
 	}
 
 	if (app) {
 		try {
 			await app.close();
-			app.log.info('[USER] Fastify HTTP server closed');
+			log!.info('[USER] Fastify HTTP server closed');
 		} catch (err) {
-			app.log.error({ err }, '[USER] Error closing Fastify');
+			log!.error({ err }, '[USER] Error closing Fastify');
 		}
 	}
 
 	try {
 		closeDatabase();
-		console.log('[USER] Database closed');
+		(log ?? console).info('[USER] Database closed');
 	} catch (err) {
-		console.error('[USER] Error closing DB', err);
+		(log ?? console).error(err, '[USER] Error closing DB');
 	}
 
 	process.exit(0);

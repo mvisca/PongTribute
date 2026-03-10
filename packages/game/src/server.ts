@@ -28,6 +28,7 @@ async function start() {
 		// INFRAESTRUCTURA (Redis)
 		// ========================================================================
 
+		// Redis se crea ANTES de buildApp — console es el único recurso disponible aquí
 		try {
 			redisClient = Utils.createRedisClient(GameEnv.getRedisConfig());
 			subscriberRedisClient = redisClient.duplicate();
@@ -55,8 +56,8 @@ async function start() {
 		// ========================================================================
 
 		cronInterval = setInterval(() => {
-			matchService.pruneQueues().catch(err => console.log('[GAME] Cron pruneQueues error:', err));
-			matchService.prunePrivateInvites().catch(err => console.error('[GAME] Cron prunePrivateInvites error:', err));
+			matchService.pruneQueues().catch(err => app!.log.error({ err }, 'Cron pruneQueues error'));
+			matchService.prunePrivateInvites().catch(err => app!.log.error({ err }, 'Cron prunePrivateInvites error'));
 		}, 10000);
 		console.log('[GAME] Cron jobs started');
 
@@ -84,33 +85,39 @@ async function start() {
 			host: GameEnv.HOST()
 		});
 
-		console.log(`[GAME] Log level: ${app.log.level}`);
-		console.log(`[GAME] Service ready at http://${GameEnv.HOST()}:${GameEnv.PORT()}`);
-		console.log(`[GAME] DB Path: ${GameEnv.GAME_SERVICE_DB_FULL_PATH()}`);
+		app.log.info(`[GAME] Log level: ${app.log.level}`);
+		app.log.info(`[GAME] Service ready at http://${GameEnv.HOST()}:${GameEnv.PORT()}`);
+		app.log.info(`[GAME] DB Path: ${GameEnv.GAME_SERVICE_DB_FULL_PATH()}`);
 
 	} catch (err) {
-		console.log(`[GAME] Startup error:`, err instanceof Error ? err.message : err);
-		console.log('[GAME] Check .env file - if missing, run: "cp .env.example .env"');
+		const msg = err instanceof Error ? err.message : err;
+		if (app) {
+			app.log.error(err, '[GAME] Startup error');
+		} else {
+			console.error('[GAME] Startup error:', msg);
+			console.error('[GAME] Check .env file - if missing, run: "cp .env.example .env"');
+		}
 		await gracefulShutdown('STARTUP_ERROR');
 	}
 }
 
 async function gracefulShutdown(signal: string) {
-	console.log(`\n[GAME] ${signal} received. Starting graceful shutdown`);
+	const log = app?.log;
+	(log ?? console).info(`\n[GAME] ${signal} received. Starting graceful shutdown`);
 
 	// 1. Dejar de disparar crons
 	if (cronInterval) {
 		clearInterval(cronInterval);
-		console.log('[GAME] Cron jobs stopped');
+		(log ?? console).info('[GAME] Cron jobs stopped');
 	}
 
 	// 2. Dejar de recibir eventos Redis (disconnect() hace quit() internamente)
 	if (eventSubscriber) {
 		try {
 			await eventSubscriber.disconnect();
-			console.log('[GAME] Event subscriber disconnected');
+			(log ?? console).info('[GAME] Event subscriber disconnected');
 		} catch (err) {
-			console.error('[GAME] Error closing event subscriber', err);
+			(log ?? console).error(err, '[GAME] Error closing event subscriber');
 		}
 	}
 
@@ -118,9 +125,9 @@ async function gracefulShutdown(signal: string) {
 	if (app) {
 		try {
 			await app.close();
-			console.log('[GAME] Fastify HTTP server closed');
+			log!.info('[GAME] Fastify HTTP server closed');
 		} catch (err) {
-			console.error('[GAME] Error closing Fastify', err);
+			log!.error({ err }, '[GAME] Error closing Fastify');
 		}
 	}
 
@@ -128,18 +135,18 @@ async function gracefulShutdown(signal: string) {
 	if (redisClient) {
 		try {
 			await redisClient.quit();
-			console.log('[GAME] Redis disconnected');
+			(log ?? console).info('[GAME] Redis disconnected');
 		} catch (err) {
-			console.error('[GAME] Error closing Redis', err);
+			(log ?? console).error(err, '[GAME] Error closing Redis');
 		}
 	}
 
 	// 5. Cerrar base de datos
 	try {
 		closeDatabase();
-		console.log('[GAME] Database closed');
+		(log ?? console).info('[GAME] Database closed');
 	} catch (err) {
-		console.error('[GAME] Error closing DB', err);
+		(log ?? console).error(err, '[GAME] Error closing DB');
 	}
 
 	process.exit(0);

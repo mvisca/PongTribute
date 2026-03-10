@@ -9,6 +9,8 @@ import {
 	WEBSOCKET_EVENTS,
 	WebSocketEventsTypes
 } from "@transcendence/shared";
+import { createLogger, type AppLogger } from '@transcendence/shared';
+
 
 type MatchEvent =
 	| TranscendenceEventsTypes.MatchFoundEvent
@@ -19,6 +21,7 @@ type MatchEvent =
 	| TranscendenceEventsTypes.MatchCancelledEvent;
 
 export class MatchEventHandler implements CommsEventHandler {
+	private log: AppLogger = createLogger('MatchEventHandler');
 
 	eventTypes = [
 		TRANSCENDENCE_EVENTS.MATCH_FOUND,
@@ -84,7 +87,7 @@ export class MatchEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.MatchFoundEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[MatchEventHandler] Partida encontrada con ${event.payload.playerIds}`);
+		this.log.info({ playerIds: event.payload.playerIds }, 'Match found');
 
 		const wsMessage: WebSocketEventsTypes.MatchFound = {
 			type: WEBSOCKET_EVENTS.MATCH_FOUND,
@@ -104,7 +107,7 @@ export class MatchEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.MatchQueueTimeoutEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[MatchEventHandler] ${event.payload.userId} agotó el tiempo en cola`);
+		this.log.info({ userId: event.payload.userId }, 'Queue timeout');
 
 		const wsMessage: WebSocketEventsTypes.MatchQueueTimeout = {
 			type: WEBSOCKET_EVENTS.MATCH_QUEUE_TIMEOUT,
@@ -125,7 +128,7 @@ export class MatchEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.MatchInviteEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[MatchEventHandler] ${event.payload.inviterUsername} Invita a ${event.payload.inviteeId}`);
+		this.log.info({ inviterId: event.payload.inviterId }, 'Match invite');
 
 		const wsMessage: WebSocketEventsTypes.MatchInvite = {
 			type: WEBSOCKET_EVENTS.MATCH_INVITE,
@@ -149,7 +152,7 @@ export class MatchEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.MatchStartedEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[MatchEventHandler] Partida empezada entre ${event.payload.playerIds}`);
+		this.log.info({ matchId: event.payload.playerIds }, 'Match started');
 
 		const wsMessage: WebSocketEventsTypes.MatchStarted = {
 			type: WEBSOCKET_EVENTS.MATCH_STARTED,
@@ -168,7 +171,7 @@ export class MatchEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.MatchRejectedEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[MatchEventHandler] Partida rechazada por ${event.payload.rejectorId}`);
+		this.log.info({ matchId: event.payload.rejectorId }, 'Match refuted by');
 
 		const wsMessage: WebSocketEventsTypes.MatchRejected = {
 			type: WEBSOCKET_EVENTS.MATCH_REJECTED,
@@ -188,7 +191,7 @@ export class MatchEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.MatchCancelledEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[MatchEventHandler] Partida cancelada. ${event.payload.reason}`);
+		this.log.info({ matchId: event.payload.reason }, 'Match cancelled due');
 
 		const wsMessage: WebSocketEventsTypes.MatchCancelled = {
 			type: WEBSOCKET_EVENTS.MATCH_CANCELLED,

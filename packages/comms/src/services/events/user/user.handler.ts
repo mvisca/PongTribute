@@ -4,13 +4,17 @@ import {
     WEBSOCKET_EVENTS,
     EventsTypes,
     TranscendenceEventsTypes,
-    WebSocketEventsTypes } from '@transcendence/shared';
+	WebSocketEventsTypes
+} from '@transcendence/shared';
+	import { createLogger, type AppLogger } from '@transcendence/shared';
 import { CommsService } from '../../comms.service.js';
 
 
 type UserEvent = TranscendenceEventsTypes.UserLoginEvent | TranscendenceEventsTypes.UserLogoutEvent;
 
 export class UserEventHandler implements CommsEventHandler {
+
+	private log: AppLogger = createLogger('UserEventHandler');
 
     eventTypes = [
         TRANSCENDENCE_EVENTS.USER_LOGIN,
@@ -39,7 +43,7 @@ export class UserEventHandler implements CommsEventHandler {
         event: TranscendenceEventsTypes.UserLoginEvent,
         commsService: CommsService
     ): Promise<void> {
-        console.log(`[UserHandler] ${event.targetUserId} online`);
+        this.log.info({ userId: event.targetUserId }, 'User online');
 
         const friends = event.payload.friendsIds ?? [];
 
@@ -53,9 +57,9 @@ export class UserEventHandler implements CommsEventHandler {
                     avatar: event.payload.avatar,
                 },
             } satisfies WebSocketEventsTypes.FriendOnline);
-            console.log(`[UserHandler] Notificado ${friends.length} amigos`);
+            this.log.info({ count: friends.length }, 'Friends notified - online');
         } else {
-            console.log(`[UserHandler] ${event.payload.username} no tiene amigos online`);
+            this.log.debug({ username: event.payload.username }, 'No friends to notify');
         }
     }
 
@@ -63,7 +67,7 @@ export class UserEventHandler implements CommsEventHandler {
         event: UserEvent,
         commsService: CommsService
     ): Promise<void> {
-        console.log(`[UserHandler] ${event.targetUserId} offline`);
+        this.log.info({ userId: event.targetUserId }, 'User offline');
 
         commsService.closeUserConnection(event.targetUserId);
 
@@ -79,9 +83,9 @@ export class UserEventHandler implements CommsEventHandler {
                     avatar: event.payload.avatar,
                 },
             } satisfies WebSocketEventsTypes.FriendOffline);
-            console.log(`[UserHandler] Notificado ${friends.length} amigos`);
+            this.log.info({ count: friends.length }, 'Friends notified - offline');
         } else {
-            console.log(`[UserHandler] ${event.payload.username} no tiene amigos online`);
+            this.log.debug({ username: event.payload.username }, 'No friends to notify');
         }
     }
 
@@ -89,7 +93,7 @@ export class UserEventHandler implements CommsEventHandler {
         event: TranscendenceEventsTypes.UserProfileUpdatedEvent,
         commsService: CommsService
     ): Promise<void> {
-        console.log(`[UserHandler] ${event.targetUserId} profile updated`);
+        this.log.info({ userId: event.targetUserId }, 'Profile updated');
 
         const friends = event.payload.friendsIds ?? [];
 
@@ -103,7 +107,7 @@ export class UserEventHandler implements CommsEventHandler {
                     avatar: event.payload.avatar,
                 },
             } satisfies WebSocketEventsTypes.FriendProfileUpdated);
-            console.log(`[UserHandler] Notificado cambio de perfil a ${friends.length} amigos`);
+            this.log.info({ count: friends.length }, 'Friends notified - profile updated');
         }
     }
 }

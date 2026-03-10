@@ -15,6 +15,7 @@ import {
 	Utils,
 	BOT_USER_ID
 } from '@transcendence/shared';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
 
 interface GameSession {
@@ -43,7 +44,8 @@ interface GameSession {
 export class GameService {
 	private activeMatches: Map<string, GameSession> = new Map();
 	private disconnectTimeouts: Map<string, NodeJS.Timeout> = new Map();
-	
+	private log: AppLogger = createLogger('GameService');
+
 	constructor(
 		private matchRepo: MatchRepository,
 		private redis: Redis
@@ -301,7 +303,7 @@ export class GameService {
 		// 1. Limpieza preventiva
 		this.stopGameLoop(session);
 		
-		console.log(`[GAME-SERVICE] Starting game loop for match ${session.matchId}`);
+		this.log.info({ matchId: session.matchId }, 'Starting game loop');
 		session.gameState.status = GameConstants.GAME_STATUS.PLAYING; // Aseguramos estado playing
 		
 		// 2. Iniciar Intervalo
@@ -649,7 +651,7 @@ export class GameService {
 				session.gameState.paddleLeft.score,
 				session.gameState.paddleRight.score,
 				Date.now()
-			).catch(e => console.error('[GAME-SERVICE] Error:', e));
+			).catch(e => this.log.error({ err: e, matchId: session.matchId }, 'Error finishing match in DB'));
 		}
 		
 		// Notificar a los 2 clientes, via websocket event		
@@ -696,7 +698,7 @@ export class GameService {
 				session.gameState.paddleLeft.score,
 				session.gameState.paddleRight.score,
 				Date.now()
-			).catch(e => console.error('[GAME-SERVICE] Error:', e));
+			).catch(e => this.log.error({ err: e, matchId }, 'Error saving forfeit match in DB'));
 		}
 
 		// Quitar partida de mapa de activas
@@ -752,11 +754,11 @@ export class GameService {
 		if (session.player1Id === userId) {
 			session.player1Username = newName;
 			session.player1Avatar = newAvatar;
-			console.log(`[GAME-SERVICE] Memory updated: Player 1 -> ${newName}`);
+			this.log.info({ userId, newName }, 'Memory updated: Player 1');
 		} else if (session.player2Id === userId) {
 			session.player2Username = newName;
 			session.player2Avatar = newAvatar;
-			console.log(`[GAME-SERVICE] Memory updated: Player 2 -> ${newName}`);
+			this.log.info( { userId, newName }, 'Memory updated: Player 2');
 		}
 	}
 }

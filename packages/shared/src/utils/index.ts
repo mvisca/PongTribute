@@ -6,6 +6,7 @@ import * as RedisFactory from './redisClient.js';
 
 export { RedisCache };
 export * from './validators.js';
+export * from './logger.js';
 
 // Re-exportar plano para retrocompatibilidad
 export const Utils = { 	

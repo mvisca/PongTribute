@@ -13,7 +13,7 @@ import {
 	TRANSCENDENCE_CHANNEL,
 	UserTypes
 } from '@transcendence/shared';
-
+import { createLogger, type AppLogger } from '@transcendence/shared';
 
 // ============================================================================
 // TYPES (Solo específicos de backend)
@@ -67,7 +67,7 @@ export class CommsService implements IEventService {
 	 */
 	private heartbeatInterval: NodeJS.Timeout | null = null;
 	private totalConnections = 0;
-	private logger = console;
+	private log: AppLogger = createLogger('CommsService');
 
 	constructor(redis: Redis, redisSub: Redis) {
 		this.redis = redis;
@@ -79,7 +79,7 @@ export class CommsService implements IEventService {
 	// ============================================================================
 	
 	async init(): Promise<void> {
-		this.logger.log('[Comms] Comenzando inicialización del servicio...');
+		this.log.info('Comenzando inicialización del servicio...');
 		
 		try {
 			// Conexión paralela
@@ -87,17 +87,17 @@ export class CommsService implements IEventService {
 				this.redis.connect(),
 				this.redisSub.connect() // Por tener en config lazyConnect: true, se conectarán recién ahora
 			]);
-			this.logger.log('[Comms] Clientes Redis conectados');
+			this.log.info('Clientes Redis conectados');
 			
 			// Suscribirse a canal de aplicacion.
 			// Se filtrará por eventType
 			await this.redisSub.subscribe(TRANSCENDENCE_CHANNEL);
-			this.logger.log(`[Comms] Suscrito a ${TRANSCENDENCE_CHANNEL}\n`);
+			this.log.info({ channel: TRANSCENDENCE_CHANNEL }, 'Subscribed to channel');
 			
 			// Listener de mensajes Redis
 			this.redisSub.on('message', (_channel, message) => {
 				this.handleRedisMessage(message).catch((err) => {
-					this.logger.error('[Comms] Error crítico en handleRedisMessage', err);
+					this.log.error({ err }, 'CRITIC Error in handleRedisMessage');
 				});
 			});
 
@@ -105,10 +105,10 @@ export class CommsService implements IEventService {
 			// Cada ciclo envía ping a todos los sockets. 
 			// Si no responden pong antes del siguiente ciclo, se considera zombie y se termina la conexión.
 			this.startHeartbeat();
-			this.logger.log('[Comms] Servicio inicializado completamente y escuchando.');
+			this.log.info('Service completely initialized and listen to.');
 			
 		} catch (err) {
-			this.logger.error('[Comms] Error FATAL en init:', err);
+			this.log.error('FATAL Error in init');
 			throw err; // El proceso debe morir si no puede conectar a Redis
 		}
 	}
@@ -119,14 +119,14 @@ export class CommsService implements IEventService {
 			clearInterval(this.heartbeatInterval);
 		}
 		
-		this.logger.log('[Comms] Cerrando conexiones WS...');
+		this.log.info('Cerrando conexiones WS...');
 		for (const [userId, sockets] of this.connections) {
 			for (const ws of sockets) {
 				try {
 					ws.close(1001, 'Servidor reiniciando/apagando');
-					this.logger.info(`Cerrado WebSocket para ${userId}, URL: ${ws.url}, Estado: ${ws.readyState}`);
+					this.log.info({ userId }, 'Closed WebSocket for');
 				} catch(err) {
-					this.logger.info(`Fallo cerrando WebSocket para ${userId}, URL: ${ws.url}, Estado: ${ws.readyState}`);
+					this.log.warn({ userId }, 'Failed closing websocket');
 					// Ignorar errores de cierre
 				}
 			}
@@ -137,9 +137,9 @@ export class CommsService implements IEventService {
 			await this.redisSub.unsubscribe();
 			await this.redisSub.quit();
 			await this.redis.quit();
-			this.logger.log('[Comms] Redis desconectado');
+			this.log.info('Redis desconectado');
 		} catch(err) {
-			this.logger.error('[Comms] Error cerrando Redis', err);
+			this.log.error({ err }, 'Error closing Redis');
 		}
 	}
 	
@@ -154,7 +154,7 @@ export class CommsService implements IEventService {
 				sockets.forEach((ws) => {
 					// Si ya estaba muerto en el ciclo anterior, eliminar
 					if (ws.isAlive === false) {
-						this.logger.log(`[Comms] Terminando conexión zombie: ${userId}`);
+						this.log.info({ userId }, 'Finishing zombie connection');
 						this.handleDisconnect(ws, userId);
 						ws.terminate();
 						return;
@@ -183,7 +183,8 @@ export class CommsService implements IEventService {
 		sockets.forEach((ws) => {
 			if (ws.readyState === WebSocket.OPEN) {
 				ws.send(messageStr, (err) => {
-					if (err) this.logger.error(`[Comms] Error enviando a ${userId}:`, err);
+					if (err)
+						this.log.error({ err, userId }, 'Error sending message');
 				});
 				sentCount++;
 			}
@@ -245,7 +246,7 @@ export class CommsService implements IEventService {
 			
 			if (!event?.type) return;
 
-			this.logger.log(`[Comms] Evento recibido: ${event.type}`);
+			this.log.info({ eventType: event.type }, 'Received Event');
 			
 			// Buscar el handler adecuado en el array de handlers importado
 			// Nota: Esto asume que tenemos implementado el patrón Strategy en ./events/index.ts
@@ -254,11 +255,11 @@ export class CommsService implements IEventService {
 			if (handler) {
 				await handler.handle(event, this); // Se pasa el evento y el CommsService al handler
 			} else {
-				this.logger.warn(`[Comms] No hay handler registrado para el canal: ${event.type}`);
+				this.log.warn({ eventType: event.type }, 'No handler registered');
 			}
 			
 		} catch (err) {
-			this.logger.error(`[Comms] Error procesando mensaje Redis}:`, err);
+			this.log.error({ err }, 'Error on Redis message processing');
 		}
 	}
 	
@@ -301,7 +302,7 @@ export class CommsService implements IEventService {
 			const user = request.user as AuthTypes.AccessTokenPayload;
 			
 			if (!user || !user.id) {
-				this.logger.error(`[Comms] Request sin user después de middleware`);
+				this.log.error('Request sin user después de middleware');
 				ws.close(1011, 'Internal Error');
 				return;
 			}
@@ -321,8 +322,9 @@ export class CommsService implements IEventService {
     		}
 
 			if (this.totalConnections >= CommsEnv.WS_MAX_CONNECTIONS()) {
-				this.logger.error(`[Comms] Max connection per user reached`);
-				ws.close(4008, 'Server connection limit reached');
+				this.log.error({ totalConnections: this.totalConnections, max: CommsEnv.WS_MAX_CONNECTIONS() }, 'Reached max server connections number');
+
+				ws.close(1008, 'Server connection limit reached');
 				return;
 			}
 			
@@ -337,8 +339,9 @@ export class CommsService implements IEventService {
 			}
 			
 			if (this.connections.get(user.id)!.size >= CommsEnv.WS_MAX_CONNECTIONS_PER_USER()) {
-				this.logger.error(`[Comms] Max connection per user reached`);
-				ws.close(4029, 'User connection limit reached');
+				this.log.error({ userId: user.id, count: this.connections.get(user.id)!.size, max: CommsEnv.WS_MAX_CONNECTIONS_PER_USER() }, 'Max user connections number reached');
+
+				ws.close(1008, 'User connection limit reached');
 				return;
 			}
 			
@@ -378,10 +381,10 @@ export class CommsService implements IEventService {
 			extWs.on('close', () => this.handleDisconnect(extWs, user.id));
 			
 			extWs.on('error', (err: Error) => {
-				this.logger.error(`[Comms] Error in socket user ${user.id}`, err);
+				this.log.error({ userId: user.id }, 'Socket failure');
 			});
 		} catch (err) {
-			this.logger.error('[Comms] Error handshake:', err);
+			this.log.error({ err }, 'Handshake Error');
 			ws.close(1011, 'Internal Error');
 		}
 	}
@@ -399,7 +402,8 @@ export class CommsService implements IEventService {
 		// Si ya no quedan sockets para este usuario, porque cerró la ultima pestaña
 		if (sockets.size === 0) {
 			this.connections.delete(userId); // Limpieza local
-			this.logger.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
+
+			this.log.info({ userId }, 'User fully disconnected');
 
 			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
 			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
@@ -412,7 +416,7 @@ export class CommsService implements IEventService {
 
 			// El servicio 'game' esta subscrito a esta publicacion
 			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
-				.catch(err => this.logger.error('[COMMS] Error publishing disconnected event:', err));
+				.catch(err => this.log.error({ err }, 'Error publishing disconnected event'));
 		}
 	}
 	

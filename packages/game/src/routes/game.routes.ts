@@ -104,5 +104,5 @@ export const gameRoutes: FastifyPluginAsync<GameAppDependencies> = async (app, o
 		gateway.handleConnection(connection, req);
 	});
 
-	console.log('[GAME-ROUTES] Game routes registered');
+	app.log.info('Game routes registered');
 };

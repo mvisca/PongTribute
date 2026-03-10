@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import type { Redis } from 'ioredis';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import {
 	UserTypes,
 	Utils,
@@ -17,12 +18,14 @@ import {
 export class UserService {
 	private userRepo: IUserRepository;
 	private redisClient: Redis;
+	private log: AppLogger;
 
 	constructor(redisClient: Redis, userRepo: IUserRepository) {
 		this.userRepo = userRepo;
 		this.redisClient = redisClient;
+		this.log = createLogger('UserService');
 	}
-	
+
 	/** Validación de argumento avatar en updateUser */
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;
@@ -130,7 +133,7 @@ export class UserService {
 			if (err instanceof SharedErrors.ValidationError || err instanceof SharedErrors.ServiceError || err instanceof SharedErrors.ConflictError || err instanceof SharedErrors.NotFoundError) {
 				throw err;
 			}
-			console.error('[USER-SERVICE] Failed to upload avatar: ', err);
+			this.log.error({ err }, 'Failed to upload avatar to Cloudinary');
 			// Mantener avatar actual si falla (diferente de Auth Service)
 			return oldAvatarUrl || UserEnv.CLOUDINARY_DEFAULT_AVATAR();
 		}
@@ -236,7 +239,7 @@ export class UserService {
 		
 		// Verificamos cambios en username o avatar
 		if (updatedUser.username !== oldUsername || updatedUser.avatar !== oldAvatar) {
-			console.log(`[USER-SERVICE] Profile updated for ${id}. (User: ${oldUsername}->${updatedUser.username}, Avatar: ${oldAvatar}->${updatedUser.avatar})`);
+			this.log.info({ userId: id, oldUsername, newUsername: updatedUser.username }, 'Profile updated');
 			
 			const eventPayload: TranscendenceEventsTypes.UserProfileUpdatedEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,
@@ -255,7 +258,7 @@ export class UserService {
 			
 			// Publicar al canal de eventos
 			this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(eventPayload))
-				.catch(err => console.error('[USER-SERVICE] Failed to publish Redis event:', err));
+				.catch(err => this.log.error({ err }, 'Failed to publish Redis profile update event'));
 		}
 		return updatedUser;
 	}

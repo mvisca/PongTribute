@@ -1,8 +1,14 @@
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import cron from 'node-cron';
 import { AuthEnv } from '../config.js';
 
 export class TokenCleanupService {
 	private job: cron.ScheduledTask | null = null;
+	private log: AppLogger;
+
+	constructor() {
+		this.log = createLogger('TokenCleanupService');
+	}
 
 	start(): void {
 		// Ejecutar cada 6 horas: ' 0 */6 * * *'
@@ -10,7 +16,7 @@ export class TokenCleanupService {
 			await this.cleanup();
 		});
 
-		console.log('[TOKEN-CLEANUP] Cronjob started: cleaning expired refresh tokens every 6 hours');
+		this.log.info('Cronjob started: cleaning expired refresh tokens every 6 hours');
 	}
 
 	private async cleanup(): Promise<void> {
@@ -27,17 +33,17 @@ export class TokenCleanupService {
 
 			if (response.ok) {
 				const result = (await response.json()) as { deleted: number };
-				console.log(`[TOKEN-CLEANUP] Deleted ${result.deleted} expired tokens`);
+				this.log.info({ deleted: result.deleted }, 'Expired tokens cleaned');
 			}
 		} catch(err) {
-			console.error('[TOKEN-CLEANUP] Error during cleanup:', err);
+			this.log.error({ err }, 'Error during token cleanup');
 		}
 	}
 
 	stop(): void {
 		if (this.job) {
 			this.job.stop();
-			console.log('[TOKEN-CLEANUP] Cronjob stopped');
+			this.log.info('Cronjob stopped');
 		}
 	}
 }

@@ -7,6 +7,7 @@ import {
 	TranscendenceEventsTypes,
 	WebSocketEventsTypes
 } from '@transcendence/shared';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 
 type FriendshipEvent = 
 | TranscendenceEventsTypes.FriendRequestEvent
@@ -14,7 +15,8 @@ type FriendshipEvent =
 | TranscendenceEventsTypes.FriendRemovedEvent;
 
 export class FriendshipEventHandler implements CommsEventHandler {
-	
+	private log: AppLogger = createLogger('FriendshipEventHandler');
+
 	eventTypes = [
 		TRANSCENDENCE_EVENTS.FRIEND_REQUEST,
 		TRANSCENDENCE_EVENTS.FRIEND_ACCEPT,
@@ -55,8 +57,7 @@ export class FriendshipEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.FriendRequestEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[FriendshipHandler] Solicitud de ${event.payload.senderId} a ${event.payload.receiverId}`);
-
+		this.log.info({ senderId: event.payload.senderId, receiverId: event.payload.receiverId }, 'Friend request');
 		const wsMessage: WebSocketEventsTypes.FriendRequest = {
 			type: WEBSOCKET_EVENTS.FRIEND_REQUEST,
 			timestamp: event.timestamp,
@@ -75,7 +76,7 @@ export class FriendshipEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.FriendAcceptedEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[FriendshipHandler] Aceptada por ${event.payload.acceptorId} a ${event.payload.requesterId}`);
+		this.log.info({ acceptorId: event.payload.acceptorId, requesterId: event.payload.requesterId }, 'Friend accepted');
 
 		const wsMessage: WebSocketEventsTypes.FriendAccepted = {
 			type: WEBSOCKET_EVENTS.FRIEND_ACCEPT,
@@ -94,8 +95,7 @@ export class FriendshipEventHandler implements CommsEventHandler {
 		event: TranscendenceEventsTypes.FriendRemovedEvent,
 		commsService: CommsService
 	): Promise<void> {
-		console.log(`[FriendshipHandler] Removida por ${event.payload.removerId} a ${event.payload.removedId}`);
-
+		this.log.info({ removerId: event.payload.removerId, removedId: event.payload.removedId }, 'Friend removed');
 		const wsMessage: WebSocketEventsTypes.FriendRemoved = {
 			type: WEBSOCKET_EVENTS.FRIEND_REMOVE,
 			timestamp: event.timestamp,

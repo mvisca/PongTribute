@@ -18,24 +18,32 @@ async function start() {
 			host: ImagesEnv.HOST()
 		});
 
-		console.log(`[IMAGES] Log level: ${app.log.level}`);
-		console.log(`[IMAGES] Service ready at ${ImagesEnv.HOST()}:${ImagesEnv.PORT()}`);
+		app.log.info(`[IMAGES] Log level: ${app.log.level}`);
+		app.log.info(`[IMAGES] Service ready at ${ImagesEnv.HOST()}:${ImagesEnv.PORT()}`);
 	} catch (err) {
-		console.log(`[IMAGES] Startup error:`, err instanceof Error ? err.message : err);
-		console.log('[IMAGES] Check .env file - if missing, run: "cp .env.example .env"');
-		await gracefulShutdown('STARTUP_ERROR');
+		// Si app se construyó antes del fallo, usamos su logger
+		// Si falló antes de buildApp, no queda otra que console
+		const msg = err instanceof Error ? err.message : err;
+		if (app) {
+			app.log.error(err, '[IMAGES] Startup error');
+		} else {
+			console.error('[IMAGES] Startup error (before app init):', msg);
+		}
+		process.exit(1);
 	}
 }
 
 async function gracefulShutdown(signal: string) {
-	console.log(`\n[IMAGES] ${signal} received. Starting graceful shutdown`);
+	const log = app?.log;
+	// si log existe lo usa, si no usa console como fallback
+	(log ?? console).info(`[IMAGES] ${signal} received. Shutting down...`);
 
 	if (app) {
 		try {
 			await app.close();
-			console.log('[IMAGES] Fastify HTTP server closed');
+			(log ?? console).info('[IMAGES] Server closed');
 		} catch (err) {
-			console.error('[IMAGES] Error closing Fastify', err);
+			(log ?? console).error(err, '[IMAGES] Error closing server');
 		}
 	}
 

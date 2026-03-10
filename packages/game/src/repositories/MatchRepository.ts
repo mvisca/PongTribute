@@ -1,6 +1,7 @@
 //Este archivo es el que comunica directamente con la BD
 
 import { MatchTypes, SharedErrors, MatchConstants } from '@transcendence/shared';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import { getDatabase } from '../connection.js';
 import { MatchMapper } from '../mappers/MatchMapper.js';
 
@@ -23,7 +24,8 @@ import { MatchMapper } from '../mappers/MatchMapper.js';
 export class MatchRepository {
     // Instancia de better-sqlite3 lista para usar
 	// private db = getDatabase();
-    private db: ReturnType<typeof getDatabase>;
+	private db: ReturnType<typeof getDatabase>;
+	private log: AppLogger = createLogger('MatchRepository');
     
     constructor(db: ReturnType<typeof getDatabase>) {
         this.db = db;
@@ -126,7 +128,7 @@ export class MatchRepository {
 		);
 
 		if (affected.length > 0) {
-			console.log(`[MATCH-REPO] Expired ${affected.length} private invitations.`);
+			this.log.info({ count: affected.length }, 'Expired private invitations');
 		}
 
 		return affected.map(row => ({
@@ -211,9 +213,9 @@ export class MatchRepository {
         const result = stmt.run(matchId);
         
         if (result.changes > 0) {
-			console.log(`[MATCH-REPO] Match ${matchId} deleted successfully.`);
+			this.log.info({ matchId }, 'Match deleted');
         } else {
-			console.warn(`[MATCH-REPO] Attempted to delete match ${matchId} but it did not exist.`);
+			this.log.warn({ matchId }, 'Attempted to delete match but it did not exist');
         }
     }
 		

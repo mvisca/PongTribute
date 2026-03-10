@@ -14,6 +14,7 @@ import {
 	BOT_USER_ID,
 	BOT_USERNAME
 } from '@transcendence/shared';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
 
 /**
@@ -23,6 +24,7 @@ import { GameEnv } from '../config.js';
 export class MatchService {
 	private matchRepo: MatchRepository;
 	private redis: Redis;
+	private log: AppLogger = createLogger('MatchService');
 	
 	// CONSTRUCTOR: INYECCIÓN DE DEPENDENCIA
 	// El servicio NO se preocupa de dónde viene Redis, solo pide una instancia.
@@ -90,7 +92,7 @@ export class MatchService {
 		const QUEUE_KEY = `match:queue:${gameModeName}`;
 		const TICKET_TIMESTAMP = Date.now();
 		
-		console.log(`[MATCH-SERVICE] User ${userId} joining queue: ${QUEUE_KEY}`);
+		this.log.info({ userId, queue: QUEUE_KEY }, 'User joining queue');
 		
 		// ATOMIC POP Intento sacar de la cola al usuario más antiguo (ID y SCORE/Timestamp)
 		// zpopmin devuelve [id, score, id, score ...]
@@ -171,7 +173,7 @@ export class MatchService {
 				match: match
 			};
 		} catch (error) {
-			console.error(`[MATCH-SERVICE] CRITICAL: Error creating match. Restoring ${opponentId} to queue.`, error);
+			this.log.error({ err: error, opponentId }, 'CRITICAL: Error creating match, restoring opponent to queue');
 			
 			// COMPENSACIÓN (Rescate)
 			// Devolvemos al oponente a la cola con su antigüedad original
@@ -205,8 +207,8 @@ export class MatchService {
 				const removedCount = await this.redis.zrem(queueKey, userId);
 				
 				if (removedCount > 0) {
-					console.log(`[MATCH-SERVICE] Timeout user ${userId} from ${mode}`);
-					
+					this.log.info({ userId, mode }, 'Queue timeout — user removed');
+
 					// Solo notificamos si confirmamos el borrado, para evitar confundir al cliente.
 					const event: TranscendenceEventsTypes.MatchQueueTimeoutEvent = {
 						type: TRANSCENDENCE_EVENTS.MATCH_QUEUE_TIMEOUT,
@@ -233,8 +235,8 @@ export class MatchService {
 		
 		const client = this.redis;
 		
-		console.log(`[MATCH-SERVICE] Removing user ${userId} from queues`);
-		
+		this.log.info({ userId }, 'Removing user from queues');
+
 		// Object.values(GameMode) nos da ['classic', 'speed', 'pro']
 		const modes = Object.values(GameConstants.GAME_MODE);
 		
@@ -354,7 +356,7 @@ export class MatchService {
 			}
 			return match;
 		} catch (error) {
-			console.error(`[MATCH-SERVICE] CRITICAL: Post-creation failure. ROLLBACK.`, error);
+			this.log.error({ err: error }, 'CRITICAL: Post-creation failure, rolling back');
 			
 			// ROLLBACK/REVIERTE ESTADO: Borra la partida física al fallar la notificación
 			await this.matchRepo.deleteMatch(newMatch.id);
@@ -414,7 +416,7 @@ export class MatchService {
 		// 'EX', 15 -> Expira en 15 segundos
 		await this.redis.set(REDIS_KEY, JSON.stringify(localMatch), 'EX', 15);
 		
-		console.log(`[MATCH-SERVICE] Local match ticket created: ${matchId}`);
+		this.log.info({ matchId }, 'Local match ticket created');
 		
 		return localMatch;
 	}
@@ -463,7 +465,7 @@ export class MatchService {
 		const REDIS_KEY = `match:local:${matchId}`;
 		await this.redis.set(REDIS_KEY, JSON.stringify(botMatch), 'EX', 30);
 
-		console.log(`[MATCH-SERVICE] Bot match ticket created: ${matchId}`);
+		this.log.info({ matchId }, 'Bot match ticket created');
 
 		// Publicamos el evento para que el servicio bot lo reciba
 		const event: TranscendenceEventsTypes.MatchBotRequestedEvent = {
@@ -500,7 +502,8 @@ export class MatchService {
 	* cuando un usuario actualiza su perfil.
 	*/
 	async handleUserUpdate(userId: string, newUsername: string, newAvatar: string): Promise<void> {
-		console.log(`[MATCH-SERVICE] Syncing username for user ${userId} -> ${newUsername}`);
+		this.log.info({ userId, newUsername }, 'Syncing user profile in match history');
+
 		await this.matchRepo.updateUser(userId, newUsername, newAvatar);
 	}
 	
@@ -552,7 +555,8 @@ export class MatchService {
 			
 			return match;
 		} catch (error) {
-			console.error(`[MATCH-SERVICE] CRITICAL: Failed to start match. ROLLBACK to PENDING.`, error);
+			this.log.error({ err: error, matchId }, 'CRITICAL: Failed to start match, rolling back to PENDING');
+
 			
 			// COMPENSACIÓN: Revertir estado si falla la notificación/hidratación
 			// Si falló el inicio, devolvemos la invitación a "pendiente" para que puedan reintentar.
@@ -598,7 +602,7 @@ export class MatchService {
 			
 			return match;
 		} catch (error) {
-			console.error(`[MATCH-SERVICE] CRITICAL: Post-reject failure.`, error);
+			this.log.error({ err: error, matchId }, 'CRITICAL: Post-reject failure');
 			// En rechazo, el rollback es menos crítico, pero idealmente revertimos
 			await this.matchRepo.updateStatus(matchId, MatchConstants.MATCH_STATUS.PENDING);
 			throw new SharedErrors.ServiceError('game', 'Error rejecting match.');
@@ -618,7 +622,7 @@ export class MatchService {
 		
 		if (pendingMatches.length === 0) return;
 		
-		console.log(`[MATCH-SERVICE] Cleaning ${pendingMatches.length} pending matches for disconnected user ${userId}`);
+		this.log.info({ userId, count: pendingMatches.length }, 'Cleaning pending matches for disconnected user');
 		
 		const promises = pendingMatches.map(async (match) => {
 			// 1. Borrado físico (DB)
@@ -628,7 +632,8 @@ export class MatchService {
 			// Si la DB dice que player2_id es null, no podemos enviar el evento.
 			// Esto filtra datos corruptos.
 			if (!match.player2?.userId) {
-				console.warn(`[MATCH-SERVICE] Pending match ${match.id} missing player2_id. Skipping notification.`);
+				this.log.warn({ matchId: match.id }, 'Pending match missing player2_id, skipping notification');
+
 				return; 
 			}
 			
@@ -697,7 +702,7 @@ export class MatchService {
 	*/
 	async cancelPrivateMatch(userId: string, matchId: string): Promise<void> {
 		
-		console.log(`[MATCH-SERVICE] Cancelling invitation ${matchId} by user ${userId}`);
+		this.log.info({ matchId, userId }, 'Cancelling private invitation');
 		
 		// 1. Obtener la partida
 		const matchRow = await this.matchRepo.findById(matchId);
@@ -769,7 +774,7 @@ export class MatchService {
 			
 			// 3. Manejo de errores HTTP
 			if (!response.ok) {
-				console.warn(`[MATCH-SERVICE] User Service responded ${response.status} for ${userId}`);
+				this.log.warn({ userId, status: response.status }, 'User Service error fetching profile');
 				return { username: 'Unknown', avatar: '' };
 			}
 			
@@ -778,7 +783,7 @@ export class MatchService {
 			return { username: userData.username, avatar: userData.avatar };
 			
 		} catch (error) {
-			console.error(`[MATCH-SERVICE] Connection error with ${baseUrl}:`, error);
+			this.log.error({ err: error, baseUrl }, 'Connection error with User Service');
 			return { username: 'Unknown', avatar: '' };
 		}
 	}

@@ -15,10 +15,7 @@ async function start() {
 		// 1. Inicializar configuración
 		CommsEnv.init();
 
-		// 2. Crear clientes Redis (command + subscriber) en server.ts
-		//    redisSub es un duplicado: misma config, conexión independiente.
-		//    Redis exige un cliente dedicado solo para subscribe (no puede hacer
-		//    otros comandos mientras está en modo suscripción).
+		/// Redis se crea ANTES de buildApp — console es el único recurso disponible aquí
 		try {
 			redisClient = Utils.createRedisClient(CommsEnv.getRedisConfig());
 			redisSubClient = redisClient.duplicate();
@@ -41,35 +38,42 @@ async function start() {
 			host: CommsEnv.HOST()
 		});
 
-		app.log.info(`[Comms] Service listo en ${CommsEnv.HOST()}:${CommsEnv.PORT()}`);
+		app.log.info(`[Comms] Log level: ${app.log.level}`);
+		app.log.info(`[Comms] Service ready at ${CommsEnv.HOST()}:${CommsEnv.PORT()}`);
 
 	} catch (err) {
-		console.error('[Comms] ERROR:', err instanceof Error ? err.message : err);
-		console.log('[Comms] Verifica .env y si no existe ejecuta: "cp .env.example .env"');
+		const msg = err instanceof Error ? err.message : err;
+		if (app) {
+			app.log.error(err, '[Comms] Startup error');
+		} else {
+			console.error('[Comms] Startup error:', msg);
+			console.error('[Comms] Check .env file - if missing, run: "cp .env.example .env"');
+		}
 		await gracefulShutdown('STARTUP_ERROR');
 	}
 }
 
 async function gracefulShutdown(signal: string) {
-	console.log(`\n[Comms] ${signal} recibido. Cerrando...`);
+	const log = app?.log;
+	(log ?? console).info(`\n[Comms] ${signal} received. Shutting down...`);
 
 	// 1. Cerrar servidor HTTP
 	if (app) {
 		try {
 			await app.close();
-			app.log.info('[Comms] Servidor HTTP cerrado');
+			log!.info('[Comms] Fastify HTTP server closed');
 		} catch (err) {
-			app.log.error({ err }, '[Comms] Error cerrando servidor');
+			log!.error({ err }, '[Comms] Error closing Fastify');
 		}
 	}
-
+	
 	// 2. Cerrar CommsService (WS + Redis internos)
 	if (commsService) {
 		try {
 			await commsService.close();
-			console.log('[Comms] CommsService cerrado (incluyendo Redis)');
+			(log ?? console).info('[Comms] CommsService closed (Redis included)');
 		} catch (err) {
-			console.error('[Comms] Error cerrando CommsService:', err);
+			(log ?? console).error(err, '[Comms] Error closing CommsService');
 		}
 	}
 

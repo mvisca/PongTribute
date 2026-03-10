@@ -1,5 +1,6 @@
 
 import type { Redis } from 'ioredis';
+import { createLogger, type AppLogger } from '@transcendence/shared';
 import {
 	SharedErrors,
 	TRANSCENDENCE_CHANNEL,
@@ -16,6 +17,7 @@ export class FriendshipService {
 	private friendshipRepo: IFriendshipRepository;
 	private userService: UserService;
 	private redisClient: Redis;
+	private log: AppLogger;
 
 	constructor(
 		friendshipRepo: IFriendshipRepository,
@@ -25,6 +27,7 @@ export class FriendshipService {
 		this.friendshipRepo = friendshipRepo;
 		this.userService = userService;
 		this.redisClient = redisClient;
+		this.log = createLogger('FriendshipService');
 	}
 
 	// ============================================================================
@@ -54,7 +57,7 @@ export class FriendshipService {
 		};
 
 		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-		console.log(`[FRIENDSHIP] FRIEND_REQUEST published: from ${senderId} to ${receiverId}`);
+		this.log.info({ senderId, receiverId }, 'FRIEND_REQUEST published');
 	}
 
 	private async publishFriendAccepted(
@@ -80,7 +83,8 @@ export class FriendshipService {
 		};
 
 		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-		console.log(`[FRIENDSHIP] FRIEND_ACCEPT published: from ${acceptorId} to ${requesterId}`);
+		this.log.info({ acceptorId, requesterId }, 'FRIEND_ACCEPT published');
+
 	}
 
 	private async publishFriendRemoved(
@@ -100,7 +104,8 @@ export class FriendshipService {
 		} satisfies TranscendenceEventsTypes.FriendRemovedEvent;
 
 		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
-		console.log(`[FRIENDSHIP] FRIEND_REMOVE published: ${removerId} removed ${removedId}`);
+		this.log.info({ removerId, removedId }, 'FRIEND_REMOVE published');
+
 	}
 
 	private isFriendshipStatus(value: unknown): value is FriendshipStatus {
@@ -168,7 +173,7 @@ export class FriendshipService {
 		
 		// 2. Notificar DESPUES
 		this.publishFriendRequest(initiatorId, initiatorUsername, friendId)			
-			.catch(err => console.error('[FriendshipService] Error publishing request:',err));
+			.catch(err => this.log.error({ err }, 'Error publishing friend request event'));
 			
 		return newFriendship;
 	}
@@ -225,7 +230,7 @@ export class FriendshipService {
         // 2. Disparar evento SOLO si aceptó
         if (accepted) {
             this.publishFriendAccepted(currentUserId, currentUsername, friendship.initiatorId)
-                .catch(err => console.error('[FriendshipService] Error publishing accept:', err));
+                .catch(err => this.log.error({ err }, 'Error publishing friend accept event'));
         }
 
         return updatedFriendship;
@@ -284,7 +289,7 @@ export class FriendshipService {
 
         // 2. Disparar evento
         this.publishFriendRemoved(currentUserId, friendId)
-            .catch(err => console.error('[FriendshipService] Error publishing remove:', err));
+            .catch(err => this.log.error({ err }, 'Error publishing friend remove event'));
 	}
 }
 
