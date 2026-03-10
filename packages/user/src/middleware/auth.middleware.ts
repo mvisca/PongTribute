@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import jwt from 'jsonwebtoken';
 import { Value } from '@sinclair/typebox/value';
-import { AuthSchemas, UserTypes, SharedErrors, AuthTypes } from "@transcendence/shared";
+import { AuthSchemas, UserTypes, SharedErrors } from "@transcendence/shared";
 import { UserEnv } from "../config.js";
 import { UserService } from "../services/user.service.js";
 
@@ -17,7 +17,7 @@ export namespace AuthMiddleware {
 			const authHeader = request.headers.authorization;
 
 			if (!authHeader || !authHeader.startsWith('Bearer ')) {
-				throw new SharedErrors.UnauthorizedError('Authorization header faltante');
+				throw new SharedErrors.UnauthorizedError('Authorization header missing');
 			}
 
 			// Extraer el token
@@ -64,13 +64,13 @@ export namespace AuthMiddleware {
 		try {
 
 			if (!request.user) {
-				throw new SharedErrors.UnauthorizedError('Usuario no autenticado');
+				throw new SharedErrors.UnauthorizedError('User not authenticated');
 			}
 
 			const paramId = (request.params as UserTypes.UserIdParams).id;
 
 			if (paramId !== request.user.id) {
-				throw new SharedErrors.ForbiddenError('No tienes permiso para acceder a este recurso');
+				throw new SharedErrors.ForbiddenError('You do not have permission to access this resource');
 			}
 		} catch (err) {
 			throw SharedErrors.handleError(err, reply);

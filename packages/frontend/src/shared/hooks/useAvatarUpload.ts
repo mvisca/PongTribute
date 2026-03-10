@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Validators } from '@transcendence/shared/utils/validators.js';
 
 type AvatarState = {
-	base64: string | null; // null=inicual - ''=reseteado - 'data:image/...'=seleccion de usuario
+	base64: string | null; // null=initial - ''=reset - 'data:image/...'=user selection
 	error: string;
 }
 
@@ -12,13 +12,13 @@ export function useAvatarUpload() {
 	function handleFile(file: File | null | undefined) {
 		if (!file) return;
 		
-		// Validar tipo
+		// Validate type
 		if (!Validators.avatarBase64.allowedTypes.includes(file.type as any)) {
 			setState(s => ({ ...s, error: Validators.avatarBase64.message }));
 			return;
 		}
 		
-		// Validar tamaño (~10MB)
+		// Validate size (~10MB)
 		if (file.size > 10_000_000) {
 			setState(s => ({ ...s, error: Validators.avatarBase64.message }));
 			return;
@@ -56,7 +56,7 @@ export function useAvatarUpload() {
 	}
 	
 	function clear() {
-		setState({ base64: null, error: '' });
+		setState({ base64: '', error: '' });
 	}
 	
 	return { ...state, handleFile, clear };

@@ -5,15 +5,16 @@ import type { Redis } from 'ioredis';
 import { AuthSchemas, AuthTypes, SharedErrors } from "@transcendence/shared";
 import { CommsEnv } from "../config.js";
 
-
-
 export namespace CommsMiddleware {
-	// Factory: recibe redis, devuelve el preHandler de Fastify
+	// Returns a preHandler that validates the JWT from the query string and
+	// checks lastLogoutAt against Redis to reject tokens invalidated by logout.
 	export function validateJWT(redis: Redis) {
-		return async (
+		return async function(
 			request: FastifyRequest,
 			reply: FastifyReply
-		): Promise<void> => {
+		): Promise<void> {
+
+			// WS auth via query string token — captured in gateway onRequest hook
 			const query = request.query as { token?: string };
 			const { token } = query;
 
@@ -29,7 +30,7 @@ export namespace CommsMiddleware {
 				const payload = jwt.verify(token, CommsEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 
 				// Type guard
-				const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+				const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 				if (!isValid) {
 					throw new SharedErrors.UnauthorizedError('Estructura de token inválida', {
 						operation: 'validateJWT',
@@ -59,6 +60,6 @@ export namespace CommsMiddleware {
 			} catch (err) {
 				return SharedErrors.handleError(err, reply);
 			}
-		}
+		};
 	}
 }

@@ -34,10 +34,24 @@ export default defineConfig({
 		port: 5173,
 		strictPort: false,
 		host: true,
-		open: false
+		open: false,
+		proxy: {
+			'/api': {
+				target: 'https://localhost',
+				changeOrigin: true,
+				secure: false,
+			},
+			'/ws': {
+				target: 'wss://localhost',
+				changeOrigin: true,
+				secure: false,
+				ws: true,
+			}
+		}
 	},
 
 	optimizeDeps: {
 		include: ['babylonjs']
-	}
+	},
+
 });

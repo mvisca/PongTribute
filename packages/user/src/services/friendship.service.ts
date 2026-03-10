@@ -125,7 +125,7 @@ export class FriendshipService {
 		const { friendId } = data;
 
 		if (initiatorId === friendId)
-			throw new SharedErrors.ValidationError('No puedes crear amistad contigo mismo', 'friendId', {
+			throw new SharedErrors.ValidationError('You cannot create a friendship with yourself', 'friendId', {
 				initiatorId,
 				friendId,
 				operation: 'createFriendship'
@@ -134,13 +134,30 @@ export class FriendshipService {
 		const [sortedUserId, sortedFriendId] = this.sortIds(initiatorId, friendId);
 		const existing = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 
-		if (existing)
-			throw new SharedErrors.ConflictError('La amistad ya existe', 'friendship', {
+		if (existing) {
+			// Permitir crear si fue rechazada
+			if (existing.status === FRIENDSHIP_STATUS.REJECTED) {
+				// Delete existing friendship
+				await this.friendshipRepo.delete(existing.userId, existing.friendId);
+				// Crear nueva friendship
+				const newFriendship = await this.friendshipRepo.create({
+					initiatorId,
+					friendId,
+					status: FRIENDSHIP_STATUS.PENDING
+				});
+				
+				this.publishFriendRequest(initiatorId, initiatorUsername, friendId)
+					.catch(err => console.error('[FriendshipService] Error publishing request:', err));
+				return newFriendship;
+			}
+
+			throw new SharedErrors.ConflictError('Friendship already exists', 'friendship', {
 				initiatorId,
 				friendId,
 				operation: 'createFriendship',
 				existingStatus: existing.status
 			});
+		}
 
 		// 1. Guardar en Base de Datos PRIMERO
         const newFriendship = await this.friendshipRepo.create({
@@ -167,14 +184,14 @@ export class FriendshipService {
 		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 
 		if (!friendship)
-			throw new SharedErrors.NotFoundError('No existe la solicitud de amistad', 'friendship', {
+			throw new SharedErrors.NotFoundError('Friend request does not exist', 'friendship', {
 				currentUserId,
 				friendId,
 				operation: 'updateFriendshipStatus'
 			});
 
 		if (friendship.status !== FRIENDSHIP_STATUS.PENDING)
-			throw new SharedErrors.ConflictError('La amistad no está pendiente', 'friendship', {
+			throw new SharedErrors.ConflictError('Friendship is not pending', 'friendship', {
 				currentUserId,
 				friendId,
 				operation: 'updateFriendshipStatus',
@@ -183,7 +200,7 @@ export class FriendshipService {
 
 		if (friendship.initiatorId === currentUserId)
 			throw new SharedErrors.ValidationError(
-				'El solicitante no puede decidir su propia solicitud',
+				'The initiator cannot decide their own request',
 				'friendship',
 				{
 					currentUserId,
@@ -225,7 +242,7 @@ export class FriendshipService {
 
 		if (status) {
 			if (!this.isFriendshipStatus(status))
-				throw new SharedErrors.ValidationError('Estado de amistad inválido', 'status', {
+				throw new SharedErrors.ValidationError('Invalid friendship status', 'status', {
 					userId,
 					attemptedStatus: status,
 					operation: 'listFriendships',
@@ -246,7 +263,7 @@ export class FriendshipService {
 		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
 	
 		if (!friendship) {
-			throw new SharedErrors.NotFoundError(`No existe la amistad`, 'friendship', {
+			throw new SharedErrors.NotFoundError(`Friendship does not exist`, 'friendship', {
 				currentUserId,
 				friendId,
 				operation: 'deleteFriendship'
@@ -254,7 +271,7 @@ export class FriendshipService {
 		}
 
 		if (friendship.status !== FRIENDSHIP_STATUS.ACCEPTED) {
-			throw new SharedErrors.ConflictError('Solo se pueden eliminar amistades activas', 'friendship', {
+			throw new SharedErrors.ConflictError('Only active friendships can be deleted', 'friendship', {
 				currentUserId,
 				friendId,
 				operation: 'deleteFriendship',

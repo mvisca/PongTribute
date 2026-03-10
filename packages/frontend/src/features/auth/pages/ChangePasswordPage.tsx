@@ -50,7 +50,7 @@ export default function ChangePasswordPage() {
 				`/auth/${userId}/password`,
 				{ method: 'PUT', body: { oldPassword, newPassword }, token: token! }
 			);
-			// Backend rota los tokens, actualizar tokens
+			// Backend rotates tokens, update tokens
 			setUser({ ...currentUser!, ...data.user });
 			setAccessToken(data.token);
 			setSuccess(true);

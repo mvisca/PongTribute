@@ -27,9 +27,9 @@ export default function EditProfilePage() {
 	const username	= useAuth((state) => state.user?.username);
 	const email		= useAuth((state) => state.user?.email);
 
-	const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
 	const setUser	= useAuth((state) => state.setUser);
-
+	const setAvatar = useAuth((state) => state.setAvatar);
+	const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
 	const [usernameInput, setUsername] = useState(username ?? '');
 	const [emailInput, setEmail] = useState(email ?? '');
 	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
@@ -68,12 +68,12 @@ export default function EditProfilePage() {
 		setError('');
 	}
 
-	// Maneja el envío de datos
+	// Handles data submission
 	const handleSubmit = async () => {
 		if (!validateInputs()) return;
 
 		try {
-			await updateProfile(userId!, {
+			const updatedProfile = await updateProfile(userId!, {
 				username: usernameInput,
 				email: emailInput,
 				avatar: avatarBase64 ?? (avatarRemoved ? null : undefined),
@@ -84,6 +84,8 @@ export default function EditProfilePage() {
 				username: usernameInput,
 				email: emailInput
 			});
+
+			setAvatar(updatedProfile.avatar ?? null);
 
 			navigate('/profile');
 

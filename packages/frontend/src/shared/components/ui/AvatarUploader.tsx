@@ -23,13 +23,15 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 		if (error) onError?.(error);
 	}, [error]);
 	
+	console.log('displaySrc:', displaySrc, '| base64:', base64, '| DEFAULT:', DEFAULT);
+
 	return (
 		<div className='mb-4 flex flex-col items-center gap-3'>
 			<AvatarDisplay src={displaySrc} size='lg' />
 			
 			{showReset &&
 				<button
-					onClick={() => { clear(); onFileChange(null); }}
+					onClick={() => { clear(); }}
 				>
 					Reset
 				</button>

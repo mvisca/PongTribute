@@ -26,30 +26,36 @@ function closeWithFallback(ws: WebSocket, code = 1000, reason = 'closing', timeo
 	}, timeoutMs);
 }
 
-function normalizeHeaderValue(value: undefined | string | string[]): string | undefined {
-	if (value === undefined) return undefined;
-	return Array.isArray(value) ? value[0] : value;
-}
-
 function parseWsAllowedOrigins(): Set<string> {
 	const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
 	const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
 	return new Set(list.map((s) => s.trim().toLowerCase()).filter(Boolean));
 }
 
-function getClientIp(req: FastifyRequest): string {
-	// Prefer forwarded header (common in docker/nginx). Keep it simple + explainable.
-	const xff = normalizeHeaderValue(req.headers['x-forwarded-for']);
-	if (xff) return xff.split(',')[0].trim();
-	return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // joan: añado ? para evitar el crash si no existe
+// Helper to obtain IP from IncomingMessage (WebSocket handler)
+function getClientIpFromIncomingMessage(req: any): string {
+	const xff = req.headers['x-forwarded-for'];
+	if (xff) {
+		const ip = Array.isArray(xff) ? xff[0] : xff;
+		return ip.split(',')[0].trim();
+	}
+	const xri = req.headers['x-real-ip'];
+	if (xri) return Array.isArray(xri) ? xri[0] : xri;
+	return req.socket?.remoteAddress || 'unknown';
 }
 
 export function buildApp(): FastifyInstance {
 	const app = Fastify(getFastifyConfig());
-	
+
 	const wsAllowedOrigins = parseWsAllowedOrigins();
 	const wsConnectionCountsByIp = new Map<string, number>();
 	let wsTotalConnections = 0;
+
+	// Declarar propiedades custom ANTES de usarlas — obligatorio en Fastify v5
+	app.decorateRequest('wsRawUrl', '');
+	app.decorateRequest('gatewayRequestId', '');
+	app.decorateRequest('gatewayStart', null);
+	app.decorateRequest('gatewayUpstream', '');
 
 	// Parse everything as Buffer to forward transparently
 	app.addContentTypeParser(
@@ -82,16 +88,22 @@ export function buildApp(): FastifyInstance {
 			.filter(Boolean),
 		credentials: true
 	});
+
+	// Capture the full URL (including query string) before Fastify routing strips it.
+	// Needed by the WS proxy to forward the token query param to the upstream service.
+	app.addHook('preHandler', (request: FastifyRequest, _reply: FastifyReply, done) => {
+		(request as any).wsRawUrl = request.url || '';
+		done();
+	});
+
 	// Basic Auth para proteger /docs
 	app.addHook('onRequest', async (request, reply) => {
-		// Solo proteger rutas de documentación
 		if (!request.url.startsWith('/docs')) {
 			return;
 		}
 
 		const authHeader = request.headers['authorization'];
 
-		// Si no hay cabecera Authorization o no es Basic, pedir credenciales
 		if (!authHeader || !authHeader.startsWith('Basic ')) {
 			reply.header('WWW-Authenticate', 'Basic realm="Docs"');
 			return reply.status(401).send({ error: 'Unauthorized' });
@@ -114,6 +126,7 @@ export function buildApp(): FastifyInstance {
 			return reply.status(401).send({ error: 'Unauthorized' });
 		}
 	});
+
 	// Request id + timing
 	app.addHook('onRequest', (request: FastifyRequest, reply: FastifyReply, done) => {
 		const incoming = request.headers['x-request-id'] || request.headers['request-id'];
@@ -148,7 +161,7 @@ export function buildApp(): FastifyInstance {
 		done();
 	});
 
-	// Registrar health check route
+	// Register health check route
 	app.register(healthRoutes);
 
 	// Swagger UI (aggregator)
@@ -181,29 +194,35 @@ export function buildApp(): FastifyInstance {
 	app.get('/docs/user.json', createOpenApiHandler(GatewayEnv.USER_SERVICE_URL, GatewayEnv.USER_OPENAPI_PATH));
 	app.get('/docs/game.json', createOpenApiHandler(GatewayEnv.GAME_SERVICE_URL, GatewayEnv.GAME_OPENAPI_PATH));
 	app.get('/docs/images.json', createOpenApiHandler(GatewayEnv.IMAGE_SERVICE_URL, GatewayEnv.IMAGE_OPENAPI_PATH));
-	
+
 	// HTTP proxy routes
 	const proxy = createProxyHandler(app);
 
 
 	// =========================================================================
-	// HELPER: Proxy WebSocket dinámico
-	// Aisla la lógica compleja de los websockets en una unica función mantenible
+	// HELPER: Dynamic WebSocket Proxy
+	// Isolates the complex WebSocket logic into a single maintainable function
 	// =========================================================================
-	function registerWsProxy(route: string, targetServiceUrl: string) {
-		// Le decimos a Fastify que intercepte la ruta dinámica (route) y que active el soporte para WebSockets.
+	function registerWsProxy(
+		route: string,
+		targetServiceUrl: string
+	) {
+
+		// Tell Fastify to intercept the dynamic route (route) and activate WebSocket support.
 		app.get(route, { websocket: true }, (connection, req) => {
-			// @fastify/websocket v8+ pasa el WebSocket directamente como primer argumento.
-			// No usar (connection as any).socket: ws@8 expone un getter .socket que retorna
-			// el net.Socket subyacente (TCP), no el WebSocket, rompiendo readyState y send().
-			const client = connection as unknown as WebSocket;
-			const requestId = (req as any).gatewayRequestId as string | undefined;
-			const clientIp = getClientIp(req);
+
+			const client = (connection as any).socket
+				? (connection as any).socket as WebSocket
+				: connection as unknown as WebSocket;
+
+			const requestId = randomUUID();
+			const clientIp = getClientIpFromIncomingMessage(req);
 
 			// --- Security: Origin check (WS is not covered by CORS) ---
-			const origin = normalizeHeaderValue(req.headers.origin);
-			const normalizedOrigin = origin?.toLowerCase();
-			if (normalizedOrigin && !wsAllowedOrigins.has(normalizedOrigin)) {
+			const originRaw = (req as any).headers['origin'];
+			const origin = Array.isArray(originRaw) ? originRaw[0] : originRaw as string | undefined;
+
+			if (origin && !wsAllowedOrigins.has(origin.toLowerCase())) {
 				app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
 				closeWithFallback(client, 1008, 'Origin not allowed', 200);
 				return;
@@ -220,26 +239,28 @@ export function buildApp(): FastifyInstance {
 			wsTotalConnections += 1;
 			wsConnectionCountsByIp.set(clientIp, currentIpCount + 1);
 
-			// Transformamos la URL base (http -> ws) e inyectamos la ruta dinámica.
-			// Para abrir un websocket, Node.js necesita que la URL empiece por ws://
+			// Build the upstream WebSocket URL:
+			// - Node.js requires the ws:// (or wss://) scheme to open a WebSocket connection,
+			//   so the service base URL (http://...) must have its scheme replaced.
+			// - The JWT token is passed as a query string (e.g. ?token=...). Fastify strips
+			//   the query string from req.url after routing, so it must be captured earlier.
+			//   The preHandler hook saves the full URL (including query) into req.wsRawUrl
+			//   before routing occurs. Here we extract that query and append it to the upstream URL.
 			const wsBase = targetServiceUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:').replace(/\/$/, '');
-			// req.raw.url es la URL completa tal como llega a Node.js (IncomingMessage.url):
-			// incluye siempre el path + query string antes de cualquier procesamiento de Fastify.
-			// Ej: "/api/game/ws?matchId=<uuid>&token=<jwt>"
-			const rawUrl      = req.raw.url ?? req.url ?? route;
-			const qIdx        = rawUrl.indexOf('?');
-			const query       = qIdx !== -1 ? rawUrl.slice(qIdx) : '';
+
+			const fullUrl = (req as any).wsRawUrl || route;
+
+			let query = '';
+			const queryIndex = fullUrl.indexOf('?');
+			if (queryIndex !== -1) {
+				query = fullUrl.slice(queryIndex);
+			}
+
 			const upstreamUrl = `${wsBase}${route}${query}`;
 
+			app.log.info({ requestId, fullUrl, query, upstreamUrl, hasToken: query.includes('token=') }, 'ws upstream url');
 
-			const clientProtocolsRaw = normalizeHeaderValue(req.headers['sec-websocket-protocol']);
-			const clientProtocols = clientProtocolsRaw
-				? clientProtocolsRaw.split(',').map((p) => p.trim()).filter(Boolean)
-				: undefined;
-
-			app.log.info({ requestId, clientIp, origin, upstreamUrl }, 'ws accepted: opening upstream');
-
-			const upstream = new WebSocket(upstreamUrl, clientProtocols);
+			const upstream = new WebSocket(upstreamUrl);
 
 			let cleanedUp = false;
 			const queuedClientMessages: WebSocket.RawData[] = [];
@@ -270,8 +291,8 @@ export function buildApp(): FastifyInstance {
 				pingInterval = setInterval(() => {
 					clientAlive = false;
 					upstreamAlive = false;
-					try { if (client.readyState === WebSocket.OPEN) client.ping(); } catch { }
-					try { if (upstream.readyState === WebSocket.OPEN) upstream.ping(); } catch { }
+					try { if (client.readyState === WebSocket.OPEN) client.ping(); } catch {}
+					try { if (upstream.readyState === WebSocket.OPEN) upstream.ping(); } catch {}
 					scheduleHeartbeatCheck();
 				}, GatewayEnv.WS_PING_INTERVAL_MS);
 			}
@@ -282,8 +303,8 @@ export function buildApp(): FastifyInstance {
 				clearTimeout(upstreamOpenTimeout);
 				if (pingInterval) clearInterval(pingInterval);
 				if (pongTimeout) clearTimeout(pongTimeout);
-				try { client.removeAllListeners(); } catch { }
-				try { upstream.removeAllListeners(); } catch { }
+				try { client.removeAllListeners(); } catch {}
+				try { upstream.removeAllListeners(); } catch {}
 
 				wsTotalConnections = Math.max(0, wsTotalConnections - 1);
 				const prev = wsConnectionCountsByIp.get(clientIp) ?? 1;
@@ -293,6 +314,7 @@ export function buildApp(): FastifyInstance {
 			}
 
 			client.on('pong', () => { clientAlive = true; });
+
 			upstream.on('pong', () => { upstreamAlive = true; });
 
 			upstream.on('open', () => {
@@ -328,6 +350,21 @@ export function buildApp(): FastifyInstance {
 			upstream.on('error', () => {
 				closeWithFallback(client, 1011, 'Upstream error', 500);
 				cleanup();
+			});
+
+			upstream.on('unexpected-response', (_req, res) => {
+				let reason = `Upstream rejected: ${res.statusCode}`;
+				const chunks: Buffer[] = [];
+				res.on('data', (chunk: Buffer) => chunks.push(chunk));
+				res.on('end', () => {
+					try {
+						const body = JSON.parse(Buffer.concat(chunks).toString());
+						if (body.message) reason = body.message;
+					} catch {}
+					app.log.warn({ requestId, statusCode: res.statusCode, reason }, 'ws upstream rejected');
+					closeWithFallback(client, 1008, reason, 200);
+					cleanup();
+				});
 			});
 
 			client.on('message', (data: WebSocket.RawData) => {
@@ -371,16 +408,16 @@ export function buildApp(): FastifyInstance {
 		});
 	}
 
+
 	// =========================================================================
-	// REGISTRO DE RUTAS WEBSOCKET
+	// WEBSOCKET ROUTE REGISTRATION
 	// =========================================================================
-	// Llamamos a la función inyectando la ruta de "Game".
-	registerWsProxy('/api/game/ws', GatewayEnv.GAME_SERVICE_URL);
-	// Reutilizamos toda la lógica de seguridad y backpressure para "Comms".
-	registerWsProxy('/api/comms/ws', GatewayEnv.COMMS_SERVICE_URL);
-
-
-
+	// Wrapped in app.register so @fastify/websocket hooks and decorators are
+	// properly scoped — without this the handler receives an incomplete request stub.
+	app.register(async function wsRoutes(_fastify) {
+		registerWsProxy('/api/game/ws', GatewayEnv.GAME_SERVICE_URL);
+		registerWsProxy('/api/comms/ws', GatewayEnv.COMMS_SERVICE_URL);
+	});
 
 	const authProxy = proxy(GatewayEnv.AUTH_SERVICE_URL);
 	app.all('/api/auth', authProxy);

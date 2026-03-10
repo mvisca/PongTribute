@@ -1,34 +1,34 @@
 import { AuthTypes, UserTypes } from '@transcendence/shared';
 
 /**
- * Interfaz que define el contrato para el repositorio de Usuarios.
- * Especifica QUÉ operaciones deben implementarse, sin definir CÓMO.
- * Permite implementar SQLite sin poner lógica de DB en lógica de negocio.
+ * Interface that defines the contract for the User repository.
+ * Specifies WHAT operations must be implemented, without defining HOW.
+ * Allows SQLite implementation without putting DB logic in business logic.
  */
 export interface IUserRepository {
     // ========================================================================
-    // MUTATIONS - Lanzan excepción si fallan
+    // MUTATIONS - Throw exception if they fail
     // ========================================================================
     
     /** Crear nuevo usuario */
     create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic>;
     
-    /** Actualizar usuario - Lanza NotFoundError si no existe */
+    /** Update user - Throws NotFoundError if not found */
     update(id: string, data: UserTypes.UpdateUserBody): Promise<UserTypes.UserPublic>;
     
-    /** Actualizar passwordHash - Lanza NotFoundError si no existe */
+    /** Update passwordHash - Throws NotFoundError if not found */
     updatePassword(id: string, passwordHash: string): Promise<UserTypes.UserPublic>;
     
-    /** Eliminar usuario - Lanza NotFoundError si no existe */
+    /** Delete user - Throws NotFoundError if not found */
     delete(id: string): Promise<void>;
     
-    /** Anonimizar usuario - Lanza NotFoundError si no existe */
+    /** Anonymize user - Throws NotFoundError if not found */
     anonymize(id: string): Promise<UserTypes.UserPublic>;
     
-    /** Actualizar isOnline - Lanza NotFoundError si no existe */
+    /** Update isOnline - Throws NotFoundError if not found */
     setOnlineStatus(id: string, isOnline: boolean): Promise<UserTypes.UserPublic>;
     
-    /** Actualizar estado 2FA - Lanza NotFoundError si no existe */
+    /** Update 2FA status - Throws NotFoundError if not found */
     update2FAStatus(
         userId: string,
         has2FAEnabled: boolean,
@@ -36,7 +36,7 @@ export interface IUserRepository {
         backupCodeHash?: string
     ): Promise<UserTypes.UserPublic>;
     
-	/** Actualizar lastLogoutAt para caducar tokens de acceso*/
+	/** Update lastLogoutAt to expire access tokens */
 	updateLastLogoutAt(userId: string, lastLogoutAt: number): Promise<void>;
 
     // ========================================================================
@@ -58,16 +58,16 @@ export interface IUserRepository {
     /** Buscar usuario por email (con passwordHash) - alias */
     findUserByEmail(email: string): Promise<UserTypes.UserInternal | null>;
 
-	/** Retorna el lastLogoutAt de un userId (timestamp en milisegundos) */
+	/** Returns the lastLogoutAt of a userId (timestamp in milliseconds) */
 	getLastLogoutAt(userId:string): Promise<number | null>;
 
 	// ========================================================================
     // CHECKERS - Retornan siempre un valor
     // ========================================================================
 
-    /** Verificar si username está en uso */
+    /** Check if username is already in use */
     isUsernameTaken(username: string): Promise<boolean>;
     
-    /** Verificar si email está en uso */
+    /** Check if email is already in use */
     isEmailTaken(email: string): Promise<boolean>;
 }

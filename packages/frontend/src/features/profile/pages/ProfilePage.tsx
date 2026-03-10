@@ -44,12 +44,12 @@ export default function ProfilePage() {
 		fetchProfile();
 	}, [userId, token]);
 
-	// Pagina de carga
+	// Loading page
 	if (loading) {
 		return <LoadingScreen />;
 	}
 
-	// Pagina de error
+	// Error page
 	if (error || !profile) {
 		return (
 			<PageContainer>
@@ -58,7 +58,7 @@ export default function ProfilePage() {
 		);
 	}
 
-	// Pagina de visualización de perfil
+	// Profile view page
 	return (
 		<PageContainer>
 			<FormCard title={profile.username}>

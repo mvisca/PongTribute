@@ -288,7 +288,7 @@ export class CommsService implements IEventService {
 				break;
 			}
 		} catch (err) {
-			// Mensaje mal formado, ignorarU): Pr
+			// Malformed message — ignore silently
 		}
 	}
 	
@@ -306,9 +306,23 @@ export class CommsService implements IEventService {
 				return;
 			}
 			
+			//  Clean dead sockets before verifing limits
+			const existing = this.connections.get(user.id);
+			if (existing) {
+				for (const sock of existing) {
+					if (sock.readyState !== WebSocket.OPEN && sock.readyState !== WebSocket.CONNECTING) {
+						existing.delete(sock);
+						this.totalConnections = Math.max(0, this.totalConnections - 1);
+					}
+				}
+				if (existing.size === 0) {
+					this.connections.delete(user.id);
+				}
+    		}
+
 			if (this.totalConnections >= CommsEnv.WS_MAX_CONNECTIONS()) {
-				this.logger.error(`[Comms] Máximo número de conexiones del servidor alcanzado`);
-				ws.close(1008, 'Server connection limit reached');
+				this.logger.error(`[Comms] Max connection per user reached`);
+				ws.close(4008, 'Server connection limit reached');
 				return;
 			}
 			
@@ -323,47 +337,48 @@ export class CommsService implements IEventService {
 			}
 			
 			if (this.connections.get(user.id)!.size >= CommsEnv.WS_MAX_CONNECTIONS_PER_USER()) {
-				this.logger.error(`[Comms] Máximo número de conexiones del usuario alcanzado`);
-				ws.close(1008, 'User connection limit reached');
+				this.logger.error(`[Comms] Max connection per user reached`);
+				ws.close(4029, 'User connection limit reached');
 				return;
 			}
 			
 			this.connections.get(user.id)!.add(extWs);
 			this.totalConnections++;
 			
-			const rateLimit = { count: 0, resetAt: Date.now() + 1000 };
+		const rateLimit = { count: 0, resetAt: Date.now() + 1000 };
 
 			// Guards contra flooding y payloads gigantes.
 			// Cierra con 1009 si supera MAX_MESSAGE_SIZE_BYTES (4KB).
 			// Cierra con 1008 si supera MAX_MESSAGES_PER_SECOND (10 msg/s, ventana deslizante por conexión).
 			extWs.on('message', (data) => {
-			// Guard 1 — tamaño
-			if (Buffer.byteLength(data as Buffer) > this.MAX_MESSAGE_SIZE_BYTES) {
-				extWs.close(1009, 'Message too large');
-				return;
-			}
+				// Guard 1 — tamaño
+				if (Buffer.byteLength(data as Buffer) > this.MAX_MESSAGE_SIZE_BYTES) {
+					extWs.close(1009, 'Message too large');
+					return;
+				}
 
-			// Guard 2 — frecuencia
-			const now = Date.now();
-			if (now > rateLimit.resetAt) {
-				rateLimit.count = 0;
-				rateLimit.resetAt = now + 1000;
-			}
-			if (++rateLimit.count > this.MAX_MESSAGES_PER_SECOND) {
-				extWs.close(1008, 'Rate limit exceeded');
-				return;
-			}
+				// Guard 2 — frecuencia
+				const now = Date.now();
+				if (now > rateLimit.resetAt) {
+					rateLimit.count = 0;
+					rateLimit.resetAt = now + 1000;
+				}
+				if (++rateLimit.count > this.MAX_MESSAGES_PER_SECOND) {
+					extWs.close(1008, 'Rate limit exceeded');
+					return;
+				}
 
-			this.handleMessage(extWs, data.toString());
+				this.handleMessage(extWs, data.toString());
 			});
-			
-			// Event listeners del socket			
+
+			// Event listeners del socket
+
 			extWs.on('pong', () => { extWs.isAlive = true });
 			
 			extWs.on('close', () => this.handleDisconnect(extWs, user.id));
 			
 			extWs.on('error', (err: Error) => {
-				this.logger.error(`[Comms] Fallo en socket user ${user.id}`, err);
+				this.logger.error(`[Comms] Error in socket user ${user.id}`, err);
 			});
 		} catch (err) {
 			this.logger.error('[Comms] Error handshake:', err);
@@ -374,16 +389,17 @@ export class CommsService implements IEventService {
 	private handleDisconnect(ws: ExtendedWebSocket, userId: string): void {
 		const sockets = this.connections.get(userId);
 
+		if (!sockets || !sockets.has(ws)) return;
+
 		if (sockets) {
 			sockets.delete(ws);
 			this.totalConnections--;
 		}
 
 		// Si ya no quedan sockets para este usuario, porque cerró la ultima pestaña
-		if (!sockets || sockets.size === 0) {
+		if (sockets.size === 0) {
 			this.connections.delete(userId); // Limpieza local
-
-			console.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
+			this.logger.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
 
 			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
 			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
@@ -396,7 +412,7 @@ export class CommsService implements IEventService {
 
 			// El servicio 'game' esta subscrito a esta publicacion
 			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
-				.catch(err => console.error('[COMMS] Error publishing disconnected event:', err));
+				.catch(err => this.logger.error('[COMMS] Error publishing disconnected event:', err));
 		}
 	}
 	

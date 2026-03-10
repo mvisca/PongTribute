@@ -93,7 +93,7 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 		const existingRow = this.getRowFriendsByIds(userId, friendId);
 		if (!existingRow)
 			throw new SharedErrors.NotFoundError(
-				`No se encontró amistad entre ${userId} y ${friendId}`,
+				`Friendship not found between ${userId} and ${friendId}`,
 				'friendship'
 			);
 

@@ -27,21 +27,21 @@ export class UserService {
 	private validateAvatar(avatar?: string): boolean {
 		if (!avatar || avatar.trim() === "") return false;
 		
-		// Validar formato y extraer base64
+		// Validate format and extract base64
 		const base64Regex = /^data:image\/(png|jpg|jpeg|webp);base64,([A-Za-z0-9+/=]+)$/;
 		const match = avatar.match(base64Regex);
 		if (!match) return false;
 		
 		const [, mimeType, base64Data] = match;
 		
-		// Validar que base64 sea válido
+		// Validate that base64 is valid
 		try {
 			Buffer.from(base64Data, 'base64');
 		} catch (e) {
-			return false;  // Base64 inválido
+			return false;  // Invalid base64
 		}
 		
-		// Validar tamaño (exacto, no aproximado)
+		// Validate size (exact, not approximate)
 		const sizeInBytes = Buffer.from(base64Data, 'base64').length;
 		const maxSizeBytes = 10 * 1024 * 1024; // 10MB
 		
@@ -73,7 +73,7 @@ export class UserService {
 			if (!response.ok) {
 				const error = await response.json().catch(() => ({ message: 'Unknown error' })) as any;
 				const errorMessage = error?.message || error?.error || response.statusText;
-				throw new SharedErrors.ServiceError('image', `Fallo subiendo avatar a Cloudinary`, {
+				throw new SharedErrors.ServiceError('image', `Failed uploading avatar to Cloudinary`, {
 					endpoint: `${UserEnv.IMAGE_SERVICE_URL()}/internal/upload`,
 					method: 'POST',
 					status: response.status,
@@ -87,7 +87,7 @@ export class UserService {
 			// Validar que URL sea válida
 			if (!data.url || typeof data.url !== 'string') {
 				throw new SharedErrors.ValidationError(
-					'Image Service retornó URL inválida',
+					'Image Service returned invalid URL',
 					'url',
 					{ 
 						received: typeof data.url, 
@@ -102,7 +102,7 @@ export class UserService {
 				new URL(data.url);
 			} catch (e) {
 				throw new SharedErrors.ValidationError(
-					'Image Service retornó URL con formato inválido',
+					'Image Service returned URL with invalid format',
 					'url',
 					{ 
 						receivedUrl: data.url, 
@@ -115,7 +115,7 @@ export class UserService {
 			// Validar que sea de Cloudinary
 			if (!data.url.startsWith('https://res.cloudinary.com/')) {
 				throw new SharedErrors.ValidationError(
-					'Image Service retornó URL no de Cloudinary',
+					'Image Service returned non-Cloudinary URL',
 					'url',
 					{ 
 						receivedUrl: data.url, 
@@ -144,14 +144,14 @@ export class UserService {
 		]);
 		
 		if (emailTaken) {
-			throw new SharedErrors.ConflictError('El email ya está en uso', 'email', {
+			throw new SharedErrors.ConflictError('Email is already in use', 'email', {
 				operation: 'createUser',
 				attemptedEmail: data.email
 			});
 		}
 		
 		if (usernameTaken) {
-			throw new SharedErrors.ConflictError('El username ya está en uso', 'username', {
+			throw new SharedErrors.ConflictError('Username is already in use', 'username', {
 				operation: 'createUser',
 				attemptedUsername: data.username
 			});
@@ -178,7 +178,7 @@ export class UserService {
 		const user = await this.userRepo.findUserByIdInternal(id);
 		
 		if (!user || user.isDeleted)
-			throw new SharedErrors.NotFoundError('El usuario no existe', 'user', {
+			throw new SharedErrors.NotFoundError('User does not exist', 'user', {
 			userId: id,
 			operation: 'updateUser',
 			isDeleted: user?.isDeleted
@@ -194,14 +194,14 @@ export class UserService {
 				data.avatar = UserEnv.CLOUDINARY_DEFAULT_AVATAR();
 			}
 			
-			// Es base64, validar formato y converit a url de cloudinary
+			// It's base64, validate format and convert to cloudinary url
 			else if (data.avatar!.startsWith('data:image/')) { 
 			
 				// Base64 válido, subir a Cloudinary
 				if (this.validateAvatar(data.avatar)) { 
 					data.avatar = await this.uploadAvatarToCloudinary(data.avatar!, user.avatar);
 
-				// Es inválido, borrar
+				// Invalid, discard
 				} else { 
 					delete data.avatar;
 				}
@@ -215,7 +215,7 @@ export class UserService {
 		if (data.email && data.email.toLowerCase() !== user.email.toLowerCase()) {
 			const isEmailTaken = await this.userRepo.isEmailTaken(data.email);
 			if (isEmailTaken)
-				throw new SharedErrors.ConflictError('El email ya está en uso', 'email', {
+				throw new SharedErrors.ConflictError('Email is already in use', 'email', {
 				operation: 'updateUser',
 				userId: id,
 				attemptedEmail: data.email
@@ -225,7 +225,7 @@ export class UserService {
 		if (data.username && data.username.toLowerCase() !== user.username.toLowerCase()) {
 			const isUsernameTaken = await this.userRepo.isUsernameTaken(data.username);
 			if (isUsernameTaken)
-				throw new SharedErrors.ConflictError('El username ya está en uso', 'username', {
+				throw new SharedErrors.ConflictError('Username is already in use', 'username', {
 				operation: 'updateUser',
 				userId: id,
 				attemptedUsername: data.username

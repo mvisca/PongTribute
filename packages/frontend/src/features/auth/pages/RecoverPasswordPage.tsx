@@ -21,7 +21,7 @@ export default function RecoverPasswordPage() {
 	const [error, setError] = useState('');
 	const [success, setSuccess] = useState(false);
 
-	// Sin el token el link es inválido
+	// Without the token the link is invalid
 	if (!token) {
 		return (
 			<PageContainer>

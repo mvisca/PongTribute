@@ -159,7 +159,7 @@ export namespace UserEnv {
 		};
 
 		if (!validateRedisConfig(redisConfig))
-			throw new Error('Configuración de Redis inválida');
+			throw new Error('Invalid Redis configuration');
 
 		return redisConfig;
 	}

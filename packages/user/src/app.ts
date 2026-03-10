@@ -60,9 +60,9 @@ export function buildApp(deps: UserAppDependencies): FastifyInstance {
 			},
 			security: [{ bearerAuth: [] }], // aplica por defecto a todas las rutas
 			tags: [
-				{ name: 'User', description: 'Gestión de usuarios' },
-				{ name: 'Token', description: 'Gestión de refresh tokens' },
-				{ name: 'Friendship', description: 'Gestión de amistades' }
+				{ name: 'User', description: 'User management' },
+				{ name: 'Token', description: 'Refresh token management' },
+				{ name: 'Friendship', description: 'Friendship management' }
 			]
 		},
 		transform: ({ schema, url }) => {

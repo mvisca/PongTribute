@@ -9,7 +9,7 @@ export interface CommsAppDependencies {
 	commsService: CommsService;
 }
 
-/** Crea y configura la instncia de Fastify */
+/** Crea y configura la instancia de Fastify */
 export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 
 	// Inicializar Fastify con config

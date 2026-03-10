@@ -15,10 +15,11 @@ type NavItem = {
 export default function Navbar() {
 	const navigate = useNavigate();
 
-    const username       = useAuth((state) => state.user?.username);
-    const token          = useAuth((state) => state.accessToken);
-    const authLogout     = useAuth((state) => state.logout);
-    const isAuthenticated = useAuth((state) => state.isAuthenticated);
+    const username			= useAuth((state) => state.user?.username);
+	const avatar			= useAuth((state) => state.avatar);
+    const token				= useAuth((state) => state.accessToken);
+    const authLogout   		= useAuth((state) => state.logout);
+    const isAuthenticated	= useAuth((state) => state.isAuthenticated);
 	
 	const [menuOpen, setMenuOpen] = useState(false);
 
@@ -38,7 +39,6 @@ export default function Navbar() {
         { icon: '👤', label: 'PROFILE',         path: '/profile' },
         { icon: '👥', label: 'FRIENDS',         path: '/friends' },
         { icon: '🕹️', label: 'PLAY',            path: '/lobby' },
-        { icon: '🔐', label: 'CHANGE PASSWORD', path: '/profile/password' },
     ];
 
 	const handleNav = (item: NavItem) => {
@@ -59,7 +59,7 @@ export default function Navbar() {
 
 				<div className='flex items-center gap-4'>
 					<div className='hidden sm:flex items-center gap-2'>
-						<AvatarDisplay src={null} size='sm' />
+						<AvatarDisplay src={avatar} size='sm' />
 						<span className='text-sm text-purple-300'>{username}</span>
 					</div>
 
@@ -76,7 +76,7 @@ export default function Navbar() {
 			{/*Overlay*/}
 			{menuOpen && (
 				<div
-					className='fixed insert-0 z-50 bg-purple-950/95 backdrop-blur-sm flex flex-col'
+					className='fixed inset-0 z-50 bg-purple-950/95 backdrop-blur-sm flex flex-col'
 					onClick={(e) => { if (e.target === e.currentTarget) setMenuOpen(false);}}
 				>
 					{/*Header overlay*/}
