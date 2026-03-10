@@ -302,9 +302,23 @@ export class CommsService implements IEventService {
 				return;
 			}
 			
+			//  Clean dead sockets before verifing limits
+			const existing = this.connections.get(user.id);
+			if (existing) {
+				for (const sock of existing) {
+					if (sock.readyState !== WebSocket.OPEN && sock.readyState !== WebSocket.CONNECTING) {
+						existing.delete(sock);
+						this.totalConnections = Math.max(0, this.totalConnections - 1);
+					}
+				}
+				if (existing.size === 0) {
+					this.connections.delete(user.id);
+				}
+    		}
+
 			if (this.totalConnections >= CommsEnv.WS_MAX_CONNECTIONS()) {
-				this.logger.error(`[Comms] Máximo número de conexiones del servidor alcanzado`);
-				ws.close(1008, 'Server connection limit reached');
+				this.logger.error(`[Comms] Max connection per user reached`);
+				ws.close(4008, 'Server connection limit reached');
 				return;
 			}
 			
@@ -319,15 +333,13 @@ export class CommsService implements IEventService {
 			}
 			
 			if (this.connections.get(user.id)!.size >= CommsEnv.WS_MAX_CONNECTIONS_PER_USER()) {
-				this.logger.error(`[Comms] Máximo número de conexiones del usuario alcanzado`);
+				this.logger.error(`[Comms] Max connection per user reached`);
 				ws.close(4029, 'User connection limit reached');
 				return;
 			}
 			
 			this.connections.get(user.id)!.add(extWs);
 			this.totalConnections++;
-			
-			
 			
 			// Event listeners del socket
 			extWs.on('message', (data) => { this.handleMessage(extWs, data.toString());	});
@@ -337,7 +349,7 @@ export class CommsService implements IEventService {
 			extWs.on('close', () => this.handleDisconnect(extWs, user.id));
 			
 			extWs.on('error', (err: Error) => {
-				this.logger.error(`[Comms] Fallo en socket user ${user.id}`, err);
+				this.logger.error(`[Comms] Error in socket user ${user.id}`, err);
 			});
 		} catch (err) {
 			this.logger.error('[Comms] Error handshake:', err);
