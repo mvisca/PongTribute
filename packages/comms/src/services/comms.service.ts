@@ -320,7 +320,7 @@ export class CommsService implements IEventService {
 			
 			if (this.connections.get(user.id)!.size >= CommsEnv.WS_MAX_CONNECTIONS_PER_USER()) {
 				this.logger.error(`[Comms] Máximo número de conexiones del usuario alcanzado`);
-				ws.close(1008, 'User connection limit reached');
+				ws.close(4029, 'User connection limit reached');
 				return;
 			}
 			
