@@ -39,7 +39,7 @@ export function useCommsSocket(onMessage:MessageHandler) {
 			ws.onclose = (event) => {
 				if (!mountedRef.current) return;
 				// auth error, don't reconnect
-				if (event.code === 4001 || event.code === 4003) return; 
+				if (event.code === 4001 || event.code === 4003 || event.code === 4029) return; 
 				// Reconnect after 3s
 				reconnectTimeout.current = setTimeout(connect, 3000);
 			};
