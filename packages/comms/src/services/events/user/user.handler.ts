@@ -39,9 +39,16 @@ export class UserEventHandler implements CommsEventHandler {
         event: TranscendenceEventsTypes.UserLoginEvent,
         commsService: CommsService
     ): Promise<void> {
+		// DEBUG
+		console.log(`[UserHandler-DEBUG] login event payload:`, JSON.stringify(event.payload));
         console.log(`[UserHandler] ${event.targetUserId} online`);
 
         const friends = event.payload.friendsIds ?? [];
+
+		// DEBUG
+		console.log(`[UserHandler-DEBUG] friends:`, friends);
+		const sent = commsService.sendToUser(friends[0], { type: 'debug-test' } as any);
+		console.log(`[UserHandler-DEBUG] sendToUser result:`, sent);
 
         if (friends.length > 0) {
             commsService.broadcastToUsers(friends, {
@@ -64,6 +71,8 @@ export class UserEventHandler implements CommsEventHandler {
         commsService: CommsService
     ): Promise<void> {
         console.log(`[UserHandler] ${event.targetUserId} offline`);
+
+		console.log(`[UserHandler-DEBUG] logout event payload:`, JSON.stringify(event.payload));
 
         commsService.closeUserConnection(event.targetUserId);
 

@@ -153,6 +153,9 @@ export class AuthService {
 				console.error(`[AUTH-SERVICE] Error cacheando lastLogoutAt en Redis:`, err)
 			);
 		}
+
+		// DEBUG
+		console.log(`[AUTH-LOGIN-DEBUG] friendsIds para ${user.id}:`, friendsIds);
 			
 		// DEFINICIÓN DEL EVENTO (Cumpliendo UserLoginEvent)
 		const loginEvent: TranscendenceEventsTypes.UserLoginEvent = {
@@ -166,7 +169,8 @@ export class AuthService {
 				avatar: user.avatar,
 				email: user.email,
 				lastLogoutAt: user.lastLogoutAt,
-				isOnline: user.isOnline
+				isOnline: user.isOnline,
+				friendsIds
 			}
 		} satisfies TranscendenceEventsTypes.UserLoginEvent;
 		

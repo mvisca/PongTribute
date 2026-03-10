@@ -21,8 +21,12 @@ export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 		crossOriginEmbedderPolicy: false
 	});
 
-	// Pligin de websocket
-	app.register(fastifyWebsocket);
+	// Websocket plugin with perMessageDeflate disabled (messasges compresion)
+	app.register(fastifyWebsocket, {
+		options: {
+			perMessageDeflate: false
+		}
+	});
 
 	// Hooks
 	app.addHook('onRoute', (route) => {

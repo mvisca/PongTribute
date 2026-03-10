@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from '../../core/auth/AuthContext';
 import { logout as logoutApi } from '../../features/auth/api/authApi';
 import { AvatarDisplay } from './ui';
+import { useFriendsStore } from '../../features/friends/store/friendsStore';
 
 type NavItem = {
 	icon: string;
@@ -21,15 +22,17 @@ export default function Navbar() {
     const authLogout   		= useAuth((state) => state.logout);
     const isAuthenticated	= useAuth((state) => state.isAuthenticated);
 	
+	const resetFriends		= useFriendsStore((state) => state.reset);
+
 	const [menuOpen, setMenuOpen] = useState(false);
 
 	if (!isAuthenticated) return null;
 
 	const handleLogout = async() => {
-		try {
+		try { 
 			await logoutApi(token!);
 		} catch {}
-
+		resetFriends();
 		authLogout();
 		navigate('/login');
 	};

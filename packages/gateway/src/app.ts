@@ -321,7 +321,7 @@ export function buildApp(): FastifyInstance {
 				clearTimeout(upstreamOpenTimeout);
 				for (const data of queuedClientMessages) {
 					if (upstream.readyState !== WebSocket.OPEN) break;
-					upstream.send(data);
+					upstream.send(data); // Empties upstream queue
 				}
 				queuedClientMessages.length = 0;
 				queuedBytes = 0;
@@ -362,7 +362,10 @@ export function buildApp(): FastifyInstance {
 						if (body.message) reason = body.message;
 					} catch {}
 					app.log.warn({ requestId, statusCode: res.statusCode, reason }, 'ws upstream rejected');
-					closeWithFallback(client, 1008, reason, 200);
+					const wsCloseCode	= res.statusCode === 401 ? 4001 
+										: res.statusCode === 403 ? 4003
+										: 1008;
+					closeWithFallback(client, wsCloseCode, reason, 200);
 					cleanup();
 				});
 			});
