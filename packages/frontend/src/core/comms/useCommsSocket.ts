@@ -24,14 +24,9 @@ export function useCommsSocket(onMessage:MessageHandler) {
 		function connect() {
 			if (!mountedRef.current || !token) return;
 
-			console.log('[WS] token at connect time:', token ? `${token.slice(0, 20)}...` : 'NULL');
-		    console.log('[WS] full url:', `${WS_URL}?token=${token}`);
-
-			// DIAGNÓSTICO TEMPORAL - borrar después de confirmar
-			const wsFullUrl = `${WS_URL}?token=${token}`;
-			console.log('[useCommsSocket] connecting to:', wsFullUrl, '| token length:', token?.length);
-
-			const ws = new WebSocket(wsFullUrl);
+				// Browsers do not allow custom headers on WebSocket upgrade requests,
+			// so the JWT must be passed as a query parameter (?token=...) and validated server-side.
+			const ws = new WebSocket(`${WS_URL}?token=${token}`);
 			wsRef.current = ws;
 
 			ws.onmessage = (event) => {
@@ -62,5 +57,8 @@ export function useCommsSocket(onMessage:MessageHandler) {
 			wsRef.current?.close();
 			wsRef.current = null;
 		};
+	// onMessage is intentionally omitted from the dependency array: the effect should only
+	// reconnect when the token changes, not on every render. Callers must keep onMessage
+	// stable (e.g. memoized with useCallback) to avoid stale-closure bugs.
 	}, [token]);
 }

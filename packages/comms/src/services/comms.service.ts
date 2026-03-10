@@ -284,7 +284,7 @@ export class CommsService implements IEventService {
 				break;
 			}
 		} catch (err) {
-			// Mensaje mal formado, ignorarU): Pr
+			// Malformed message — ignore silently
 		}
 	}
 	
@@ -357,7 +357,7 @@ export class CommsService implements IEventService {
 		if (!sockets || sockets.size === 0) {
 			this.connections.delete(userId); // Limpieza local
 
-			console.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
+			this.logger.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
 
 			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
 			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
@@ -370,7 +370,7 @@ export class CommsService implements IEventService {
 
 			// El servicio 'game' esta subscrito a esta publicacion
 			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
-				.catch(err => console.error('[COMMS] Error publishing disconnected event:', err));
+				.catch(err => this.logger.error('[COMMS] Error publishing disconnected event:', err));
 		}
 	}
 	

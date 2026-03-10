@@ -37,14 +37,6 @@ function parseWsAllowedOrigins(): Set<string> {
     return new Set(list.map((s) => s.trim()).filter(Boolean));
 }
 
-// Helper to obtain IP from FastifyRequest (HTTP handler) Probably wrong!! TODO Remove if IncomingMessage works
-function getClientIp(req: FastifyRequest): string {
-    // Prefer forwarded header (common in docker/nginx). Keep it simple + explainable.
-    const xff = normalizeHeaderValue(req.headers['x-forwarded-for']);
-    if (xff) return xff.split(',')[0].trim();
-    return (req.ip || req.socket?.remoteAddress || 'unknown').toString(); // added ? to avoid crash if socket is undefined
-}
-
 // Helper to obtain IP from IncomingMessage (WebSocket handler)
 function getClientIpFromIncomingMessage(req: any): string {
     const xff = req.headers['x-forwarded-for'];
@@ -182,24 +174,6 @@ export function buildApp(): FastifyInstance {
         // Tell Fastify to intercept the dynamic route (route) and activate WebSocket support.
         app.get(route, { websocket: true }, (connection, req) => {
    
-            // DIAGNÓSTICO TOTAL — borrar después
-            console.log('\n[WS-RAW-DIAG]', JSON.stringify({
-                'req.url':              (req as any).url,
-                'req.raw.url':          (req as any).raw?.url,
-                'x-original-uri':       (req as any).headers?.['x-original-uri'],
-                'x-forwarded-for':      (req as any).headers?.['x-forwarded-for'],
-                'req.query':            (req as any).query,
-            }));
-
-            console.log('\n[WS-RAW-DIAG]', {
-              'req.url': req.url,
-              'req.raw.url': req.raw?.url,
-              'x-original-uri': req.headers?.['x-original-uri'],
-              'x-forwarded-for': req.headers?.['x-forwarded-for'],
-              'req.query': req.query
-            });
-
-
             const client = (connection as any).socket
                 ? (connection as any).socket as WebSocket
                 : connection as unknown as WebSocket;
@@ -228,18 +202,17 @@ export function buildApp(): FastifyInstance {
             wsTotalConnections += 1;
             wsConnectionCountsByIp.set(clientIp, currentIpCount + 1);
             
-            // Transform the base URL (http -> ws) and inject the dynamic route
-            // To open a WebSocket, Node.js needs the URL to start with ws://
+            // Build the upstream WebSocket URL:
+            // - Node.js requires the ws:// (or wss://) scheme to open a WebSocket connection,
+            //   so the service base URL (http://...) must have its scheme replaced.
+            // - The JWT token is passed as a query string (e.g. ?token=...). Fastify strips
+            //   the query string from req.url after routing, so it must be captured earlier.
+            //   The preHandler hook saves the full URL (including query) into req.wsRawUrl
+            //   before routing occurs. Here we extract that query and append it to the upstream URL.
             const wsBase = targetServiceUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:').replace(/\/$/, '');
 
-            const upgradeReq = (client as any)._req;
             const fullUrl = (req as any).wsRawUrl || route;
 
-            // REEMPLAZA el console.log del WS-RAW-DIAG por esto:
-            console.log('[WS-DIAG] upgradeReq:', upgradeReq);
-            console.log('[WS-DIAG] client._req:', (client as any)._req);
-            console.log('[WS-DIAG] wsRawUrl:', (req as any).wsRawUrl);
-            
             let query = '';
             const queryIndex = fullUrl.indexOf('?');
             if (queryIndex !== -1) {

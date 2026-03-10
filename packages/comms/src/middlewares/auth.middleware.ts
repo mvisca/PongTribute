@@ -40,11 +40,6 @@ export namespace CommsMiddleware {
 		reply: FastifyReply
 	): Promise<void> {
 
-		// LOGS DE VERIFICACION
-		console.log('[validateJWT] headers:', JSON.stringify(request.headers));
-		console.log('[validateJWT] query:', JSON.stringify(request.query));
-		console.log('[validateJWT] raw url:', request.raw.url);
-
 		// WS auth via query string token — captured in gateway onRequest hook
 		const query = request.query as { token?: string };
 		const { token } = query;

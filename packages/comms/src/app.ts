@@ -9,7 +9,7 @@ export interface CommsAppDependencies {
 	commsService: CommsService;
 }
 
-/** Crea y configura la instncia de Fastify */
+/** Crea y configura la instancia de Fastify */
 export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 
 	// Inicializar Fastify con config
@@ -24,22 +24,6 @@ export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 	// Pligin de websocket
 	app.register(fastifyWebsocket);
 	
-	// Hooks
-	app.addHook('onRoute', (route) => {
-		const method = route.method.toString();
-		if (method === 'HEAD') return;
-		
-		const icon = {
-			POST: '📤',
-			GET: '📖',
-			PUT: '✏️',
-			DELETE: '🗑️',
-			PATCH: '🔧'
-		}[method] || '📌';
-
-		console.log(`${icon} COMMS: ${method.padEnd(7)} ${route.url}`);
-	});
-
 	// Registro de rutas
 	app.register(CommsRoutes.healthRoutes, { ...deps });
 	app.register(CommsRoutes.wsRoutes, { prefix: '/api', ...deps });
@@ -52,6 +36,5 @@ export function buildApp(deps: CommsAppDependencies): FastifyInstance {
 		});
 	});
 
-	console.log('Returning App: COMMS');
 	return app;
 }
