@@ -75,11 +75,12 @@ stop: check-env
 	@$(DC) stop
 
 nuke: check-env
-	@echo "WARNING: All images, volumes, TLS certificates and DB files (from .env paths) will be deleted."	@echo -n "Continue? [y/N] "; read -r answer; \
+	@echo "WARNING: All images, volumes, TLS certificates and DB files (from .env paths) will be deleted."
+	@echo -n "Continue? [y/N] "; read -r answer; \
 	if [ "$$answer" = "y" ] || [ "$$answer" = "Y" ]; then \
 		if [ -n "$(USER_SERVICE_DB_PATH)" ]; then rm -f $(USER_SERVICE_DB_PATH)/*.db; fi; \
 		if [ -n "$(GAME_SERVICE_DB_PATH)" ]; then rm -f $(GAME_SERVICE_DB_PATH)/*.db; fi; \
-		if [ -d ./packages/nginx/certs ]; then rm -f ./packages/nginx/certs/tls.crt ./packages/nginx/certs/tls.key; fi; \	
+		if [ -d ./packages/nginx/certs ]; then rm -f ./packages/nginx/certs/tls.crt ./packages/nginx/certs/tls.key; fi; \
 		$(DC) down -v 2>/dev/null || true; \
 		docker system prune -a -f --volumes; \
 		echo "Done."; \
