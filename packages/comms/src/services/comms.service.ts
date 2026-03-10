@@ -360,15 +360,16 @@ export class CommsService implements IEventService {
 	private handleDisconnect(ws: ExtendedWebSocket, userId: string): void {
 		const sockets = this.connections.get(userId);
 
+		if (!sockets || !sockets.has(ws)) return;
+
 		if (sockets) {
 			sockets.delete(ws);
 			this.totalConnections--;
 		}
 
 		// Si ya no quedan sockets para este usuario, porque cerró la ultima pestaña
-		if (!sockets || sockets.size === 0) {
+		if (sockets.size === 0) {
 			this.connections.delete(userId); // Limpieza local
-
 			this.logger.log(`[COMMS] User ${userId} fully disconnected. Emitting system event.`);
 
 			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
