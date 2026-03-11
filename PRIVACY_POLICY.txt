@@ -1,7 +1,7 @@
 Privacy Policy — Transcendence
 
 Transcendence is a project developed for educational purposes as part of the project ft_trascendence belonging 
-to the common core of school 42 barcelona. This policy describes in simple terms how we handle data in the application.
+to the common core of school 42 Barcelona. This policy describes in simple terms how we handle data in the application.
 
 What data we collect
 - Email, username, and password (stored encrypted) to create and manage your account.

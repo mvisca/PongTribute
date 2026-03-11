@@ -21,7 +21,7 @@ export default function PublicHomePage() {
 
 			<div className='flex flex-col gap-4 w-full max-w-xs'>
 				<ArcadeButton onClick={() => navigate('/login')}>LOGIN</ArcadeButton>
-				<NeonButton onClick={() => navigate('/register')}>REGISTER</NeonButton>
+				<ArcadeButton onClick={() => navigate('/register')}>REGISTER</ArcadeButton>
 			</div>
 		</div>
 	);
