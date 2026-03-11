@@ -281,7 +281,7 @@ export class UserService {
 	
 	async update2FAStatus(
 		userId: string,
-		has2FAEnabled: boolean,this.friendshipRepo;
+		has2FAEnabled: boolean,
 		totpSecret?: string,
 		backupCodeHash?: string
 	): Promise<UserTypes.UserPublic> {
