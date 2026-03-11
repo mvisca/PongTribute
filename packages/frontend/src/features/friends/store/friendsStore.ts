@@ -7,18 +7,25 @@ export interface FriendEntry {
 	isOnline: boolean;
 }
 
+export interface FriendInvite { // TODO eliminar campos muertos?
+	initiatorId: string;
+	userId: string;
+	friendId: string;
+}
+
 interface FriendsState {
 	// Accepted friends
 	friends: Record<string, FriendEntry>
 	// Pending incoming requests (key=initiatorId)
-	pending: Record<string, { initiatorId: string, userId: string, friendId: string }>
+	pending: Record<string, FriendInvite>
 
 	// Actions
 	setFriends: (entries: FriendEntry[]) => void;
-	setPending: (entries: Array<{ initiatorId: string; userId: string; friendId: string }>) => void;
+	setPending: (entries: Array<FriendInvite>) => void;
 	setOnline: (userId: string, isOnline: boolean) => void;
 	updateProfile: (userId: string, username: string, avatar: string) => void;
 	addFriend: (entry: FriendEntry) => void;
+	addPending: (entry: FriendInvite) => void;
 	removeFriend: (userId: string) => void;
 	removePending: (userId: string) => void;
 	reset: () => void;
@@ -53,6 +60,9 @@ export const useFriendsStore = create<FriendsState>((set) => ({
 	
 	addFriend: (entry) =>
 		set((state) => ({ friends: { ...state.friends, [entry.userId]: entry } })),
+
+	addPending: (entry) =>
+		set((state) => ({ pending: { ...state.pending, [entry.initiatorId]: entry } })),
 
 	removeFriend: (userId) =>
 		set((state) => {

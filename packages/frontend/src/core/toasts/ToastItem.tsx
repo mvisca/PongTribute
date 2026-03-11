@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useToastStore } from "./toastStore";
+import { useToastStore } from "./toastStore.js";
 import type { Toast } from './toast.types';
 import { TOAST_VARIANT, TOAST_TYPE, TOAST_BUTTON_STYLE} from './toast.types';
 
