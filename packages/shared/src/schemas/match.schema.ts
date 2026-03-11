@@ -73,12 +73,6 @@ export namespace MatchSchemas {
 		matchType: MatchTypeSchema,
 		opponentId: Type.Optional(UuidField), // Si null -> Matchmaking público
 		gameMode: Type.Optional(GameModeSchema),
-		// targetScore: Type.Optional(Type.Integer({
-		// 	minimum: GameConstants.GAME_CONSTANTS.SCORE.MIN,
-		// 	maximum: GameConstants.GAME_CONSTANTS.SCORE.MAX,
-		// 	multipleOf: GameConstants.GAME_CONSTANTS.SCORE.STEP,
-		// 	default: GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
-		// }))
 		// El targetScore se manejara en front con un slider de 5 a 21 y con opcion de solo impares
 		targetScore: Type.Optional(Type.Union([
 			Type.Literal(5), Type.Literal(7), Type.Literal(9),
