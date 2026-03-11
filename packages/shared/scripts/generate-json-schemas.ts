@@ -26,3 +26,5 @@ for (const [filename, schema] of Object.entries(schemas)) {
 }
 
 console.log('\n   --- Todos los schemas de IMAGES generados ---');
+
+// TODO remove dead code inherited from ROR images service
