@@ -20,7 +20,7 @@ export const Validators = {
 		pattern:   new RegExp(VC.PASSWORD_PATTERN),
 		minLength: VC.PASSWORD_MIN_LENGTH,
 		maxLength: VC.PASSWORD_MAX_LENGTH,
-		message: 'Password: 8-32 chars, at least one lowercase and one number, no spaces'
+		message: 'Password: 8-32 chars, at least one uppercase, one lowercase and one number, no spaces'
 	},
 
 	// Avatar base64

@@ -29,14 +29,18 @@ export function useCommsSocket(onMessage:MessageHandler) {
 			const ws = new WebSocket(`${WS_URL}?token=${token}`);
 			wsRef.current = ws;
 
-			ws.onmessage = (event) => {
+			ws.onmessage = async (event) => {
 				try {
-					const msg = JSON.parse(event.data) as WebSocketEventsTypes.AnyWsMessage;
+					const raw = typeof event.data === 'string' // Defensive in case of message is sent as binary
+						? event.data
+						: await (event.data as Blob).text();
+					const msg = JSON.parse(raw) as WebSocketEventsTypes.AnyWsMessage;
 					onMessage(msg);
 				} catch {}
 			};
 
 			ws.onclose = (event) => {
+				if (wsRef.current !== ws) return;
 				if (!mountedRef.current) return;
 				// auth error, don't reconnect
 				if (event.code === 4001 || event.code === 4003 || event.code === 4029) return; 

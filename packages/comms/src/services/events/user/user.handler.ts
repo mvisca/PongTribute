@@ -47,6 +47,9 @@ export class UserEventHandler implements CommsEventHandler {
 
         const friends = event.payload.friendsIds ?? [];
 
+		// DEBUG
+		const sent = commsService.sendToUser(friends[0], { type: 'debug-test' } as any);
+
         if (friends.length > 0) {
             commsService.broadcastToUsers(friends, {
                 type: WEBSOCKET_EVENTS.FRIEND_ONLINE,

@@ -1,18 +1,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../../core/auth/AuthContext';
-import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
-import type { FriendshipTypes } from '@transcendence/shared/types/friendship.types.js';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
-import { getProfile } from '../../profile/api/profileApi';
-import {
-	getFriendships,
-	sendFriendRequest,
-	respondFriendRequest,
-	removeFriend,
-	findUserByUsername
-} from '../api/friendsApi';
-import { FriendItem } from '../components/FriendItem';
+
 import {
 	PageContainer,
 	FormCard,
@@ -23,17 +13,32 @@ import {
 	AvatarDisplay,
 	LoadingScreen
 } from '../../../shared/components/ui';
+import { getProfile } from '../../profile/api/profileApi';
 
-import { useToastStore, TOAST_TYPE, TOAST_BUTTON_STYLE } from '../../../core/toasts'; //TEST
+import {
+	getFriendships,
+	sendFriendRequest,
+	respondFriendRequest,
+	removeFriend,
+	findUserByUsername
+} from '../api/friendsApi';
+import { useFriendsStore, FriendEntry } from '../store/friendsStore';
+import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
+import { FriendItem } from '../components/FriendItem';
+import type { FriendshipTypes } from '@transcendence/shared/types/friendship.types.js';
 
 export default function FriendsPage() {
-	const { info, success, error: toastError, action } = useToastStore(); //TEST
 
 	const token 					= useAuth((state) => state.accessToken);
 	const currentUserId				= useAuth((state) => state.user?.id);
 
-	const [friends, setFriends]		= useState<FriendshipTypes.Friendship[]>([]);
-	const [pending, setPending]		= useState<FriendshipTypes.Friendship[]>([]);
+	const friends = useFriendsStore(state => state.friends);
+	const pending = useFriendsStore(state => state.pending);
+	const setFriends = useFriendsStore(state => state.setFriends);
+	const setPending = useFriendsStore(state => state.setPending);
+	const removeFriendStore = useFriendsStore(state => state.removeFriend);
+	const removePendingStore = useFriendsStore(state => state.removePending);
+
 	const [loading, setLoading]		= useState(true);
 	const [error, setError]			= useState('');
 
@@ -51,8 +56,30 @@ export default function FriendsPage() {
 				getFriendships(token, FRIENDSHIP_STATUS.PENDING),
 			]);
 
-			setFriends(acceptedRes.friendships);
-			setPending(allPendingRes.friendships.filter(friendship => friendship.initiatorId !== currentUserId));
+			// Populate Friends with profile data
+			const enriched = await Promise.all(
+				acceptedRes.friendships.map(async (friend) => {
+					const friendId = friend.userId === currentUserId ? friend.friendId : friend.userId;
+					try {
+						const profile = await getProfile(friendId, token);
+						return {
+							userId: friendId,
+							username: profile.username,
+							avatar: profile.avatar ?? '',
+							isOnline: profile.isOnline,
+						} satisfies FriendEntry;
+					} catch {
+						return { userId: friendId, username: friendId, avatar: '', isOnline: false };
+					}
+				})
+			);
+			setFriends(enriched);
+
+			// Incoming pending requests
+			const incomingPending = allPendingRes.friendships
+				.filter(friend => friend.initiatorId !== currentUserId)
+				.map(friend => ({ initiatorId: friend.initiatorId, userId: friend.userId, friendId: friend.friendId }));
+			setPending(incomingPending);
 
 		} catch {
 			setError('Failed to load friends');
@@ -63,16 +90,13 @@ export default function FriendsPage() {
 
 	useEffect(() => {
 		loadFriendships();
-	}, []);
+	}, []); // TODO sin dependencias?
 
 	const handleRemove = async (friendId: string) => {
 		if (!token) return;
-
 		try{
 			await removeFriend(friendId, token);
-			setFriends(friendsList => friendsList.filter(
-				friend => friend.userId && friend.userId !== friendId
-			));
+			removeFriendStore(friendId);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to remove friend');
 		}
@@ -80,13 +104,10 @@ export default function FriendsPage() {
 
 	const handleRespond = async (initiatorId: string, accepted: boolean) => {
 		if (!token) return;
-
 		try {
 			await respondFriendRequest(initiatorId, accepted, token);
-			setPending(friendsList => friendsList.filter(
-				friend => friend.initiatorId && friend.initiatorId !== initiatorId
-			));
-			if (accepted) await loadFriendships();
+			removePendingStore(initiatorId);
+			if (accepted) await loadFriendships(); // Reload friends
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to respond to friend request');
 		}
@@ -158,12 +179,12 @@ export default function FriendsPage() {
 			</FormCard>
 
 			{/*Pending requests*/}
-			{pending.length > 0 && (
-				<FormCard title={`REQUESTS (${pending.length})`}>
-					{pending.map(friendRequest => (
+			{Object.keys(pending).length > 0 && (
+				<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
+					{ Object.values(pending).map( req => (
 						<PendingItem
-							key={friendRequest.initiatorId}
-							initiatorId={friendRequest.initiatorId}
+							key={req.initiatorId}
+							initiatorId={req.initiatorId}
 							token={token!}
 							onRespond={handleRespond}
 						/>
@@ -172,43 +193,18 @@ export default function FriendsPage() {
 			)}
 
 			{/*Friends list*/}
-			<FormCard title={`Friends (${friends.length})`}>
-				{friends.length === 0
-					? (
-						<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>
-					) : (
-						friends.map(friendship => {
-							const friendId = friendship.userId === currentUserId ? friendship.friendId : friendship.userId;
-							return (
-								<FriendItem
-									key={friendId}
-									friendId={friendId}
-									onRemove={handleRemove}
-								/>
-							);
-						})
-					)
+			<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
+				{ Object.keys(friends).length === 0
+					? (<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>)
+					: Object.values(friends).map(entry => (
+						<FriendItem
+							key={entry.userId}
+							entry={entry}
+							onRemove={handleRemove}
+						/>
+					))
 				}
 			</FormCard>
-
-			{/*TEST DE TOAST}
-			<div className='flex gap-2 flex-wrap'>
-				<button onClick={() => info('Amigo conectado')}>Toast info</button>
-				<button onClick={() => success('Solicitud enviada')}>Toast success</button>
-				<button onClick={() => toastError('Error de red')}>Toast error</button>
-				<button onClick={() => action({
-					type: TOAST_TYPE.INFO,
-					message: 'quiere ser tu amigo',
-					duration: 0,
-					actions: [
-						{ label: 'Aceptar', onClick: () => console.log('aceptado'), style: TOAST_BUTTON_STYLE.PRIMARY },
-						{ label: 'Rechazar', onClick: () => console.log('rechazado'), style: TOAST_BUTTON_STYLE.DANGER },
-					],
-					expiresAt: Date.now() + 10000
-				})}>Toast action</button>
-			</div>
-			{/*FIN DE TEST DE TOAST*/}
-
 		</PageContainer>
 	);
 }
