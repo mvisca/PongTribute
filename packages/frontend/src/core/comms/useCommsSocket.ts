@@ -1,10 +1,11 @@
 import{ useEffect, useRef } from 'react';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
 import { useAuth } from '../auth/AuthContext';
+import { WS_COMMS_URL } from '../api/wsUrls';
 
 type MessageHandler = (msg: WebSocketEventsTypes.AnyWsMessage) => void;
 
-const WS_URL = import.meta.env.VITE_WS_COMMS_URL ?? '/ws/comms';
+const WS_URL = WS_COMMS_URL ?? import.meta.env.VITE_WS_COMMS_URL ?? '/ws/comms';
 
 export function useCommsSocket(onMessage:MessageHandler) {
 	const token = useAuth((state) => state.accessToken);
