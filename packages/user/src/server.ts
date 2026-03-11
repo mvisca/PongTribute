@@ -41,7 +41,7 @@ async function start() {
 		// Crear services con dependencias inyectadas
 		// 3. Services con logger provisional (console) — se actualizará tras buildApp
 		// Alternativa más limpia: hacer el logger opcional en el constructor con fallback
-		const userService = new UserService(redisClient!, userRepo);
+		const userService = new UserService(redisClient!, userRepo, friendshipRepo);
 		const friendshipService = new FriendshipService(friendshipRepo, userService, redisClient);
 		const tokenService = new TokenService(tokenRepo);
 

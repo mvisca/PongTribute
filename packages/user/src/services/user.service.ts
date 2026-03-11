@@ -11,19 +11,32 @@ import {
 } from '@transcendence/shared';
 import {
 	IUserRepository,
+	IFriendshipRepository,
 	UserEnv,
 	UserMapper
 } from '../index.js';
 
 export class UserService {
 	private userRepo: IUserRepository;
+	private friendshipRepo: IFriendshipRepository;
 	private redisClient: Redis;
 	private log: AppLogger;
 
-	constructor(redisClient: Redis, userRepo: IUserRepository) {
+	constructor(
+		redisClient: Redis,
+		userRepo: IUserRepository,
+		friendshipRepo: IFriendshipRepository
+	) {
 		this.userRepo = userRepo;
+		this.friendshipRepo = friendshipRepo;
 		this.redisClient = redisClient;
 		this.log = createLogger('UserService');
+	}
+
+	/** Private helper to get user friends' ids */
+	private async getFriendIds(userId: string): Promise<string[]> {
+		const friendships = await this.friendshipRepo.findByUser(userId);
+		return friendships.map(friend => friend.userId === userId ? friend.friendId : friend.userId);	
 	}
 
 	/** Validación de argumento avatar en updateUser */
@@ -241,6 +254,8 @@ export class UserService {
 		if (updatedUser.username !== oldUsername || updatedUser.avatar !== oldAvatar) {
 			this.log.info({ userId: id, oldUsername, newUsername: updatedUser.username }, 'Profile updated');
 			
+			const friendsIds = await this.getFriendIds(id);
+
 			const eventPayload: TranscendenceEventsTypes.UserProfileUpdatedEvent = {
 				type: TRANSCENDENCE_EVENTS.USER_PROFILE_UPDATED,
 				timestamp: Date.now(),
@@ -253,6 +268,7 @@ export class UserService {
 					email: updatedUser.email,
 					lastLogoutAt: updatedUser.lastLogoutAt,
 					isOnline: updatedUser.isOnline,
+					friendsIds,
 				}
 			} satisfies TranscendenceEventsTypes.UserProfileUpdatedEvent;
 			
@@ -265,7 +281,7 @@ export class UserService {
 	
 	async update2FAStatus(
 		userId: string,
-		has2FAEnabled: boolean,
+		has2FAEnabled: boolean,this.friendshipRepo;
 		totpSecret?: string,
 		backupCodeHash?: string
 	): Promise<UserTypes.UserPublic> {

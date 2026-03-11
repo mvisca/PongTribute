@@ -88,7 +88,10 @@ export class FriendshipEventHandler implements CommsEventHandler {
 			}
 		};
 
-		commsService.broadcastToUsers([event.payload.requesterId], wsMessage);
+		commsService.broadcastToUsers([
+			event.payload.requesterId,
+			event.payload.acceptorId
+		], wsMessage);
 	}
 
 	private async handleFriendRemove(

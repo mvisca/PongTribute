@@ -6,7 +6,7 @@ import {
 	TOAST_BUTTON_STYLE, 
 	TOAST_TYPE, 
 	ToastContainer, 
-	useToastStore
+	useToastStore,
 } from './core/toasts';
 import { useAuth } from './core/auth/AuthContext';
 import { useCommsSocket } from './core/comms/useCommsSocket';
@@ -14,11 +14,16 @@ import { respondFriendRequest } from './features/friends/api/friendsApi';
 import { useFriendsStore } from './features/friends/store/friendsStore';
 
 export default function App() {
-	const { info, error, success, warning, action } = useToastStore();
+	const info = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.info);
+	const error = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.error);
+	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
+	const warning = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.warning);
+	const action = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.action);
 	
 	const setOnline = useFriendsStore(state => state.setOnline);
 	const updateProfile = useFriendsStore(state => state.updateProfile);
 	const addFriend = useFriendsStore(state => state.addFriend);
+	const addPending = useFriendsStore(state => state.addPending);
 	const removeFriend = useFriendsStore(state => state.removeFriend);
 	const removePending = useFriendsStore(state => state.removePending);
 
@@ -68,6 +73,11 @@ export default function App() {
 
 			// Friendship
 			case WEBSOCKET_EVENTS.FRIEND_REQUEST:
+				addPending({
+					initiatorId: msg.payload.senderId,
+					userId: msg.payload.senderId,
+					friendId: msg.payload.senderId
+				});
 				action({
 					type: TOAST_TYPE.INFO,
 					message: `${msg.payload.senderUsername} wants to be your friend`,
@@ -109,9 +119,9 @@ export default function App() {
 		}
 	}, [
 		handleAcceptFriend,	handleRejectFriend,	setOnline,
-		updateProfile,		addFriend,			removeFriend,
-		removePending,		info,				success,
-		warning,			action
+		updateProfile,		addFriend,			addPending,
+		removeFriend,		removePending,		info,
+		success,			warning,			action
 	]);
 
 	useCommsSocket(handleWsMessage);

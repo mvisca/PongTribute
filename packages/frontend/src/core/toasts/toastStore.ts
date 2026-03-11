@@ -12,7 +12,7 @@ interface ToastState {
 	action: (params: Omit<ToastAction, 'id' | 'variant'>) => void;
 };
 
-export const useToastStore = create<ToastState>((set) => ({
+export const useTroastStore = create<ToastState>((set) => ({
 	toasts: [],
 
 	dismiss: (id) => 
