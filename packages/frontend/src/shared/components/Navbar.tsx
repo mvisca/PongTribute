@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { useAuth } from '../../core/auth/AuthContext';
+import { useAuthStore } from '../../core/auth/AuthStore';
 import { logout as logoutApi } from '../../features/auth/api/authApi';
 import { AvatarDisplay } from './ui';
 import { useFriendsStore } from '../../features/friends/store/friendsStore';
@@ -16,11 +16,11 @@ type NavItem = {
 export default function Navbar() {
 	const navigate = useNavigate();
 
-    const username			= useAuth((state) => state.user?.username);
-	const avatar			= useAuth((state) => state.avatar);
-    const token				= useAuth((state) => state.accessToken);
-    const authLogout   		= useAuth((state) => state.logout);
-    const isAuthenticated	= useAuth((state) => state.isAuthenticated);
+    const username			= useAuthStore((state) => state.user?.username);
+	const avatar			= useAuthStore((state) => state.avatar);
+    const token				= useAuthStore((state) => state.accessToken);
+    const authLogout   		= useAuthStore((state) => state.logout);
+    const isAuthenticated	= useAuthStore((state) => state.isAuthenticated);
 	
 	const resetFriends		= useFriendsStore((state) => state.reset);
 

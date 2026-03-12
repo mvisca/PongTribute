@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../core/auth/AuthContext';
+import { useAuthStore } from '../../../core/auth/AuthStore';
 import { apiRequest } from '../../../core/api/client';
 import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 import {
@@ -15,11 +15,11 @@ import {
 export default function ChangePasswordPage() {
 	const navigate = useNavigate();
 
-	const userId = useAuth((state) => state.user?.id);
-	const token = useAuth((state) => state.accessToken);
-	const currentUser = useAuth((state) => state.user);
-	const setUser = useAuth((state) => state.setUser);
-	const setAccessToken = useAuth((state) => state.setAccessToken);
+	const userId = useAuthStore((state) => state.user?.id);
+	const token = useAuthStore((state) => state.accessToken);
+	const currentUser = useAuthStore((state) => state.user);
+	const setUser = useAuthStore((state) => state.setUser);
+	const setAccessToken = useAuthStore((state) => state.setAccessToken);
 
 	const [oldPassword, setOldPassword] = useState('');
 	const [newPassword, setNewPassword] = useState('');

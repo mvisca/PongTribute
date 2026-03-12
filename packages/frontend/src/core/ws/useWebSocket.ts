@@ -1,17 +1,23 @@
 import{ useEffect, useRef } from 'react';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
-import { useAuth } from '../auth/AuthContext';
-import { WS_COMMS_URL } from '../api/wsUrls';
+import { useAuthStore } from '../auth/AuthStore';
+import { WS_COMMS_URL } from '../api/wsUrls'; // To build ws path on ngrok
 
-type MessageHandler = (msg: WebSocketEventsTypes.AnyWsMessage) => void;
+interface UseWebSocketOptions {
+	onMessage:  (msg: WebSocketEventsTypes.AnyWsMessage) => void;
+	// Called on successful open (initial connect + every reconnect).
+	// Helps to re-sync state that may have been lost during disconnection.
+	// Must be stable (memorized with useCallback).
+	// Intentionally omitted from the effect dependency array, same reasonin as onMessage.
+	onConnect?: () => void;
+}
 
-const WS_URL = WS_COMMS_URL ?? import.meta.env.VITE_WS_COMMS_URL ?? '/ws/comms';
-
-export function useCommsSocket(onMessage:MessageHandler) {
-	const token = useAuth((state) => state.accessToken);
-	const wsRef = useRef<WebSocket | null>(null);
+export function useWebSocket({ onMessage, onConnect }: UseWebSocketOptions) {
+	const wsRef = useRef<WebSocket | null>(null); // live instance of websocket
+	const mountedRef = useRef(true); // indicates if the component is mounted
 	const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const mountedRef = useRef(true);
+
+	const token = useAuthStore((state) => state.accessToken);
 	
 	useEffect(() => {
 		mountedRef.current = true;
@@ -25,10 +31,13 @@ export function useCommsSocket(onMessage:MessageHandler) {
 		function connect() {
 			if (!mountedRef.current || !token) return;
 
-				// Browsers do not allow custom headers on WebSocket upgrade requests,
+			// Browsers do not allow custom headers on WebSocket upgrade requests,
 			// so the JWT must be passed as a query parameter (?token=...) and validated server-side.
-			const ws = new WebSocket(`${WS_URL}?token=${token}`);
+			const ws = new WebSocket(`${WS_COMMS_URL}?token=${token}`);
 			wsRef.current = ws;
+
+			// Calls loadFriendships
+			ws.onopen = () => { onConnect?.();}
 
 			ws.onmessage = async (event) => {
 				try {
@@ -41,9 +50,12 @@ export function useCommsSocket(onMessage:MessageHandler) {
 			};
 
 			ws.onclose = (event) => {
+				// Exceptions
+				// Exception: don't reconnect other's tab websocket 
 				if (wsRef.current !== ws) return;
+				// Exception: don't reconnect inextistent websocket
 				if (!mountedRef.current) return;
-				// auth error, don't reconnect
+				// Exceptfion: auth error, don't reconnect
 				if (event.code === 4001 || event.code === 4003 || event.code === 4029) return; 
 				// Reconnect after 3s
 				reconnectTimeout.current = setTimeout(connect, 3000);

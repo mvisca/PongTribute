@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
-import { useAuth } from '../../../core/auth/AuthContext';
+import { useAuthStore } from '../../../core/auth/AuthStore';
 import { getProfile } from '../api/profileApi';
 import {
 	PageContainer,
@@ -15,8 +15,8 @@ import {
 
 export default function ProfilePage() {
 	const navigate = useNavigate();
-	const userId = useAuth((state) => state.user?.id);
-	const token = useAuth((state) => state.accessToken);
+	const userId = useAuthStore((state) => state.user?.id);
+	const token = useAuthStore((state) => state.accessToken);
 
 	const [profile, setProfile] = useState<UserTypes.UserPublic | null>(null);
 	const [loading, setLoading] = useState(true);

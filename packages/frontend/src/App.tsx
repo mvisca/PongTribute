@@ -8,18 +8,25 @@ import {
 	ToastContainer, 
 	useToastStore,
 } from './core/toasts';
-import { useAuth } from './core/auth/AuthContext';
-import { useCommsSocket } from './core/comms/useCommsSocket';
-import { respondFriendRequest } from './features/friends/api/friendsApi';
-import { useFriendsStore } from './features/friends/store/friendsStore';
+import { useAuthStore } from './core/auth/AuthStore';
+import { useWebSocket } from './core/ws/useWebSocket';
+import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
+import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
+import { getProfile } from './features/profile/api/profileApi';
+import { useFriendsStore, FriendEntry } from './features/friends/store/friendsStore';
 
 export default function App() {
+	const token = useAuthStore((state) => state.accessToken);
+	const currentUserId = useAuthStore((state) => state.user?.id); 
+
 	const info = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.info);
 	const error = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.error);
 	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
 	const warning = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.warning);
 	const action = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.action);
 	
+	const setFriends = useFriendsStore(state => state.setFriends);
+	const setPending = useFriendsStore(state => state.setPending);
 	const setOnline = useFriendsStore(state => state.setOnline);
 	const updateProfile = useFriendsStore(state => state.updateProfile);
 	const addFriend = useFriendsStore(state => state.addFriend);
@@ -27,7 +34,37 @@ export default function App() {
 	const removeFriend = useFriendsStore(state => state.removeFriend);
 	const removePending = useFriendsStore(state => state.removePending);
 
-	const token = useAuth((state) => state.accessToken);
+	const loadFriendships = useCallback(async () => {
+		if (!token) return;
+
+		try {
+			const [acceptedRes, pendingRes] = await Promise.all([
+				getFriendships(token, FRIENDSHIP_STATUS.ACCEPTED),
+				getFriendships(token, FRIENDSHIP_STATUS.PENDING),
+			]);
+
+			// Populate Friends with profile data
+			const enriched = await Promise.all(
+				acceptedRes.friendships.map(async (friend) => {
+					const friendId = friend.userId === currentUserId ? friend.friendId : friend.userId;
+					const profile = await getProfile(friendId, token).catch(() => null);
+					return {
+						userId: friendId,
+						username: profile?.username ?? friendId,
+						avatar: profile?.avatar ?? '',
+						isOnline: profile?.isOnline ?? false,
+					} satisfies FriendEntry;
+				})
+			);
+			setFriends(enriched);
+
+			// Incoming pending requests
+			const incomingPending = pendingRes.friendships
+				.filter(friend => friend.initiatorId !== currentUserId)
+				.map(friend => ({ initiatorId: friend.initiatorId, userId: friend.userId, friendId: friend.friendId }));
+			setPending(incomingPending);
+		} catch { };
+	}, [token, currentUserId, setFriends, setPending]);
 
 	const handleAcceptFriend = useCallback(async (
 		senderId: string,
@@ -41,7 +78,7 @@ export default function App() {
 			removePending(senderId);
 		} catch {
 			error('Failed to accept request');
-		}
+		} 
 	}, [token, addFriend, removePending, error]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
@@ -124,7 +161,7 @@ export default function App() {
 		success,			warning,			action
 	]);
 
-	useCommsSocket(handleWsMessage);
+	useWebSocket({ onMessage: handleWsMessage, onConnect: loadFriendships });
 
 	return (
 		<>

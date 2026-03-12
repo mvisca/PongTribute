@@ -1,8 +1,20 @@
-
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../../core/auth/AuthContext';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
-
+// AUTH STORE Zustand
+import { useAuthStore } from '../../../core/auth/AuthStore';
+// PROFILE API
+import { getProfile } from '../../profile/api/profileApi';
+// FRIENDS STORE Zustand
+import { useFriendsStore } from '../store/friendsStore';
+// FRIENDS API
+import {
+	sendFriendRequest,
+	respondFriendRequest,
+	removeFriend,
+	findUserByUsername
+} from '../api/friendsApi';
+// FRIENDS Components
+import { FriendItem } from '../components/FriendItem';
 import {
 	PageContainer,
 	FormCard,
@@ -13,84 +25,28 @@ import {
 	AvatarDisplay,
 	LoadingScreen
 } from '../../../shared/components/ui';
-import { getProfile } from '../../profile/api/profileApi';
-
-import {
-	getFriendships,
-	sendFriendRequest,
-	respondFriendRequest,
-	removeFriend,
-	findUserByUsername
-} from '../api/friendsApi';
-import { useFriendsStore, FriendEntry } from '../store/friendsStore';
-import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
-import { FriendItem } from '../components/FriendItem';
-import type { FriendshipTypes } from '@transcendence/shared/types/friendship.types.js';
 
 export default function FriendsPage() {
 
-	const token 					= useAuth((state) => state.accessToken);
-	const currentUserId				= useAuth((state) => state.user?.id);
+	const token 							= useAuthStore((state) => state.accessToken);
+	const currentUserId						= useAuthStore((state) => state.user?.id);
 
-	const friends = useFriendsStore(state => state.friends);
-	const pending = useFriendsStore(state => state.pending);
-	const setFriends = useFriendsStore(state => state.setFriends);
-	const setPending = useFriendsStore(state => state.setPending);
-	const removeFriendStore = useFriendsStore(state => state.removeFriend);
-	const removePendingStore = useFriendsStore(state => state.removePending);
+	const setFriends						= useFriendsStore(state => state.setFriends);
+	const setPending						= useFriendsStore(state => state.setPending);
+	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
+	const removePendingStore 				= useFriendsStore(state => state.removePending);
 
-	const [loading, setLoading]		= useState(true);
-	const [error, setError]			= useState('');
+	const [loading, setLoading]				= useState(true);
+	const [error, setError]					= useState('');
 
 	const [searchInput, setSearchInput] 	= useState('');
 	const [searchResult, setSearchResult] 	= useState<UserTypes.UserPublic | null>(null);
 	const [searchError, setSearchError] 	= useState('');
 	const [searchLoading, setSearchLoading]	= useState(false);
 
-	const loadFriendships = async () => {
-		if (!token) return;
-
-		try {
-			const [acceptedRes, allPendingRes] = await Promise.all([
-				getFriendships(token, FRIENDSHIP_STATUS.ACCEPTED),
-				getFriendships(token, FRIENDSHIP_STATUS.PENDING),
-			]);
-
-			// Populate Friends with profile data
-			const enriched = await Promise.all(
-				acceptedRes.friendships.map(async (friend) => {
-					const friendId = friend.userId === currentUserId ? friend.friendId : friend.userId;
-					try {
-						const profile = await getProfile(friendId, token);
-						return {
-							userId: friendId,
-							username: profile.username,
-							avatar: profile.avatar ?? '',
-							isOnline: profile.isOnline,
-						} satisfies FriendEntry;
-					} catch {
-						return { userId: friendId, username: friendId, avatar: '', isOnline: false };
-					}
-				})
-			);
-			setFriends(enriched);
-
-			// Incoming pending requests
-			const incomingPending = allPendingRes.friendships
-				.filter(friend => friend.initiatorId !== currentUserId)
-				.map(friend => ({ initiatorId: friend.initiatorId, userId: friend.userId, friendId: friend.friendId }));
-			setPending(incomingPending);
-
-		} catch {
-			setError('Failed to load friends');
-		} finally {
-			setLoading(false);
-		}
-	}
-
 	useEffect(() => {
 		loadFriendships();
-	}, []); // TODO sin dependencias?
+	}, [token]); // TODO sin dependencias?
 
 	const handleRemove = async (friendId: string) => {
 		if (!token) return;

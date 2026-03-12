@@ -16,8 +16,8 @@ type AuthState = {
 
 // Inicialización del store Zustand
 // Está disponible para todos los componentes 
-// Pueden leerlo y escribirlo usando el hook useAuth()
-export const useAuth = create<AuthState>()(
+// Pueden leerlo y escribirlo usando el hook useAuthStore()
+export const useAuthStore = create<AuthState>()(
 	// Middleware que intercepta cada set() del store
 	// Sincroniza el estado con localstorage
 	// Cuando la app recarga rehidrata el store con localstorage antes de que componentes renderice

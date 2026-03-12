@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { updateProfile, getProfile } from '../../profile/api/profileApi';
-import { useAuth } from '../../../core/auth/AuthContext';
+import { useAuthStore } from '../../../core/auth/AuthStore';
 import {
 	PageContainer,
 	FormCard,
@@ -21,14 +21,14 @@ type ErrorsState = {
 export default function EditProfilePage() {
 	const navigate = useNavigate();
 
-	const token		= useAuth((state) => state.accessToken);
-	const currentUser = useAuth((state) => state.user);
-	const userId	= useAuth((state) => state.user?.id);
-	const username	= useAuth((state) => state.user?.username);
-	const email		= useAuth((state) => state.user?.email);
+	const token		= useAuthStore((state) => state.accessToken);
+	const currentUser = useAuthStore((state) => state.user);
+	const userId	= useAuthStore((state) => state.user?.id);
+	const username	= useAuthStore((state) => state.user?.username);
+	const email		= useAuthStore((state) => state.user?.email);
 
-	const setUser	= useAuth((state) => state.setUser);
-	const setAvatar = useAuth((state) => state.setAvatar);
+	const setUser	= useAuthStore((state) => state.setUser);
+	const setAvatar = useAuthStore((state) => state.setAvatar);
 	const [currentAvatar, setCurrentAvatar] = useState<string | null>(null);
 	const [usernameInput, setUsername] = useState(username ?? '');
 	const [emailInput, setEmail] = useState(email ?? '');
