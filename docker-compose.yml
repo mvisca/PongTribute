@@ -215,6 +215,11 @@ services:
           VITE_DEFAULT_AVATAR: ${VITE_DEFAULT_AVATAR}
       container_name: ft_transcendence_nginx
       restart: always
+      env_file:
+        - .env
+      environment:
+        - HOST_UID=${UID}
+        - HOST_GID=${GID}
       ports:
         - "80:80"
         - "443:443"
