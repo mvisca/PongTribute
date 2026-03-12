@@ -24,6 +24,7 @@ export default function App() {
 	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
 	const warning = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.warning);
 	const action = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.action);
+	const dismiss = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.dismiss);
 	
 	const setFriends = useFriendsStore(state => state.setFriends);
 	const setPending = useFriendsStore(state => state.setPending);
@@ -76,20 +77,22 @@ export default function App() {
 			await respondFriendRequest(senderId, true, token);
 			addFriend({ userId: senderId, username: senderUsername, avatar: senderAvatar, isOnline: true });
 			removePending(senderId);
+			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
 		} 
-	}, [token, addFriend, removePending, error]);
+	}, [token, addFriend, removePending, error, dismiss]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, false, token);
 			removePending(senderId);
+			dismiss(senderId);
 		} catch {
 			error('Failed to reject request');
 		}
-	}, [token, removePending, error]);
+	}, [token, removePending, error, dismiss]);
 
 	const handleWsMessage = useCallback((msg: WebSocketEventsTypes.AnyWsMessage) => {
 		switch (msg.type) {
@@ -116,6 +119,7 @@ export default function App() {
 					friendId: msg.payload.senderId
 				});
 				action({
+					id: msg.payload.senderId,
 					type: TOAST_TYPE.INFO,
 					message: `${msg.payload.senderUsername} wants to be your friend`,
 					duration: 0,

@@ -9,7 +9,7 @@ interface ToastState {
 	success: (message: string, duration?: number) => void;
 	error: (message: string, duration?: number) => void;
 	warning: (message: string, duration?: number) => void;
-	action: (params: Omit<ToastAction, 'id' | 'variant'>) => void;
+	action: (params: Omit<ToastAction, 'variant'>) => void;
 };
 
 export const useToastStore = create<ToastState>((set) => ({
@@ -56,7 +56,6 @@ export const useToastStore = create<ToastState>((set) => ({
 	
 	action: (params) =>
 		set((state) => ({ toasts: [...state.toasts, {
-			id: crypto.randomUUID(),
 			variant: TOAST_VARIANT.ACTION,
 			...params
 		}]})),

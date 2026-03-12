@@ -1,7 +1,7 @@
 ================================================================================
 PROYECTO: ft_transcendence
 ================================================================================
-GENERADO: 2026-03-12 11:33:22
+GENERADO: 2026-03-12 15:39:11
 
 ================================================================================
 ESTRUCTURA DEL PROYECTO
@@ -9,7 +9,7 @@ ESTRUCTURA DEL PROYECTO
 
 .
 |-- docker-compose.yml
-|-- frontend_status_2026-03-12_11-33-22.txt
+|-- frontend_status_2026-03-12_15-39-11.txt
 |-- Makefile
 |-- make_status.sh
 |-- package.json
@@ -854,7 +854,7 @@ networks:
     driver: bridge
 
 
->>> ARCHIVO: ./frontend_status_2026-03-12_11-33-22.txt (21592 bytes)
+>>> ARCHIVO: ./frontend_status_2026-03-12_15-39-11.txt (21592 bytes)
 --------------------------------------------------------------------------------
 [Error al leer]
 
@@ -5847,7 +5847,7 @@ export type CommsEventHandler = EventHandler<CommsService>;
 // y todos los propios/prublicos de CommsService.
 
 
->>> ARCHIVO: ./packages/comms/src/services/events/friendship/friendship.handler.ts (3413 bytes)
+>>> ARCHIVO: ./packages/comms/src/services/events/friendship/friendship.handler.ts (3385 bytes)
 --------------------------------------------------------------------------------
 import { CommsEventHandler } from '../base.handler.js';
 import { CommsService } from '../../comms.service.js';
@@ -5941,7 +5941,6 @@ export class FriendshipEventHandler implements CommsEventHandler {
 
 		commsService.broadcastToUsers([
 			event.payload.requesterId,
-			event.payload.acceptorId
 		], wsMessage);
 	}
 
@@ -6343,6 +6342,12 @@ export * from './comms.service.js';
     { "path": "../shared" }
   ]
 }
+
+>>> ARCHIVO: ./packages/frontend/.gitignore (11 bytes)
+--------------------------------------------------------------------------------
+.env
+*.txt
+
 
 >>> ARCHIVO: ./packages/frontend/frontend_status_2026-03-12_08-08-03.txt (200151 bytes)
 --------------------------------------------------------------------------------
@@ -13695,7 +13700,7 @@ export default {
 //2. Corre autoprefixer
 
 
->>> ARCHIVO: ./packages/frontend/src/App.tsx (5889 bytes)
+>>> ARCHIVO: ./packages/frontend/src/App.tsx (6043 bytes)
 --------------------------------------------------------------------------------
 import { useCallback } from 'react';
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
@@ -13723,6 +13728,7 @@ export default function App() {
 	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
 	const warning = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.warning);
 	const action = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.action);
+	const dismiss = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.dismiss);
 	
 	const setFriends = useFriendsStore(state => state.setFriends);
 	const setPending = useFriendsStore(state => state.setPending);
@@ -13775,6 +13781,7 @@ export default function App() {
 			await respondFriendRequest(senderId, true, token);
 			addFriend({ userId: senderId, username: senderUsername, avatar: senderAvatar, isOnline: true });
 			removePending(senderId);
+			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
 		} 
@@ -13815,6 +13822,7 @@ export default function App() {
 					friendId: msg.payload.senderId
 				});
 				action({
+					id: msg.payload.senderId,
 					type: TOAST_TYPE.INFO,
 					message: `${msg.payload.senderUsername} wants to be your friend`,
 					duration: 0,
@@ -14246,7 +14254,7 @@ export interface ToastAction extends ToastBase {
 
 export type Toast = ToastSimple | ToastAction;	
 
->>> ARCHIVO: ./packages/frontend/src/core/toasts/toastStore.ts (1697 bytes)
+>>> ARCHIVO: ./packages/frontend/src/core/toasts/toastStore.ts (1662 bytes)
 --------------------------------------------------------------------------------
 import { create } from 'zustand';
 import type { Toast, ToastAction } from './toast.types.js';
@@ -14259,7 +14267,7 @@ interface ToastState {
 	success: (message: string, duration?: number) => void;
 	error: (message: string, duration?: number) => void;
 	warning: (message: string, duration?: number) => void;
-	action: (params: Omit<ToastAction, 'id' | 'variant'>) => void;
+	action: (params: Omit<ToastAction, 'variant'>) => void;
 };
 
 export const useToastStore = create<ToastState>((set) => ({
@@ -14306,7 +14314,6 @@ export const useToastStore = create<ToastState>((set) => ({
 	
 	action: (params) =>
 		set((state) => ({ toasts: [...state.toasts, {
-			id: crypto.randomUUID(),
 			variant: TOAST_VARIANT.ACTION,
 			...params
 		}]})),
@@ -20470,7 +20477,7 @@ fi
 }
 
 
->>> ARCHIVO: ./packages/gateway/src/app.ts (15743 bytes)
+>>> ARCHIVO: ./packages/gateway/src/app.ts (16110 bytes)
 --------------------------------------------------------------------------------
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
@@ -20500,10 +20507,22 @@ function closeWithFallback(ws: WebSocket, code = 1000, reason = 'closing', timeo
 	}, timeoutMs);
 }
 
+function normalizeOrigin(origin: string | undefined): string | undefined {
+	if (!origin) return undefined;
+	const trimmed = origin.trim().toLowerCase();
+	// Remove a single trailing slash to avoid mismatches between
+	// "https://host" and "https://host/".
+	return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+}
+
 function parseWsAllowedOrigins(): Set<string> {
 	const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
-	const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
-	return new Set(list.map((s) => s.trim().toLowerCase()).filter(Boolean));
+	const source = raw.length ? raw : GatewayEnv.CORS_ORIGIN;
+	const list = source
+		.split(',')
+		.map(normalizeOrigin)
+		.filter((s): s is string => Boolean(s));
+	return new Set(list);
 }
 
 // Helper to obtain IP from IncomingMessage (WebSocket handler)
@@ -20521,7 +20540,7 @@ function getClientIpFromIncomingMessage(req: any): string {
 export function buildApp(): FastifyInstance {
 	const app = Fastify(getFastifyConfig());
 
-	const wsAllowedOrigins = parseWsAllowedOrigins();
+		const wsAllowedOrigins = parseWsAllowedOrigins();
 	const wsConnectionCountsByIp = new Map<string, number>();
 	let wsTotalConnections = 0;
 
@@ -20694,9 +20713,9 @@ export function buildApp(): FastifyInstance {
 
 			// --- Security: Origin check (WS is not covered by CORS) ---
 			const originRaw = (req as any).headers['origin'];
-			const origin = Array.isArray(originRaw) ? originRaw[0] : originRaw as string | undefined;
+			const origin = normalizeOrigin(Array.isArray(originRaw) ? originRaw[0] : originRaw as string | undefined);
 
-			if (origin && !wsAllowedOrigins.has(origin.toLowerCase())) {
+			if (origin && !wsAllowedOrigins.has(origin)) {
 				app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
 				closeWithFallback(client, 1008, 'Origin not allowed', 200);
 				return;
@@ -36708,5 +36727,5 @@ CONFIGURACIÓN USADA:
 - Extensiones incluidas: *.tsx *.ts *.jsx *.js *.json *.txt *.yml *.yaml *.css *.scss *.html *.sh *.rb *.sql *.conf *.prisma *.env.example .gitignore .dockerignore Dockerfile*
 
 ================================================================================
-FIN DEL STATUS - 2026-03-12 11:33:25
+FIN DEL STATUS - 2026-03-12 15:39:16
 ================================================================================
