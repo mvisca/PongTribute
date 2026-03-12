@@ -1,7 +1,7 @@
 import{ useEffect, useRef } from 'react';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
 import { useAuthStore } from '../auth/AuthStore';
-import { WS_COMMS_URL } from '../api/wsUrls'; // To build ws path on ngrok
+import { WS_COMMS_URL } from './wsUrls'; // To build ws path on ngrok
 
 interface UseWebSocketOptions {
 	onMessage:  (msg: WebSocketEventsTypes.AnyWsMessage) => void;
