@@ -12,6 +12,9 @@ import EditProfilePage from '../../features/auth/pages/EditProfilePage';
 import ChangePasswordPage from '../../features/auth/pages/ChangePasswordPage';
 import ProfilePage from '../../features/profile/pages/ProfilePage';
 import FriendsPage from '../../features/friends/pages/FriendsPage';
+import Footer from '../../shared/components/Footer';
+import PrivacyPage from '../../features/home/pages/PrivacyPage';
+import TermsPage from '../../features/home/pages/TermsPage';
 
 export function AppRouter() {
 	return (
@@ -26,8 +29,8 @@ export function AppRouter() {
 					<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
 					<Route path="/forgot" element={<ForgotPasswordPage />} />
 					<Route path="/recover" element={<RecoverPasswordPage />} />
-					<Route path="/privacy" element={<div>PRIVACY</div>} />
-					<Route path="/terms" element={<div>TERMS</div>} />
+					<Route path="/privacy" element={<PrivacyPage />} />
+					<Route path="/terms"   element={<TermsPage />} />
 
 					{/* Protected routes */}
 					<Route path="/home" element={<ProtectedRoute><div>Coming soon</div></ProtectedRoute>} />
@@ -40,6 +43,7 @@ export function AppRouter() {
 					<Route path="*" element={<Navigate to="/" replace />} />
 				</Routes>
 			</div>
+			<Footer /> 
 		</BrowserRouter>
 	);
 }
