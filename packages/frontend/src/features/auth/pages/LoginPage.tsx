@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { login } from '../api/authApi';
-import { useAuth } from '../../../core/auth/AuthContext';
+import { useAuthStore } from '../../../core/auth/AuthStore';
 import { PageContainer, FormCard, FormInput, PasswordInput, ArcadeButton, LinkButton, AlertError } from '../../../shared/components/ui';
 import { getProfile } from '../../profile/api/profileApi';
 
 export default function LoginPage() {
 	const navigate = useNavigate();
-	const authLogin = useAuth((state) => state.login);
-	const setAvatar = useAuth((state) => state.setAvatar);
+	const authLogin = useAuthStore((state) => state.login);
+	const setAvatar = useAuthStore((state) => state.setAvatar);
 
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');

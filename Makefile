@@ -103,6 +103,7 @@ ps: check-env
 
 env-export:
 	@echo "export GID=$(shell id -g)"
+	@echo "export UID=$(shell id -u)"
 
 open-browser:
 	@nohup xdg-open http://localhost >/dev/null 2>&1 </dev/null &

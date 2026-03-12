@@ -26,10 +26,22 @@ function closeWithFallback(ws: WebSocket, code = 1000, reason = 'closing', timeo
 	}, timeoutMs);
 }
 
+function normalizeOrigin(origin: string | undefined): string | undefined {
+	if (!origin) return undefined;
+	const trimmed = origin.trim().toLowerCase();
+	// Remove a single trailing slash to avoid mismatches between
+	// "https://host" and "https://host/".
+	return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+}
+
 function parseWsAllowedOrigins(): Set<string> {
 	const raw = (GatewayEnv.WS_ALLOWED_ORIGINS || '').trim();
-	const list = raw.length ? raw.split(',') : [GatewayEnv.CORS_ORIGIN];
-	return new Set(list.map((s) => s.trim().toLowerCase()).filter(Boolean));
+	const source = raw.length ? raw : GatewayEnv.CORS_ORIGIN;
+	const list = source
+		.split(',')
+		.map(normalizeOrigin)
+		.filter((s): s is string => Boolean(s));
+	return new Set(list);
 }
 
 // Helper to obtain IP from IncomingMessage (WebSocket handler)
@@ -47,7 +59,7 @@ function getClientIpFromIncomingMessage(req: any): string {
 export function buildApp(): FastifyInstance {
 	const app = Fastify(getFastifyConfig());
 
-	const wsAllowedOrigins = parseWsAllowedOrigins();
+		const wsAllowedOrigins = parseWsAllowedOrigins();
 	const wsConnectionCountsByIp = new Map<string, number>();
 	let wsTotalConnections = 0;
 
@@ -220,9 +232,9 @@ export function buildApp(): FastifyInstance {
 
 			// --- Security: Origin check (WS is not covered by CORS) ---
 			const originRaw = (req as any).headers['origin'];
-			const origin = Array.isArray(originRaw) ? originRaw[0] : originRaw as string | undefined;
+			const origin = normalizeOrigin(Array.isArray(originRaw) ? originRaw[0] : originRaw as string | undefined);
 
-			if (origin && !wsAllowedOrigins.has(origin.toLowerCase())) {
+			if (origin && !wsAllowedOrigins.has(origin)) {
 				app.log.warn({ requestId, origin, clientIp }, 'ws rejected: origin not allowed');
 				closeWithFallback(client, 1008, 'Origin not allowed', 200);
 				return;

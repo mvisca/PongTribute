@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { register } from '../api/authApi';
-import { useAuth } from '../../../core/auth/AuthContext';
+import { useAuthStore } from '../../../core/auth/AuthStore';
 import {
 	PageContainer,
 	FormCard,
@@ -24,8 +24,8 @@ type ErrorsState = {
 export default function RegisterPage() {
 	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
 	const navigate = useNavigate();
-	const authLogin = useAuth((state) => state.login);
-	const setAvatar = useAuth((state) => state.setAvatar);
+	const authLogin = useAuthStore((state) => state.login);
+	const setAvatar = useAuthStore((state) => state.setAvatar);
 
 	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
 	const [username, setUsername] = useState('');
