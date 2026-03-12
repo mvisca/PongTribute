@@ -67,9 +67,9 @@ ALLOWED_EXTENSIONS=(
 # ================================================================================
 
 # Limpieza
-rm -f status*.txt
+rm -f frontend_status*.txt
 
-OUTPUT_FILE="status_$(date '+%Y-%m-%d_%H-%M-%S').txt"
+OUTPUT_FILE="frontend_status_$(date '+%Y-%m-%d_%H-%M-%S').txt"
 
 # Colores
 GREEN='\033[0;32m'

@@ -31,6 +31,8 @@ export default function FriendsPage() {
 	const token 							= useAuthStore((state) => state.accessToken);
 	const currentUserId						= useAuthStore((state) => state.user?.id);
 
+	const friends							= useFriendsStore(state => state.friends);
+	const pending							= useFriendsStore(state => state.pending);
 	const setFriends						= useFriendsStore(state => state.setFriends);
 	const setPending						= useFriendsStore(state => state.setPending);
 	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
@@ -45,8 +47,8 @@ export default function FriendsPage() {
 	const [searchLoading, setSearchLoading]	= useState(false);
 
 	useEffect(() => {
-		loadFriendships();
-	}, [token]); // TODO sin dependencias?
+		setLoading(false);
+	}, []);
 
 	const handleRemove = async (friendId: string) => {
 		if (!token) return;
@@ -63,7 +65,6 @@ export default function FriendsPage() {
 		try {
 			await respondFriendRequest(initiatorId, accepted, token);
 			removePendingStore(initiatorId);
-			if (accepted) await loadFriendships(); // Reload friends
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to respond to friend request');
 		}
