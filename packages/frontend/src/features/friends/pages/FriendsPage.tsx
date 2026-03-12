@@ -149,62 +149,66 @@ export default function FriendsPage() {
 
 	return (
 		<PageContainer>
-			<AlertError message={error} />
+			<div className='flex flex-col gap-6 w-full max-w-[420px]'>
+				
+				<AlertError message={error} />
 
-			{/*Search*/}
-			<FormCard title='ADD FRIEND'>
-				<div className='flex gap-2'>
-					<FormInput
-						value={searchInput}
-						onChange={(value) => { setSearchInput(value); setSearchError(''); setSearchResult(null);}}
-						placeholder='Search by username'
-						error={searchError}
-					/>
-					<ArcadeButton onClick={handleSearch} disabled={searchLoading || !searchInput.trim()}>
-						{searchLoading ? '...' : 'SEARCH'}
-					</ArcadeButton>
-				</div>
-
-				{searchResult && (
-					<div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
-						<div className='flex items-center gap-3'>
-							<AvatarDisplay src={searchResult.avatar} size='sm' />
-							<span className='text-sm text-purple-200'>{searchResult.username}</span>
-						</div>
-						<NeonButton onClick={() => handleSendRequest(searchResult.id)} >
-							ADD
-						</NeonButton>
-					</div>
-				)}
-			</FormCard>
-
-			{/*Pending requests*/}
-			{Object.keys(pending).length > 0 && (
-				<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
-					{ Object.values(pending).map( req => (
-						<PendingItem
-							key={req.initiatorId}
-							initiatorId={req.initiatorId}
-							token={token!}
-							onRespond={handleRespond}
-						/>
-					))}
+				{/*Friends list*/}
+				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
+					{ Object.keys(friends).length === 0
+						? (<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>)
+						: Object.values(friends).map(entry => (
+							<FriendItem
+								key={entry.userId}
+								entry={entry}
+								onRemove={handleRemove}
+							/>
+						))
+					}
 				</FormCard>
-			)}
 
-			{/*Friends list*/}
-			<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
-				{ Object.keys(friends).length === 0
-					? (<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>)
-					: Object.values(friends).map(entry => (
-						<FriendItem
-							key={entry.userId}
-							entry={entry}
-							onRemove={handleRemove}
+				{/*Pending requests*/}
+				{Object.keys(pending).length > 0 && (
+					<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
+						{ Object.values(pending).map( req => (
+							<PendingItem
+								key={req.initiatorId}
+								initiatorId={req.initiatorId}
+								token={token!}
+								onRespond={handleRespond}
+							/>
+						))}
+					</FormCard>
+				)}
+
+				{/*Add friend*/}
+				<FormCard title='ADD FRIEND'>
+					<div className='flex gap-2'>
+						<FormInput
+							value={searchInput}
+							onChange={(value) => { setSearchInput(value); setSearchError(''); setSearchResult(null);}}
+							placeholder='Search by username'
+							error={searchError}
 						/>
-					))
-				}
-			</FormCard>
+						<ArcadeButton onClick={handleSearch} disabled={searchLoading || !searchInput.trim()}>
+							{searchLoading ? '...' : 'SEARCH'}
+						</ArcadeButton>
+					</div>
+
+					{searchResult && (
+						<div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
+							<div className='flex items-center gap-3'>
+								<AvatarDisplay src={searchResult.avatar} size='sm' />
+								<span className='text-sm text-purple-200'>{searchResult.username}</span>
+							</div>
+							<NeonButton onClick={() => handleSendRequest(searchResult.id)}>
+								ADD
+							</NeonButton>
+						</div>
+					)}
+				</FormCard>
+
+			</div>
 		</PageContainer>
 	);
 }

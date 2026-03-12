@@ -85,49 +85,55 @@ export default function RegisterPage() {
 
 	return (
 		<PageContainer>
-			<FormCard title='REGISTER'>
-				<AlertError message={error} />
+			<div className='flex flex-col items-center'>
+				{/* <h1 className='retro-title mb-10'>
+					WELCOME TO <br /> PING🏓PONG
+				</h1> */}
+				
+				<FormCard title='REGISTER'>
+					<AlertError message={error} />
 
-				<FormInput
-					value={username}
-					onChange={(value) => { setUsername(value); clearErrors();}}
-					placeholder='Username'
-					error={errors.username}
-				/>
+					<FormInput
+						value={username}
+						onChange={(value) => { setUsername(value); clearErrors();}}
+						placeholder='Username'
+						error={errors.username}
+					/>
 
-				<FormInput
-					value={email}
-					onChange={(value) => { setEmail(value); clearErrors();}}
-					placeholder='Email'
-					error={errors.email}
-				/>
+					<FormInput
+						value={email}
+						onChange={(value) => { setEmail(value); clearErrors();}}
+						placeholder='Email'
+						error={errors.email}
+					/>
 
-				<AvatarUploader
-					currentSrc={DEFAULT}
-					onFileChange={setAvatarBase64}
-					onError={(msg) => setError(msg)}
-				/>
+					<AvatarUploader
+						currentSrc={DEFAULT}
+						onFileChange={setAvatarBase64}
+						onError={(msg) => setError(msg)}
+					/>
 
-				<PasswordInput
-					value={password}
-					onChange={(value) => { setPassword(value); clearErrors();}}
-					placeholder='Password'
-					error={errors.password}
-				/>
+					<PasswordInput
+						value={password}
+						onChange={(value) => { setPassword(value); clearErrors();}}
+						placeholder='Password'
+						error={errors.password}
+					/>
 
-				<div className='flex justify-center mt-6'>
-					<ArcadeButton
-						onClick={handleRegister}
-						disabled={!!error || Object.values(errors).some(err => err !== '')}
-					>
-						REGISTER
-					</ArcadeButton>
-				</div>
+					<div className='flex justify-center mt-6'>
+						<ArcadeButton
+							onClick={handleRegister}
+							disabled={!!error || Object.values(errors).some(err => err !== '')}
+						>
+							REGISTER
+						</ArcadeButton>
+					</div>
 
-				<div className='mt-6 text-right'>
-					<LinkButton onClick={() => navigate('/login')}>← Back to login</LinkButton>
-				</div>
-			</FormCard>
+					<div className='mt-6 text-right'>
+						<LinkButton onClick={() => navigate('/login')}>← Back to login</LinkButton>
+					</div>
+				</FormCard>
+			</div>
 		</PageContainer>
 	);
 }

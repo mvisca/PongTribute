@@ -59,9 +59,9 @@ export default function LoginPage() {
 	return (
 		<PageContainer>
 			<div className='flex flex-col items-center'>
-				<h1 className='retro-title mb-10'>
+				{/* <h1 className='retro-title mb-10'>
 					WELCOME TO <br /> PING🏓PONG
-				</h1>
+				</h1> */}
 
 				<FormCard title='LOGIN'>
 					<AlertError message={error} />
