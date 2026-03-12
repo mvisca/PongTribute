@@ -13,7 +13,7 @@ import { useWebSocket } from './core/ws/useWebSocket';
 import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
 import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
 import { getProfile } from './features/profile/api/profileApi';
-import { useFriendsStore, FriendEntry } from './features/friends/store/friendsStore';
+import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
 
 export default function App() {
 	const token = useAuthStore((state) => state.accessToken);
@@ -61,9 +61,19 @@ export default function App() {
 
 			// Incoming pending requests
 			const incomingPending = pendingRes.friendships
-				.filter(friend => friend.initiatorId !== currentUserId)
-				.map(friend => ({ initiatorId: friend.initiatorId, userId: friend.userId, friendId: friend.friendId }));
-			setPending(incomingPending);
+				.filter(friend => friend.initiatorId !== currentUserId);
+			const enrichedPending = await Promise.all(
+				incomingPending.map(async (friend) => {
+					const profile = await getProfile(friend.initiatorId, token).catch(() => null);
+					return {
+						senderId: friend.initiatorId,
+						senderUsername: profile?.username ?? friend.initiatorId,
+						senderAvatar: profile?.avatar ?? '',
+					} satisfies FriendInvite;
+				})
+			);
+
+			setPending(enrichedPending);
 		} catch { };
 	}, [token, currentUserId, setFriends, setPending]);
 
@@ -75,13 +85,12 @@ export default function App() {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, true, token);
-			addFriend({ userId: senderId, username: senderUsername, avatar: senderAvatar, isOnline: true });
 			removePending(senderId);
 			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
 		} 
-	}, [token, addFriend, removePending, error, dismiss]);
+	}, [token, removePending, error, dismiss]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
 		if (!token) return;
@@ -114,9 +123,9 @@ export default function App() {
 			// Friendship
 			case WEBSOCKET_EVENTS.FRIEND_REQUEST:
 				addPending({
-					initiatorId: msg.payload.senderId,
-					userId: msg.payload.senderId,
-					friendId: msg.payload.senderId
+					senderId: msg.payload.senderId,
+					senderUsername: msg.payload.senderUsername,
+					senderAvatar: msg.payload.senderAvatar,
 				});
 				action({
 					id: msg.payload.senderId,
@@ -142,12 +151,28 @@ export default function App() {
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_ACCEPT:
-				addFriend({
-					userId: msg.payload.acceptorId,
-					username: msg.payload.acceptorUsername,
-					avatar: msg.payload.acceptorAvatar,
-					isOnline: true,
-				});
+				if (currentUserId !== msg.payload.acceptorId) {
+					// For the REQUESTER
+					addFriend({
+						userId: msg.payload.acceptorId,
+						username: msg.payload.acceptorUsername,
+						avatar: msg.payload.acceptorAvatar,
+						isOnline: true,
+					});
+				}
+				else { 
+					// For the ACCEPTOR
+					const pending = useFriendsStore.getState().pending[msg.payload.requesterId];
+					if (pending) {
+						removePending(msg.payload.requesterId);
+						addFriend({
+							userId: msg.payload.requesterId,
+							username: pending.senderUsername,
+							avatar: pending.senderAvatar,
+							isOnline: true
+						});
+					}
+				}
 				success(`${msg.payload.acceptorUsername} is now your friend`);
 				break;
 	
@@ -169,8 +194,8 @@ export default function App() {
 
 	return (
 		<>
-			<AppRouter />
 			<ToastContainer />
+			<AppRouter />
 		</>
 	);
 }

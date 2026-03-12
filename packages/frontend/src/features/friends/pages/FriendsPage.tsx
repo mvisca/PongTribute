@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 // AUTH STORE Zustand
 import { useAuthStore } from '../../../core/auth/AuthStore';
-// PROFILE API
-import { getProfile } from '../../profile/api/profileApi';
 // FRIENDS STORE Zustand
-import { useFriendsStore } from '../store/friendsStore';
+import { FriendInvite, useFriendsStore } from '../store/friendsStore';
 // FRIENDS API
 import {
 	sendFriendRequest,
@@ -25,6 +23,7 @@ import {
 	AvatarDisplay,
 	LoadingScreen
 } from '../../../shared/components/ui';
+import { useToastStore } from '../../../core/toasts';
 
 export default function FriendsPage() {
 
@@ -33,10 +32,10 @@ export default function FriendsPage() {
 
 	const friends							= useFriendsStore(state => state.friends);
 	const pending							= useFriendsStore(state => state.pending);
-	const setFriends						= useFriendsStore(state => state.setFriends);
-	const setPending						= useFriendsStore(state => state.setPending);
 	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
 	const removePendingStore 				= useFriendsStore(state => state.removePending);
+
+	const dismiss							= useToastStore(state => state.dismiss);
 
 	const [loading, setLoading]				= useState(true);
 	const [error, setError]					= useState('');
@@ -65,6 +64,7 @@ export default function FriendsPage() {
 		try {
 			await respondFriendRequest(initiatorId, accepted, token);
 			removePendingStore(initiatorId);
+			dismiss(initiatorId);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to respond to friend request');
 		}
@@ -140,9 +140,8 @@ export default function FriendsPage() {
 				<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
 					{ Object.values(pending).map( req => (
 						<PendingItem
-							key={req.initiatorId}
-							initiatorId={req.initiatorId}
-							token={token!}
+							key={req.senderId}
+							entry={req}
 							onRespond={handleRespond}
 						/>
 					))}
@@ -167,36 +166,23 @@ export default function FriendsPage() {
 }
 
 function PendingItem({
-	initiatorId,
-	token,
-	onRespond,
-}: {
-	initiatorId: string;
-	token: string;
+	entry,
+	onRespond 
+} : {
+	entry: FriendInvite;
 	onRespond: (id: string, accepted: boolean) => void;
-
 }) {
-	const [user, setUser] = useState<UserTypes.UserPublic | null>(null);
-
-	useEffect(() => {
-		getProfile(initiatorId, token)
-			.then(setUser)
-			.catch(() => {});
-	}, [initiatorId]);
-
-	if (!user) return null;
-
 	return (
 		<div className='friend-item'>
 			<div className='flex items-center gap-3'>
-				<AvatarDisplay src={user.avatar} size='sm' />
-				<span className='text-sm text-purple-200'>{user.username}</span>
+				<AvatarDisplay src={entry.senderAvatar} size='sm' />
+				<span className='text-sm text-purple-200'>{entry.senderUsername}</span>
 			</div>
 
 			<div className='flex gap-2'>
-				<NeonButton onClick={() => onRespond(initiatorId, true)}>✓</NeonButton>
+				<NeonButton onClick={() => onRespond(entry.senderId, true)}>✓</NeonButton>
 				<button
-					onClick={() => onRespond(initiatorId, false)}
+					onClick={() => onRespond(entry.senderId, false)}
 					className='text-xs text-red-400 hover:text-red-200 px-2'
 				>
 					✕
