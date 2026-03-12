@@ -90,7 +90,6 @@ export class FriendshipEventHandler implements CommsEventHandler {
 
 		commsService.broadcastToUsers([
 			event.payload.requesterId,
-			event.payload.acceptorId
 		], wsMessage);
 	}
 
