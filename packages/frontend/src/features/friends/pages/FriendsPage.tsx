@@ -1,8 +1,18 @@
-
 import { useEffect, useState } from 'react';
-import { useAuth } from '../../../core/auth/AuthContext';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
-
+// AUTH STORE Zustand
+import { useAuthStore } from '../../../core/auth/AuthStore';
+// FRIENDS STORE Zustand
+import { FriendInvite, useFriendsStore } from '../store/friendsStore';
+// FRIENDS API
+import {
+	sendFriendRequest,
+	respondFriendRequest,
+	removeFriend,
+	findUserByUsername
+} from '../api/friendsApi';
+// FRIENDS Components
+import { FriendItem } from '../components/FriendItem';
 import {
 	PageContainer,
 	FormCard,
@@ -13,84 +23,31 @@ import {
 	AvatarDisplay,
 	LoadingScreen
 } from '../../../shared/components/ui';
-import { getProfile } from '../../profile/api/profileApi';
-
-import {
-	getFriendships,
-	sendFriendRequest,
-	respondFriendRequest,
-	removeFriend,
-	findUserByUsername
-} from '../api/friendsApi';
-import { useFriendsStore, FriendEntry } from '../store/friendsStore';
-import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
-import { FriendItem } from '../components/FriendItem';
-import type { FriendshipTypes } from '@transcendence/shared/types/friendship.types.js';
+import { useToastStore } from '../../../core/toasts';
 
 export default function FriendsPage() {
 
-	const token 					= useAuth((state) => state.accessToken);
-	const currentUserId				= useAuth((state) => state.user?.id);
+	const token 							= useAuthStore((state) => state.accessToken);
+	const currentUserId						= useAuthStore((state) => state.user?.id);
 
-	const friends = useFriendsStore(state => state.friends);
-	const pending = useFriendsStore(state => state.pending);
-	const setFriends = useFriendsStore(state => state.setFriends);
-	const setPending = useFriendsStore(state => state.setPending);
-	const removeFriendStore = useFriendsStore(state => state.removeFriend);
-	const removePendingStore = useFriendsStore(state => state.removePending);
+	const friends							= useFriendsStore(state => state.friends);
+	const pending							= useFriendsStore(state => state.pending);
+	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
+	const removePendingStore 				= useFriendsStore(state => state.removePending);
 
-	const [loading, setLoading]		= useState(true);
-	const [error, setError]			= useState('');
+	const dismiss							= useToastStore(state => state.dismiss);
+
+	const [loading, setLoading]				= useState(true);
+	const [error, setError]					= useState('');
 
 	const [searchInput, setSearchInput] 	= useState('');
 	const [searchResult, setSearchResult] 	= useState<UserTypes.UserPublic | null>(null);
 	const [searchError, setSearchError] 	= useState('');
 	const [searchLoading, setSearchLoading]	= useState(false);
 
-	const loadFriendships = async () => {
-		if (!token) return;
-
-		try {
-			const [acceptedRes, allPendingRes] = await Promise.all([
-				getFriendships(token, FRIENDSHIP_STATUS.ACCEPTED),
-				getFriendships(token, FRIENDSHIP_STATUS.PENDING),
-			]);
-
-			// Populate Friends with profile data
-			const enriched = await Promise.all(
-				acceptedRes.friendships.map(async (friend) => {
-					const friendId = friend.userId === currentUserId ? friend.friendId : friend.userId;
-					try {
-						const profile = await getProfile(friendId, token);
-						return {
-							userId: friendId,
-							username: profile.username,
-							avatar: profile.avatar ?? '',
-							isOnline: profile.isOnline,
-						} satisfies FriendEntry;
-					} catch {
-						return { userId: friendId, username: friendId, avatar: '', isOnline: false };
-					}
-				})
-			);
-			setFriends(enriched);
-
-			// Incoming pending requests
-			const incomingPending = allPendingRes.friendships
-				.filter(friend => friend.initiatorId !== currentUserId)
-				.map(friend => ({ initiatorId: friend.initiatorId, userId: friend.userId, friendId: friend.friendId }));
-			setPending(incomingPending);
-
-		} catch {
-			setError('Failed to load friends');
-		} finally {
-			setLoading(false);
-		}
-	}
-
 	useEffect(() => {
-		loadFriendships();
-	}, []); // TODO sin dependencias?
+		setLoading(false);
+	}, []);
 
 	const handleRemove = async (friendId: string) => {
 		if (!token) return;
@@ -107,7 +64,7 @@ export default function FriendsPage() {
 		try {
 			await respondFriendRequest(initiatorId, accepted, token);
 			removePendingStore(initiatorId);
-			if (accepted) await loadFriendships(); // Reload friends
+			dismiss(initiatorId);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to respond to friend request');
 		}
@@ -153,28 +110,40 @@ export default function FriendsPage() {
 				
 				<AlertError message={error} />
 
-				{/*Friends list*/}
-				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
-					{ Object.keys(friends).length === 0
-						? (<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>)
-						: Object.values(friends).map(entry => (
-							<FriendItem
-								key={entry.userId}
-								entry={entry}
-								onRemove={handleRemove}
-							/>
-						))
-					}
-				</FormCard>
+				{/*Search*/}
+				<FormCard title='ADD FRIEND'>
+					<div className='flex gap-2'>
+						<FormInput
+							value={searchInput}
+							onChange={(value) => { setSearchInput(value); setSearchError(''); setSearchResult(null);}}
+							placeholder='Search by username'
+							error={searchError}
+						/>
+						<ArcadeButton onClick={handleSearch} disabled={searchLoading || !searchInput.trim()}>
+							{searchLoading ? '...' : 'SEARCH'}
+						</ArcadeButton>
+					</div>
 
+					{searchResult && (
+						<div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
+							<div className='flex items-center gap-3'>
+								<AvatarDisplay src={searchResult.avatar} size='sm' />
+								<span className='text-sm text-purple-200'>{searchResult.username}</span>
+							</div>
+							<NeonButton onClick={() => handleSendRequest(searchResult.id)} >
+								ADD
+							</NeonButton>
+						</div>
+					)}
+				</FormCard>
+				
 				{/*Pending requests*/}
 				{Object.keys(pending).length > 0 && (
 					<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
 						{ Object.values(pending).map( req => (
 							<PendingItem
-								key={req.initiatorId}
-								initiatorId={req.initiatorId}
-								token={token!}
+								key={req.senderId}
+								entry={req}
 								onRespond={handleRespond}
 							/>
 						))}
@@ -214,36 +183,23 @@ export default function FriendsPage() {
 }
 
 function PendingItem({
-	initiatorId,
-	token,
-	onRespond,
-}: {
-	initiatorId: string;
-	token: string;
+	entry,
+	onRespond 
+} : {
+	entry: FriendInvite;
 	onRespond: (id: string, accepted: boolean) => void;
-
 }) {
-	const [user, setUser] = useState<UserTypes.UserPublic | null>(null);
-
-	useEffect(() => {
-		getProfile(initiatorId, token)
-			.then(setUser)
-			.catch(() => {});
-	}, [initiatorId]);
-
-	if (!user) return null;
-
 	return (
 		<div className='friend-item'>
 			<div className='flex items-center gap-3'>
-				<AvatarDisplay src={user.avatar} size='sm' />
-				<span className='text-sm text-purple-200'>{user.username}</span>
+				<AvatarDisplay src={entry.senderAvatar} size='sm' />
+				<span className='text-sm text-purple-200'>{entry.senderUsername}</span>
 			</div>
 
 			<div className='flex gap-2'>
-				<NeonButton onClick={() => onRespond(initiatorId, true)}>✓</NeonButton>
+				<NeonButton onClick={() => onRespond(entry.senderId, true)}>✓</NeonButton>
 				<button
-					onClick={() => onRespond(initiatorId, false)}
+					onClick={() => onRespond(entry.senderId, false)}
 					className='text-xs text-red-400 hover:text-red-200 px-2'
 				>
 					✕

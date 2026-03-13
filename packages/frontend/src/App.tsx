@@ -8,18 +8,26 @@ import {
 	ToastContainer, 
 	useToastStore,
 } from './core/toasts';
-import { useAuth } from './core/auth/AuthContext';
-import { useCommsSocket } from './core/comms/useCommsSocket';
-import { respondFriendRequest } from './features/friends/api/friendsApi';
-import { useFriendsStore } from './features/friends/store/friendsStore';
+import { useAuthStore } from './core/auth/AuthStore';
+import { useWebSocket } from './core/ws/useWebSocket';
+import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
+import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
+import { getProfile } from './features/profile/api/profileApi';
+import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
 
 export default function App() {
+	const token = useAuthStore((state) => state.accessToken);
+	const currentUserId = useAuthStore((state) => state.user?.id); 
+
 	const info = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.info);
 	const error = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.error);
 	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
 	const warning = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.warning);
 	const action = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.action);
+	const dismiss = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.dismiss);
 	
+	const setFriends = useFriendsStore(state => state.setFriends);
+	const setPending = useFriendsStore(state => state.setPending);
 	const setOnline = useFriendsStore(state => state.setOnline);
 	const updateProfile = useFriendsStore(state => state.updateProfile);
 	const addFriend = useFriendsStore(state => state.addFriend);
@@ -27,7 +35,47 @@ export default function App() {
 	const removeFriend = useFriendsStore(state => state.removeFriend);
 	const removePending = useFriendsStore(state => state.removePending);
 
-	const token = useAuth((state) => state.accessToken);
+	const loadFriendships = useCallback(async () => {
+		if (!token) return;
+
+		try {
+			const [acceptedRes, pendingRes] = await Promise.all([
+				getFriendships(token, FRIENDSHIP_STATUS.ACCEPTED),
+				getFriendships(token, FRIENDSHIP_STATUS.PENDING),
+			]);
+
+			// Populate Friends with profile data
+			const enriched = await Promise.all(
+				acceptedRes.friendships.map(async (friend) => {
+					const friendId = friend.userId === currentUserId ? friend.friendId : friend.userId;
+					const profile = await getProfile(friendId, token).catch(() => null);
+					return {
+						userId: friendId,
+						username: profile?.username ?? friendId,
+						avatar: profile?.avatar ?? '',
+						isOnline: profile?.isOnline ?? false,
+					} satisfies FriendEntry;
+				})
+			);
+			setFriends(enriched);
+
+			// Incoming pending requests
+			const incomingPending = pendingRes.friendships
+				.filter(friend => friend.initiatorId !== currentUserId);
+			const enrichedPending = await Promise.all(
+				incomingPending.map(async (friend) => {
+					const profile = await getProfile(friend.initiatorId, token).catch(() => null);
+					return {
+						senderId: friend.initiatorId,
+						senderUsername: profile?.username ?? friend.initiatorId,
+						senderAvatar: profile?.avatar ?? '',
+					} satisfies FriendInvite;
+				})
+			);
+
+			setPending(enrichedPending);
+		} catch { };
+	}, [token, currentUserId, setFriends, setPending]);
 
 	const handleAcceptFriend = useCallback(async (
 		senderId: string,
@@ -37,22 +85,23 @@ export default function App() {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, true, token);
-			addFriend({ userId: senderId, username: senderUsername, avatar: senderAvatar, isOnline: true });
 			removePending(senderId);
+			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
-		}
-	}, [token, addFriend, removePending, error]);
+		} 
+	}, [token, removePending, error, dismiss]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, false, token);
 			removePending(senderId);
+			dismiss(senderId);
 		} catch {
 			error('Failed to reject request');
 		}
-	}, [token, removePending, error]);
+	}, [token, removePending, error, dismiss]);
 
 	const handleWsMessage = useCallback((msg: WebSocketEventsTypes.AnyWsMessage) => {
 		switch (msg.type) {
@@ -74,11 +123,12 @@ export default function App() {
 			// Friendship
 			case WEBSOCKET_EVENTS.FRIEND_REQUEST:
 				addPending({
-					initiatorId: msg.payload.senderId,
-					userId: msg.payload.senderId,
-					friendId: msg.payload.senderId
+					senderId: msg.payload.senderId,
+					senderUsername: msg.payload.senderUsername,
+					senderAvatar: msg.payload.senderAvatar,
 				});
 				action({
+					id: msg.payload.senderId,
 					type: TOAST_TYPE.INFO,
 					message: `${msg.payload.senderUsername} wants to be your friend`,
 					duration: 0,
@@ -101,12 +151,28 @@ export default function App() {
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_ACCEPT:
-				addFriend({
-					userId: msg.payload.acceptorId,
-					username: msg.payload.acceptorUsername,
-					avatar: msg.payload.acceptorAvatar,
-					isOnline: true,
-				});
+				if (currentUserId !== msg.payload.acceptorId) {
+					// For the REQUESTER
+					addFriend({
+						userId: msg.payload.acceptorId,
+						username: msg.payload.acceptorUsername,
+						avatar: msg.payload.acceptorAvatar,
+						isOnline: true,
+					});
+				}
+				else { 
+					// For the ACCEPTOR
+					const pending = useFriendsStore.getState().pending[msg.payload.requesterId];
+					if (pending) {
+						removePending(msg.payload.requesterId);
+						addFriend({
+							userId: msg.payload.requesterId,
+							username: pending.senderUsername,
+							avatar: pending.senderAvatar,
+							isOnline: true
+						});
+					}
+				}
 				success(`${msg.payload.acceptorUsername} is now your friend`);
 				break;
 	
@@ -124,12 +190,12 @@ export default function App() {
 		success,			warning,			action
 	]);
 
-	useCommsSocket(handleWsMessage);
+	useWebSocket({ onMessage: handleWsMessage, onConnect: loadFriendships });
 
 	return (
 		<>
-			<AppRouter />
 			<ToastContainer />
+			<AppRouter />
 		</>
 	);
 }

@@ -84,7 +84,8 @@ export class FriendshipEventHandler implements CommsEventHandler {
 			payload: {
 				acceptorId: event.payload.acceptorId,
 				acceptorUsername: event.payload.acceptorUsername,
-				acceptorAvatar: event.payload.acceptorAvatar
+				acceptorAvatar: event.payload.acceptorAvatar,
+				requesterId: event.payload.requesterId
 			}
 		};
 

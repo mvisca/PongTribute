@@ -251,6 +251,7 @@ export namespace WebSocketEventsTypes {
 			acceptorId: UserTypes.UserId;
 			acceptorUsername: string;
 			acceptorAvatar: string;
+			requesterId: UserTypes.UserId;
 		};
 	}
 
