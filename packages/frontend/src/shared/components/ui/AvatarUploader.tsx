@@ -42,6 +42,7 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 			{showReset &&
 				<button
 					onClick={() => { clear(); }}
+					className='text-xs text-purple-400 hover:text-purple-200'
 				>
 					Reset
 				</button>

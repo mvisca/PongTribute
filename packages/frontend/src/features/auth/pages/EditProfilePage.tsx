@@ -115,20 +115,22 @@ export default function EditProfilePage() {
 					onError={(msg) => setError(msg)}
 				/>
 
-				<FormInput
-					value={usernameInput}
-					onChange={(v) => { setUsername(v); clearErrors(); }}
-					placeholder='Username'
-					error={errors.username}
-				/>
-
-				<FormInput
-					value={emailInput}
-					onChange={(v) => { setEmail(v); clearErrors(); }}
-					placeholder='Email'
-					error={errors.email}
-				/>
-
+				<div className='mt-6'>
+					<FormInput
+						value={usernameInput}
+						onChange={(v) => { setUsername(v); clearErrors(); }}
+						placeholder='Username'
+						error={errors.username}
+					/>
+				</div>
+				<div className='-mt-3'>
+					<FormInput
+						value={emailInput}
+						onChange={(v) => { setEmail(v); clearErrors(); }}
+						placeholder='Email'
+						error={errors.email}
+					/>
+				</div>
 				<div className='flex justify-center mt-6'>
 					<ArcadeButton
 						onClick={handleSubmit}

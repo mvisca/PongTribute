@@ -100,25 +100,31 @@ export default function RegisterPage() {
 						error={errors.username}
 					/>
 
-					<FormInput
-						value={email}
-						onChange={(value) => { setEmail(value); clearErrors();}}
-						placeholder='Email'
-						error={errors.email}
-					/>
+					<div className='-mt-3'>
+						<FormInput
+							value={email}
+							onChange={(value) => { setEmail(value); clearErrors();}}
+							placeholder='Email'
+							error={errors.email}
+						/>
+					</div>
 
-					<AvatarUploader
-						currentSrc={DEFAULT}
-						onFileChange={setAvatarBase64}
-						onError={(msg) => setError(msg)}
-					/>
-
-					<PasswordInput
-						value={password}
-						onChange={(value) => { setPassword(value); clearErrors();}}
-						placeholder='Password'
-						error={errors.password}
-					/>
+					<div className='-mt-3'>
+						<AvatarUploader
+							currentSrc={DEFAULT}
+							onFileChange={setAvatarBase64}
+							onError={(msg) => setError(msg)}
+						/>
+					</div>
+						
+					<div className='mt-7'>
+						<PasswordInput
+							value={password}
+							onChange={(value) => { setPassword(value); clearErrors();}}
+							placeholder='Password'
+							error={errors.password}
+						/>
+					</div>
 
 					<div className='flex justify-center mt-6'>
 						<ArcadeButton

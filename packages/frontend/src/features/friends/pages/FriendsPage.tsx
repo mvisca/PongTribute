@@ -111,18 +111,40 @@ export default function FriendsPage() {
 				
 				<AlertError message={error} />
 
+				{/* 3. FRIENDS LIST */}
+				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
+					{Object.keys(friends).length === 0 ? (
+						<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>
+					) : (
+						Object.values(friends).map(entry => (
+							<FriendItem
+								key={entry.userId}
+								entry={entry}
+								onRemove={handleRemove}
+							/>
+						))
+					)}
+				</FormCard>
+
 				{/* 1. ADD FRIEND - Solo una vez */}
 				<FormCard title='ADD FRIEND'>
-					<div className='flex gap-2'>
+					<div className='flex gap-10 items-start'>
 						<FormInput
 							value={searchInput}
 							onChange={(value) => { setSearchInput(value); setSearchError(''); setSearchResult(null);}}
 							placeholder='Search by username'
 							error={searchError}
 						/>
-						<ArcadeButton onClick={handleSearch} disabled={searchLoading || !searchInput.trim()}>
+						{/*<ArcadeButton onClick={handleSearch} disabled={searchLoading || !searchInput.trim()}>
 							{searchLoading ? '...' : 'SEARCH'}
-						</ArcadeButton>
+						</ArcadeButton> */}
+						<button
+							onClick={handleSearch}
+							disabled={searchLoading || !searchInput.trim()}
+							className='arcade-btn px-8 py-[0.6rem] text-sm self-start disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap'
+						>
+							{searchLoading ? '...' : 'SEARCH'}
+						</button>
 					</div>
 
 					{searchResult && (
@@ -131,9 +153,9 @@ export default function FriendsPage() {
 								<AvatarDisplay src={searchResult.avatar} size='sm' />
 								<span className='text-sm text-purple-200'>{searchResult.username}</span>
 							</div>
-							<NeonButton onClick={() => handleSendRequest(searchResult.id)}>
+							<ArcadeButton onClick={() => handleSendRequest(searchResult.id)}>
 								ADD
-							</NeonButton>
+							</ArcadeButton>
 						</div>
 					)}
 				</FormCard>
@@ -151,20 +173,6 @@ export default function FriendsPage() {
 					</FormCard>
 				)}
 
-				{/* 3. FRIENDS LIST */}
-				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
-					{Object.keys(friends).length === 0 ? (
-						<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>
-					) : (
-						Object.values(friends).map(entry => (
-							<FriendItem
-								key={entry.userId}
-								entry={entry}
-								onRemove={handleRemove}
-							/>
-						))
-					)}
-				</FormCard>
 			</div>
 		</PageContainer>
 	);

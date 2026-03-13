@@ -76,24 +76,30 @@ export default function ChangePasswordPage() {
 			<FormCard title='CHANGE PASSWORD'>
 				<AlertError message={error} />
 
+				<div className='-mt-3'>
 				<PasswordInput
 					value={oldPassword}
 					onChange={(v) => { setOldPassword(v); setError(''); }}
 					placeholder='Current password'
 				/>
-
+				</div>
+				
+				<div className='-mt-3'>
 				<PasswordInput
 					value={newPassword}
 					onChange={(v) => { setNewPassword(v); setError(''); }}
 					placeholder='New password'
 				/>
-
+				</div>
+				
+				<div className='-mt-3'>
 				<PasswordInput
 					value={confirmPassword}
 					onChange={(v) => { setConfirm(v); setError(''); }}
 					placeholder='Confirm password'
 				/>
-
+				</div>
+				
 				<div className='flex justify-center mt-6'>
 					<ArcadeButton onClick={handleSubmit} disabled={!!error}>
 						UPDATE PASSWORD

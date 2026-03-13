@@ -75,7 +75,7 @@ export default function ProfilePage() {
 					</span>
 				</p>
 
-				<div className='flex flex-col gap-3 mt-6'>
+				<div className='flex flex-col gap-5 mt-6'>
 					<ArcadeButton onClick={() => navigate('/profile/edit')}>EDIT PROFILE</ArcadeButton>
 					<ArcadeButton onClick={() => navigate('/profile/password')}>CHANGE PASSWORD</ArcadeButton>
 					<ArcadeButton onClick={() => navigate('/home')}>HOME</ArcadeButton>
