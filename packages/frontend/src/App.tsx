@@ -85,12 +85,11 @@ export default function App() {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, true, token);
-			removePending(senderId);
 			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
 		} 
-	}, [token, removePending, error, dismiss]);
+	}, [token, error, dismiss]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
 		if (!token) return;

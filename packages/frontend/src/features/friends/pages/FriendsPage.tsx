@@ -59,12 +59,13 @@ export default function FriendsPage() {
 		}
 	};
 
-	const handleRespond = async (initiatorId: string, accepted: boolean) => {
+	const handleRespond = async (senderId: string, accepted: boolean) => {
 		if (!token) return;
 		try {
-			await respondFriendRequest(initiatorId, accepted, token);
-			removePendingStore(initiatorId);
-			dismiss(initiatorId);
+			await respondFriendRequest(senderId, accepted, token);
+			if (!accepted)
+				removePendingStore(senderId);
+			dismiss(senderId);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to respond to friend request');
 		}
@@ -110,47 +111,7 @@ export default function FriendsPage() {
 				
 				<AlertError message={error} />
 
-				{/*Search*/}
-				<FormCard title='ADD FRIEND'>
-					<div className='flex gap-2'>
-						<FormInput
-							value={searchInput}
-							onChange={(value) => { setSearchInput(value); setSearchError(''); setSearchResult(null);}}
-							placeholder='Search by username'
-							error={searchError}
-						/>
-						<ArcadeButton onClick={handleSearch} disabled={searchLoading || !searchInput.trim()}>
-							{searchLoading ? '...' : 'SEARCH'}
-						</ArcadeButton>
-					</div>
-
-					{searchResult && (
-						<div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
-							<div className='flex items-center gap-3'>
-								<AvatarDisplay src={searchResult.avatar} size='sm' />
-								<span className='text-sm text-purple-200'>{searchResult.username}</span>
-							</div>
-							<NeonButton onClick={() => handleSendRequest(searchResult.id)} >
-								ADD
-							</NeonButton>
-						</div>
-					)}
-				</FormCard>
-				
-				{/*Pending requests*/}
-				{Object.keys(pending).length > 0 && (
-					<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
-						{ Object.values(pending).map( req => (
-							<PendingItem
-								key={req.senderId}
-								entry={req}
-								onRespond={handleRespond}
-							/>
-						))}
-					</FormCard>
-				)}
-
-				{/*Add friend*/}
+				{/* 1. ADD FRIEND - Solo una vez */}
 				<FormCard title='ADD FRIEND'>
 					<div className='flex gap-2'>
 						<FormInput
@@ -177,6 +138,33 @@ export default function FriendsPage() {
 					)}
 				</FormCard>
 
+				{/* 2. PENDING REQUESTS */}
+				{Object.keys(pending).length > 0 && (
+					<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
+						{Object.values(pending).map(req => (
+							<PendingItem
+								key={req.senderId}
+								entry={req}
+								onRespond={handleRespond}
+							/>
+						))}
+					</FormCard>
+				)}
+
+				{/* 3. FRIENDS LIST */}
+				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
+					{Object.keys(friends).length === 0 ? (
+						<p className='text-sm text-purple-400 text-center py-4'>No friends yet</p>
+					) : (
+						Object.values(friends).map(entry => (
+							<FriendItem
+								key={entry.userId}
+								entry={entry}
+								onRemove={handleRemove}
+							/>
+						))
+					)}
+				</FormCard>
 			</div>
 		</PageContainer>
 	);
