@@ -7,11 +7,13 @@ type AuthState = {
 	avatar: string | null;
 	accessToken: string | null;
 	isAuthenticated: boolean;
+	isValidating: boolean;
 	login: (user: AuthTypes.AccessTokenPayload, accessToken: string) => void;
 	logout: () => void;
 	setUser: (user: AuthTypes.AccessTokenPayload) => void;
 	setAvatar: (avatar: string | null) => void;
 	setAccessToken: (accessToken: string) => void;
+	setValidating: (isValidating: boolean) => void;
 };
 
 // Inicialización del store Zustand
@@ -27,11 +29,14 @@ export const useAuthStore = create<AuthState>()(
 			avatar: null,
 			accessToken: null,
 			isAuthenticated: false,
+			isValidating: false,
 			
 			login: (user, accessToken) => set({
 				user,
+				avatar: null,
 				accessToken,
 				isAuthenticated: true,
+				isValidating: false,
 			}),
 			
 			logout: () => set({
@@ -39,11 +44,16 @@ export const useAuthStore = create<AuthState>()(
 				avatar: null,
 				accessToken: null,
 				isAuthenticated: false,
+				isValidating: false,
 			}),
 			
 			setUser: (user) => set({ user }),
+
 			setAvatar: (avatar) => set({ avatar }),
+
 			setAccessToken: (accessToken) => set({ accessToken }),
+
+			setValidating: (isValidating) => set({ isValidating }),
 		}),
 		{
 			name: 'auth-storage',

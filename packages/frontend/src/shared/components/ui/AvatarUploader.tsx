@@ -1,29 +1,39 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAvatarUpload } from '../../hooks/useAvatarUpload';
 import AvatarDisplay from './AvatarDisplay';
 
 interface Props {
-	currentSrc?: string | null;
 	onFileChange: (base64: string | null) => void;
 	onError?: (msg: string) => void;
+	currentSrc?: string | null;
 }
 
 export default function AvatarUploader({ onFileChange, onError, currentSrc }: Props) {
-	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
-	const isDefault = currentSrc === DEFAULT;
 	const { base64, error, handleFile, clear } = useAvatarUpload();
+	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
 	const displaySrc = base64 || (base64 === '' ? DEFAULT : currentSrc ?? DEFAULT)
-	const showReset = !!(base64 || (currentSrc && currentSrc !== DEFAULT))
+	// Show reset if: reset has not been pressed (base64 !== '')
+	// and there is a new image (base64 = something) or there is not a cuustom avatar (currentSrc !== DEFAULT)
+	const showReset = base64 !== '' && !!(base64 || (currentSrc && currentSrc !== DEFAULT))
 
+	// Avoid call onFileChange on mount (prevents seting base64 on null without reset)
+	const isFirstRender = useRef(true);
+
+	// To track avatar changes
 	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return;
+		}
+
+		// Only notify parent on actual changes
 		onFileChange(base64 === '' ? null : base64);
 	}, [base64]);
 
+	// To track erros
 	useEffect(() => {
 		if (error) onError?.(error);
 	}, [error]);
-	
-	console.log('displaySrc:', displaySrc, '| base64:', base64, '| DEFAULT:', DEFAULT);
 
 	return (
 		<div className='mb-4 flex flex-col items-center gap-3'>

@@ -84,6 +84,15 @@ export const authRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, o
 		handler: controller.logout.bind(controller)
 	});
 
+	/** Verificar si el token de acceso es válido */
+	app.get('/auth/verify', {
+		preHandler: [AuthMiddleware.validateJWT],
+		handler: async (request, reply) => {
+			const user = request.user as { id: string };
+			return reply.code(200).send({ valid: true, userId: user.id });
+		}
+	});
+
 	// ============================================================================
 	// PROTECTED ROUTES // CON JWT + OWNERSHIP
 	// ============================================================================

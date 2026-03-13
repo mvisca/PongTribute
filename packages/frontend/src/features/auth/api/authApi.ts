@@ -55,3 +55,13 @@ export async function confirmPasswordReset(token: string, newPassword: string): 
 		body: { token, newPassword },
 	});
 }
+
+/** Verificar si el token de acceso sigue siendo válido */
+export async function verifyToken(token: string): Promise<boolean> {
+	try {
+		await apiRequest('/auth/verify', { method: 'GET', token });
+		return true;
+	} catch {
+		return false;
+	}
+}

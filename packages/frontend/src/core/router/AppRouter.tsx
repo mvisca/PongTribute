@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '../auth/ProtectedRoute';
+import { ProtectedRoute } from './ProtectedRoute';
 
 import Navbar from '../../shared/components/Navbar';
 
+import { RootRedirect } from './RootRedirect';
 import PublicHomePage from '../../features/home/pages/PublicHomePage';
 import RegisterPage from '../../features/auth/pages/RegisterPage';
 import LoginPage from '../../features/auth/pages/LoginPage';
@@ -25,8 +26,11 @@ export function AppRouter() {
 				<Navbar />
 				<div className={`flex-1 overflow-y-auto ${isAuthenticated ? 'pt-14' : ''}`}>
 					<Routes>
+						{/* Root redirect */}
+						<Route path="/" element={<RootRedirect />} />
+
 						{/* Public routes */}
-						<Route path="/" element={<PublicHomePage />} />
+						<Route path='/welcome' element={<PublicHomePage />} />
 						<Route path="/login" element={<LoginPage />} />
 						<Route path="/register" element={<RegisterPage />} />
 						<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />

@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
 import { AppRouter } from './core/router/AppRouter';
+import { LoadingScreen } from './shared/components/ui';
 import { 
 	TOAST_BUTTON_STYLE, 
 	TOAST_TYPE, 
@@ -10,6 +11,7 @@ import {
 	useToastStore,
 } from './core/toasts';
 import { useAuthStore } from './core/auth/AuthStore';
+import { useAuthValidation } from './core/auth/useAuthValidation';
 import { useWebSocket } from './core/ws/useWebSocket';
 import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
 import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
@@ -86,12 +88,11 @@ export default function App() {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, true, token);
-			removePending(senderId);
 			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
 		} 
-	}, [token, removePending, error, dismiss]);
+	}, [token, error, dismiss]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
 		if (!token) return;
@@ -191,12 +192,14 @@ export default function App() {
 		success,			warning,			action
 	]);
 
+	const { isValidating } = useAuthValidation();
+
 	useWebSocket({ onMessage: handleWsMessage, onConnect: loadFriendships });
 
 	return (
 		<>
-			<ToastContainer />
 			<AppRouter />
+			<ToastContainer />
 		</>
 	);
 }
