@@ -152,16 +152,22 @@ export class CommsService implements IEventService {
 		this.heartbeatInterval = setInterval(() => {
 			this.connections.forEach((sockets, userId) => {
 				sockets.forEach((ws) => {
-					// Si ya estaba muerto en el ciclo anterior, eliminar
-					if (ws.isAlive === false) {
-						this.log.info({ userId }, 'Finishing zombie connection');
+					// Clean closed ws before trying ping
+					if (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING) {
+						this.log.info({ userId }, 'Removing closed connection in heartbeat');
 						this.handleDisconnect(ws, userId);
 						ws.terminate();
 						return;
 					}
-
-					ws.isAlive = false; // Marcar como pendiente
-					ws.ping(); // Enviar ping, es síncrono, a diferencia del de redis que es async
+					// Kill zombies
+					if (ws.isAlive === false) {
+						this.log.info({ userId }, 'Terminanting zombie connection');
+						this.handleDisconnect(ws, userId);
+						ws.terminate();
+					}
+					
+					ws.isAlive = false; // Set as pending 
+					ws.ping(); // Sends ping only if ws is OPEN
 				});
 			});
 		}, CommsEnv.WS_PING_INTERVAL_MS());
