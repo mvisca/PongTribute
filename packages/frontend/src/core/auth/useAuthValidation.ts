@@ -3,18 +3,21 @@ import { useAuthStore } from './AuthStore';
 import { verifyToken } from '../../features/auth/api/authApi';
 
 export function useAuthValidation() {
-	const [isValidating, setIsValidating] = useState(true);
 	const accessToken = useAuthStore(state => state.accessToken);
 	const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+	const isValidating = useAuthStore(state => state.isValidating);
+	const setValidating = useAuthStore(state => state.setValidating);
 	const logout = useAuthStore(state => state.logout);
 
 	useEffect(() => {
 		async function validate() {
+			// No need to validate if there's no token
 			if (!accessToken || !isAuthenticated) {
-				setIsValidating(false);
+				setValidating(false);
 				return;
 			}
 
+			// Show loader while validating
 			const isValid = await verifyToken(accessToken);
 
 			if (!isValid) {
@@ -22,11 +25,12 @@ export function useAuthValidation() {
 				logout();
 			}
 
-			setIsValidating(false);
+			// Finish validation
+			setValidating(false);
 		}
 
 		validate();
-	}, []); // Solo ejecutar al montar
+	}, []); // Only on mount, no dependencies so it dosn't reloads
 
 	return { isValidating };
 }

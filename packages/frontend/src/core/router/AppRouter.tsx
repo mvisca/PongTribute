@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ProtectedRoute } from '../auth/ProtectedRoute';
+import { ProtectedRoute } from './ProtectedRoute';
 
 import Navbar from '../../shared/components/Navbar';
 

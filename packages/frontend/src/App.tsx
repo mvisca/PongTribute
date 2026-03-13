@@ -195,12 +195,10 @@ export default function App() {
 
 	useWebSocket({ onMessage: handleWsMessage, onConnect: loadFriendships });
 
-	if (isValidating) return <LoadingScreen />;
-
 	return (
 		<>
-			<ToastContainer />
 			<AppRouter />
+			<ToastContainer />
 		</>
 	);
 }
