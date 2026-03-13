@@ -11,6 +11,7 @@ import {
 	LinkButton,
 	AlertError,
 	AvatarUploader,
+	LoadingScreen,
 } from '../../../shared/components/ui';
 
 type ErrorsState = {
@@ -34,6 +35,7 @@ export default function EditProfilePage() {
 	const [emailInput, setEmail] = useState(email ?? '');
 	const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
 	const [avatarRemoved, setAvatarRemoved] = useState(false);
+	const [loading, setLoading] = useState(false);
 
 	const [errors, setErrors] = useState<ErrorsState>({ username: '', email: ''	});
 	const [error, setError] = useState('');
@@ -72,6 +74,9 @@ export default function EditProfilePage() {
 	const handleSubmit = async () => {
 		if (!validateInputs()) return;
 
+		setLoading(true);
+		setError('');
+
 		try {
 			const updatedProfile = await updateProfile(userId!, {
 				username: usernameInput,
@@ -91,8 +96,13 @@ export default function EditProfilePage() {
 
 		} catch(err: any) {
 			setError(err?.message ?? 'Update failed');
+			setLoading(false);
 		}
 	};
+
+	if (loading) {
+		return <LoadingScreen />;
+	}
 
 	return (
 		<PageContainer>
