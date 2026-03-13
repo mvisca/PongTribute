@@ -232,12 +232,41 @@ export class CommsService implements IEventService {
 	
 	public async closeUserConnection(userId: UserTypes.UserId): Promise<void> {
 		const sockets = this.connections.get(userId);
-		if (sockets) {
-			sockets.forEach(ws => {
-				ws.close(1008, 'Sesión cerrada por logout');
-			});
-			this.connections.delete(userId);
-		}
+		if (!sockets || sockets.size === 0) return;
+
+		this.log.info({ userId, count: sockets.size }, 'Closing all user connections (logout)');
+
+		// Terminate each socket and clean
+		sockets.forEach(ws => {
+			try {
+				if (ws.readyState === WebSocket.OPEN) {
+					ws.close(1008, 'Session closed on logout');
+				}
+			} catch (err) {
+				this.log.warn({ err }, 'Error closing socket gracefully');
+			}
+
+			// Force terminate even if client is gone
+			ws.terminate();
+
+			// Decrement counter
+			this.totalConnections = Math.max(0, this.totalConnections - 1); 
+		});
+
+		// Remove from connection map
+		this.connections.delete(userId);
+
+		// Publish USER_DISCONNECTED event for game service
+		const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
+			type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
+			timestamp: Date.now(),
+			source: 'comms-service',
+			targetUserId: userId,
+			payload: { userId }
+		};
+
+		this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
+			.catch(err => this.log.error({ err }, 'Error publishing USER_DISCONNECTED on logout'));
 	}	
 	
 	// ==========================================================================
