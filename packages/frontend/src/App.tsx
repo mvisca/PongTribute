@@ -1,3 +1,4 @@
+//packages/frontend/src/App.tsx
 import { useCallback } from 'react';
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';

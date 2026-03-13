@@ -1,3 +1,4 @@
+//packages/frontend/src/shared/components/Footer.tsx
 export default function Footer() {
 	const authors = [
 		{ alias: 'mvisca',   url: 'https://github.com/mvisca'   },
