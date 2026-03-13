@@ -38,7 +38,6 @@ export default function Navbar() {
 	};
 
 	const navItems: NavItem[] = [
-        { icon: '🏠', label: 'HOME',            path: '/home' },
         { icon: '👤', label: 'PROFILE',         path: '/profile' },
         { icon: '👥', label: 'FRIENDS',         path: '/friends' },
         { icon: '🕹️', label: 'PLAY',            path: '/lobby' },

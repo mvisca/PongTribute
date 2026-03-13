@@ -33,8 +33,10 @@ export const useAuthStore = create<AuthState>()(
 			
 			login: (user, accessToken) => set({
 				user,
+				avatar: null,
 				accessToken,
 				isAuthenticated: true,
+				isValidating: false,
 			}),
 			
 			logout: () => set({
@@ -61,7 +63,6 @@ export const useAuthStore = create<AuthState>()(
 				avatar: state.avatar,
 				accessToken: state.accessToken,
 				isAuthenticated: state.isAuthenticated,
-				isValidating: state.isValidating, // TODO debe ir aqui? y isAuthenticated? deben persistirse?
 			}),
 		}
 	)
