@@ -3,6 +3,7 @@ import { ProtectedRoute } from './ProtectedRoute';
 
 import Navbar from '../../shared/components/Navbar';
 
+import { RootRedirect } from './RootRedirect';
 import PublicHomePage from '../../features/home/pages/PublicHomePage';
 import RegisterPage from '../../features/auth/pages/RegisterPage';
 import LoginPage from '../../features/auth/pages/LoginPage';
@@ -22,8 +23,11 @@ export function AppRouter() {
 			<Navbar />
 			<div className='pt-14'>
 				<Routes>
+					{/* Root redicrect */}
+					<Route path="/" element={<RootRedirect />} />
+					
 					{/* Public routes */}
-					<Route path="/" element={<PublicHomePage />} />
+					<Route path='/welcome' element={<PublicHomePage />} />
 					<Route path="/login" element={<LoginPage />} />
 					<Route path="/register" element={<RegisterPage />} />
 					<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
