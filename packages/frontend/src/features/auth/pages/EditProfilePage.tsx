@@ -132,7 +132,7 @@ export default function EditProfilePage() {
 				<div className='flex justify-center mt-6'>
 					<ArcadeButton
 						onClick={handleSubmit}
-						disabled={!!error || Object.values(errors).some(err => err !== '')}
+						disabled={loading || !!error || Object.values(errors).some(err => err !== '')}
 					>
 						UPDATE PROFILE
 					</ArcadeButton>
