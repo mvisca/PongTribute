@@ -164,6 +164,7 @@ export class CommsService implements IEventService {
 						this.log.info({ userId }, 'Terminanting zombie connection');
 						this.handleDisconnect(ws, userId);
 						ws.terminate();
+						return;
 					}
 					
 					ws.isAlive = false; // Set as pending 
