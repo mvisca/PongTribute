@@ -17,8 +17,14 @@ export function useAuthValidation() {
 				return;
 			}
 
+			// Starts validation
+			setValidating(true);
+
 			// Show loader while validating
-			const isValid = await verifyToken(accessToken);
+			const [isValid] = await Promise.all([
+				verifyToken(accessToken),
+				new Promise(resolve => setTimeout(resolve, 200))
+			]);
 
 			if (!isValid) {
 				console.warn('[Auth] Token expired or invalid - logging out');
