@@ -19,7 +19,7 @@ define check_running_and_up
 	fi
 endef
 
-.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke env-export ensure-db-dirs open-browser re
+.PHONY: all help check-env build up up_build debug down clean fclean logs ps stop nuke env-export ensure-db-dirs open-browser re download
 
 all: up_build open-browser
 
@@ -40,6 +40,7 @@ help:
 	@echo "  make open-browser - Open http://localhost in your default browser"
 	@echo "  make rebuild      - Force docker compose up -d --build (rebuild stack). Requires .env"
 	@echo "  make re           - Rebuild stack (docker compose up -d --build) and open http://localhost in your default browser"
+	@echo "  make download     - Download required base images from AWS Public ECR and tag them locally"
 
 check-env:
 	@test -f "$(ENV_FILE)" || (echo "Error: $(ENV_FILE) is missing. Create your .env before running Docker, You can use .env.example as a template." && exit 1)
@@ -107,3 +108,13 @@ env-export:
 
 open-browser:
 	@nohup xdg-open http://localhost >/dev/null 2>&1 </dev/null &
+
+download:
+	@echo "Pulling base images from AWS Public ECR..."
+	@docker pull public.ecr.aws/docker/library/redis:7-alpine
+	@docker tag public.ecr.aws/docker/library/redis:7-alpine redis:7-alpine
+	@docker pull public.ecr.aws/docker/library/node:20-bookworm-slim
+	@docker tag public.ecr.aws/docker/library/node:20-bookworm-slim node:20-bookworm-slim
+	@docker pull public.ecr.aws/docker/library/nginx:1.27-alpine
+	@docker tag public.ecr.aws/docker/library/nginx:1.27-alpine nginx:1.27-alpine
+	@echo "Done. Required base images are available locally."
