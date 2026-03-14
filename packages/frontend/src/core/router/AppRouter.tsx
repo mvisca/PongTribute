@@ -18,6 +18,8 @@ import PrivacyPage from '../../features/home/pages/PrivacyPage';
 import TermsPage from '../../features/home/pages/TermsPage';
 import LobbyPage from '../../features/lobby/pages/LobbyPage';
 import { useAuthStore } from '../auth/AuthStore';
+import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
+import HistoryPage from '../../features/auth/pages/HistoryPage';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -47,7 +49,9 @@ export function AppRouter() {
 						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
 						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-
+						<Route path='/2fa' element={<TwoFactorPage />} />
+						<Route path='/history' element={<HistoryPage />} />
+						
 						{/* 404 */}
 						<Route path="*" element={<Navigate to="/" replace />} />
 					</Routes>
