@@ -208,6 +208,9 @@ services:
       restart: always
       env_file:
         - .env
+      environment:
+        - UID=${UID}
+        - GID=${GID}
       ports:
         - "8080:80"
         - "8443:443"
