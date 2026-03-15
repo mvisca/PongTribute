@@ -209,8 +209,8 @@ services:
       env_file:
         - .env
       environment:
-        - UID=${UID}
-        - GID=${GID}
+        - HOST_UID=${UID}
+        - HOST_GID=${GID}
       ports:
         - "8080:80"
         - "8443:443"
