@@ -6,14 +6,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-RUN corepack enable
-COPY . .
+  RUN corepack enable
 
-RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @transcendence/shared build
-RUN pnpm --filter @transcendence/gateway build
-RUN pnpm --filter @transcendence/gateway deploy --prod --legacy /deploy
-
+  # ---- dependency manifests (better docker cache) ----
+  COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+  COPY packages/shared/package.json packages/shared/package.json
+  COPY packages/gateway/package.json packages/gateway/package.json
+  
+  RUN pnpm install --frozen-lockfile
+  
+  # ---- source code ----
+  COPY packages/shared packages/shared
+  COPY packages/gateway packages/gateway
+  
+  # ---- build ----
+  RUN pnpm --filter @transcendence/shared build
+  RUN pnpm --filter @transcendence/gateway build
+  RUN pnpm --filter @transcendence/gateway deploy --prod --legacy /deploy
+  
+  
 
 FROM node:20-bookworm-slim AS runtime
 
