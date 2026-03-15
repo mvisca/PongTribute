@@ -6,8 +6,7 @@ import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 
 // FRIENDS STORE Zustand
-import { FriendInvite, useFriendsStore } from '../store/friendsStore';
-
+import { FriendEntry, FriendInvite, useFriendsStore } from '../store/friendsStore';
 // FRIENDS API
 import {
 	sendFriendRequest,
@@ -31,16 +30,18 @@ import {
 } from '../../../shared/components/ui';
 
 import { useToastStore } from '../../../core/toasts';
+import { getProfile } from '../../profile/api/profileApi';
 
 export default function FriendsPage() {
 
 	const token = useAuthStore((state) => state.accessToken);
 	const currentUserId = useAuthStore((state) => state.user?.id);
 
-	const friends = useFriendsStore(state => state.friends);
-	const pending = useFriendsStore(state => state.pending);
-	const removeFriendStore = useFriendsStore(state => state.removeFriend);
-	const removePendingStore = useFriendsStore(state => state.removePending);
+	const friends							= useFriendsStore(state => state.friends);
+	const pending							= useFriendsStore(state => state.pending);
+	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
+	const removePendingStore 				= useFriendsStore(state => state.removePending);
+	const addFriendStore 					= useFriendsStore(state => state.addFriend);
 
 	const navigate = useNavigate();
 	const dismiss = useToastStore(state => state.dismiss);
@@ -73,10 +74,20 @@ export default function FriendsPage() {
 
 		try {
 			await respondFriendRequest(senderId, accepted, token);
+			if (accepted) {
+				const invite = pending[senderId];
+				const profile = await getProfile(senderId, token).catch(() => null);
 
-			if (!accepted)
-				removePendingStore(senderId);
-
+				if (invite) {
+					addFriendStore({ 
+						userId: senderId,
+						username: profile?.username ?? invite?.senderUsername ?? senderId,
+						avatar: profile?.avatar ?? invite?.senderAvatar ?? '',
+						isOnline: profile?.isOnline ?? false
+					} satisfies FriendEntry);
+				}
+			}
+			removePendingStore(senderId);
 			dismiss(senderId);
 
 		} catch (err: any) {
