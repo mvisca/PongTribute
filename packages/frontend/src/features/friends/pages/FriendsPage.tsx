@@ -3,7 +3,7 @@ import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 // AUTH STORE Zustand
 import { useAuthStore } from '../../../core/auth/AuthStore';
 // FRIENDS STORE Zustand
-import { FriendInvite, useFriendsStore } from '../store/friendsStore';
+import { FriendEntry, FriendInvite, useFriendsStore } from '../store/friendsStore';
 // FRIENDS API
 import {
 	sendFriendRequest,
@@ -24,6 +24,7 @@ import {
 	LoadingScreen
 } from '../../../shared/components/ui';
 import { useToastStore } from '../../../core/toasts';
+import { getProfile } from '../../profile/api/profileApi';
 
 export default function FriendsPage() {
 
@@ -34,6 +35,7 @@ export default function FriendsPage() {
 	const pending							= useFriendsStore(state => state.pending);
 	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
 	const removePendingStore 				= useFriendsStore(state => state.removePending);
+	const addFriendStore 					= useFriendsStore(state => state.addFriend);
 
 	const dismiss							= useToastStore(state => state.dismiss);
 
@@ -63,8 +65,20 @@ export default function FriendsPage() {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, accepted, token);
-			if (!accepted)
-				removePendingStore(senderId);
+			if (accepted) {
+				const invite = pending[senderId];
+				const profile = await getProfile(senderId, token).catch(() => null);
+
+				if (invite) {
+					addFriendStore({ 
+						userId: senderId,
+						username: profile?.username ?? invite?.senderUsername ?? senderId,
+						avatar: profile?.avatar ?? invite?.senderAvatar ?? '',
+						isOnline: profile?.isOnline ?? false
+					} satisfies FriendEntry);
+				}
+			}
+			removePendingStore(senderId);
 			dismiss(senderId);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to respond to friend request');

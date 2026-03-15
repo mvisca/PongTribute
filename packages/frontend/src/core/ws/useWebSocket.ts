@@ -3,8 +3,12 @@ import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.typ
 import { useAuthStore } from '../auth/AuthStore';
 import { WS_COMMS_URL } from './wsUrls'; // To build ws path diverse setups (localhost, ngrok, etc)
 
+const MAX_RECONNECT_ATTEMPTS = 8;
+const BASE_DELAY_MS = 1000;
+const MAX_DELAY_MS = 30000;
+
 interface UseWebSocketOptions {
-	onMessage:  (msg: WebSocketEventsTypes.AnyWsMessage) => void;
+	onMessage: (msg: WebSocketEventsTypes.AnyWsMessage) => void | Promise<void>;
 	// Called on successful open (initial connect + every reconnect).
 	// Helps to re-sync state that may have been lost during disconnection.
 	// Must be stable (memorized with useCallback).
@@ -16,6 +20,7 @@ export function useWebSocket({ onMessage, onConnect }: UseWebSocketOptions) {
 	const wsRef = useRef<WebSocket | null>(null); // live instance of websocket
 	const mountedRef = useRef(true); // indicates if the component is mounted
 	const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const attemptRef = useRef(0);
 
 	const token = useAuthStore((state) => state.accessToken);
 	
@@ -32,8 +37,14 @@ export function useWebSocket({ onMessage, onConnect }: UseWebSocketOptions) {
 		function connect() {
 			if (!mountedRef.current || !token) return;
 
+			// Don't create ws if one already exist
+			const current = wsRef.current;
+			if (current && (current.readyState === WebSocket.OPEN || current.readyState === WebSocket.CONNECTING)) {
+				return;
+			}
+
 			const wsUrl = `${WS_COMMS_URL}?token=${token.substring(0, 10)}***`; // DEBUG
-            console.log('[WebSocket] 🔌 Connecting to:', WS_COMMS_URL);
+            console.log('[WebSocket] 🔌 Connecting to:', wsUrl);
 
 			// Browsers do not allow custom headers on WebSocket upgrade requests,
 			// so the JWT must be passed as a query parameter (?token=...) and validated server-side.
@@ -43,8 +54,8 @@ export function useWebSocket({ onMessage, onConnect }: UseWebSocketOptions) {
 			// Calls loadFriendships
 			ws.onopen = () => {
 				console.log('[WebSocket] ✅ Connected successfully'); // DEBUG
+				attemptRef.current = 0;
 				onConnect?.();
-
 			}
 
 			ws.onmessage = async (event) => {
@@ -84,9 +95,15 @@ export function useWebSocket({ onMessage, onConnect }: UseWebSocketOptions) {
 					return;
 				} 
 
-				// Reconnect after 3s
-				console.log('[WebSocket] 🔄 Reconnecting in 3s...'); // DEBUG
-				reconnectTimeout.current = setTimeout(connect, 3000);
+				// Reconnect with exponential backoff
+				if (attemptRef.current >= MAX_RECONNECT_ATTEMPTS) {
+					console.log('[WebSocket] 🛑 Giving up: max reconnect attempts reached'); // DEBUG
+					return;
+				}
+				const delay = Math.min(BASE_DELAY_MS * Math.pow(2, attemptRef.current), MAX_DELAY_MS);
+				attemptRef.current++;
+				console.log(`[WebSocket] 🔄 Reconnecting in ${delay}ms - Aattempt ${attemptRef.current}/${MAX_RECONNECT_ATTEMPTS}`); // DEBUG
+				reconnectTimeout.current = setTimeout(connect, delay);
 			};
 
 			ws.onerror = (err) => {
@@ -100,6 +117,7 @@ export function useWebSocket({ onMessage, onConnect }: UseWebSocketOptions) {
 		return () => {
 			console.log('[WebSocket] 🧹 Cleanup - unmounting'); // DEBUG
 			mountedRef.current = false;
+			attemptRef.current = 0;
 			if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
 			wsRef.current?.close();
 			wsRef.current = null;
