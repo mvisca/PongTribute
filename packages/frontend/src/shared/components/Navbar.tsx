@@ -75,12 +75,13 @@ export default function Navbar({ onMenuClick, onProfileClick }: NavbarProps) {
  					</button>
 
   					<button
-    					onClick={() => setMenuOpen(true)}
-   						className='text-purple-300 hover:text-white transition-colors text-xl px-2'
-    					aria-label='Open menu'
-  					>
-    					☰
-  					</button>
+						onClick={handleLogout}
+						className="text-purple-300 hover:text-red-400 transition-colors text-xl px-2"
+						aria-label="Logout"
+						title="Logout"
+					>
+						Logout🚪
+					</button>
 				</div>
 			</nav>
 		

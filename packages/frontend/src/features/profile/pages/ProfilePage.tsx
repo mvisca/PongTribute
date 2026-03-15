@@ -64,7 +64,7 @@ export default function ProfilePage() {
 					onClick={() => navigate('/lobby')}
 					className="absolute right-4 top-4 text-purple-300 hover:text-white text-xl"
 				>
-					✕
+					← Back
 				</button>
 
 				<FormCard title={profile.username}>
@@ -91,6 +91,28 @@ export default function ProfilePage() {
 						<ArcadeButton onClick={() => navigate('/profile/password')}>
 							CHANGE PASSWORD
 						</ArcadeButton>
+						{/* Toggle 2FA */}
+						<button
+							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
+							className={`arcade-btn px-6 py-2 text-sm tracking-widest ${
+							twoFAEnabled
+							? '!text-red-400 !border-red-400 hover:!text-red-300 hover:!border-red-300'
+							: '!text-green-400 !border-green-400 hover:!text-green-300 hover:!border-green-300'
+						}`}
+						>
+							{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
+						</button>
+						{/* Toggle 2FA */}
+						{/* <button
+							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
+							className={`arcade-btn px-6 py-2 text-sm ${
+							twoFAEnabled
+							? 'text-red-400 border-red-400 hover:text-red-300 hover:border-red-300'
+							: 'text-green-400 border-green-400 hover:text-green-300 hover:border-green-300'
+							}`}
+						>
+						{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
+						</button> */}
 
 						<ArcadeButton onClick={() => navigate('/history')}>
 							HISTORY
@@ -99,16 +121,6 @@ export default function ProfilePage() {
 						<ArcadeButton onClick={() => navigate('/friends')}>
 							FRIENDS
 						</ArcadeButton>
-						
-						{/* Toggle 2FA */}
-						<button
-  							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
-  							className={`px-6 py-2 rounded-lg text-white font-bold text-sm transition-colors ${
-    						twoFAEnabled ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'
-  							}`}
-						>
-  						{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
-						</button>
 
 					</div>
 				</FormCard>
