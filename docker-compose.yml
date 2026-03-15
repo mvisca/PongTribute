@@ -217,7 +217,7 @@ services:
       volumes:
         - ./packages/nginx/certs:/etc/nginx/certs
       healthcheck:
-        test: ["CMD-SHELL", "wget -q --spider --no-check-certificate https://localhost/health || exit 1"]
+        test: ["CMD-SHELL", "wget -q --spider --no-check-certificate https://127.0.0.1/health || exit 1"]
         interval: 15s
         timeout: 3s
         retries: 3
