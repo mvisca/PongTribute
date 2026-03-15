@@ -35,6 +35,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 COPY --from=build /deploy/node_modules ./node_modules
 COPY --from=build /app/packages/user/dist ./dist
+COPY --from=build /app/packages/user/src/schemas ./dist/src/schemas
 COPY --from=build /app/packages/user/package.json ./package.json
 COPY --from=build /app/packages/shared/dist ./node_modules/@transcendence/shared/dist
 
