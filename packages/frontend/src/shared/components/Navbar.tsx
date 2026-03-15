@@ -65,18 +65,22 @@ export default function Navbar({ onMenuClick, onProfileClick }: NavbarProps) {
 					PING🏓PONG
 				</button>
 
-				<div className='flex items-center gap-4'>
-					<div className='hidden sm:flex items-center gap-2'>
-						<AvatarDisplay src={avatar} size='sm' />
-						<span className='text-sm text-purple-300'>{username}</span>
-					</div>
+				<div className='flex items-center gap-4 ml-auto'>
+ 					<button
+   					 onClick={() => navigate('/profile')}
+   					 className='hidden sm:flex items-center gap-2 hover:bg-purple-800 px-2 py-1 rounded-lg transition-colors cursor-pointer'
+ 					>
+   					<AvatarDisplay src={avatar} size='sm' />
+    				<span className='text-sm text-purple-300'>{username}</span>
+ 					</button>
 
-					<button
-						onClick={() => setMenuOpen(true)}
-						className='text-purple-300 hover:text-white transition-colors text-xl px-2'
-						aria-label='Open menu'
+  					<button
+						onClick={handleLogout}
+						className="text-purple-300 hover:text-red-400 transition-colors text-xl px-2"
+						aria-label="Logout"
+						title="Logout"
 					>
-						☰
+						Logout🚪
 					</button>
 				</div>
 			</nav>
