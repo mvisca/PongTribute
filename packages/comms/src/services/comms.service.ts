@@ -256,7 +256,7 @@ export class CommsService implements IEventService {
 		// Remove from connection map
 		this.connections.delete(userId);
 
-		// Publish USER_DISCONNECTED event for game service
+		// Publish USER_DISCONNECTED eacceptorIdvent for game service
 		const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
 			type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
 			timestamp: Date.now(),
