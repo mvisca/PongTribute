@@ -107,6 +107,7 @@ export default defineConfig(({ command }) => ({
 				target: 'https://localhost',
 				changeOrigin: true,
 				secure: false,
+				ws: true,
 			},
 			'/ws': {
 				target: 'wss://localhost',

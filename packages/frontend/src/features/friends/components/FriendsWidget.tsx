@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { useFriendsStore } from '../store/friendsStore';
-import { sendFriendRequest, findUserByUsername, respondFriendRequest } from '../api/friendsApi';
+import { sendFriendRequest, findUserByUsername, respondFriendRequest, removeFriend } from '../api/friendsApi';
 import { FriendItem } from './FriendItem';
 import { AvatarDisplay } from '../../../shared/components/ui';
 
@@ -54,12 +54,20 @@ export function FriendsWidget() {
 		} catch {}
 	};
 	
+	const handleRemove = async (friendId: string) => {
+	if (!token) return;
+	try {
+		await removeFriend(friendId, token);
+		removePending(friendId); // o el action correcto del store
+	} catch {}
+	};
+	
 	return (
 		<div className='bg-purple-950 rounded-xl shadow-lg w-56 flex flex-col gap-3 p-3'>
 
 			{/* FRIENDS LIST */}
 			<div>
-				<h2 className='retro-title-sm mb-1'>
+				<h2 className='retro-title-sm mb-1 p-2'>
 					FRIENDS ({Object.keys(friends).length})
 				</h2>
 				{Object.keys(friends).length === 0 ? (
@@ -67,7 +75,14 @@ export function FriendsWidget() {
 				) : (
 					<div className='flex flex-col gap-1'>
 						{Object.values(friends).map(entry => (
-							<FriendItem key={entry.userId} entry={entry} />
+							<FriendItem
+								key={entry.userId}
+								entry={entry}
+								onRemove={handleRemove}
+								onPlay={(id) => console.log('play', id)}
+								playLabel='PLAY'
+							/>
+
 						))}
 					</div>
 				)}
@@ -129,18 +144,18 @@ export function FriendsWidget() {
 										<AvatarDisplay src={req.senderAvatar} size='sm' />
 										<span className='text-[10px] text-purple-200'>{req.senderUsername}</span>
 									</div>
-									<div className='flex gap-1'>
-										<button
-											onClick={() => handleRespond(req.senderId, true)}
-											className='arcade-btn-sm'
-										>
-											✓
-										</button>
+									<div className='flex flex-col items-end gap-1'>
 										<button
 											onClick={() => handleRespond(req.senderId, false)}
 											className='text-[10px] text-red-400 hover:text-red-200 px-2'
 										>
-											✕
+											REFUSE
+										</button>
+										<button
+											onClick={() => handleRespond(req.senderId, true)}
+											className='arcade-btn-sm'
+										>
+											ACCEPT
 										</button>
 									</div>
 								</div>

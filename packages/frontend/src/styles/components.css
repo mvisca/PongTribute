@@ -94,7 +94,7 @@
 	FRIENDS LIST
 	============================================ */
 	.friend-item {
-		@apply flex items-center justify-between p-0 bg-purple-900 rounded-lg mb-1;
+		@apply flex items-center justify-between p-1 bg-purple-900 rounded-lg mb-1;
 	}
 	
 	/*
