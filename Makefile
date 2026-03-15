@@ -107,7 +107,7 @@ env-export:
 	@echo "export UID=$(shell id -u)"
 
 open-browser:
-	@nohup xdg-open http://localhost >/dev/null 2>&1 </dev/null &
+	@nohup xdg-open https://localhost:8443 >/dev/null 2>&1 </dev/null &
 
 download:
 	@echo "Pulling base images from AWS Public ECR..."
