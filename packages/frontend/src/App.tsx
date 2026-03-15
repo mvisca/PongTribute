@@ -180,7 +180,7 @@ export default function App() {
 	
 			case WEBSOCKET_EVENTS.FRIEND_REMOVE:
 				removeFriend(msg.payload.removerId);
-				warning('A frindship has ended');
+				warning('A friendship has ended');
 				break;
 			
 			default: break

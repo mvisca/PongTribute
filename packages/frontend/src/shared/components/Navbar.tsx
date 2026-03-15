@@ -13,7 +13,13 @@ type NavItem = {
 	danger?: boolean;
 }
 
-export default function Navbar() {
+// Props opcionales para callbacks
+type NavbarProps = 
+{
+  onMenuClick?: () => void;
+  onProfileClick?: () => void;
+}
+export default function Navbar({ onMenuClick, onProfileClick }: NavbarProps) {
 	const navigate = useNavigate();
 
     const username			= useAuthStore((state) => state.user?.username);
@@ -119,13 +125,13 @@ export default function Navbar() {
 							className='w-full max-w-sm flex items-center gap-6 px-8 py-4 rounded-xl text-red-400 hover:text-red-200 hover:bg-red-900/30'
 						>
 							<span className='text-2xl w-8 text-center'>🚪</span>
-							<span className='text-lg font-bold tracking-widest group-hover_translate-x-1 transition'>
+							<span className='text-lg font-bold tracking-widest group-hover:translate-x-1 transition'>
 								LOGOUT
 							</span>
 						</button>
 					</nav>
 				</div>
-			)};
+			)}
 		</>
 	);
 }

@@ -16,6 +16,7 @@ import FriendsPage from '../../features/friends/pages/FriendsPage';
 import Footer from '../../shared/components/Footer';
 import PrivacyPage from '../../features/home/pages/PrivacyPage';
 import TermsPage from '../../features/home/pages/TermsPage';
+import LobbyPage from '../../features/lobby/pages/LobbyPage';
 import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
@@ -42,7 +43,8 @@ export function AppRouter() {
 						<Route path="/terms"   element={<TermsPage />} />
 
 						{/* Protected routes */}
-						<Route path="/home" element={<ProtectedRoute><div>Coming soon</div></ProtectedRoute>} />
+						{/* <Route path="/home" element={<ProtectedRoute><div>Coming soon</div></ProtectedRoute>} /> */}
+						<Route path="/home" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>}/>
 						<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
