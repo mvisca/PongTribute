@@ -279,11 +279,9 @@ export function buildApp(): FastifyInstance {
 			let queuedBytes = 0;
 
 			const upstreamOpenTimeout = setTimeout(() => {
-				if (!clientAlive || !upstreamAlive) {
-					if (!clientAlive) closeWithFallback(client, 1011, 'Upstream not available', 200);
-					if (!upstreamAlive) closeWithFallback(upstream, 1011, 'Upstream open timeout', 200);
-					cleanup();
-				}
+				if (!clientAlive) closeWithFallback(client, 1011, 'Upstream not available', 200);
+				if (!upstreamAlive) closeWithFallback(upstream, 1011, 'Upstream open timeout', 200);
+			cleanup();
 			}, GatewayEnv.WS_UPSTREAM_OPEN_TIMEOUT_MS);
 
 			let clientAlive = true;
