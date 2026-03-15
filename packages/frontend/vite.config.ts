@@ -90,6 +90,10 @@ export default defineConfig(({ command }) => ({
 	},
 
 	server: {
+		watch: {
+			usePolling: true,
+			interval: 300
+    	},
 		https: command === 'serve' ? {
 			key:  fs.readFileSync('../nginx/certs/tls.key'),
 			cert: fs.readFileSync('../nginx/certs/tls.crt'),

@@ -17,6 +17,18 @@ body {
 	margin-bottom: 0.75rem;
 }
 
+/* Form input para el dashboard de friends */
+.input-sm {
+    background-color: #12081f;
+    border: 2px solid #6d3bd1;
+    color: #ffffff;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.4rem;
+    width: 70%;
+    margin-bottom: 0.5rem;
+}
+
 .input:focus {
 	outline: none;
 	border-color: #00ffff;
@@ -56,6 +68,20 @@ body {
 		0 0 14px rgba(255, 79, 216, 0.5);
 }
 
+/* Título retro con degradado SOLO para dashboard de friends*/
+.retro-title-sm {
+    background: linear-gradient(90deg, #00ffff, #ff4fd8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+    font-size: 1.20rem;
+    line-height: 1.4;
+	text-shadow:
+		0 0 8px rgba(0, 255, 255, 0.6),
+		0 0 14px rgba(255, 79, 216, 0.5);
+}
+
 /* Botones arcade */
 .arcade-btn {
 	border: 2px solid #ff4fd8;
@@ -67,11 +93,43 @@ body {
 	transition: all 0.2s ease;
 }
 
+.arcade-btn-sm {
+    border: 2px solid #ff4fd8;
+    background-color: transparent;
+    color: #ff4fd8;
+    padding: 0.15rem 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 0 10px rgba(255, 79, 216, 0.6);
+    transition: all 0.2s ease;
+    font-size: 1rem;
+	line-height: 1;
+}
+
 .arcade-btn:hover {
 	transform: translateY(-2px);
 	box-shadow:
 		0 0 12px #00ffff,
 		0 0 24px rgba(0, 255, 255, 0.6);
+}
+
+/* Dashboard friends - boton */
+.arcade-btn-sm {
+    border: 2px solid #ff4fd8;
+    background-color: transparent;
+    color: #ff4fd8;
+    padding: 0.15rem 0.6rem;
+    border-radius: 0.3rem;
+    box-shadow: 0 0 10px rgba(255, 79, 216, 0.6);
+    transition: all 0.2s ease;
+    font-size: 0.65rem;
+	line-height: 1;
+}
+
+.arcade-btn-sm:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 0 12px #00ffff,
+        0 0 24px rgba(0, 255, 255, 0.6);
 }
 
 /* 🎮 GAME SCREEN ARCADE */

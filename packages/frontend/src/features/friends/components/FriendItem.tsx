@@ -13,9 +13,7 @@ export function FriendItem({ entry, onRemove }: Props) {
 				<AvatarDisplay src={entry.avatar} size='sm' />
 				<div>
 					<p className='text-sm font-bold text-purple-200'>{entry.username}</p>
-					<span className={entry.isOnline ? 'text-green-400' : 'text-purple-500'}>
-						{entry.isOnline ? '● Online' : '○ Offline'}
-					</span>
+					<span className={entry.isOnline ? 'online-dot' : 'offline-dot'}>●</span>
 				</div>
 			</div>
 			{onRemove && (

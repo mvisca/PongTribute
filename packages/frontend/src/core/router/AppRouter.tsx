@@ -19,6 +19,7 @@ import TermsPage from '../../features/home/pages/TermsPage';
 import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
+import TempPage from '../../features/home/pages/TempPage';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -49,6 +50,7 @@ export function AppRouter() {
 						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
 						<Route path='/2fa' element={<TwoFactorPage />} />
 						<Route path='/history' element={<HistoryPage />} />
+						<Route path='/temp' element={<ProtectedRoute><TempPage /></ProtectedRoute>} />
 						
 						{/* 404 */}
 						<Route path="*" element={<Navigate to="/" replace />} />

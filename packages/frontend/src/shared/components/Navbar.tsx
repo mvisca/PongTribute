@@ -52,12 +52,9 @@ export default function Navbar() {
     return (
 		<>
 			<nav className='fixed top-0 left-0 right-0 z-50 bg-purple-900 border-b border-purple-700 px-6 py-3 flex items-center justify-between'>
-				<button
-					onClick={() => navigate('/home')}
-					className='text-purple-300 font-bold text-lg tracking-widest hover:text-white transition-colors'
-				>
+				<span className='text-purple-300 font-bold text-lg tracking-widest'>
 					PING🏓PONG
-				</button>
+				</span>
 
 				<div className='flex items-center gap-4'>
 					<div className='hidden sm:flex items-center gap-2'>
