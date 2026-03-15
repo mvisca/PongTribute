@@ -72,7 +72,7 @@ export default function Navbar({ onMenuClick, onProfileClick }: NavbarProps) {
  					>
    					<AvatarDisplay src={avatar} size='sm' />
     				<span className='text-sm text-purple-300'>{username}</span>
- 					 </button>
+ 					</button>
 
   					<button
     					onClick={() => setMenuOpen(true)}

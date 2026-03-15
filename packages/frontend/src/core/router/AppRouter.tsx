@@ -45,6 +45,7 @@ export function AppRouter() {
 						{/* Protected routes */}
 						{/* <Route path="/home" element={<ProtectedRoute><div>Coming soon</div></ProtectedRoute>} /> */}
 						<Route path="/home" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>}/>
+						<Route path="/lobby" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
 						<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
