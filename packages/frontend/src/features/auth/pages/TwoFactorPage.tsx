@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { enable2FA } from '../api/authApi';
-import { PageContainer, FormCard, LinkButton, ArcadeButton, AlertError, FormInput } from '../../../shared/components/ui';
-import { verify2FASetup } from '../api/authApi';
+import { PageContainer, FormCard, LinkButton, ArcadeButton, AlertError, FormInput, PasswordInput } from '../../../shared/components/ui';
+import { enable2FA, verify2FASetup, disable2FA } from '../api/authApi';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
+import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 
 export default function TwoFactorPage() {
     const navigate = useNavigate();
@@ -17,6 +17,7 @@ export default function TwoFactorPage() {
     const [error, setError] = useState('');
     const [setupData, setSetupData] = useState<AuthTypes.Enable2FAResponse | null>(null);
     const [totpCode, setTotpCode] = useState('');
+    const [disablePassword, setDisablePassword] = useState('');
 
     async function handleStartActivation() {
         setError('');
@@ -47,6 +48,23 @@ export default function TwoFactorPage() {
         }
     }
 
+    async function handleDisable2FA() {
+        setError('');
+        if (!userId || !token) return;
+        if (!disablePassword) {
+            setError('Password is required to disable 2FA');
+            return;
+        }
+        try {
+            const data = await disable2FA(userId, disablePassword, token);
+            setUser({ ...user!, ...data.user });
+            setAccessToken(data.token);
+            setDisablePassword('');
+            navigate('/profile');
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to disable 2FA');
+        }
+    }
     return (
         <PageContainer>
             <FormCard title='2FA'>
@@ -104,9 +122,23 @@ export default function TwoFactorPage() {
                     </div>
                 )}
                 {user?.has2FAEnabled && (
-                    <p className="text-xs text-purple-400 text-center mt-2">
-                        2FA is active. You can disable it below.
-                    </p>
+                    <div className="mt-6 flex flex-col items-center gap-4">
+                        <p className="text-xs text-purple-400 text-center">
+                            2FA is active. Enter your password to disable it.
+                        </p>
+                        <div className="-mt-2 w-full max-w-[280px]">
+                            <PasswordInput
+                                value={disablePassword}
+                                onChange={(v) => { setDisablePassword(v); setError(''); }}
+                                placeholder="Your password"
+                            />
+                        </div>
+                        <div className="flex justify-center mt-4">
+                            <ArcadeButton onClick={handleDisable2FA}>
+                                DISABLE 2FA
+                            </ArcadeButton>
+                        </div>
+                    </div>
                 )}
                 <div className="mt-6 text-right">
                  <LinkButton onClick={() => navigate('/profile')}>← Back to profile</LinkButton>
