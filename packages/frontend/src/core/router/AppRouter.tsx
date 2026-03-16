@@ -21,6 +21,7 @@ import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
 import TempPage from '../../features/home/pages/TempPage';
+import DeleteAccountPage from '../../features/profile/pages/DeleteAccountPage';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -28,7 +29,7 @@ export function AppRouter() {
 		<BrowserRouter>
 			<div className='flex flex-col h-screen'>
 				<Navbar />
-				<div className={`flex-1 overflow-y-auto ${isAuthenticated ? 'pt-14' : ''}`}>
+				<div className={`flex-1 overflow-y-auto ${isAuthenticated ? 'pt-20' : ''}`}>
 					<Routes>
 						{/* Root redirect */}
 						<Route path="/" element={<RootRedirect />} />
@@ -50,6 +51,7 @@ export function AppRouter() {
 						<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+						<Route path='/profile/delete' element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
 						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
 						<Route path='/history' element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
 						<Route path='/2fa' element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />						<Route path='/history' element={<HistoryPage />} />

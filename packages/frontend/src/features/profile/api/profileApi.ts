@@ -35,3 +35,10 @@ export async function updateProfile(
 		token,
 	});
 }
+
+export async function anonymizeAccount(userId: string, token: string): Promise<void> {
+    await apiRequest<void>(`/users/${userId}/anonymize`, {
+        method: 'PUT',
+        token,
+    });
+}

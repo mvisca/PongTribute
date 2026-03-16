@@ -8,6 +8,7 @@ import {
 	FormCard,
 	ArcadeButton,
 	LoadingScreen,
+	LinkButton,
 	AvatarDisplay,
 	AlertError,
 } from '../../../shared/components/ui';
@@ -59,13 +60,6 @@ export default function ProfilePage() {
 		<PageContainer>
 			<div className="relative">
 				
-				{/* Botón cerrar */}
-				<button
-					onClick={() => navigate('/lobby')}
-					className="absolute right-4 top-4 text-purple-300 hover:text-white text-xl"
-				>
-					← Back
-				</button>
 
 				<FormCard title={profile.username}>
 					<div className='flex justify-center mb-4'>
@@ -91,7 +85,7 @@ export default function ProfilePage() {
 						<ArcadeButton onClick={() => navigate('/profile/password')}>
 							CHANGE PASSWORD
 						</ArcadeButton>
-						{/* Toggle 2FA */}
+						{/* Toggle 2FA
 						<button
 							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
 							className={`arcade-btn px-6 py-2 text-sm tracking-widest ${
@@ -101,28 +95,26 @@ export default function ProfilePage() {
 						}`}
 						>
 							{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
-						</button>
-						{/* Toggle 2FA */}
-						{/* <button
-							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
-							className={`arcade-btn px-6 py-2 text-sm ${
-							twoFAEnabled
-							? 'text-red-400 border-red-400 hover:text-red-300 hover:border-red-300'
-							: 'text-green-400 border-green-400 hover:text-green-300 hover:border-green-300'
-							}`}
-						>
-						{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
 						</button> */}
+
+
+						<ArcadeButton onClick={() => setTwoFAEnabled(!twoFAEnabled)}>
+							{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
+						</ArcadeButton>
+
+						<ArcadeButton onClick={() => navigate('/profile/delete')}>
+							DELETE ACCOUNT
+						</ArcadeButton>
 
 						<ArcadeButton onClick={() => navigate('/history')}>
 							HISTORY
 						</ArcadeButton>
-
-						<ArcadeButton onClick={() => navigate('/friends')}>
-							FRIENDS
-						</ArcadeButton>
-
 					</div>
+	
+				{/* Botón volver */}
+				<div className='mt-6 text-right'>
+					<LinkButton onClick={() => navigate('/lobby')}>← Back</LinkButton>
+				</div>
 				</FormCard>
 			</div>
 		</PageContainer>
