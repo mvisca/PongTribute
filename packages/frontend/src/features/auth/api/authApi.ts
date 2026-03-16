@@ -65,3 +65,41 @@ export async function verifyToken(token: string): Promise<boolean> {
 		return false;
 	}
 }
+
+/** Iniciar activación de 2FA: devuelve QR, backupCode y setupToken */
+export async function enable2FA(
+	userId: string,
+	token: string
+): Promise<AuthTypes.Enable2FAResponse> {
+	return await apiRequest<AuthTypes.Enable2FAResponse>(`/auth/${userId}/enable-2fa`, {
+		method: 'POST',
+		token,
+	});
+}
+
+/** Completar activación de 2FA: envía setupToken + código TOTP de 6 dígitos */
+export async function verify2FASetup(
+	userId: string,
+	setupToken: string,
+	totpCode: string,
+	token: string
+): Promise<AuthTypes.LoginSuccessResponse> {
+	return await apiRequest<AuthTypes.LoginSuccessResponse>(`/auth/${userId}/verify-2fa-setup`, {
+		method: 'POST',
+		body: { setupToken, totpCode },
+		token,
+	});
+}
+
+/** Desactivar 2FA; requiere la contraseña actual */
+export async function disable2FA(
+	userId: string,
+	password: string,
+	token: string
+): Promise<AuthTypes.LoginSuccessResponse> {
+	return await apiRequest<AuthTypes.LoginSuccessResponse>(`/auth/${userId}/disable-2fa`, {
+		method: 'POST',
+		body: { password },
+		token,
+	});
+}
