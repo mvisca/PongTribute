@@ -130,6 +130,9 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+# VSCode/Cursor workspace settings (local only)
+.vscode/
+
 # yarn v3
 .pnp.*
 .yarn/*

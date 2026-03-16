@@ -47,8 +47,7 @@ export function AppRouter() {
 						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
 						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-						<Route path='/2fa' element={<TwoFactorPage />} />
-						<Route path='/history' element={<HistoryPage />} />
+						<Route path='/2fa' element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />						<Route path='/history' element={<HistoryPage />} />
 						
 						{/* 404 */}
 						<Route path="*" element={<Navigate to="/" replace />} />
