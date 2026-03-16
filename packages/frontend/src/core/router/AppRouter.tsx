@@ -19,6 +19,7 @@ import TermsPage from '../../features/home/pages/TermsPage';
 import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
+import Verify2FALoginPage from '../../features/auth/pages/Verify2FALoginPage';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -35,8 +36,7 @@ export function AppRouter() {
 						<Route path='/welcome' element={<PublicHomePage />} />
 						<Route path="/login" element={<LoginPage />} />
 						<Route path="/register" element={<RegisterPage />} />
-						<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
-						<Route path="/forgot" element={<ForgotPasswordPage />} />
+						<Route path="/verify-2fa" element={<Verify2FALoginPage />} />						<Route path="/forgot" element={<ForgotPasswordPage />} />
 						<Route path="/recover" element={<RecoverPasswordPage />} />
 						<Route path="/privacy" element={<PrivacyPage />} />
 						<Route path="/terms"   element={<TermsPage />} />
