@@ -109,9 +109,13 @@ export default function Verify2FALoginPage() {
 							onChange={(v) => {
 								const hex = v.toUpperCase().replace(/[^A-F0-9]/g, '').slice(0, 8);
 								const next =
-									hex.length <= 4
-										? (hex.length === 0 ? '' : hex + '-')
-										: `${hex.slice(0, 4)}-${hex.slice(4)}`;
+									hex.length === 0
+										? ''
+										: hex.length < 4
+											? hex
+											: hex.length === 4
+												? hex + '-'
+												: `${hex.slice(0, 4)}-${hex.slice(4)}`;
 								setBackupCode(next);
 								setError('');
 							}}
