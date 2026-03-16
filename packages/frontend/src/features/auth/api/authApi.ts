@@ -103,3 +103,25 @@ export async function disable2FA(
 		token,
 	});
 }
+
+/** Completar login con 2FA: envía provisionalToken + código TOTP (sin Bearer) */
+export async function verify2FALogin(
+	provisionalToken: string,
+	totpCode: string
+): Promise<AuthTypes.LoginSuccessResponse> {
+	return await apiRequest<AuthTypes.LoginSuccessResponse>('/auth/verify-2fa', {
+		method: 'POST',
+		body: { provisionalToken, totpCode },
+	});
+}
+
+/** Completar login con código de respaldo; desactiva 2FA (sin Bearer) */
+export async function verifyBackupCode(
+	provisionalToken: string,
+	backupCode: string
+): Promise<AuthTypes.LoginSuccessResponse> {
+	return await apiRequest<AuthTypes.LoginSuccessResponse>('/auth/verify-backup-code', {
+		method: 'POST',
+		body: { provisionalToken, backupCode },
+	});
+}
