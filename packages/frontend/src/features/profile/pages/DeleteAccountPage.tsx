@@ -44,7 +44,7 @@ export default function DeleteAccountPage() {
 
                 <p className='text-sm text-purple-300 text-center mb-2'>
                     This action is <span className='text-red-400 font-bold'>irreversible</span>.
-                    Your account and personal data will be permanently anonymized.
+                    Your account and personal data will be permanently deleted.
                 </p>
 
                 <p className='text-xs text-purple-400 text-center mb-6'>

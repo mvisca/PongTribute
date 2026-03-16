@@ -21,7 +21,7 @@ export default function ProfilePage() {
 	const [profile, setProfile] = useState<UserTypes.UserPublic | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
-	const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+	//const [twoFAEnabled, setTwoFAEnabled] = useState(false);
 
 	useEffect(() => {
 		if (!userId || !token) {
@@ -35,7 +35,7 @@ export default function ProfilePage() {
 				const data = await getProfile(userId, token);
 				console.log('[ProfilePage] data received:', data);
 				setProfile(data);
-				setTwoFAEnabled(data.has2FAEnabled ?? false);
+				//setTwoFAEnabled(data.has2FAEnabled ?? false);
 			} catch(err) {
 				setError('Failed to load profile');
 				console.error('[ProfilePage] fetch error:', err);
@@ -85,23 +85,12 @@ export default function ProfilePage() {
 						<ArcadeButton onClick={() => navigate('/profile/password')}>
 							CHANGE PASSWORD
 						</ArcadeButton>
-						{/* Toggle 2FA
-						<button
-							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
-							className={`arcade-btn px-6 py-2 text-sm tracking-widest ${
-							twoFAEnabled
-							? '!text-red-400 !border-red-400 hover:!text-red-300 hover:!border-red-300'
-							: '!text-green-400 !border-green-400 hover:!text-green-300 hover:!border-green-300'
-						}`}
-						>
-							{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
-						</button> */}
 
-
-						<ArcadeButton onClick={() => setTwoFAEnabled(!twoFAEnabled)}>
-							{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
+						{/* Toggle 2FA */}
+						<ArcadeButton onClick={() => navigate('/2fa')}>
+							{profile.has2FAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
 						</ArcadeButton>
-
+						
 						<ArcadeButton onClick={() => navigate('/profile/delete')}>
 							DELETE ACCOUNT
 						</ArcadeButton>

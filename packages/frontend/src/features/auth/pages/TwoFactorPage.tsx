@@ -75,7 +75,7 @@ export default function TwoFactorPage() {
                 </p>
                 {!user?.has2FAEnabled && !setupData && (
                     <div className="flex justify-center mt-6">
-                        <ArcadeButton onClick={handleStartActivation}>ACTIVATE 2FA</ArcadeButton>
+                        <ArcadeButton onClick={handleStartActivation}>GENERATE QR</ArcadeButton>
                     </div>
                 )}
                 {setupData && (
