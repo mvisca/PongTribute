@@ -13,7 +13,13 @@ type NavItem = {
 	danger?: boolean;
 }
 
-export default function Navbar() {
+// Props opcionales para callbacks
+type NavbarProps = 
+{
+  onMenuClick?: () => void;
+  onProfileClick?: () => void;
+}
+export default function Navbar({ onMenuClick, onProfileClick }: NavbarProps) {
 	const navigate = useNavigate();
 
     const username			= useAuthStore((state) => state.user?.username);
@@ -56,18 +62,22 @@ export default function Navbar() {
 					PING🏓PONG
 				</span>
 
-				<div className='flex items-center gap-4'>
-					<div className='hidden sm:flex items-center gap-2'>
-						<AvatarDisplay src={avatar} size='sm' />
-						<span className='text-sm text-purple-300'>{username}</span>
-					</div>
+				<div className='flex items-center gap-4 ml-auto'>
+ 					<button
+   					 onClick={() => navigate('/profile')}
+   					 className='hidden sm:flex items-center gap-2 hover:bg-purple-800 px-2 py-1 rounded-lg transition-colors cursor-pointer'
+ 					>
+   					<AvatarDisplay src={avatar} size='sm' />
+    				<span className='text-sm text-purple-300'>{username}</span>
+ 					</button>
 
-					<button
-						onClick={() => setMenuOpen(true)}
-						className='text-purple-300 hover:text-white transition-colors text-xl px-2'
-						aria-label='Open menu'
+  					<button
+						onClick={handleLogout}
+						className="text-purple-300 hover:text-red-400 transition-colors text-xl px-2"
+						aria-label="Logout"
+						title="Logout"
 					>
-						☰
+						Logout🚪
 					</button>
 				</div>
 			</nav>
@@ -116,13 +126,13 @@ export default function Navbar() {
 							className='w-full max-w-sm flex items-center gap-6 px-8 py-4 rounded-xl text-red-400 hover:text-red-200 hover:bg-red-900/30'
 						>
 							<span className='text-2xl w-8 text-center'>🚪</span>
-							<span className='text-lg font-bold tracking-widest group-hover_translate-x-1 transition'>
+							<span className='text-lg font-bold tracking-widest group-hover:translate-x-1 transition'>
 								LOGOUT
 							</span>
 						</button>
 					</nav>
 				</div>
-			)};
+			)}
 		</>
 	);
 }

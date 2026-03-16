@@ -8,9 +8,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 RUN corepack enable
-COPY . .
+
+# ---- dependency manifests (better docker cache) ----
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/bot/package.json packages/bot/package.json
 
 RUN pnpm install --frozen-lockfile
+
+# ---- source code ----
+COPY packages/shared packages/shared
+COPY packages/bot packages/bot
+
+# ---- build ----
 RUN pnpm --filter @transcendence/shared build
 RUN pnpm --filter @transcendence/bot build
 RUN pnpm --filter @transcendence/bot deploy --prod --legacy /deploy

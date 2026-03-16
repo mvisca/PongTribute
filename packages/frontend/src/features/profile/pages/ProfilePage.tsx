@@ -7,7 +7,6 @@ import {
 	PageContainer,
 	FormCard,
 	ArcadeButton,
-	NeonButton,
 	LoadingScreen,
 	AvatarDisplay,
 	AlertError,
@@ -21,6 +20,7 @@ export default function ProfilePage() {
 	const [profile, setProfile] = useState<UserTypes.UserPublic | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
+	const [twoFAEnabled, setTwoFAEnabled] = useState(false);
 
 	useEffect(() => {
 		if (!userId || !token) {
@@ -34,6 +34,7 @@ export default function ProfilePage() {
 				const data = await getProfile(userId, token);
 				console.log('[ProfilePage] data received:', data);
 				setProfile(data);
+				setTwoFAEnabled(data.has2FAEnabled ?? false);
 			} catch(err) {
 				setError('Failed to load profile');
 				console.error('[ProfilePage] fetch error:', err);
@@ -44,12 +45,8 @@ export default function ProfilePage() {
 		fetchProfile();
 	}, [userId, token]);
 
-	// Loading page
-	if (loading) {
-		return <LoadingScreen />;
-	}
+	if (loading) return <LoadingScreen />;
 
-	// Error page
 	if (error || !profile) {
 		return (
 			<PageContainer>
@@ -58,29 +55,76 @@ export default function ProfilePage() {
 		);
 	}
 
-	// Profile view page
 	return (
 		<PageContainer>
-			<FormCard title={profile.username}>
-				<div className='flex justify-center mb-4'>
-					<AvatarDisplay src={profile.avatar} size='lg' />
-				</div>
+			<div className="relative">
+				
+				{/* Botón cerrar */}
+				<button
+					onClick={() => navigate('/lobby')}
+					className="absolute right-4 top-4 text-purple-300 hover:text-white text-xl"
+				>
+					← Back
+				</button>
 
-				<p className='text-sm text-purple-300 text-center mb-1'>
-					{profile.email}
-				</p>
-				<p className='text-xs text-center mb-6'>
-					<span className={profile.isOnline ? 'text-green-400' : 'text-purple-500'}>
-						{profile.isOnline ? '● Online' : '○ Offline'}
-					</span>
-				</p>
+				<FormCard title={profile.username}>
+					<div className='flex justify-center mb-4'>
+						<AvatarDisplay src={profile.avatar} size='lg' />
+					</div>
 
-				<div className='flex flex-col gap-5 mt-6'>
-					<ArcadeButton onClick={() => navigate('/profile/edit')}>EDIT PROFILE</ArcadeButton>
-					<ArcadeButton onClick={() => navigate('/profile/password')}>CHANGE PASSWORD</ArcadeButton>
-					<ArcadeButton onClick={() => navigate('/profile')}>PLAY</ArcadeButton>
-				</div>
-			</FormCard>
+					<p className='text-sm text-purple-300 text-center mb-1'>
+						{profile.email}
+					</p>
+
+					<p className='text-xs text-center mb-6'>
+						<span className={profile.isOnline ? 'text-green-400' : 'text-purple-500'}>
+							{profile.isOnline ? '● Online' : '○ Offline'}
+						</span>
+					</p>
+
+					<div className='flex flex-col gap-5 mt-6'>
+
+						<ArcadeButton onClick={() => navigate('/profile/edit')}>
+							EDIT PROFILE
+						</ArcadeButton>
+
+						<ArcadeButton onClick={() => navigate('/profile/password')}>
+							CHANGE PASSWORD
+						</ArcadeButton>
+						{/* Toggle 2FA */}
+						<button
+							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
+							className={`arcade-btn px-6 py-2 text-sm tracking-widest ${
+							twoFAEnabled
+							? '!text-red-400 !border-red-400 hover:!text-red-300 hover:!border-red-300'
+							: '!text-green-400 !border-green-400 hover:!text-green-300 hover:!border-green-300'
+						}`}
+						>
+							{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
+						</button>
+						{/* Toggle 2FA */}
+						{/* <button
+							onClick={() => setTwoFAEnabled(!twoFAEnabled)}
+							className={`arcade-btn px-6 py-2 text-sm ${
+							twoFAEnabled
+							? 'text-red-400 border-red-400 hover:text-red-300 hover:border-red-300'
+							: 'text-green-400 border-green-400 hover:text-green-300 hover:border-green-300'
+							}`}
+						>
+						{twoFAEnabled ? 'DISABLE 2FA' : 'ENABLE 2FA'}
+						</button> */}
+
+						<ArcadeButton onClick={() => navigate('/history')}>
+							HISTORY
+						</ArcadeButton>
+
+						<ArcadeButton onClick={() => navigate('/friends')}>
+							FRIENDS
+						</ArcadeButton>
+
+					</div>
+				</FormCard>
+			</div>
 		</PageContainer>
 	);
 }

@@ -7,15 +7,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   python3 make g++ \
   && rm -rf /var/lib/apt/lists/*
 
+
 RUN corepack enable
-COPY . .
+
+# ---- dependency manifests (better docker cache) ----
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/game/package.json packages/game/package.json
 
 RUN pnpm install --frozen-lockfile
+
+# ---- source code ----
+COPY packages/shared packages/shared
+COPY packages/game packages/game
+
+# ---- build ----
 RUN pnpm --filter @transcendence/shared build
 RUN pnpm --filter @transcendence/game build
-RUN cp -r /app/packages/game/src/schemas /app/packages/game/dist/schemas
 RUN pnpm --filter @transcendence/game deploy --prod --legacy /deploy
-
 
 FROM node:20-bookworm-slim AS runtime
 
@@ -26,9 +35,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 
 COPY --from=build /deploy/node_modules ./node_modules
 COPY --from=build /app/packages/game/dist ./dist
+COPY --from=build /app/packages/game/src/schemas ./dist/schemas
 COPY --from=build /app/packages/game/package.json ./package.json
 COPY --from=build /app/packages/shared/dist ./node_modules/@transcendence/shared/dist
 
-RUN chmod -R a+rX /app
 EXPOSE 3003
 CMD ["node", "dist/server.js"]

@@ -3,7 +3,6 @@ import { useCallback } from 'react';
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
 import { AppRouter } from './core/router/AppRouter';
-import { LoadingScreen } from './shared/components/ui';
 import { 
 	TOAST_BUTTON_STYLE, 
 	TOAST_TYPE, 
@@ -88,11 +87,19 @@ export default function App() {
 		if (!token) return;
 		try {
 			await respondFriendRequest(senderId, true, token);
+			removePending(senderId);
+			const profile= await getProfile(senderId, token).catch(() => null);
+			addFriend({ 
+				userId: senderId,
+				username: profile?.username ?? senderUsername,
+				avatar: profile?.avatar ?? senderAvatar,
+				isOnline: profile?.isOnline ?? false
+			} satisfies FriendEntry);
 			dismiss(senderId);
 		} catch {
 			error('Failed to accept request');
 		} 
-	}, [token, error, dismiss]);
+	}, [token, error, dismiss, removePending, addFriend]);
 
 	const handleRejectFriend = useCallback(async (senderId: string) => {
 		if (!token) return;
@@ -105,7 +112,7 @@ export default function App() {
 		}
 	}, [token, removePending, error, dismiss]);
 
-	const handleWsMessage = useCallback((msg: WebSocketEventsTypes.AnyWsMessage) => {
+	const handleWsMessage = useCallback(async (msg: WebSocketEventsTypes.AnyWsMessage) => {
 		switch (msg.type) {
 			// Social presence
 			case WEBSOCKET_EVENTS.FRIEND_ONLINE:
@@ -153,34 +160,22 @@ export default function App() {
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_ACCEPT:
-				if (currentUserId !== msg.payload.acceptorId) {
-					// For the REQUESTER
-					addFriend({
-						userId: msg.payload.acceptorId,
-						username: msg.payload.acceptorUsername,
-						avatar: msg.payload.acceptorAvatar,
-						isOnline: true,
-					});
-				}
-				else { 
-					// For the ACCEPTOR
-					const pending = useFriendsStore.getState().pending[msg.payload.requesterId];
-					if (pending) {
-						removePending(msg.payload.requesterId);
-						addFriend({
-							userId: msg.payload.requesterId,
-							username: pending.senderUsername,
-							avatar: pending.senderAvatar,
-							isOnline: true
-						});
-					}
-				}
+				if (currentUserId === msg.payload.acceptorId) break;
+				// For the REQUESTER
+				const profile = await getProfile(msg.payload.acceptorId, token!)
+					.catch(() => null);
+				addFriend({
+					userId: msg.payload.acceptorId,
+					username: profile?.username ?? msg.payload.acceptorUsername,
+					avatar: profile?.avatar ?? msg.payload.acceptorAvatar,
+					isOnline: profile?.isOnline ?? true,
+				});
 				success(`${msg.payload.acceptorUsername} is now your friend`);
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_REMOVE:
 				removeFriend(msg.payload.removerId);
-				warning('A frindship has ended');
+				warning('A friendship has ended');
 				break;
 			
 			default: break

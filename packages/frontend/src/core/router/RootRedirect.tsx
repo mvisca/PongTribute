@@ -13,6 +13,6 @@ export function RootRedirect() {
 
 	// Redirects based on auth status
 	return isAuthenticated
-	? <Navigate to='/profile' replace />
+	? <Navigate to='/home' replace />
 	: <Navigate to='/welcome' replace />
 }

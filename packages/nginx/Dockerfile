@@ -7,8 +7,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 
-COPY . .
-
 ARG VITE_API_URL
 ARG VITE_WS_COMMS_URL
 ARG VITE_WS_GAME_URL
@@ -21,8 +19,18 @@ ENV VITE_WS_GAME_URL=${VITE_WS_GAME_URL}
 ENV VITE_DEBUG=${VITE_DEBUG}
 ENV VITE_DEFAULT_AVATAR=${VITE_DEFAULT_AVATAR}
 
+# ---- dependency manifests (better docker cache) ----
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/shared/package.json packages/shared/package.json
+COPY packages/frontend/package.json packages/frontend/package.json
+
 RUN pnpm install --frozen-lockfile
 
+# ---- source code ----
+COPY packages/shared packages/shared
+COPY packages/frontend packages/frontend
+
+# ---- build ----
 RUN pnpm --filter @transcendence/shared build
 RUN pnpm --filter @transcendence/frontend build
 
