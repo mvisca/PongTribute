@@ -20,6 +20,7 @@ import LobbyPage from '../../features/lobby/pages/LobbyPage';
 import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
+import GamePage from '../../features/game/pages/GamePages';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -43,15 +44,14 @@ export function AppRouter() {
 						<Route path="/terms"   element={<TermsPage />} />
 
 						{/* Protected routes */}
-						{/* <Route path="/home" element={<ProtectedRoute><div>Coming soon</div></ProtectedRoute>} /> */}
 						<Route path="/home" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>}/>
-						<Route path="/lobby" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
 						<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
 						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
-						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
 						<Route path='/2fa' element={<TwoFactorPage />} />
+						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
 						<Route path='/history' element={<HistoryPage />} />
+						<Route path="/game/:matchId" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
 						
 						{/* 404 */}
 						<Route path="*" element={<Navigate to="/" replace />} />

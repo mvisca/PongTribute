@@ -16,6 +16,7 @@ import { getFriendships, respondFriendRequest } from './features/friends/api/fri
 import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
 import { getProfile } from './features/profile/api/profileApi';
 import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
+import { useMatchStore } from './features/lobby/store/matchStore';
 
 export default function App() {
 	const token = useAuthStore((state) => state.accessToken);
@@ -178,7 +179,38 @@ export default function App() {
 				warning('A friendship has ended');
 				break;
 			
-			default: break
+			// Match events
+			case WEBSOCKET_EVENTS.MATCH_FOUND:
+				useMatchStore.getState().setPendingEvent({
+					type: 'found',
+					matchId: msg.payload.matchId,
+				});
+				break;
+
+			case WEBSOCKET_EVENTS.MATCH_QUEUE_TIMEOUT:
+				useMatchStore.getState().setPendingEvent({
+					type: 'queue_timeout',
+					reason: msg.payload.reason,
+				});
+				break;
+
+			case WEBSOCKET_EVENTS.MATCH_STARTED:
+				useMatchStore.getState().setPendingEvent({
+					type: 'started',
+					matchId: msg.payload.matchId,
+				});
+				break;
+
+			case WEBSOCKET_EVENTS.MATCH_REJECTED:
+				warning('Match invitation declined');
+				break;
+			
+			case WEBSOCKET_EVENTS.MATCH_CANCELLED:
+				warning('Match cancelled');
+				break;
+
+			default:
+				break;
 		}
 	}, [
 		handleAcceptFriend,	handleRejectFriend,	setOnline,

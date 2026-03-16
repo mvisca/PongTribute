@@ -1,93 +1,167 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { useFriendsStore, FriendEntry } from '../../friends/store/friendsStore';
-import Navbar from '../../../shared/components/Navbar';
+import { createMatch, leaveQueue } from '../../game/api/gameApi';
+import { GameConstants } from '@transcendence/shared/constants/game.constants.js';
+import MatchSetup, { type ValidScore } from '../components/MatchSetup';
+import MatchMaking from '../components/MatchMaking';
+import { useMatchStore } from '../store/matchStore';
+
+type MatchType = 'public' | 'local' | 'bot';
+type Step = 'menu' | 'setup' | 'matchmaking';
+
+const MENU_ITEMS: { type: MatchType; label: string }[] = [
+	{ type: 'public', label: 'PLAY ONLINE' },
+	{ type: 'local', label: 'LOCAL MATCH' },
+	{ type: 'bot', label: 'PLAY VS BOT' },
+];
+
+const SETUP_TITLES: Record<MatchType, string> = {
+	public: 'ONLINE MATCH',
+	local: 'LOCAL MATCH',
+	bot: 'VS BOT',
+};
 
 export default function LobbyPage() {
-  // Estado local
-  const [showProfile, setShowProfile] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+	const navigate = useNavigate();
+	const token = useAuthStore(state => state.accessToken);
 
-  // Usuario actual
-  const currentUser = useAuthStore((state) => state.user);
-  const avatar = useAuthStore((state) => state.avatar);
+	const pendingEvent = useMatchStore(state => state.pendingEvent);
+	const clearPendingEvent = useMatchStore(state => state.clearPendingEvent);
 
-  // Amigos
-  const friends = useFriendsStore((state) => state.friends);
-  const friendsList = Object.values(friends);
+	const [step, setStep] = useState<Step>('menu');
+	const [matchType, setMatchType] = useState<MatchType>('public');
+	const [gameMode, setGameMode] = useState<GameConstants.GameModeType>('classic');
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState('');
 
-  return (
-    <div className="flex flex-col h-screen">
-      {/* Navbar con menú funcional */}
-      <Navbar
-        onMenuClick={() => setMenuOpen(!menuOpen)}
-        onProfileClick={() => setShowProfile(!showProfile)}
-      />
+	useEffect(() => {
+		if (!pendingEvent) return;
 
-      {/* Fondo*/}
-      <div className="retro-bg min-h-screen flex flex-col items-center justify-center text-purple-100 relative">
+		switch (pendingEvent.type) {
+			case 'found':
+			case 'started':
+				clearPendingEvent();
+				navigate(`/game/${pendingEvent.matchId}`);
+				break;
+			
+			case 'queue_timeout':
+				clearPendingEvent();
+				setError(pendingEvent.reason || 'Queue timed out - no opponent found');
+				setStep('setup');
+				break;
+		}
+	}, [pendingEvent, clearPendingEvent, navigate]);
 
-        {/* Perfil lateral */}
-        {showProfile && (
-          <div className="absolute left-0 top-0 w-80 h-full bg-purple-800 p-4 z-50 overflow-y-auto">
-            <div className="flex flex-col items-center gap-4">
-              <div className="w-16 h-16 bg-purple-700 rounded-full flex items-center justify-center text-2xl">
-                {avatar ?? '👤'}
-              </div>
-              <p className="font-bold text-purple-100">{currentUser?.username}</p>
-              <p className="text-sm text-purple-300">{currentUser?.email}</p>
+	const handleMenuSelect = (type: MatchType) => {
+		setMatchType(type);
+		setError('');
+		setStep('setup');
+	};
 
-              <div className="mt-4 w-full">
-                <h3 className="font-bold text-purple-200 mb-2">Friends</h3>
-                {friendsList.length === 0 ? (
-                  <p className="text-sm text-purple-400">No friends yet</p>
-                ) : (
-                  friendsList.map((friend: FriendEntry) => (
-                    <div
-                      key={friend.userId}
-                      className="flex items-center gap-2 mb-2 text-purple-100"
-                    >
-                      <div className="w-8 h-8 bg-purple-700 rounded-full flex items-center justify-center text-sm">
-                        {friend.avatar ?? '👤'}
-                      </div>
-                      <span>{friend.username}</span>
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          friend.isOnline ? 'bg-green-400' : 'bg-gray-500'
-                        }`}
-                      ></span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+	const handleStart = async (
+		mode: GameConstants.GameModeType,
+		targetScore: ValidScore
+	) => {
+		if (!token) return;
+		setGameMode(mode);
+		setLoading(true);
+		setError('');
 
-        {/* Pantalla de juego central */}
-        <div className="flex-1 flex items-center justify-center relative">
-          <div className="bg-black w-[80vw] max-w-[1000px] aspect-video rounded-lg shadow-lg flex flex-col items-center justify-center">
-            {/*Ideal para cuando pongamos canvas-> <div className="bg-black w-[80vw] max-w-[1000px] aspect-video rounded-lg shadow-lg overflow-hidden">
-  <canvas id="pong-game" className="w-full h-full"></canvas>
-</div> */}
-            <h1 className="text-purple-100 text-2xl mb-6">Welcome to Ping Pong</h1>
+		try {
+			const result = await createMatch({ matchType, gameMode: mode, targetScore }, token);
 
-            {/* Botones principales de la lobby */}
-            <div className="flex gap-4">
-              <button className="neon-btn px-6 py-2" onClick={() => alert('Play Online')}>
-                PLAY ONLINE
-              </button>
-              <button className="neon-btn px-6 py-2" onClick={() => alert('Local Match')}>
-                LOCAL MATCH
-              </button>
-			  <button className="neon-btn px-6 py-2" onClick={() => alert('Local Match')}>
-                PLAY VS BOT
-              </button>
-            </div>
-          </div>
-        </div>
+			if ('outcome' in result && result.outcome === 'added_to_queue') {
+				setStep('matchmaking');
+				return;
+			}
 
-      </div>
-    </div>
-  );
+			if ('id' in result) {
+				navigate(`/game/${result.id}`);
+				return;
+			}
+		} catch (err: any) {
+			setError(err?.message ?? 'Failed to create match');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleCancelQueue = async () => {
+		if (!token) return;
+		try { await leaveQueue(token); } catch {}
+		clearPendingEvent(); // In case an event arrives during cancell 
+		setStep('setup');
+	};
+
+	const handlePlayBot = async () => {
+		if (!token) return;
+		setLoading(true);
+		try {
+			const result = await createMatch(
+				{ matchType: 'bot', gameMode, targetScore: 11 },
+				token
+			);
+			if ('id' in result) {
+				navigate(`/game/${result.id}`);
+			}
+		} catch (err: any) {
+			setError(err?.message ?? 'Failed to create bot match');
+			setStep('setup');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const renderScreen = () => {
+		switch (step) {
+			case 'matchmaking':
+				return (
+					<MatchMaking
+						gameMode={gameMode}
+						onCancel={handleCancelQueue}
+						onPlayBot={handlePlayBot}
+					/>
+				);
+
+			case 'setup':
+				return (
+					<MatchSetup
+						title={SETUP_TITLES[matchType]}
+						onStart={handleStart}
+						onBack={() => setStep('menu')}
+						loading={loading}
+					/>
+				);
+			
+			default:
+				return (
+					<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
+						<h1 className='text-2xl tracking-widest'>PING PONG</h1>
+						<div className='arcade-menu'>
+							{MENU_ITEMS.map(({ type, label}) => (
+								<button
+									key={type}
+									className='neon-btn px-6 py-2'
+									onClick={() => handleMenuSelect(type)}
+								>
+									{label}
+								</button>
+							))}
+						</div>
+					</div>
+				)
+		}
+	};
+
+	return (
+		<div className='retro-bg min-h-screen flex flex-col items-center justify-center text-purple-100'>
+			{error && (
+				<p className='text-red-400 text-sm mb-4'>{error}</p>
+			)}
+			<div className='arcade-screen'>
+				{renderScreen()}
+			</div>
+		</div>
+	);
 }

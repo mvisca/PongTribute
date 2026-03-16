@@ -1,0 +1,133 @@
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { useAuthStore } from '../../../core/auth/AuthStore';
+import { WS_GAME_URL } from '../../../core/ws/wsUrls';
+import type { WebSocketEventsTypes, GameTypes } from '@transcendence/shared/types/index.js';
+import type { GameConstants as GC } from '@transcendence/shared/constants/game.constants.js';
+import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
+
+
+export interface MatchInfo {
+	matchId: string;
+	opponentId: string;
+	opponentUsername: string;
+	opponentAvatar: string;
+	gameMode: GC.GameModeType;
+}
+
+export type GameStatus = 'connecting' | 'joined' | 'playing' | 'finished' | 'opponent_disconnected' | 'error';
+
+interface GameSocketState {
+	status: GameStatus;
+	matchInfo: MatchInfo | null;
+	gameState: GameTypes.GameDynamicState | null;
+	gameOver: WebSocketEventsTypes.GameOver['payload'] | null;
+	waitSeconds: number;
+	error: string;
+}
+
+export function useGameSocket(matchId: string) {
+	const token = useAuthStore(state => state.accessToken);
+	
+	const [state, setState] = useState<GameSocketState>({
+		status: 'connecting',
+		matchInfo: null,
+		gameState: null,
+		gameOver: null,
+		waitSeconds: 0,
+		error: '',
+	} satisfies GameSocketState);
+	
+	const wsRef = useRef<WebSocket | null>(null);
+	// Ref for latest gameState (canvas reads this, avoids re-renders at 60fps)
+	const gameStateRef = useRef<GameTypes.GameDynamicState>(null);
+
+	const sendAction = useCallback((action: GC.GameAction, playerSide?: GC.PlayerSide) => {
+		if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+		const payload: GameTypes.GameInputPayload = { gameId: matchId, action };
+		if (playerSide) payload.playerSide = playerSide;
+		wsRef.current.send(JSON.stringify(payload));
+	}, [matchId]);
+
+	useEffect(() => {
+		if (!token || !matchId) return;
+		
+		const ws = new WebSocket(`${WS_GAME_URL}?matchId=${matchId}&token=${token}`);
+		wsRef.current = ws;
+
+		ws.onopen = () => {
+			console.log('[GameWS] Connected');
+		}
+
+		ws.onmessage = (event) => {
+			try {
+				const msg = JSON.parse(event.data);
+
+				switch (msg.type) {
+					case WEBSOCKET_EVENTS.MATCH_JOINED:
+						setState(state => ({
+							...state,
+							status: 'joined',
+							matchInfo: {
+								matchId: msg.payload.matchId,
+								opponentId: msg.payload.opponentId,
+								opponentUsername: msg.payload.opponentUsername,
+								opponentAvatar: msg.payload.opponentAvatar,
+								gameMode: msg.payload.gameMode,
+							},
+						}));
+						break;
+					
+					case WEBSOCKET_EVENTS.GAME_UPDATE:
+						gameStateRef.current = msg.payload.gameState;
+						setState(s => s.status !== 'playing'
+							? { ...s, status: 'playing', gameState: msg.payload.gameState }
+							: s								
+						);
+						break;
+
+					case WEBSOCKET_EVENTS.GAME_OVER:
+						gameStateRef.current = null;
+						setState(s => ({
+							...s,
+							status: 'finished',
+							gameOver: msg.payload,
+						}));
+						break;
+
+					case WEBSOCKET_EVENTS.GAME_OPPONENT_DISCONNECTED:
+						setState(s => ({
+							...s,
+							status: 'opponent_disconnected',
+							waitSeconds: msg.payload.waitSeconds,
+						}));
+						break;
+					
+					case WEBSOCKET_EVENTS.GAME_OPPONENT_RECONNECTED:
+						setState(s => ({ ...s, status: 'playing' }));
+						break;
+				}
+			} catch (err) {
+				console.log('[GameWS] Parse error:', err);
+			}
+		}
+
+		ws.onclose = (event) => {
+			console.log(`[GameWS] Closed: ${event.code} ${event.reason}`);
+			// Don't overwrite finished status
+			setState(s =>
+				s.status === 'finished'
+					? s 
+					: { ...s, status: 'error', error: event.reason || 'Connection lost'}
+			);
+		};
+
+		ws.onerror = () => ws.close();
+
+		return () => {
+			ws.close();
+			wsRef.current = null;
+		};
+	}, [token, matchId]);
+
+	return { ...state, gameStateRef, sendAction };
+} 
