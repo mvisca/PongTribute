@@ -30,11 +30,23 @@ export function renderGame(
 	ctx.fillStyle = '#ff4fd8';
 	drawPaddle(ctx, state.paddleLeft, sx, sy);
 	ctx.fillStyle = '#00ffff';
-	drawPaddle(ctx, state.paddleLeft, sx, sy);
+	drawPaddle(ctx, state.paddleRight, sx, sy);
 
 	// Ball
+	ctx.fillStyle = '#ffffff';
+	ctx.beginPath();
+	ctx.arc(
+		state.ball.x * sx,
+		state.ball.y * sy,
+		GameConstants.GAME_CONSTANTS.BALL_RADIUS * Math.min(sx, sy),
+		0,
+		Math.PI * 2
+	);
+	ctx.fill();
+
+	// Font
 	ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-	ctx.font = `$48 * sy}px 'Share Tech Mono', monospace`;
+	ctx.font = `${48 * sy}px 'Share Tech Mono', monospace`;
 	ctx.textAlign = 'center';
 	ctx.fillText(`${state.paddleLeft.score}`, canvasWidth * 0.25, 60 * sy);
 	ctx.fillText(`${state.paddleRight.score}`, canvasWidth * 0.75, 60 * sy);

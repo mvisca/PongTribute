@@ -77,7 +77,9 @@ export default function LobbyPage() {
 			}
 
 			if ('id' in result) {
-				navigate(`/game/${result.id}`);
+				navigate(`/game/${result.id}`, {
+					state: { isLocal: matchType === 'local' }
+				});
 				return;
 			}
 		} catch (err: any) {

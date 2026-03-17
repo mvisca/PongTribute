@@ -58,9 +58,13 @@ export function useGameSocket(matchId: string) {
 			console.log('[GameWS] Connected');
 		}
 
-		ws.onmessage = (event) => {
+		ws.onmessage = async (event) => {
 			try {
-				const msg = JSON.parse(event.data);
+				// Protects from blob messages
+				const raw = typeof event.data === 'string'
+					? event.data
+					: await (event.data as Blob).text();
+				const msg = JSON.parse(raw);
 
 				switch (msg.type) {
 					case WEBSOCKET_EVENTS.MATCH_JOINED:
