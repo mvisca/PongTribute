@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { apiRequest } from '../../../core/api/client';
+import { apiRequestWithRefresh } from '../../../core/api/apiInterceptor';
 import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 import {
 	PageContainer,
@@ -46,7 +46,7 @@ export default function ChangePasswordPage() {
 		}
 
 		try {
-			const data = await apiRequest<AuthTypes.LoginSuccessResponse>(
+			const data = await apiRequestWithRefresh<AuthTypes.LoginSuccessResponse>(
 				`/auth/${userId}/password`,
 				{ method: 'PUT', body: { oldPassword, newPassword }, token: token! }
 			);

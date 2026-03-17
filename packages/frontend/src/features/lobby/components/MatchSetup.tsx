@@ -1,0 +1,78 @@
+import { useState } from 'react';
+import type { GameConstants } from '@transcendence/shared';
+
+const GAME_MODES: { value: GameConstants.GameModeType; label: string }[] = [
+	{ value: 'classic', label: 'Classic'},
+	{ value: 'speed', label: 'Speed' },
+	{ value: 'pro', label: 'Pro' },
+];
+
+export type ValidScore = 5 | 7 | 9 | 11 | 13 | 15 | 17 | 19 | 21;
+const TARGET_SCORES: ValidScore[] = [5, 7, 9, 11, 13, 15, 17, 19, 21];
+
+interface Props {
+	title: string;
+	onStart: (gameMode: GameConstants.GameModeType, targetScore: ValidScore) => void;
+	onBack: () => void;
+	loading?: boolean;
+}
+
+export default function MatchSetup({
+	title,
+	onStart,
+	onBack,
+	loading = false
+}: Props) {
+	const [gameMode, setGameMode] = useState<GameConstants.GameModeType>('classic');
+	const [scoreIndex, setScoreIndex] = useState(3);
+
+	return (
+		<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
+			<h2 className='text-2xl tracking-widest'>
+				{title}
+			</h2>
+
+			{/* Mode selection */}
+			<div className='flex gap-6'>
+				{GAME_MODES.map((m) => (
+					<button
+						key={m.value}
+						onClick={() => setGameMode(m.value)}
+						className={`arcade-btn px-6 py-2 transition-all duration-200 ${
+							gameMode === m.value
+								? 'bg-blue-700 border-2 border-purple-400 shadow-[0_0_20px_#00ffff] scale-105 text-white'
+								: 'opacity-80 hover:opacity-100'
+						}`}
+					>
+						{m.label}
+					</button>
+				))}
+			</div>
+
+			{/* Score limit */}
+			<div className='flex flex-col items-center gap-2 w-64'>
+				<span>
+					Score Limit: {TARGET_SCORES[scoreIndex]}
+				</span>
+				<input type="range"
+					min={0}
+					max={TARGET_SCORES.length -1}
+					value={scoreIndex}
+					onChange={(e) => setScoreIndex(Number(e.target.value))}
+					className='w-full'
+				/>
+			</div>
+
+			<div className='flex gap-6 mt-4'>
+				<button className='neon-btn text-xs' onClick={onBack}>BACK</button>
+				<button
+					className='arcade-btn px-6 py-2'
+					onClick={() => onStart(gameMode, TARGET_SCORES[scoreIndex])}
+					disabled={loading}
+				>
+					{loading ? 'LOADING...' : 'START'}
+				</button>
+			</div>
+		</div>
+	);
+}

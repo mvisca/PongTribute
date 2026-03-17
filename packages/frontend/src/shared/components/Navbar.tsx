@@ -13,13 +13,7 @@ type NavItem = {
 	danger?: boolean;
 }
 
-// Props opcionales para callbacks
-type NavbarProps = 
-{
-  onMenuClick?: () => void;
-  onProfileClick?: () => void;
-}
-export default function Navbar({ onMenuClick, onProfileClick }: NavbarProps) {
+export default function Navbar() {
 	const navigate = useNavigate();
 
     const username			= useAuthStore((state) => state.user?.username);

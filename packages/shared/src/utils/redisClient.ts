@@ -18,7 +18,7 @@ export function createRedisClient(config: Partial<RedisConfig>): Redis {
         ...config,
         retryStrategy: config.retryStrategy || defaultRetryStrategy,
     };
-    
+      
     // 2: Validamos el objeto FINAL (que ya tiene los defaults), no el parcial
     // Hacemos cast a RedisConfig porque ya debería estar completo tras el merge
     if (!validateRedisConfig(finalConfig as RedisConfig))

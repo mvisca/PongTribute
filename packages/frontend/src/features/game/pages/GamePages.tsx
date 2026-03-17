@@ -1,0 +1,163 @@
+import React, { useEffect, useRef, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../../core/auth/AuthStore';
+import { useGameSocket } from '../hooks/useGameSocket';
+import { renderGame } from '../renderer/gameRender';
+import { GameConstants} from '@transcendence/shared/constants/game.constants.js';
+
+const { GAME_ACTION, PLAYER_SIDE } = GameConstants;
+
+export default function GamePage() {
+	const { matchId } = useParams<{ matchId: string }>();
+	const navigate = useNavigate();
+	const currentUserId = useAuthStore(state => state.user?.id);
+
+	const { status, matchInfo, gameOver, waitSeconds, error, gameStateRef, sendAction } = useGameSocket(matchId!);
+
+	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const animRef = useRef<number>(0);
+
+	// Determine wich side the current user plays
+	const isLocal = matchInfo ? matchInfo.opponentUsername === 'Guest Player' : false;
+	const isPlayer1 = matchInfo ? matchInfo.opponentId !== currentUserId : true;
+
+	// Keyboard input
+	const keysDown = useRef(new Set<string>());
+	const handleKeyDown = useCallback((e: KeyboardEvent) => {
+		if (keysDown.current.has(e.key)) return; // prevent repeat
+		keysDown.current.add(e.key);
+
+		if (isLocal) {
+			// Local: W/S for left, ArrowUp/ArrowDown for right
+			switch (e.key) {
+				case 'w': case 'W': sendAction(GAME_ACTION.MOVE_UP, PLAYER_SIDE.LEFT); break;
+				case 's': case 'S': sendAction(GAME_ACTION.MOVE_DOWN, PLAYER_SIDE.LEFT); break;
+				case 'ArrowUp': sendAction(GAME_ACTION.MOVE_UP, PLAYER_SIDE.RIGHT); e.preventDefault(); break;
+				case 'ArrowDown': sendAction(GAME_ACTION.MOVE_DOWN, PLAYER_SIDE.RIGHT); e.preventDefault(); break;
+			}
+		} else {
+			switch (e.key) {
+				case 'w': case 'W': case 'ArrowUp': sendAction(GAME_ACTION.MOVE_UP); e.preventDefault(); break;
+				case 's': case 'S': case 'ArrowDown': sendAction(GAME_ACTION.MOVE_DOWN); e.preventDefault(); break;
+			}
+		}
+	}, [isLocal, sendAction]);
+
+	const handleKeyUp = useCallback((e: KeyboardEvent) => {
+		keysDown.current.delete(e.key);
+
+		if (isLocal) {
+			if (e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
+				sendAction(GAME_ACTION.STOP, PLAYER_SIDE.LEFT);
+			}
+			if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+				sendAction(GAME_ACTION.STOP, PLAYER_SIDE.RIGHT);
+			}
+		} else {
+			if (['w', 'W', 's', 'S', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+				sendAction(GAME_ACTION.STOP);
+			}
+		}
+	}, [isLocal, sendAction]);
+
+	useEffect(() => {
+		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('keyup', handleKeyUp);
+		return () => {
+			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('keyup', handleKeyUp);
+		};
+	}, [handleKeyDown, handleKeyUp]);
+
+	// Canvas render loop
+	useEffect(() => {
+		const canvas = canvasRef.current;
+		if (!canvas) return;
+		const ctx = canvas.getContext('2d');
+		if (!ctx) return;
+
+		function frame() {
+			const gs = gameStateRef.current;
+			if (gs && canvas && ctx) {
+				renderGame(ctx, gs, canvas.width, canvas.height);
+			}
+			animRef.current = requestAnimationFrame(frame);
+		}
+
+		animRef.current = requestAnimationFrame(frame);
+		return () => cancelAnimationFrame(animRef.current);
+	}, [gameStateRef]);
+
+	// Overlays
+	const renderOverlay = () => {
+		switch (status) {
+			case 'connecting':
+				return <Overlay>Connecting...</Overlay>;
+			
+			case 'joined':
+				return (
+					<Overlay>
+						<p className='text-lg'>VS {matchInfo?.opponentUsername}</p>
+						<p className='text-sm text-purple-400 mt-2'>Waiting for game to start...</p>
+					</Overlay>
+				);
+			
+			case 'opponent_disconnected':
+				return (
+					<Overlay>
+						<p className='text-lg'>Opponent disconnected</p>
+						<p className='text-sm text-purple-400 mt-2'>Waiting {waitSeconds}s for reconnection...</p>
+					</Overlay>
+				)
+			
+			case 'finished':
+				const won = gameOver?.winnerId === currentUserId;
+				return (
+					<Overlay>
+						<p className='text-3xl mb-4'>{won ? 'YOU WIN!' : 'YOU LOSE'}</p>
+						<p className='text-lg mb-6'>
+							{gameOver?.player1Score} - {gameOver?.player2Score}
+						</p>
+						<button className='neon-btn px-6 py-2' onClick={() => navigate('/home')}>
+							BACK TO LOBBY
+						</button>
+					</Overlay>
+				);
+			
+			case 'error':
+				return (
+					<Overlay>
+						<p className='text-red-400 mb-4'>{error || 'Connection lost'}</p>
+						<button className='neon-btn px-6 py-2' onClick={() => navigate('/home')}>
+							BACK TO LOBBY
+						</button>
+					</Overlay>
+				);
+
+			default:
+				return null;
+		}
+	};
+
+	return (
+		<div className='retro-bg min-h-screen flex items-center justify-center'>
+			<div className='arcade-screen relative'>
+				<canvas 
+					ref={canvasRef}
+					width={780}
+					height={480}
+					className='w-full h-full rounded-lg'
+				/>
+				{renderOverlay()}
+			</div>
+		</div>
+	);
+}
+
+function Overlay({ children }: { children: React.ReactNode }) {
+	return (
+		<div className='absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-purple-100 rounded-lg'>
+			{children}
+		</div>
+	);
+}
