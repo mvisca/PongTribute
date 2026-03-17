@@ -89,8 +89,8 @@ export default function HistoryPage() {
                             );
                         })}
                     </div>
-                )}
-
+				)}
+				
                 {/* Paginación */}
                 <div className='flex justify-between items-center mt-6'>
                     <LinkButton
@@ -115,6 +115,7 @@ export default function HistoryPage() {
                         ← Back to profile
                     </LinkButton>
                 </div>
+
 
             </FormCard>
         </PageContainer>
