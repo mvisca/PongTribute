@@ -26,7 +26,7 @@ interface GameSocketState {
 }
 
 export function useGameSocket(matchId: string) {
-	const token = useAuthStore(state => state.accessToken);
+	const tokenRef = useRef(useAuthStore.getState().accessToken);
 	
 	const [state, setState] = useState<GameSocketState>({
 		status: 'connecting',
@@ -49,6 +49,7 @@ export function useGameSocket(matchId: string) {
 	}, [matchId]);
 
 	useEffect(() => {
+		const token = tokenRef.current;
 		if (!token || !matchId) return;
 		
 		const ws = new WebSocket(`${WS_GAME_URL}?matchId=${matchId}&token=${token}`);
@@ -131,7 +132,7 @@ export function useGameSocket(matchId: string) {
 			ws.close();
 			wsRef.current = null;
 		};
-	}, [token, matchId]);
+	}, [matchId]);
 
 	return { ...state, gameStateRef, sendAction };
 } 
