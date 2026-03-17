@@ -420,7 +420,7 @@ export namespace SharedEnv {
 			COOKIE_SECRET: requireSecret(process.env.COOKIE_SECRET, 'COOKIE_SECRET'),
 			TOKEN_EXPIRY: validateRange(
 				envOr(process.env.TOKEN_EXPIRY, DEFAULTS.TOKEN_EXPIRY, 'TOKEN_EXPIRY'),
-				300, // 5 minutos
+				60, // 1 minuto
 				86400, // 24 horas
 				'TOKEN_EXPIRY'
 			),

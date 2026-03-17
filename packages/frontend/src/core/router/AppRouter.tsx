@@ -21,6 +21,7 @@ import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
 import GamePage from '../../features/game/pages/GamePages';
+import { LogedRedirect } from './LogedRedirect';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -34,14 +35,38 @@ export function AppRouter() {
 						<Route path="/" element={<RootRedirect />} />
 
 						{/* Public routes */}
-						<Route path='/welcome' element={<PublicHomePage />} />
-						<Route path="/login" element={<LoginPage />} />
-						<Route path="/register" element={<RegisterPage />} />
-						<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
-						<Route path="/forgot" element={<ForgotPasswordPage />} />
-						<Route path="/recover" element={<RecoverPasswordPage />} />
-						<Route path="/privacy" element={<PrivacyPage />} />
-						<Route path="/terms"   element={<TermsPage />} />
+						<Route path='/welcome' element={
+							<LogedRedirect>
+								<PublicHomePage />
+							</LogedRedirect>
+						}/>
+						<Route path="/login" element={
+							<LogedRedirect>
+								{<LoginPage />}
+							</LogedRedirect>
+						}/>
+						<Route path="/register" element={
+							<LogedRedirect>
+								<RegisterPage /> 
+							</LogedRedirect>
+						}/>
+						<Route path="/verify-2fa" element={						
+							<LogedRedirect>
+								<div>Verify 2FA Page</div>
+							</LogedRedirect>
+						}/>
+						<Route path="/forgot" element={
+							<LogedRedirect>
+								<ForgotPasswordPage />
+							</LogedRedirect>
+						}/>
+						<Route path="/recover" element={
+							<LogedRedirect>
+								<RecoverPasswordPage />
+							</LogedRedirect>
+						}/>
+						<Route path="/privacy" element={<PrivacyPage />}/>
+						<Route path="/terms" element={<TermsPage />} />
 
 						{/* Protected routes */}
 						<Route path="/home" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>}/>

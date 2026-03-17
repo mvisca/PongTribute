@@ -1,11 +1,11 @@
-import { apiRequest } from "../../../core/api/client";
+import { apiRequestWithRefresh } from "../../../core/api/apiInterceptor";
 import type { MatchSchemas, MatchTypes } from "@transcendence/shared";
 
 export async function createMatch(
 	body: MatchSchemas.CreateMatchBodyType,
 	token: string
 ): Promise<MatchTypes.Match | { outcome: 'added_to_queue' }> {
-	return apiRequest('/matches', {
+	return apiRequestWithRefresh('/matches', {
 		method: 'POST',
 		body,
 		token
@@ -13,7 +13,7 @@ export async function createMatch(
 }
 
 export async function leaveQueue(token: string) {
-	return apiRequest('/matches/queue', {
+	return apiRequestWithRefresh('/matches/queue', {
 		method: 'DELETE',
 		token
 	});
