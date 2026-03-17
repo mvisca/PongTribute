@@ -354,19 +354,24 @@ export class GameService {
 		const { config, ball, paddleLeft, paddleRight } = session.gameState;
 		
 		// A. Movimiento de Palas (Inercia)
-		if (config.hasInertia && config.friction) {
-			[paddleLeft, paddleRight].forEach(paddle => {
+		[paddleLeft, paddleRight].forEach(paddle => {
+			if (paddle.dy === 0) return;
+			const maxPos = config.height - config.paddleHeight;
+			if (config.hasInertia && config.friction) {
 				if (Math.abs(paddle.dy) > 0.1) {
 					paddle.y += paddle.dy;
 					paddle.dy *= config.friction!;
-					const maxPos = config.height - config.paddleHeight;
-					if (paddle.y < 0) { paddle.y = 0; paddle.dy = 0; }
-					if (paddle.y > maxPos) { paddle.y = maxPos; paddle.dy = 0; }
 				} else {
 					paddle.dy = 0;
 				}
-			});
-		}
+			} else {
+				// Constant speed, applys dy at every tick without decay
+				paddle.y += paddle.dy;
+			}
+
+			if (paddle.y < 0) { paddle.y = 0; paddle.dy = 0; }
+			if (paddle.y > maxPos) { paddle.y = maxPos; paddle.dy = 0; }
+		});
 		
 		// B. Movimiento de la Bola (usando vectores DX/DY)
 		ball.x += ball.dx;
@@ -584,21 +589,13 @@ export class GameService {
 		const speed = config.paddleSpeed; 
 		
 		if (payload.action === 'STOP') {
-			if (!config.hasInertia) paddle.dy = 0;
+			paddle.dy = 0;
 		} 
 		else if (payload.action === 'MOVE_UP') {
-			if (config.hasInertia) {
-				paddle.dy = -speed; 
-			} else {
-				paddle.y = Math.max(0, paddle.y - speed);
-			}
+			paddle.dy = -speed; 
 		} 
 		else if (payload.action === 'MOVE_DOWN') {
-			if (config.hasInertia) {
-				paddle.dy = speed;
-			} else {
-				paddle.y = Math.min(config.height - config.paddleHeight, paddle.y + speed);
-			}
+			paddle.dy = speed;
 		}
 	}
 	

@@ -238,6 +238,8 @@ export class BotClient {
 			id: this.options.botUserId,
 			username: this.options.botUsername,
 			email: 'bot@transcendence.local',
+			has2FAEnabled: false,
+			is2FAVerified: false,
 		};
 
 		// El bot genera su propio token con el mismo secret que usa el sistema.
