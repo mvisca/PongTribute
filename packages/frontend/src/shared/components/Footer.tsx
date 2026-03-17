@@ -3,7 +3,7 @@ export default function Footer() {
 	const authors = [
 		{ alias: 'mvisca',   url: 'https://github.com/mvisca'   },
 		{ alias: 'jocuni-p', url: 'https://github.com/jocuni-p' },
-		{ alias: 'dKurbi',   url: 'https://github.com/dKurbi'   },
+		{ alias: 'dkurcbar',   url: 'https://github.com/dKurbi'   },
 		{ alias: 'meriusky', url: 'https://github.com/meriusky'  },
 	];
 

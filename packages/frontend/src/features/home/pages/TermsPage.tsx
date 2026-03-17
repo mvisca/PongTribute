@@ -25,6 +25,12 @@ export default function TermsPage() {
 					</div>
 
 					<div>
+						<p className='text-white font-bold mb-1'>Third-party services and content</p>
+						<p>The service depends on external providers for certain features. We use Cloudinary to store and serve profile avatars, and Google Fonts to display typography. If your browser blocks tracking or third-party content, fonts and avatars may not load and the site&apos;s appearance or functionality may be affected. We do not control these providers&apos; availability or their terms.</p>
+						<p className='mt-1'>User content (avatars) that you upload is stored with Cloudinary. You retain ownership of your content and grant us the rights needed to display it within the application. Use of Cloudinary is subject to their terms and conditions; we are not responsible for their practices.</p>
+					</div>
+
+					<div>
 						<p className='text-white font-bold mb-1'>Consequences</p>
 						<p>Accounts may be suspended or removed if these terms are violated.</p>
 					</div>
