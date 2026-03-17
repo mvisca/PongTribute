@@ -55,8 +55,12 @@ export class MatchController {
                 return reply.status(200).send(result);
             }
             
-            // Para 'match_found', 'local' o 'private' -> 201
-            return reply.status(201).send(result);
+			// Para 'match_found', 'local' o 'private' -> 201
+			if ('outcome' in result && result.outcome === 'match_found' && 'match' in result) {
+				return reply.status(201).send(result.match);
+			}
+
+			return reply.status(201).send(result);
 
         } catch (error) {
             // El servicio lanza errores (Validation, Conflict, etc), aquí los capturamos

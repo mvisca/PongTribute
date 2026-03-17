@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { renderGame } from '../renderer/gameRender';
@@ -17,8 +17,10 @@ export default function GamePage() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const animRef = useRef<number>(0);
 
+	const location = useLocation();
+	const isLocal = (location.state as { isLocal?: boolean } | null)?.isLocal ?? false;
+	
 	// Determine wich side the current user plays
-	const isLocal = matchInfo ? matchInfo.opponentUsername === 'Guest Player' : false;
 	const isPlayer1 = matchInfo ? matchInfo.opponentId !== currentUserId : true;
 
 	// Keyboard input
@@ -112,9 +114,12 @@ export default function GamePage() {
 			
 			case 'finished':
 				const won = gameOver?.winnerId === currentUserId;
+				const winnerText = isLocal
+					? (gameOver?.winnerId === matchInfo?.opponentId ? 'PLAYER 2️⃣ WINNS!' : 'PLAYER 1️⃣ WINNS!')
+					: (won ?  '🏆 YOU WIN!' : '🍷 YOU LOSE!');
 				return (
 					<Overlay>
-						<p className='text-3xl mb-4'>{won ? 'YOU WIN!' : 'YOU LOSE'}</p>
+						<p className='text-3xl mb-4'>{winnerText}</p>
 						<p className='text-lg mb-6'>
 							{gameOver?.player1Score} - {gameOver?.player2Score}
 						</p>
