@@ -141,12 +141,12 @@ export default function LobbyPage() {
 			default:
 				return (
 					<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
-						<h1 className='text-2xl tracking-widest'>PING PONG</h1>
+						<h1 className='text-3xl tracking-widest'>PING🏓PONG</h1>
 						<div className='arcade-menu'>
 							{MENU_ITEMS.map(({ type, label}) => (
 								<button
 									key={type}
-									className='neon-btn px-6 py-2'
+									className='arcade-btn px-6 py-2'
 									onClick={() => handleMenuSelect(type)}
 								>
 									{label}
@@ -158,19 +158,6 @@ export default function LobbyPage() {
 		}
 	};
 
-	// return (
-	// 	<div className='retro-bg min-h-screen flex flex-row items-center justify-center gap-6 text-purple-100'>
-	// 		<FriendsWidget />
-	// 		<div className='flex flex-col items-center gap-4'>
-	// 			{error && (
-	// 				<p className='text-red-400 text-sm'>{error}</p>
-	// 			)}
-	// 			<div className='arcade-screen'>
-	// 				{renderScreen()}
-	// 			</div>
-	// 		</div>
-	// 	</div>
-	// );
 	return (
 		<div className='retro-bg h-full relative flex items-center justify-center text-purple-100 min-w-[1150px]'>
 			
