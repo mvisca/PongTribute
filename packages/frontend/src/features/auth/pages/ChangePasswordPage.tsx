@@ -101,7 +101,7 @@ export default function ChangePasswordPage() {
 				</div>
 				
 				<div className='flex justify-center mt-6'>
-					<ArcadeButton onClick={handleSubmit} disabled={!!error}>
+					<ArcadeButton onClick={handleSubmit} disabled={!oldPassword || !newPassword || !confirmPassword}>
 						UPDATE PASSWORD
 					</ArcadeButton>
 				</div>
