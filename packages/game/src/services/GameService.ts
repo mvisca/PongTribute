@@ -31,6 +31,8 @@ interface GameSession {
 	gameState: GameTypes.GameState;
 	loopId: NodeJS.Timeout | null;
 	isLocal: boolean;
+	inputP1: number; // -1 up; 0 none; 1 down
+	inputP2: number;
 }
 
 /**
@@ -94,7 +96,9 @@ export class GameService {
 						socketP1: null,
 						socketP2: null,
 						loopId: null,
-						gameState: this.createInitialState(matchId, match.targetScore, match.gameMode)
+						gameState: this.createInitialState(matchId, match.targetScore, match.gameMode),
+						inputP1: 0,
+						inputP2: 0,
 					} satisfies GameSession;
 					this.activeMatches.set(matchId, session);
 				} else {
@@ -126,7 +130,9 @@ export class GameService {
 							socketP1: null,
 							socketP2: null,
 							loopId: null,
-							gameState: this.createInitialState(matchId, local.targetScore, local.gameMode)
+							gameState: this.createInitialState(matchId, local.targetScore, local.gameMode),
+							inputP1: 0,
+							inputP2: 0,
 						} satisfies GameSession;
 						this.activeMatches.set(matchId, session);
 					}
@@ -361,35 +367,37 @@ export class GameService {
 		
 		// A. Movimiento de Palas (Inercia)
 		const paddleMaxY = config.height - config.paddleHeight;
+		const paddles: [GameTypes.PaddleState, number][] = [
+			[paddleLeft, session.inputP1],
+			[paddleRight, session.inputP2],
+		];
 
-		[paddleLeft, paddleRight].forEach(paddle => {
-			const isStationary = paddle.dy === 0;
-			if (isStationary) return;
-
-			const hasInertia = config.hasInertia && !!config.friction;
-			const isMovementSignificant = Math.abs(paddle.dy) > 0.1;
-
-			if (hasInertia) {
-				if (isMovementSignificant) {
-					// Apply movement and decay speed
-					paddle.y += paddle.dy;
-					paddle.dy *= config.friction!;
-				} else {
-					// Residual speed depictable, stop paddle
-					paddle.dy = 0;
+		paddles.forEach(([paddle, input]) => {
+			if (config.hasInertia && !!config.friction) {
+				// Apply continuous force while input is active
+				if (input !== 0) {
+					paddle.dy += input * config.paddleSpeed * 0.3;
+					// Cap velocity
+					paddle.dy = Math.max(-config.paddleSpeed, Math.min(config.paddleSpeed, paddle.dy));
 				}
-			} else {
-				// Constant speed, apply movement (dy) without decay
+				// Always apply friction
+				paddle.dy *= config.friction;
+				if (Math.abs(paddle.dy) < 0.1) paddle.dy = 0;
+			}
+			// Non-inertia: dy is already set directly by processInput
+
+			// Move
+			if (paddle.dy !== 0) {
 				paddle.y += paddle.dy;
 			}
 
-			// Clamp: keep paddle inside canvas
-			if (paddle.y < 0 || paddle.y > paddleMaxY) {
-				if (paddle.y < 0) {
-					paddle.y = 0;
-				} else {
-					paddle.y = paddleMaxY;
-				}
+			// Clamp
+			if (paddle.y < 0) {
+				paddle.y = 0;
+				paddle.dy = 0;
+			}
+			if (paddle.y > paddleMaxY) {
+				paddle.y = paddleMaxY;
 				paddle.dy = 0;
 			}
 		});
@@ -614,16 +622,40 @@ export class GameService {
 		}
 		
 		const { config } = session.gameState;
-		const speed = config.paddleSpeed; 
 		
+		// Determine which input slot to update
+		const isP1Paddle = (session.isLocal)
+			? payload.playerSide !== 'right'
+			: session.player1Id === userId;
+
 		if (payload.action === 'STOP') {
-				paddle.dy = 0;
+			if (isP1Paddle) {
+				session.inputP1 = 0;
+			} else {
+				session.inputP2 = 0;
+			}
+		} else if (payload.action === 'MOVE_UP') {
+			if (isP1Paddle) {
+				session.inputP1 = -1;
+			}  else {
+				session.inputP2 = -1;
+			}
+		} else if (payload.action === 'MOVE_DOWN') {
+			if (isP1Paddle) {
+				session.inputP1 = 1;
+			} else {
+				session.inputP2 = 1;
+			}
 		}
-		else if (payload.action === 'MOVE_UP') {
-			paddle.dy = -speed; 
-		} 
-		else if (payload.action === 'MOVE_DOWN') {
-			paddle.dy = speed;
+
+		// Non intertial modes, also set dy directly for instant response
+		if (!config.hasInertia) {
+			const speed = config.paddleSpeed;
+			paddle.dy = (payload.action === 'STOP')
+				? 0
+				: (payload.action === 'MOVE_UP')
+					? -speed
+					: speed;
 		}
 	}
 	
