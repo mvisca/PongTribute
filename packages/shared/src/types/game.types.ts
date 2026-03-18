@@ -7,11 +7,12 @@ export namespace GameTypes {
 	
 	// Definición de Tipos para la Configuración del Modo
 	export interface GameModeConfig {
-		paddleSpeed: number;      // Píxeles por frame
-		ballSpeedBase: number;    // Velocidad inicial
-		ballAcceleration: number; // Multiplicador por golpe (ej: 0.10 = +10%)
-		hasInertia: boolean;      // Activa física de fricción
-		friction?: number;        // 0 a 1 (Solo si hasInertia es true)
+		paddleSpeed: number;		// Píxeles por frame
+		ballSpeedBase: number;		// Velocidad inicial
+		ballAcceleration: number;	// Multiplicador por golpe (ej: 0.10 = +10%)
+		hasInertia: boolean;		// Activa física de fricción
+		friction?: number;			// 0 a 1 (Solo si hasInertia es true)
+		accel?: number;				// Acceleration force
 	}
 	
 	// 1. Configuración del tablero (La "Cancha")
