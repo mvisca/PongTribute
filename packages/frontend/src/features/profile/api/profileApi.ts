@@ -37,7 +37,7 @@ export async function updateProfile(
 }
 
 export async function anonymizeAccount(userId: string, token: string): Promise<void> {
-    await apiRequest<void>(`/users/${userId}/anonymize`, {
+    await apiRequestWithRefresh<void>(`/users/${userId}/anonymize`, {
         method: 'PUT',
         token,
     });
