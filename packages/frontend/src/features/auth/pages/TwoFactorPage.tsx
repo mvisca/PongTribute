@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { PageContainer, FormCard, LinkButton, ArcadeButton, AlertError, FormInput, PasswordInput } from '../../../shared/components/ui';
+import { PageContainer, FormCard, LinkButton, ArcadeButton, AlertError, FormInput, PasswordInput, LoadingScreen } from '../../../shared/components/ui';
 import { enable2FA, verify2FASetup, disable2FA } from '../api/authApi';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
@@ -27,8 +27,6 @@ export default function TwoFactorPage() {
 		}
 	}, []);
 	
-
-
     async function handleStartActivation() {
         setError('');
         if (!userId || !token) return;
@@ -75,17 +73,15 @@ export default function TwoFactorPage() {
             setError(err instanceof Error ? err.message : 'Failed to disable 2FA');
         }
     }
+
+	if (loading) {
+		return ( <LoadingScreen /> );
+	}
+
     return (
         <PageContainer>
-            <FormCard title='2FA'>
+            <FormCard title= {user?.has2FAEnabled ? '2FA is enabled' : '2FA is disabled'}>
                 <AlertError message={error} />
-
-                <p className="text-sm text-purple-300 text-center mb-4">
-                 {user?.has2FAEnabled ? '2FA is enabled' : '2FA is disabled'}
-                </p>
-                {loading && (
-					<p className="text-sm text-purple-300 text-center mt-6">Loading...</p>
-				)}
                 {setupData && (
                     <div className="mt-6 flex flex-col items-center gap-4">
                         <p className="text-sm text-purple-200 text-center">
@@ -138,6 +134,7 @@ export default function TwoFactorPage() {
                                 placeholder="Your password"
                             />
                         </div>
+						
                         <div className="flex justify-center mt-4">
                             <ArcadeButton onClick={handleDisable2FA} disabled={!disablePassword.trim()}>
                                 DISABLE 2FA
@@ -146,7 +143,7 @@ export default function TwoFactorPage() {
                     </div>
                 )}
                 <div className="mt-6 text-right">
-                 <LinkButton onClick={() => navigate('/profile')}>← Back to profile</LinkButton>
+                	<LinkButton onClick={() => navigate('/profile')}>← Back to profile</LinkButton>
                 </div>
             </FormCard>
         </PageContainer>
