@@ -141,6 +141,7 @@ body {
 	width: 780px;
 	height: 480px;
 	border-radius: 1.2rem;
+	overflow: hidden;
 	position: relative;
 	display: flex;
 	align-items: center;
@@ -148,10 +149,10 @@ body {
 	
 	/* Glow neón potente */
 	box-shadow:
-		0 0 20px rgba(0, 255, 255, 0.8),
-		0 0 40px rgba(0, 255, 255, 0.6),
-		0 0 60px rgba(255, 79, 216, 0.7),
-		0 0 90px rgba(255, 79, 216, 0.5);
+		0 0 10px rgba(0, 255, 255, 0.8),
+		0 0 20px rgba(0, 255, 255, 0.6),
+		0 0 30px rgba(255, 79, 216, 0.7),
+		0 0 50px rgba(255, 79, 216, 0.5);
 }
 
 /* Botones del menú del juego */

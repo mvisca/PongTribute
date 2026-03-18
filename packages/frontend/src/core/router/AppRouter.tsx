@@ -20,7 +20,6 @@ import LobbyPage from '../../features/lobby/pages/LobbyPage';
 import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
-import TempPage from '../../features/home/pages/TempPage';
 import DeleteAccountPage from '../../features/profile/pages/DeleteAccountPage';
 import Verify2FALoginPage from '../../features/auth/pages/Verify2FALoginPage';
 import GamePage from '../../features/game/pages/GamePages';
@@ -80,7 +79,6 @@ export function AppRouter() {
 						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
 						<Route path='/history' element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
 						<Route path='/2fa' element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />						<Route path='/history' element={<HistoryPage />} />
-						<Route path='/temp' element={<ProtectedRoute><TempPage /></ProtectedRoute>} />
 						<Route path="/game/:matchId" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
 						
 						{/* 404 */}

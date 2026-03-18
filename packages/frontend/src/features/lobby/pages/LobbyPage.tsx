@@ -6,6 +6,8 @@ import { GameConstants } from '@transcendence/shared/constants/game.constants.js
 import MatchSetup, { type ValidScore } from '../components/MatchSetup';
 import MatchMaking from '../components/MatchMaking';
 import { useMatchStore } from '../store/matchStore';
+import { FriendsWidget } from '../../friends/components/FriendsWidget';
+
 
 type MatchType = 'public' | 'local' | 'bot';
 type Step = 'menu' | 'setup' | 'matchmaking';
@@ -156,14 +158,37 @@ export default function LobbyPage() {
 		}
 	};
 
+	// return (
+	// 	<div className='retro-bg min-h-screen flex flex-row items-center justify-center gap-6 text-purple-100'>
+	// 		<FriendsWidget />
+	// 		<div className='flex flex-col items-center gap-4'>
+	// 			{error && (
+	// 				<p className='text-red-400 text-sm'>{error}</p>
+	// 			)}
+	// 			<div className='arcade-screen'>
+	// 				{renderScreen()}
+	// 			</div>
+	// 		</div>
+	// 	</div>
+	// );
 	return (
-		<div className='retro-bg min-h-screen flex flex-col items-center justify-center text-purple-100'>
-			{error && (
-				<p className='text-red-400 text-sm mb-4'>{error}</p>
-			)}
-			<div className='arcade-screen'>
-				{renderScreen()}
+		<div className='retro-bg h-full relative flex items-center justify-center text-purple-100 min-w-[1150px]'>
+			
+			{/* Widget anclado top-left */}
+			<div className='absolute top-4 left-4'>
+				<FriendsWidget />
 			</div>
+
+			{/* Arcade screen centrado */}
+			<div className='flex flex-col items-center gap-4 ml-46'>
+				{error && (
+					<p className='text-red-400 text-sm'>{error}</p>
+				)}
+				<div className='arcade-screen'>
+					{renderScreen()}
+				</div>
+			</div>
+
 		</div>
 	);
 }

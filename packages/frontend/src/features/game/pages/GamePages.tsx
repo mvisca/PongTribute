@@ -3,7 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { useGameSocket } from '../hooks/useGameSocket';
 import { renderGame } from '../renderer/gameRender';
-import { GameConstants} from '@transcendence/shared/constants/game.constants.js';
+import { GameConstants } from '@transcendence/shared/constants/game.constants.js';
+import { FriendsWidget } from '../../friends/components/FriendsWidget';
 
 const { GAME_ACTION, PLAYER_SIDE } = GameConstants;
 
@@ -145,8 +146,11 @@ export default function GamePage() {
 	};
 
 	return (
-		<div className='retro-bg min-h-screen flex items-center justify-center'>
-			<div className='arcade-screen relative'>
+		<div className='retro-bg h-full relative flex items-center justify-center min-w-[1150px]'>
+			<div className='absolute top-4 left-4'>
+				<FriendsWidget />
+			</div>
+			<div className='arcade-screen relative ml-46'>
 				<canvas 
 					ref={canvasRef}
 					width={780}
