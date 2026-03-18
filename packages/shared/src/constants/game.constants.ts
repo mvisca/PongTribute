@@ -75,9 +75,9 @@ export namespace GameConstants {
 
 	// mode configs
 	export const GAME_MODES: Record<string, GameTypes.GameModeConfig> = {
-		classic: { paddleSpeed: 9,  ballSpeedBase: 6, ballAcceleration: 0,    hasInertia: false },
-		speed:   { paddleSpeed: 18, ballSpeedBase: 6, ballAcceleration: 0.10, hasInertia: false },
-		pro:     { paddleSpeed: 18, ballSpeedBase: 6, ballAcceleration: 0.10, hasInertia: true, friction: 0.88 },
+		classic: { paddleSpeed: 9,  ballSpeedBase: 6, ballAcceleration: 0,    hasInertia: true, friction: 0.62 },
+		speed:   { paddleSpeed: 12, ballSpeedBase: 6, ballAcceleration: 0.10, hasInertia: true, friction: 0.71 },
+		pro:     { paddleSpeed: 18, ballSpeedBase: 6, ballAcceleration: 0.15, hasInertia: true, friction: 0.89 },
 	};
 
 	// player side

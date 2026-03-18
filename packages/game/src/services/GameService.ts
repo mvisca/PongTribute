@@ -360,56 +360,80 @@ export class GameService {
 		const { config, ball, paddleLeft, paddleRight } = session.gameState;
 		
 		// A. Movimiento de Palas (Inercia)
+		const paddleMaxY = config.height - config.paddleHeight;
+
 		[paddleLeft, paddleRight].forEach(paddle => {
-			if (paddle.dy === 0) return;
-			const maxPos = config.height - config.paddleHeight;
-			if (config.hasInertia && config.friction) {
-				if (Math.abs(paddle.dy) > 0.1) {
+			const isStationary = paddle.dy === 0;
+			if (isStationary) return;
+
+			const hasInertia = config.hasInertia && !!config.friction;
+			const isMovementSignificant = Math.abs(paddle.dy) > 0.1;
+
+			if (hasInertia) {
+				if (isMovementSignificant) {
+					// Apply movement and decay speed
 					paddle.y += paddle.dy;
 					paddle.dy *= config.friction!;
 				} else {
+					// Residual speed depictable, stop paddle
 					paddle.dy = 0;
 				}
 			} else {
-				// Constant speed, applys dy at every tick without decay
+				// Constant speed, apply movement (dy) without decay
 				paddle.y += paddle.dy;
 			}
 
-			if (paddle.y < 0) { paddle.y = 0; paddle.dy = 0; }
-			if (paddle.y > maxPos) { paddle.y = maxPos; paddle.dy = 0; }
+			// Clamp: keep paddle inside canvas
+			if (paddle.y < 0 || paddle.y > paddleMaxY) {
+				if (paddle.y < 0) {
+					paddle.y = 0;
+				} else {
+					paddle.y = paddleMaxY;
+				}
+				paddle.dy = 0;
+			}
 		});
 		
-		// B. Movimiento de la Bola (usando vectores DX/DY)
+		// B. Ball movement
 		ball.x += ball.dx;
 		ball.y += ball.dy;
-		
-		// C. Rebote Paredes
-		if (ball.y - config.ballRadius <= 0 || ball.y + config.ballRadius >= config.height) {
+
+		// C. Ball walls bounce with sub-tick position crrection
+		const topLimit = config.ballRadius;
+		const bottomLimit = config.height - config.ballRadius;
+
+		if (ball.y < topLimit) {
+			// Off canvas depth
+			const offCanvas = topLimit - ball.y;
+			// Bounce, corrected position
+			ball.y = topLimit + offCanvas;
+			// Invert direction
 			ball.dy *= -1;
 		}
-		
-		// D. Colisión Palas
-		const paddle = (ball.x < config.width / 2) ? paddleLeft : paddleRight;
-		if (this.checkCollision(ball, paddle, config)) {
-			this.handlePaddleHit(session.gameState, paddle);
+		if (ball.y > bottomLimit) {
+			const offCanvas = ball.y - bottomLimit;
+			ball.y = bottomLimit - offCanvas;
+			ball.dy *= -1;
 		}
-		
-		// E. Puntuación y condición de victoria
+
+		// D. Ball and paddles collision
+		const activePaddle = ball.x < config.width / 2 ? paddleLeft : paddleRight;
+		if (this.checkCollision(ball, activePaddle, config)) {
+			this.handlePaddleHit(session.gameState, activePaddle)
+		}		
+
+		// E. Goal scored and victory condition
 		if (ball.x < 0) {
 			paddleRight.score++;
-			// Capturamos el retorno. Si hay ganador, lo devolvemos inmediatamente.
 			const winner = this.checkScoreOrReset(session, 'paddleRight');
-			if (winner)
-				return winner; 
+			if (winner) return winner;
 		} else if (ball.x > config.width) {
 			paddleLeft.score++;
-			// Idem para el otro lado.
 			const winner = this.checkScoreOrReset(session, 'paddleLeft');
-			if (winner)
-				return winner;
+			if (winner) return winner;
 		}
-		
-		return null; // Si no hay ganador, el juego sigue
+
+		return null; // Game updated, no goals
 	}
 	
 	/**
@@ -439,11 +463,11 @@ export class GameService {
 		// Usamos el radio desde la config, no desde la bola
 		const r = config.ballRadius;
 		
-		const inX = ball.x - r < paddle.x + config.paddleWidth && 
-		ball.x + r > paddle.x;
+		const inX = (ball.x - r) < (paddle.x + config.paddleWidth)
+					&& (ball.x + r) > (paddle.x);
 		
-		const inY = ball.y + r > paddle.y && 
-		ball.y - r < paddle.y + config.paddleHeight;
+		const inY = (ball.y + r) > (paddle.y)
+					&& (ball.y - r) < (paddle.y + config.paddleHeight);
 		
 		return inX && inY;
 	}
@@ -593,7 +617,6 @@ export class GameService {
 		const speed = config.paddleSpeed; 
 		
 		if (payload.action === 'STOP') {
-			if (!config.hasInertia) 
 				paddle.dy = 0;
 		}
 		else if (payload.action === 'MOVE_UP') {
