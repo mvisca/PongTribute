@@ -376,7 +376,12 @@ export class GameService {
 			if (config.hasInertia && !!config.friction) {
 				// Apply continuous force while input is active
 				if (input !== 0) {
-					paddle.dy += input * config.paddleSpeed * 0.3;
+
+					// Ease toward target: exponential ramp-up
+					// Brief keypress add little speed, holding adds more speed
+					const targetDy = input * config.paddleSpeed;
+					const accel = 0.08; // lower = slower ramp
+					paddle.dy += (targetDy - paddle.dy) * accel;
 					// Cap velocity
 					paddle.dy = Math.max(-config.paddleSpeed, Math.min(config.paddleSpeed, paddle.dy));
 				}

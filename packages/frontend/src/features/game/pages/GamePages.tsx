@@ -50,15 +50,46 @@ export default function GamePage() {
 		keysDown.current.delete(e.key);
 
 		if (isLocal) {
-			if (e.key === 'w' || e.key === 'W' || e.key === 's' || e.key === 'S') {
-				sendAction(GAME_ACTION.STOP, PLAYER_SIDE.LEFT);
+			// Left paddle (w-W-s-S)
+			if (['w', 'W', 's', 'S'].includes(e.key)) {
+				const hasUp = keysDown.current.has('w') || keysDown.current.has('W');
+				const hasDown = keysDown.current.has('s') || keysDown.current.has('S');
+
+				if (hasUp) {
+					sendAction(GAME_ACTION.MOVE_UP, PLAYER_SIDE.LEFT);
+				} else if (hasDown) {
+					sendAction(GAME_ACTION.MOVE_DOWN, PLAYER_SIDE.LEFT);
+				} else {
+					sendAction(GAME_ACTION.STOP, PLAYER_SIDE.LEFT);
+				}
 			}
+
+			// Right paddle (arrows)
 			if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-				sendAction(GAME_ACTION.STOP, PLAYER_SIDE.RIGHT);
+				const hasUp = keysDown.current.has('ArrowUp');
+				const hasDown = keysDown.current.has('ArrowDown');
+
+				if (hasUp) {
+					sendAction(GAME_ACTION.MOVE_UP, PLAYER_SIDE.RIGHT);
+				} else if (hasDown) {
+					sendAction(GAME_ACTION.MOVE_DOWN, PLAYER_SIDE.RIGHT);
+				} else {
+					sendAction(GAME_ACTION.STOP, PLAYER_SIDE.RIGHT);
+				}
 			}
 		} else {
-			if (['w', 'W', 's', 'S', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-				sendAction(GAME_ACTION.STOP);
+			// Online: both key sets control same paddle
+			if ([ 'w', 'W', 's', 'S', 'ArrowUp', 'ArrowDown' ].includes(e.key)) {
+				const hasUp = keysDown.current.has('w') || keysDown.current.has('W') || keysDown.current.has('ArrowUp');
+				const hasDown = keysDown.current.has('s') || keysDown.current.has('S') || keysDown.current.has('ArrowDown');
+
+				if (hasUp) {
+					sendAction(GAME_ACTION.MOVE_UP);
+				} else if (hasDown) {
+					sendAction(GAME_ACTION.MOVE_DOWN);
+				} else {
+					sendAction(GAME_ACTION.STOP);
+				}
 			}
 		}
 	}, [isLocal, sendAction]);
