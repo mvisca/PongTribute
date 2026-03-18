@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { PageContainer, FormCard, LinkButton, ArcadeButton, AlertError, FormInput, PasswordInput } from '../../../shared/components/ui';
@@ -18,6 +18,16 @@ export default function TwoFactorPage() {
     const [setupData, setSetupData] = useState<AuthTypes.Enable2FAResponse | null>(null);
     const [totpCode, setTotpCode] = useState('');
     const [disablePassword, setDisablePassword] = useState('');
+	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		if (!user?.has2FAEnabled && !setupData) {
+			setLoading(true);
+			handleStartActivation().finally(() => setLoading(false));
+		}
+	}, []);
+	
+
 
     async function handleStartActivation() {
         setError('');
@@ -73,11 +83,9 @@ export default function TwoFactorPage() {
                 <p className="text-sm text-purple-300 text-center mb-4">
                  {user?.has2FAEnabled ? '2FA is enabled' : '2FA is disabled'}
                 </p>
-                {!user?.has2FAEnabled && !setupData && (
-                    <div className="flex justify-center mt-6">
-                        <ArcadeButton onClick={handleStartActivation}>GENERATE QR</ArcadeButton>
-                    </div>
-                )}
+                {loading && (
+					<p className="text-sm text-purple-300 text-center mt-6">Loading...</p>
+				)}
                 {setupData && (
                     <div className="mt-6 flex flex-col items-center gap-4">
                         <p className="text-sm text-purple-200 text-center">
@@ -90,17 +98,8 @@ export default function TwoFactorPage() {
                             className="w-40 h-40 border border-purple-500 rounded shadow-lg"
                         />
 
-                        <div className="text-xs text-purple-300 text-center max-w-xs">
-                        <p className="mb-1">Step 2: Save your backup code:</p>
-                        <p className="font-mono text-sm text-purple-100 mb-1">
-                            {setupData.backupCode}
-                        </p>
-                        <p className="text-[11px]">
-                            Store this code in a safe place. It will not be shown again.
-                        </p>
-                        </div>
                         <p className="text-sm text-purple-200 text-center mt-2">
-                            Step 3: Enter the 6-digit code from your app.
+                            Step 2: Enter the 6-digit code from your app.
                         </p>
                         <div className="-mt-2 w-full max-w-[200px]">
                             <FormInput
@@ -114,8 +113,14 @@ export default function TwoFactorPage() {
                                 error=""
                             />
                         </div>
+                        <div className="text-sm text-purple-200 text-center max-w-xs">
+                        <p className="mb-1">Keep save your backup code:</p>
+                        <p className="font-mono text-sm text-purple-100 mb-1">
+                            {setupData.backupCode}
+                        </p>
+                        </div>
                         <div className="flex justify-center mt-4">
-                            <ArcadeButton onClick={handleConfirmSetup}>
+                            <ArcadeButton onClick={handleConfirmSetup} disabled={totpCode.length !== 6}>
                                 CONFIRM 2FA
                             </ArcadeButton>
                         </div>
@@ -124,7 +129,7 @@ export default function TwoFactorPage() {
                 {user?.has2FAEnabled && (
                     <div className="mt-6 flex flex-col items-center gap-4">
                         <p className="text-xs text-purple-400 text-center">
-                            2FA is active. Enter your password to disable it.
+                            Enter your password to disable it.
                         </p>
                         <div className="-mt-2 w-full max-w-[280px]">
                             <PasswordInput
@@ -134,7 +139,7 @@ export default function TwoFactorPage() {
                             />
                         </div>
                         <div className="flex justify-center mt-4">
-                            <ArcadeButton onClick={handleDisable2FA}>
+                            <ArcadeButton onClick={handleDisable2FA} disabled={!disablePassword.trim()}>
                                 DISABLE 2FA
                             </ArcadeButton>
                         </div>

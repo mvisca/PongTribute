@@ -64,7 +64,7 @@ export default function MatchSetup({
 			</div>
 
 			<div className='flex gap-6 mt-4'>
-				<button className='neon-btn text-xs' onClick={onBack}>BACK</button>
+				<button className='arcade-btn px-1 py-2' onClick={onBack}>CANCEL</button>
 				<button
 					className='arcade-btn px-6 py-2'
 					onClick={() => onStart(gameMode, TARGET_SCORES[scoreIndex])}
