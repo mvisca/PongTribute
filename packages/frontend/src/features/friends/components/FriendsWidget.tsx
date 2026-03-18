@@ -7,6 +7,7 @@ import { getProfile } from '../../profile/api/profileApi';
 import { FriendEntry } from '../store/friendsStore';
 import { FriendItem } from './FriendItem';
 import { AvatarDisplay } from '../../../shared/components/ui';
+import { useToastStore } from '../../../core/toasts';
 
 export function FriendsWidget() {
     const token           = useAuthStore(state => state.accessToken);
@@ -14,14 +15,15 @@ export function FriendsWidget() {
     const friends         = useFriendsStore(state => state.friends);
     const pending         = useFriendsStore(state => state.pending);
     const removePending   = useFriendsStore(state => state.removePending);
-    const removeFriendStore = useFriendsStore(state => state.removeFriend); // ← añadir
-    const addFriend       = useFriendsStore(state => state.addFriend);      // ← añadir
+    const removeFriendStore = useFriendsStore(state => state.removeFriend);
+    const addFriend       = useFriendsStore(state => state.addFriend);
+	const dismiss = useToastStore(state => state.dismiss);
 
     const [searchInput,   setSearchInput]   = useState('');
     const [searchResult,  setSearchResult]  = useState<{ id: string; username: string; avatar: string } | null>(null);
     const [searchError,   setSearchError]   = useState('');
     const [searchLoading, setSearchLoading] = useState(false);
-    const [feedback,      setFeedback]      = useState<{ msg: string; ok: boolean } | null>(null); // ← añadir
+    const [feedback,      setFeedback]      = useState<{ msg: string; ok: boolean } | null>(null);
 	
 
 	const showFeedback = (msg: string, ok: boolean) => {
@@ -51,7 +53,7 @@ export function FriendsWidget() {
             await sendFriendRequest(friendId, token);
             setSearchResult(null);
             setSearchInput('');
-            showFeedback('Request sent!', true); // ← añadir
+            showFeedback('Request sent!', true);
         } catch (err: any) {
             setSearchError(err?.message ?? 'Failed to send request');
         }
@@ -62,7 +64,6 @@ export function FriendsWidget() {
         try {
             await respondFriendRequest(senderId, accepted, token);
             if (accepted) {
-                // ← bloque nuevo
                 const invite  = pending[senderId];
                 const profile = await getProfile(senderId, token).catch(() => null);
                 addFriend({
@@ -73,7 +74,9 @@ export function FriendsWidget() {
                 } satisfies FriendEntry);
                 showFeedback('Friend added!', true);
             }
-            removePending(senderId);
+			removePending(senderId);
+			//dismiss(senderId);
+			useToastStore.getState().dismiss(senderId);
         } catch {
             showFeedback('Action failed', false);
         }
@@ -83,7 +86,7 @@ export function FriendsWidget() {
         if (!token) return;
         try {
             await removeFriend(friendId, token);
-            removeFriendStore(friendId); // ← corregido
+            removeFriendStore(friendId);
         } catch {
             showFeedback('Failed to remove friend', false);
         }
@@ -183,7 +186,7 @@ export function FriendsWidget() {
                                             onClick={() => handleRespond(req.senderId, false)}
                                             className='text-[10px] text-red-400 hover:text-red-200 px-2'
                                         >
-                                            REFUSE
+                                            REJECT
                                         </button>
                                         <button
                                             onClick={() => handleRespond(req.senderId, true)}
