@@ -175,13 +175,19 @@ export class GameService {
 		
 		socket.send(JSON.stringify(msg));
 		
-		if (session.gameState.status === GameConstants.GAME_STATUS.PLAYING) {
+		const matchWaiting = session.gameState.status === GameConstants.GAME_STATUS.WAITING;
+		const matchOn = session.gameState.status === GameConstants.GAME_STATUS.PAUSED
+						|| session.gameState.status === GameConstants.GAME_STATUS.PLAYING;
+		const isLocalHuman = session.isLocal && !isBotMatch;
+		const isLocalBotOrRemote = session.socketP1 && session.socketP2;
+
+		if (matchOn) {
 			this.handleReconnection(session, matchId, isPlayer1);
-		} else if (session.gameState.status === GameConstants.GAME_STATUS.WAITING) {
-			if (session.isLocal && !isBotMatch && session.socketP1) {
+		} else if (matchWaiting) {
+			if (isLocalHuman && session.socketP1) {
 				// Local humano vs humano: comparten socket, arranca con P1
 				this.startGameLoop(session);
-			} else if (session.socketP1 && session.socketP2) {
+			} else if (isLocalBotOrRemote) {
 				// Remota o bot: ambos sockets deben estar conectados
 				this.startGameLoop(session);
 			}
@@ -540,8 +546,6 @@ export class GameService {
 		};
 	}
 	
-	
-	
 	public async processInput(matchId: string, userId: string, message: Buffer | string): Promise<void> {
 		const session = this.activeMatches.get(matchId);
 		if (!session) return;
@@ -589,8 +593,9 @@ export class GameService {
 		const speed = config.paddleSpeed; 
 		
 		if (payload.action === 'STOP') {
-			paddle.dy = 0;
-		} 
+			if (!config.hasInertia) 
+				paddle.dy = 0;
+		}
 		else if (payload.action === 'MOVE_UP') {
 			paddle.dy = -speed; 
 		} 
