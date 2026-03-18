@@ -43,6 +43,9 @@ export default function MatchSetup({
 								? 'bg-blue-700 border-2 border-purple-400 shadow-[0_0_20px_#00ffff] scale-105 text-white'
 								: 'opacity-80 hover:opacity-100'
 						}`}
+						style={gameMode === m.value ? {
+							boxShadow: '0 0 12px #00ffff, 0 0 24px rgba(0, 255, 255, 0.6)'
+						} : undefined}
 					>
 						{m.label}
 					</button>
