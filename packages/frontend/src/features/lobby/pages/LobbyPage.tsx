@@ -141,7 +141,7 @@ export default function LobbyPage() {
 			default:
 				return (
 					<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
-						<h1 className='text-2xl tracking-widest'>PING 🏓 PONG</h1>
+						<h1 className='text-2xl tracking-widest'style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #a855f7' }}>PING 🏓 PONG</h1>
 						<div className='arcade-menu'>
 							{MENU_ITEMS.map(({ type, label}) => (
 								<button
