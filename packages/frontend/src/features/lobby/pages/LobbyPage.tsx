@@ -141,12 +141,12 @@ export default function LobbyPage() {
 			default:
 				return (
 					<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
-						<h1 className='text-3xl tracking-widest'>PING🏓PONG</h1>
+						<h1 className='text-2xl tracking-widest'>PING 🏓 PONG</h1>
 						<div className='arcade-menu'>
 							{MENU_ITEMS.map(({ type, label}) => (
 								<button
 									key={type}
-									className='arcade-btn px-6 py-2'
+									className='arcade-btn px-6 py-2 text-base'
 									onClick={() => handleMenuSelect(type)}
 								>
 									{label}
