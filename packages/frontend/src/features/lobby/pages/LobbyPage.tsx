@@ -1,27 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { createMatch, leaveQueue } from '../../game/api/gameApi';
+import { createMatch, leaveQueue, cancelMatch } from '../../game/api/gameApi';
 import { GameConstants } from '@transcendence/shared/constants/game.constants.js';
 import MatchSetup, { type ValidScore } from '../components/MatchSetup';
 import MatchMaking from '../components/MatchMaking';
+import FriendWaiting from '../components/FriendWaiting';
+import { AvatarDisplay } from '../../../shared/components/ui';
 import { useMatchStore } from '../store/matchStore';
 import { FriendsWidget } from '../../friends/components/FriendsWidget';
 
 
-type MatchType = 'public' | 'local' | 'bot';
-type Step = 'menu' | 'setup' | 'matchmaking';
+type MatchType = 'public' | 'local' | 'bot' | 'private';
+type Step = 'menu' | 'setup' | 'matchmaking' | 'friend_setup' | 'friend_waiting';
 
 const MENU_ITEMS: { type: MatchType; label: string }[] = [
 	{ type: 'public', label: 'PLAY ONLINE' },
-	{ type: 'local', label: 'LOCAL MATCH' },
-	{ type: 'bot', label: 'PLAY VS BOT' },
+	{ type: 'local',  label: 'LOCAL MATCH' },
+	{ type: 'bot',	  label: 'PLAY VS BOT' },
 ];
 
 const SETUP_TITLES: Record<MatchType, string> = {
-	public: 'ONLINE MATCH',
-	local: 'LOCAL MATCH',
-	bot: 'VS BOT',
+	public:	 'ONLINE MATCH',
+	local:	 'LOCAL MATCH',
+	bot:	 'VS BOT',
+	private: 'CHALLENGE FRIEND',
 };
 
 export default function LobbyPage() {
@@ -34,8 +37,14 @@ export default function LobbyPage() {
 	const [step, setStep] = useState<Step>('menu');
 	const [matchType, setMatchType] = useState<MatchType>('public');
 	const [gameMode, setGameMode] = useState<GameConstants.GameModeType>('classic');
+	const [targetScore, setTargetScore] = useState<ValidScore>(11);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+
+	const [friendId, setFriendId] = useState('');
+	const [friendUsername, setFriendUsername] = useState('');
+	const [friendAvatar, setFriendAvatar] = useState('');
+	const [pendingMatchId, setPendingMatchId] = useState('');
 
 	useEffect(() => {
 		if (!pendingEvent) return;
@@ -52,21 +61,45 @@ export default function LobbyPage() {
 				setError(pendingEvent.reason || 'Queue timed out - no opponent found');
 				setStep('setup');
 				break;
-		}
-	}, [pendingEvent, clearPendingEvent, navigate]);
 
+			case 'friend_rejected':
+				clearPendingEvent();
+				setError(`${friendUsername} declined the invitation`);
+				setPendingMatchId('');
+				setStep('menu');
+				{/** Could stay in current step waiting for cance or play bot... */}
+				break;
+			
+			case 'friend_expired':
+				clearPendingEvent();
+				setError(`${friendUsername} did not responde in time`);
+				setPendingMatchId('');
+				setStep('menu');
+				break;
+			
+			case 'friend_cancelled':
+				clearPendingEvent();
+				setPendingMatchId('');
+				setStep('menu');
+				break;
+		}
+	}, [pendingEvent, clearPendingEvent, navigate, friendUsername, friendAvatar]);
+
+	// Main menu
 	const handleMenuSelect = (type: MatchType) => {
 		setMatchType(type);
 		setError('');
 		setStep('setup');
 	};
 
+	// PLAY (public, local, bot)
 	const handleStart = async (
 		mode: GameConstants.GameModeType,
 		targetScore: ValidScore
 	) => {
 		if (!token) return;
 		setGameMode(mode);
+		setTargetScore(targetScore);
 		setLoading(true);
 		setError('');
 
@@ -91,6 +124,7 @@ export default function LobbyPage() {
 		}
 	};
 
+	// Cancel public queue
 	const handleCancelQueue = async () => {
 		if (!token) return;
 		try { await leaveQueue(token); } catch {}
@@ -98,25 +132,88 @@ export default function LobbyPage() {
 		setStep('setup');
 	};
 
+	// Play vs bot (from matchmaking or friend_waiting)
 	const handlePlayBot = async () => {
 		if (!token) return;
 		setLoading(true);
+
+		// In case click comes from friend challenge
+		if (pendingMatchId) {
+			try { await cancelMatch(pendingMatchId, token); } catch {}
+			setPendingMatchId('');
+		}
+
+		// leaveQueue before creating bot match. cleans user from redis queue
+		if (step === 'matchmaking') {
+			try { await leaveQueue(token); } catch {}
+		}
+
 		try {
 			const result = await createMatch(
-				{ matchType: 'bot', gameMode, targetScore: 11 },
+				{ matchType: 'bot', gameMode, targetScore },
 				token
 			);
+
 			if ('id' in result) {
 				navigate(`/game/${result.id}`);
 			}
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to create bot match');
-			setStep('setup');
+			setStep('menu');
 		} finally {
 			setLoading(false);
 		}
 	};
 
+	// Friend challenge from friend widget
+	const handleFriendChallenge = (id: string, username: string, avatar: string) => {
+		setFriendId(id);
+		setFriendUsername(username);
+		setFriendAvatar(avatar);
+		setMatchType('private');
+		setError('');
+		setStep('friend_setup');
+	};
+
+	// Friend challenge start
+	const handleFriendStart = async (
+		mode: GameConstants.GameModeType,
+		score: ValidScore
+	) => {
+		if (!token) return;
+		setGameMode(mode);
+		setTargetScore(score);
+		setLoading(true);
+		setError('');
+
+		try {
+			const result = await createMatch(
+				{ matchType: 'private', opponentId: friendId, gameMode: mode, targetScore: score },
+				token
+			);
+
+			if ('id' in result) {
+				setPendingMatchId(result.id);
+				setStep('friend_waiting');
+			} 	
+		} catch (err: any) {
+			setError(err?.message ?? 'Failed to send invitation');
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	// Cancel friend challenge TODO si remueve el amigo y existe una invitacion creada a partida de amigo se debe cancelar la partida tambien // Si se está jugando no se puede cancelar porque hay una partida activa
+	const handleCancelInvite = async () => {
+		if (!token) return;
+		if (pendingMatchId) {
+			try { await cancelMatch(pendingMatchId, token); } catch {}
+			setPendingMatchId('');
+		}
+		setStep('menu');
+	}
+
+	// Render
 	const renderScreen = () => {
 		switch (step) {
 			case 'matchmaking':
@@ -128,6 +225,29 @@ export default function LobbyPage() {
 					/>
 				);
 
+           case 'friend_setup':
+                return (
+					<>
+					{/** TODO add AVATAR here, rqeuires a new componente for setup */}
+					<MatchSetup
+					title={`CHALLENGE ${friendUsername.toUpperCase()}`}
+					onStart={handleFriendStart}
+					onBack={() => setStep('menu')}
+					loading={loading}
+                    />
+					</>
+                );
+
+            case 'friend_waiting':
+                return (
+                    <FriendWaiting
+                        friendUsername={friendUsername}
+						friendAvatar={friendAvatar}
+                        onCancel={handleCancelInvite}
+                        onPlayBot={handlePlayBot}
+                    />
+                );
+
 			case 'setup':
 				return (
 					<MatchSetup
@@ -135,6 +255,7 @@ export default function LobbyPage() {
 						onStart={handleStart}
 						onBack={() => setStep('menu')}
 						loading={loading}
+						fixedScore={matchType === 'public' ? 11 : undefined}
 					/>
 				);
 			
@@ -143,7 +264,7 @@ export default function LobbyPage() {
 					<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
 						<h1 className='text-2xl tracking-widest'style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #a855f7' }}>PING 🏓 PONG</h1>
 						<div className='arcade-menu'>
-							{MENU_ITEMS.map(({ type, label}) => (
+							{MENU_ITEMS.map(({ type, label }) => (
 								<button
 									key={type}
 									className='arcade-btn px-6 py-2 text-base'
@@ -161,12 +282,12 @@ export default function LobbyPage() {
 	return (
 		<div className='retro-bg h-full relative flex items-center justify-center text-purple-100 min-w-[1150px]'>
 			
-			{/* Widget anclado top-left */}
+			{/* Widget anchored top-left */}
 			<div className='absolute top-4 left-4'>
-				<FriendsWidget />
+				<FriendsWidget onPlayToFather={handleFriendChallenge} />
 			</div>
 
-			{/* Arcade screen centrado */}
+			{/* Arcade screen center */}
 			<div className='flex flex-col items-center gap-4 ml-46'>
 				{error && (
 					<p className='text-red-400 text-sm'>{error}</p>

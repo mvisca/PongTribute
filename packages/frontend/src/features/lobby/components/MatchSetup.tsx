@@ -15,16 +15,18 @@ interface Props {
 	onStart: (gameMode: GameConstants.GameModeType, targetScore: ValidScore) => void;
 	onBack: () => void;
 	loading?: boolean;
+	fixedScore?: ValidScore;
 }
 
 export default function MatchSetup({
 	title,
 	onStart,
 	onBack,
-	loading = false
+	loading = false,
+	fixedScore,
 }: Props) {
 	const [gameMode, setGameMode] = useState<GameConstants.GameModeType>('classic');
-	const [scoreIndex, setScoreIndex] = useState(3);
+	const [scoreIndex, setScoreIndex] = useState(TARGET_SCORES.indexOf(11));
 
 	return (
 		<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
@@ -52,25 +54,31 @@ export default function MatchSetup({
 				))}
 			</div>
 
-			{/* Score limit */}
-			<div className='flex flex-col items-center gap-2 w-64'>
-				<span>
-					Score Limit: {TARGET_SCORES[scoreIndex]}
-				</span>
-				<input type="range"
-					min={0}
-					max={TARGET_SCORES.length -1}
-					value={scoreIndex}
-					onChange={(e) => setScoreIndex(Number(e.target.value))}
-					className='w-full'
-				/>
-			</div>
+			{/* Score limit to chose */}
+			{!fixedScore && (
+				<div className='flex flex-col items-center gap-2 w-64'>
+					<span>
+						Score Limit: {TARGET_SCORES[scoreIndex]}
+					</span>
+					<input type="range"
+						min={0}
+						max={TARGET_SCORES.length -1}
+						value={scoreIndex}
+						onChange={(e) => setScoreIndex(Number(e.target.value))}
+						className='w-full'
+						/>
+				</div>
+			)}
+			{/* Fixed score for public matches */}
+			{fixedScore && (
+				<p className='text-sm opacity-60'>Score: {fixedScore} (fixed)</p>
+			)}
 
 			<div className='flex gap-6 mt-4'>
 				<button className='arcade-btn px-1 py-2' onClick={onBack}>CANCEL</button>
 				<button
 					className='arcade-btn px-6 py-2'
-					onClick={() => onStart(gameMode, TARGET_SCORES[scoreIndex])}
+					onClick={() => onStart(gameMode, fixedScore ?? TARGET_SCORES[scoreIndex])}
 					disabled={loading}
 				>
 					{loading ? 'LOADING...' : 'START'}

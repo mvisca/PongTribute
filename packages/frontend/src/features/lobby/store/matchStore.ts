@@ -1,9 +1,12 @@
 import { create } from 'zustand';
 
 type MatchEvent = 
-	| { type: 'found'; matchId: string }
-	| { type: 'started'; matchId: string }
-	| { type: 'queue_timeout'; reason: string };
+	| { type: 'found';			matchId: string }
+	| { type: 'started';		matchId: string }
+	| { type: 'queue_timeout';	reason: string  }
+	| { type: 'friend_rejected'	 }
+	| { type: 'friend_expired'	 }
+	| { type: 'friend_cancelled' };
 
 interface MatchStore {
 	/** Evento pendiente de procesar por LobbyPage */

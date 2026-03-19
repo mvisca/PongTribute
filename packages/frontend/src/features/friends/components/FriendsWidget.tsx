@@ -9,15 +9,21 @@ import { FriendItem } from './FriendItem';
 import { AvatarDisplay } from '../../../shared/components/ui';
 import { useToastStore } from '../../../core/toasts';
 
-export function FriendsWidget() {
+interface Props {
+	onPlayToFather?: (friendId: string, friendUsername: string, friendAvatar: string) => void;
+}
+
+export function FriendsWidget( { onPlayToFather }: Props) {
     const token           = useAuthStore(state => state.accessToken);
     const currentUserId   = useAuthStore(state => state.user?.id);
+
     const friends         = useFriendsStore(state => state.friends);
     const pending         = useFriendsStore(state => state.pending);
     const removePending   = useFriendsStore(state => state.removePending);
     const removeFriendStore = useFriendsStore(state => state.removeFriend);
     const addFriend       = useFriendsStore(state => state.addFriend);
-	const dismiss = useToastStore(state => state.dismiss);
+	
+	const dismiss 		  = useToastStore(state => state.dismiss);
 
     const [searchInput,   setSearchInput]   = useState('');
     const [searchResult,  setSearchResult]  = useState<{ id: string; username: string; avatar: string } | null>(null);
@@ -109,7 +115,7 @@ export function FriendsWidget() {
                                 key={entry.userId}
                                 entry={entry}
                                 onRemove={handleRemove}
-                                onPlay={(id) => console.log('play', id)}
+                                onPlayFromChild={(id, username, avatar) => onPlayToFather?.(id, username, avatar)}
                                 playLabel='PLAY'
                             />
                         ))}

@@ -8,13 +8,34 @@ export async function createMatch(
 	return apiRequestWithRefresh('/matches', {
 		method: 'POST',
 		body,
-		token
+		token,
 	});
 }
 
-export async function leaveQueue(token: string) {
+export async function leaveQueue(token: string):  Promise<void> {
 	return apiRequestWithRefresh('/matches/queue', {
 		method: 'DELETE',
-		token
+		token,
+	});
+}
+
+export async function cancelMatch(matchId: string, token: string): Promise<void> {
+	return apiRequestWithRefresh(`/matches/${matchId}`, {
+		method: 'DELETE',
+		token,
+	});
+}
+
+export async function acceptMatch(matchId: string, token: string): Promise<MatchTypes.Match> {
+	return apiRequestWithRefresh(`/matches/${matchId}/accept`, {
+		method: 'POST',
+		token,
+	});
+}
+
+export async function rejectMatch(matchId: string, token: string): Promise<MatchTypes.Match> {
+	return apiRequestWithRefresh(`/matches/${matchId}/reject`, {
+		method: 'POST',
+		token,
 	});
 }
