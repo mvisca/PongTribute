@@ -1,27 +1,34 @@
 //packages/frontend/src/App.tsx
 import { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
+import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
+
 import { AppRouter } from './core/router/AppRouter';
+import { useAuthValidation } from './core/auth/useAuthValidation';
+import { useWebSocket } from './core/ws/useWebSocket';
+import { useAuthStore } from './core/auth/AuthStore';
 import { 
 	TOAST_BUTTON_STYLE, 
 	TOAST_TYPE, 
 	ToastContainer, 
 	useToastStore,
 } from './core/toasts';
-import { useAuthStore } from './core/auth/AuthStore';
-import { useAuthValidation } from './core/auth/useAuthValidation';
-import { useWebSocket } from './core/ws/useWebSocket';
+
 import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
-import { FRIENDSHIP_STATUS } from '@transcendence/shared/constants/friendship.constants.js';
-import { getProfile } from './features/profile/api/profileApi';
 import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
+import { getProfile } from './features/profile/api/profileApi';
 import { useMatchStore } from './features/lobby/store/matchStore';
+import { acceptMatch, rejectMatch } from './features/game/api/gameApi';
 
 export default function App() {
 	const token = useAuthStore((state) => state.accessToken);
 	const currentUserId = useAuthStore((state) => state.user?.id); 
 
+	const navigate = useNavigate();
+	
 	const info = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.info);
 	const error = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.error);
 	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
@@ -180,6 +187,39 @@ export default function App() {
 				break;
 			
 			// Match events
+			case WEBSOCKET_EVENTS.MATCH_INVITE:
+				action({
+					id: msg.payload.matchId,
+					type: TOAST_TYPE.INFO,
+					message: `${msg.payload.inviterUsername} challenges you to a ${msg.payload.gameMode} match`,
+					duration: 0,
+					expiresAt: msg.payload.expiresAt,
+					actions: [
+						{
+							label: 'Accept',
+							onClick: async () => {
+								if (!token) return;
+								try {
+									const result = await acceptMatch(msg.payload.matchId, token);
+									if ('id' in result) navigate(`/game/${result.id}`);
+								} catch {
+									error('Failed to accept invitation');
+								}
+							},
+							style: TOAST_BUTTON_STYLE.PRIMARY
+						},
+						{
+							label: 'Reject',
+							onClick: async () => {
+								if (!token) return;
+								try { await rejectMatch(msg.payload.matchId, token); } catch {}
+							},
+							style: TOAST_BUTTON_STYLE.DANGER
+						}
+					]
+				});
+				break;
+			
 			case WEBSOCKET_EVENTS.MATCH_FOUND:
 				useMatchStore.getState().setPendingEvent({
 					type: 'found',
@@ -202,11 +242,20 @@ export default function App() {
 				break;
 
 			case WEBSOCKET_EVENTS.MATCH_REJECTED:
-				warning('Match invitation declined');
+				useMatchStore.getState().setPendingEvent({ type: 'friend_rejected'});
+				new Audio('https://www.myinstants.com/media/sounds/chicken.mp3').play().catch(() => {});
+				warning('🐔'); 
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:
-				warning('Match cancelled');
+				dismiss(msg.payload.matchId);
+				if (msg.payload.reason === 'invitation_expired') {
+					useMatchStore.getState().setPendingEvent({ type: 'friend_expired' });
+				} else {
+					// HOST_DISCONNECTED or HOST_CANCELLED
+					useMatchStore.getState().setPendingEvent({ type: 'friend_cancelled' });
+					warning('Match cancelled');
+				}
 				break;
 
 			default:

@@ -181,7 +181,7 @@ export default function GamePage() {
 	return (
 		<div className='retro-bg h-full relative flex items-center justify-center min-w-[1150px]'>
 			<div className='absolute top-4 left-4'>
-				<FriendsWidget />
+				<FriendsWidget /> {/** Tambien hay widget vacio aqui, no se debe completar? */}
 			</div>
 			<div className='flex flex-col items-center gap-8 ml-46'>
 				{matchInfo && (
