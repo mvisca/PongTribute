@@ -29,7 +29,7 @@ export default function GamePage() {
 	const isLocal = (location.state as { isLocal?: boolean } | null)?.isLocal ?? false;
 	
 	// Determine wich side the current user plays
-	const isPlayer1 = matchInfo ? matchInfo.opponentId !== currentUserId : true;
+	const isPlayer1 = matchInfo ? matchInfo.playerSide === 'left' : true;
 
 	// Keyboard input
 	const keysDown = useRef(new Set<string>());

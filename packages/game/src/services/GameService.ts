@@ -175,7 +175,8 @@ export class GameService {
                 opponentUsername: isPlayer1 ? session.player2Username : session.player1Username,
                 opponentAvatar: isPlayer1 ? session.player2Avatar : session.player1Avatar,
                 gameMode: session.gameState.config.gameModeName,
-                status: session.gameState.status,
+				status: session.gameState.status,
+				playerSide: isPlayer1 ? 'left' : 'right',
             }
         } satisfies WebSocketEventsTypes.MatchJoined;
         

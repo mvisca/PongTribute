@@ -12,6 +12,7 @@ export interface MatchInfo {
 	opponentUsername: string;
 	opponentAvatar: string;
 	gameMode: GC.GameModeType;
+	playerSide: 'left' | 'right';
 }
 
 export type GameStatus = 'connecting' | 'joined' | 'playing' | 'finished' | 'opponent_disconnected' | 'error';
@@ -78,6 +79,7 @@ export function useGameSocket(matchId: string) {
 								opponentUsername: msg.payload.opponentUsername,
 								opponentAvatar: msg.payload.opponentAvatar,
 								gameMode: msg.payload.gameMode,
+								playerSide: msg.payload.playerSide ?? 'left', 
 							},
 						}));
 						break;

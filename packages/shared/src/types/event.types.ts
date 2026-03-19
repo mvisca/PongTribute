@@ -326,7 +326,8 @@ export namespace WebSocketEventsTypes {
 			opponentUsername: string;
 			opponentAvatar: string;
 			gameMode: GameConstants.GameModeType;
-			status: string; // 'waiting' | 'playing'
+			status: string;
+			playerSide?: 'left' | 'right';
 		};
 	}
 
