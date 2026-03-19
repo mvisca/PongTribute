@@ -29,7 +29,7 @@ export default function FriendWaiting({friendUsername, friendAvatar, onCancel, o
 			<h2 className='text-2xl tracking-widest'>WAITING FOR</h2>
 			<p className='text-xl text-purple-300 tracking-widest'>{friendUsername}</p>
 
-			<div className='text-6xl font-bold tracking-widest'>
+			<div className='text-4xl font-bold tracking-widest'>
 				{remaining > 0 ? `${remaining}s` : '–'}
 			</div>
 
@@ -39,13 +39,13 @@ export default function FriendWaiting({friendUsername, friendAvatar, onCancel, o
 
 			<div className='flex gap-8 mt-4'>
 				<button
-					className='neon-btn text-xs'
+					className='arcade-btn px-6 py-2 text-base'
 					onClick={onCancel}
 				>
 					CANCEL
 				</button>
 				<button
-					className='arcade-btn px-6 py-2'
+					className='arcade-btn px-6 py-2 text-base'
 					onClick={onPlayBot}
 				>
 					PLAY VS BOT

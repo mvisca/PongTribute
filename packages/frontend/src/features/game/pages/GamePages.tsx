@@ -203,7 +203,7 @@ export default function GamePage() {
 				return (
 					<Overlay>
 						<p className='text-red-400 mb-4'>{error || 'Connection lost'}</p>
-						<button className='neon-btn px-6 py-2' onClick={() => navigate('/home')}>
+						<button className='arcade-btn px-6 py-2' onClick={() => navigate('/home')}>
 							BACK TO LOBBY
 						</button>
 					</Overlay>
