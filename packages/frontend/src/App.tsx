@@ -1,6 +1,6 @@
 //packages/frontend/src/App.tsx
-import { useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 import type { WebSocketEventsTypes } from '@transcendence/shared/types/event.types.js';
@@ -24,10 +24,13 @@ import { useMatchStore } from './features/lobby/store/matchStore';
 import { acceptMatch, rejectMatch } from './features/game/api/gameApi';
 
 export default function App() {
+	const navigate = useNavigate();
+	const location = useLocation();
+
 	const token = useAuthStore((state) => state.accessToken);
 	const currentUserId = useAuthStore((state) => state.user?.id); 
 
-	const navigate = useNavigate();
+	const activeMatchId = useMatchStore(state => state.activeMatchId);
 	
 	const info = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.info);
 	const error = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.error);
@@ -271,6 +274,15 @@ export default function App() {
 	const { isValidating } = useAuthValidation();
 
 	useWebSocket({ onMessage: handleWsMessage, onConnect: loadFriendships });
+
+	// Keeps player in match
+	useEffect(() => {
+		if (!activeMatchId) return;
+		if (location.pathname === `/game/${activeMatchId}`) return;
+
+		// If user is in any differente path:
+		navigate(`/game/${activeMatchId}`);
+	}, [activeMatchId, location.pathname, navigate]);
 
 	return (
 		<>

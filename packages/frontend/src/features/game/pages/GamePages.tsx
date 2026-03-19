@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { useGameSocket } from '../hooks/useGameSocket';
+import { useMatchStore } from '../../../features/lobby/store/matchStore';
 import { renderGame } from '../renderer/gameRender';
 import { GameConstants } from '@transcendence/shared/constants/game.constants.js';
 import { FriendsWidget } from '../../friends/components/FriendsWidget';
@@ -17,6 +18,10 @@ export default function GamePage() {
 	
 	const { status, matchInfo, gameOver, waitSeconds, error, gameStateRef, sendAction } = useGameSocket(matchId!);
 
+	const setActiveMatchId = useMatchStore(s => s.setActiveMatchId);
+	const clearActiveMatchId = useMatchStore(s => s.clearActiveMatchId);
+	const [disconnectCountdown, setDisconnectCountdown] = useState<number>(0);
+
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const animRef = useRef<number>(0);
 
@@ -28,6 +33,7 @@ export default function GamePage() {
 
 	// Keyboard input
 	const keysDown = useRef(new Set<string>());
+
 	const handleKeyDown = useCallback((e: KeyboardEvent) => {
 		if (keysDown.current.has(e.key)) return; // prevent repeat
 		keysDown.current.add(e.key);
@@ -96,6 +102,7 @@ export default function GamePage() {
 		}
 	}, [isLocal, sendAction]);
 
+	// keyboar inputs
 	useEffect(() => {
 		window.addEventListener('keydown', handleKeyDown);
 		window.addEventListener('keyup', handleKeyUp);
@@ -124,6 +131,33 @@ export default function GamePage() {
 		return () => cancelAnimationFrame(animRef.current);
 	}, [gameStateRef]);
 
+	// Register active match on mount
+	useEffect(() => {
+		if (matchId) setActiveMatchId(matchId);
+		return () => clearActiveMatchId();
+	}, [matchId, setActiveMatchId, clearActiveMatchId]);
+
+	// Clear on game end
+	useEffect(() => {
+		if (status === 'finished' || status === 'error') {
+			clearActiveMatchId();
+		}
+	}, [status, clearActiveMatchId]);
+	
+	
+	// Opponent discconnected countdown
+	useEffect(() => {
+		if (status !== 'opponent_disconnected') return;
+
+		setDisconnectCountdown(waitSeconds);
+
+		const interval = setInterval(() => {
+			setDisconnectCountdown(s => Math.max(0, s - 1));
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [status, waitSeconds]);
+
 	// Overlays
 	const renderOverlay = () => {
 		switch (status) {
@@ -142,7 +176,9 @@ export default function GamePage() {
 				return (
 					<Overlay>
 						<p className='text-lg'>Opponent disconnected</p>
-						<p className='text-sm text-purple-400 mt-2'>Waiting {waitSeconds}s for reconnection...</p>
+						<p className='text-sm text-purple-400 mt-2'>
+							Waiting for reconnection... {disconnectCountdown}s
+						</p>
 					</Overlay>
 				)
 			
