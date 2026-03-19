@@ -485,9 +485,9 @@ export class MatchService {
 
 	async getMatchHistory(
 		userId: string,
-		offset: number = 0
+		offset: number = 0,
+		limit: number = 6
 	): Promise<MatchTypes.Match[]> {
-		const limit = 20;
 		return await this.matchRepo.findByUserId(userId, limit, offset);
 	}
 	

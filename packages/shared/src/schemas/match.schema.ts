@@ -199,7 +199,8 @@ export namespace MatchSchemas {
 			}),
 			querystring: Type.Object({
 				// Solo permitimos offset para paginar (página 1, 2, 3...)
-				offset: Type.Optional(Type.Number({ default: 0, minimum: 0 }))
+				offset: Type.Optional(Type.Number({ default: 0, minimum: 0 })),
+				limit:  Type.Optional(Type.Number({ default: 10, minimum: 1, maximum: 50 }))
 			}),
 			response: {
 				200: Type.Object({ matches: Type.Array(Match) }),

@@ -75,7 +75,7 @@ export default function HistoryPage() {
                                         <span className='text-purple-300 tracking-widest'>
                                             {me?.score ?? 0} — {rival?.score ?? 0}
                                         </span>
-                                        <span className='text-purple-500 text-xs'>
+                                        <span className='text-white text-xs'>
                                             {rival?.username ?? 'Unknown'}
                                         </span>
                                     </div>
@@ -99,7 +99,7 @@ export default function HistoryPage() {
                     >
                         ← PREV
                     </LinkButton>
-                    <span className='text-xs text-purple-500'>
+                    <span className='text-sm text-purple-500'>
                         Page {page + 1}
                     </span>
                     <LinkButton
