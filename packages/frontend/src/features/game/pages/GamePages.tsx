@@ -12,7 +12,9 @@ export default function GamePage() {
 	const { matchId } = useParams<{ matchId: string }>();
 	const navigate = useNavigate();
 	const currentUserId = useAuthStore(state => state.user?.id);
-
+	const currentUsername = useAuthStore(state => state.user?.username);
+	const currentAvatar = useAuthStore(state => state.avatar);
+	
 	const { status, matchInfo, gameOver, waitSeconds, error, gameStateRef, sendAction } = useGameSocket(matchId!);
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -181,14 +183,42 @@ export default function GamePage() {
 			<div className='absolute top-4 left-4'>
 				<FriendsWidget />
 			</div>
-			<div className='arcade-screen relative ml-46'>
-				<canvas 
-					ref={canvasRef}
-					width={780}
-					height={480}
-					className='w-full h-full rounded-lg'
-				/>
-				{renderOverlay()}
+			<div className='flex flex-col items-center gap-8 ml-46'>
+				{matchInfo && (
+					<div className='flex items-center justify-center gap-80 w-[780px] mb-[-8px] z-10'>
+						<div className='flex items-center gap-2'>
+							<img
+								src={isPlayer1 ? (currentAvatar ?? '') : matchInfo.opponentAvatar}
+								alt='avatar'
+								className='w-12 h-12 rounded-full border border-purple-500 object-cover'
+								onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+							/>
+							<span className='text-purple-200 text-base'>
+								{isPlayer1 ? currentUsername : matchInfo.opponentUsername}
+							</span>
+						</div>
+						<div className='flex items-center gap-2 flex-row-reverse'>
+							<img
+								src={isPlayer1 ? matchInfo.opponentAvatar : (currentAvatar ?? '')}
+								alt='avatar'
+								className='w-12 h-12 rounded-full border border-purple-500 object-cover'
+								onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+							/>
+							<span className='text-purple-200 text-base'>
+								{isPlayer1 ? matchInfo.opponentUsername : currentUsername}
+							</span>
+						</div>
+					</div>
+				)}
+				<div className='arcade-screen relative'>
+					<canvas 
+						ref={canvasRef}
+						width={780}
+						height={480}
+						className='w-full h-full rounded-lg'
+					/>
+					{renderOverlay()}
+				</div>
 			</div>
 		</div>
 	);
