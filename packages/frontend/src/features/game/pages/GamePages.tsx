@@ -153,11 +153,11 @@ export default function GamePage() {
 					: (won ?  '🏆 YOU WIN!' : '🍷 YOU LOSE!');
 				return (
 					<Overlay>
-						<p className='text-3xl mb-4'>{winnerText}</p>
+						<p className='text-2xl mb-4'>{winnerText}</p>
 						<p className='text-lg mb-6'>
 							{gameOver?.player1Score} - {gameOver?.player2Score}
 						</p>
-						<button className='neon-btn px-6 py-2' onClick={() => navigate('/home')}>
+						<button className='arcade-btn px-6 py-2 text-base' onClick={() => navigate('/home')}>
 							BACK TO LOBBY
 						</button>
 					</Overlay>
