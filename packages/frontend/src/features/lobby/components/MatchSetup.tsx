@@ -56,7 +56,7 @@ export default function MatchSetup({
 
 			{/* Score limit to chose */}
 			{!fixedScore && (
-				<div className='flex flex-col items-center gap-2 w-64'>
+				<div className='flex flex-col text-base items-center gap-2 w-64'>
 					<span>
 						Score Limit: {TARGET_SCORES[scoreIndex]}
 					</span>
@@ -65,7 +65,7 @@ export default function MatchSetup({
 						max={TARGET_SCORES.length -1}
 						value={scoreIndex}
 						onChange={(e) => setScoreIndex(Number(e.target.value))}
-						className='w-full'
+						className='w-full h-[2px] accent-purple-400 cursor-pointer'
 						/>
 				</div>
 			)}
@@ -77,8 +77,8 @@ export default function MatchSetup({
 			<div className='flex gap-6 mt-4'>
 				<button className='arcade-btn px-1 py-2 text-base' onClick={onBack}>CANCEL</button>
 				<button
-					className='arcade-btn px-6 py-2'
-					onClick={() => onStart(gameMode, fixedScore ?? TARGET_SCORES[scoreIndex])}
+					className='arcade-btn px-6 py-2 text-base'
+					onClick={() => onStart(gameMode, TARGET_SCORES[scoreIndex])}
 					disabled={loading}
 				>
 					{loading ? 'LOADING...' : 'START'}
