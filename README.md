@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by <login1>[, <login2>[, <login3>[...]]].*
+*This project has been created as part of the 42 curriculum by <jocuni-p>[, <dkurcbar>[, <mvisca-g>[, <mehernan>]]].*
 
 ## Description
 
@@ -137,29 +137,47 @@ pnpm redis:cli
 
 Fill this for **each** team member listed in the first line.
 
-| 42 login | Name | Role(s) | Responsibilities |
-|---|---|---|---|
-| <PLACEHOLDER> | <PLACEHOLDER> | PO | <PLACEHOLDER: product vision, backlog, validation, stakeholder comms> |
-| <PLACEHOLDER> | <PLACEHOLDER> | PM / Scrum Master | <PLACEHOLDER: planning, tracking, removing blockers, facilitation> |
-| <PLACEHOLDER> | <PLACEHOLDER> | Tech Lead / Architect | <PLACEHOLDER: architecture, key decisions, code quality, reviews> |
-| <PLACEHOLDER> | <PLACEHOLDER> | Developer | <PLACEHOLDER: features implemented, ownership areas> |
-| <PLACEHOLDER> | <PLACEHOLDER> | Developer | <PLACEHOLDER: features implemented, ownership areas> |
+| 42 login   | Name        | Role(s)         | Responsibilities |
+|------------|-------------|-----------------|-----------------------------------------------------------|
+| <mehernan> | <Meritxell> | Product Owner   | < product vision, backlog, validation, stakeholder comms> |
+| <jocuni-p> | <Joan>      | Product Manager | < planning, tracking, removing blockers, facilitation> |
+| <mvisca-g> | <Martin>    | Tech Lead       | < architecture, key decisions, code quality, reviews> |
+| <dkurcbar> | <Diego>     | Developer       | <features implemented, ownership areas> |
 
 ---
 
 ## Project Management
 
 **How we organized the work**:
-- <PLACEHOLDER: e.g., weekly planning + daily async updates + sprint reviews>
-- <PLACEHOLDER: how tasks were split and tracked>
+At the beginning of the project, the team worked in person on campus, where we collaboratively defined the initial architecture, shared ideas, and distributed responsibilities. Tasks were initially assigned at a high level:
+
+- One member focused on the frontend development
+- One member focused on the game implementation
+- Three members worked on the backend services and Docker infrastructure
+
+During development, the project faced a significant change: one team member left and the subject requirements were updated. As a result, the team had to adapt both the scope and the organization.
+
+- We shifted to a more flexible workflow:
+- Weekly meetings to review progress and discuss blockers
+- Continuous async updates between members
+- Iterative improvements rather than strict sprint planning
+
+This approach allowed us to stay aligned while adapting to changes in both team size and project requirements.
 
 **Tools**:
-- <PLACEHOLDER: GitHub Issues / Projects / Trello / Notion / etc.>
+- <GitHub: (repositories, version control, and collaboration)>
+- <GitHubCodespaces: (early-stage frontend development and testing)>
+- <Notion: (architecture planning, diagrams, and shared notes)>
+- <Docker/DockerCompose (development and deployment environment)>
 
 **Communication**:
-- <PLACEHOLDER: Discord/Slack channel(s), meeting cadence, decision records>
+- <Campus: (Initially, discussions were held in person on campus)>
+- <WhatsApp: (The WhatsApp group became the main communication channel for daily coordination)>
+- <GoogleMeet: (Weekly meetings)>
+  - Share progress
+  - Discuss technical challenges
+  - Align next steps
 
----
 
 ## Technical Stack
 
