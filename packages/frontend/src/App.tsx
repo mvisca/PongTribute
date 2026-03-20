@@ -279,10 +279,12 @@ export default function App() {
 	useEffect(() => {
 		if (!activeMatchId) return;
 		if (location.pathname === `/game/${activeMatchId}`) return;
+		// Only redirect atuhenticated users
+		if (!token) return;
 
 		// If user is in any differente path:
-		navigate(`/game/${activeMatchId}`);
-	}, [activeMatchId, location.pathname, navigate]);
+		navigate(`/game/${activeMatchId}`, { replace: true });
+	}, [activeMatchId, location.pathname, navigate, token]);
 
 	return (
 		<>
