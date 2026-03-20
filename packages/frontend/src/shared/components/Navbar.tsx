@@ -57,21 +57,32 @@ export default function Navbar() {
 				</span>
 
 				<div className='flex items-center gap-4 ml-auto'>
+					{/* Avatar + username — solo visible en desktop */}
  					<button
    					 onClick={() => navigate('/profile')}
    					 className='hidden sm:flex items-center gap-2 hover:bg-purple-800 px-2 py-1 rounded-lg transition-colors cursor-pointer'
  					>
    					<AvatarDisplay src={avatar} size='sm' />
     				<span className='text-sm text-purple-300'>{username}</span>
- 					</button>
-
+					</button>
+					
+					{/* Logout — solo visible en desktop */}
   					<button
 						onClick={handleLogout}
-						className="text-purple-300 hover:text-red-400 transition-colors text-2xl px-2"
+						className="hidden sm:block text-purple-300 hover:text-red-400 transition-colors text-2xl px-2"
 						aria-label="Logout"
 						title="Logout"
 					>
 						⏻
+					</button>
+
+					{/* Hamburguesa — solo visible en móvil */}
+					<button
+						onClick={() => setMenuOpen(true)}
+						className='sm:hidden text-purple-300 hover:text-white text-2xl px-2'
+						aria-label='Open menu'
+					>
+						☰
 					</button>
 				</div>
 			</nav>

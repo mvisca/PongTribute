@@ -152,15 +152,6 @@ export default function FriendsPage() {
 				{/* FRIENDS LIST */}
 				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
 
-					{/* BACK BUTTON */}
-					<div className="flex justify-end mb-3">
-						<button
-							onClick={() => navigate('/profile')}
-							className="text-purple-300 hover:text-white text-sm"
-						>
-							← BACK
-						</button>
-					</div>
 
 					{Object.keys(friends).length === 0 ? (
 
@@ -226,6 +217,16 @@ export default function FriendsPage() {
 						</div>
 
 					)}
+					
+					{/* BACK BUTTON */}
+					<div className="flex justify-end mb-3">
+						<button
+							onClick={() => navigate('/profile')}
+							className="text-purple-300 hover:text-white text-sm"
+						>
+							← BACK
+						</button>
+					</div>
 
 				</FormCard>
 

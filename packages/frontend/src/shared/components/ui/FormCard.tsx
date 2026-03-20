@@ -8,8 +8,7 @@ interface Props {
 
 export default function FormCard({ children, title, wide = false }: Props) {
   return (
-     <div className={`bg-purple-950 p-8 rounded-xl shadow-lg ${wide ? 'w-[900px]' : 'w-[420px]'}`}>
-		  {/* <h1 className='text-2xl font-bold text-center mb-6'>{title}</h1 > */}
+     <div className={`bg-purple-950 p-8 rounded-xl shadow-lg ${wide ? 'w-full max-w-[900px]' : 'w-full sm:w-[420px]'}`}>
 		  <h1 className='retro-title mb-6'>{title}</h1>
       {children}
     </div>

@@ -9,6 +9,9 @@ import { FriendsWidget } from '../../friends/components/FriendsWidget';
 
 const { GAME_ACTION, PLAYER_SIDE } = GameConstants;
 
+
+
+
 export default function GamePage() {
 	const { matchId } = useParams<{ matchId: string }>();
 	const navigate = useNavigate();
@@ -16,6 +19,16 @@ export default function GamePage() {
 	const currentUsername = useAuthStore(state => state.user?.username);
 	const currentAvatar = useAuthStore(state => state.avatar);
 	
+	// Detectar pantalla pequeña
+	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
+	
+	useEffect(() => {
+		const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+
 	const { status, matchInfo, gameOver, waitSeconds, error, gameStateRef, sendAction } = useGameSocket(matchId!);
 
 	const setActiveMatchId = useMatchStore(s => s.setActiveMatchId);
@@ -214,8 +227,27 @@ export default function GamePage() {
 		}
 	};
 
+	if (isSmallScreen) {
+		return (
+			<div className='retro-bg h-full flex flex-col items-center justify-center gap-6 px-8 text-center'>
+				<span className='text-6xl'>🕹️</span>
+				<h2 className='text-xl text-purple-200'>Desktop required</h2>
+				<p className='text-sm text-purple-400'>
+					This game needs a larger screen to play. Open it on a desktop or laptop.
+				</p>
+				<button
+					className='arcade-btn px-6 py-2 text-sm'
+					onClick={() => navigate('/home')}
+				>
+					BACK TO LOBBY
+				</button>
+			</div>
+		);
+	}
+
+
 	return (
-		<div className='retro-bg h-full relative flex items-center justify-center min-w-[1150px]'>
+		<div className='retro-bg h-full overflow-hidden relative flex items-center justify-center min-w-[1150px]'>
 			<div className='absolute top-4 left-4'>
 				<FriendsWidget /> {/** Tambien hay widget vacio aqui, no se debe completar? */}
 			</div>

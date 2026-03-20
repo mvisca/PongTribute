@@ -58,9 +58,6 @@ export default function ProfilePage() {
 
 	return (
 		<PageContainer>
-			<div className="relative">
-				
-
 				<FormCard title={profile.username}>
 					<div className='flex justify-center mb-4'>
 						<AvatarDisplay src={profile.avatar} size='lg' />
@@ -105,7 +102,6 @@ export default function ProfilePage() {
 					<LinkButton onClick={() => navigate('/lobby')}>← Back</LinkButton>
 				</div>
 				</FormCard>
-			</div>
 		</PageContainer>
 	);
 }

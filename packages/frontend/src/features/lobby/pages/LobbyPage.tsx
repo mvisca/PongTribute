@@ -46,6 +46,14 @@ export default function LobbyPage() {
 	const [friendAvatar, setFriendAvatar] = useState('');
 	const [pendingMatchId, setPendingMatchId] = useState('');
 
+	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
+
+	useEffect(() => {
+		const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
 	useEffect(() => {
 		if (!pendingEvent) return;
 
@@ -279,8 +287,18 @@ export default function LobbyPage() {
 		}
 	};
 
+	if (isSmallScreen) {
+		return (
+			<div className='retro-bg h-full flex flex-col items-center justify-center gap-6 px-8 text-center'>
+				<p className='text-4xl'>🕹️</p>
+				<p className='text-purple-200 text-lg'>Desktop required to play</p>
+				<p className='text-purple-400 text-sm'>🖥️ Large screen + ⌨️ Keyboard required</p>
+			</div>
+		);
+	}
+
 	return (
-		<div className='retro-bg h-full relative flex items-center justify-center text-purple-100 min-w-[1150px]'>
+		<div className='retro-bg h-full overflow-hidden relative flex items-center justify-center text-purple-100 min-w-[1150px]'>
 			
 			{/* Widget anchored top-left */}
 			<div className='absolute top-4 left-4'>
