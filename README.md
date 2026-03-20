@@ -135,14 +135,12 @@ pnpm redis:cli
 
 ## Team Information
 
-Fill this for **each** team member listed in the first line.
-
-| 42 login   | Name        | Role(s)         | Responsibilities |
+| 42 login   | Name        | Role(s)         | Responsibilities                                          |
 |------------|-------------|-----------------|-----------------------------------------------------------|
 | <mehernan> | <Meritxell> | Product Owner   | < product vision, backlog, validation, stakeholder comms> |
-| <jocuni-p> | <Joan>      | Product Manager | < planning, tracking, removing blockers, facilitation> |
-| <mvisca-g> | <Martin>    | Tech Lead       | < architecture, key decisions, code quality, reviews> |
-| <dkurcbar> | <Diego>     | Developer       | <features implemented, ownership areas> |
+| <jocuni-p> | <Joan>      | Product Manager | < planning, tracking, removing blockers, facilitation>    |
+| <mvisca-g> | <Martin>    | Tech Lead       | < architecture, key decisions, code quality, reviews>     |
+| <dkurcbar> | <Diego>     | Developer       | <features implemented, ownership areas>                   |
 
 ---
 
@@ -202,7 +200,6 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 ### DevOps / Deployment
 - **Docker Compose** to run the full stack with one command
 - **nginx** as reverse proxy and HTTPS termination
-- <PLACEHOLDER: CI/CD, monitoring, logging, etc. if applicable>
 
 ### Justification for major technical choices
 - <REACT: We chose React because it provides a flexible and component-based architecture, which is ideal for building a dynamic Single Page Application (SPA).>
@@ -250,49 +247,97 @@ DB file: `packages/game/db/<game.db>` (path is configured via `GAME_SERVICE_DB_*
 
 ## Features List
 
-List **all implemented features**, who worked on them, and what they do.
-
-| Feature | Description | Owner(s) | Status |
-|---|---|---|---|
-| Auth: register/login/logout/refresh | Secure auth flows (JWT + refresh tokens). | <PLACEHOLDER> | <PLACEHOLDER: done/in progress> |
-| 2FA (TOTP + backup codes) | Setup and verification during login. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Password reset | Email-based reset with TTL. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Profile | View/update user profile and settings. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Avatars | Upload/delete avatars via image service. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Friends | Friend requests + accept/reject/remove. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Presence (WS) | Online/offline updates to friends via comms WS. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Game (WS) | Real-time Pong-like match over WebSockets. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Matchmaking | Queue/room matching backed by Redis. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Match history | Persisted match records and history UI. | <PLACEHOLDER> | <PLACEHOLDER> |
-| Bot opponent | Bot connects via WS and plays matches. | <PLACEHOLDER> | <PLACEHOLDER> |
+| Feature                             | Description                                     |
+|-------------------------------------|-------------------------------------------------|
+| Auth: register/login/logout/refresh | Secure auth flows (JWT + refresh tokens).       | 
+| 2FA (TOTP + backup codes)           | Setup and verification during login.            |
+| Password reset                      | Email-based reset with TTL.                     |
+| Profile                             | View/update user profile and settings.          |
+| Avatars                             | Upload/delete avatars via image service.        |
+| Friends                             | Friend requests + accept/reject/remove.         |
+| Presence (WS)                       | Online/offline updates to friends via comms WS. |
+| Game (WS)                           | Real-time Pong-like match over WebSockets.      |
+| Matchmaking                         | Queue/room matching backed by Redis.            |
+| Match history                       | Persisted match records and history UI.         | 
+| Bot opponent                        | Bot connects via WS and plays matches.          |
 
 ---
 
 ### Selected modules and point calculation
 
-| Category           | Module                      | Type  |Point| Owner(s)                   |
-|--------------------|-----------------------------|-------|-----|----------------------------|
-| <WEB>              | <FRAMEWORK>                 | Major |  2  | <All>                      |
-| <WEB>              | <WebSocket Game>            | Major |  2  | <Joan>                     |
-| <WEB>              | <Public API>                | Major |  2  | <All>                      |
-| <WEB>              | <Custom-made design system> | Minor |  1  | <Meritxell>                |
-| <USER MANAGEMENTS> | <User management>           | Major |  2  | <Martin, Meritxell, Diego> |
-| <USER MANAGEMENTS> | <2FA>                       | Minor |  1  | <Martin>                   |
-| <AI>               | <AI Opponent>               | Major |  2  | <Martin>                   |
-| <GAMIN>            | <Game>                      | Major |  2  | <Joan>                     |
-| <GAMIN>            | <Remote players >           | Major |  2  | <Joan>                     |
-| <GAMIN>            | <Customisation options>     | Minor |  1  | <Joan>                     |
-| <DEVOPS>           | <Backend as microservices>  | Major |  2  | <All>                      |
+| Category           | Module                      | Type  |Point| Owner(s)                      |
+|--------------------|-----------------------------|-------|-----|-------------------------------|
+| <WEB>              | <Framework>                 | Major |  2  | <All>                         |
+| <WEB>              | <WebSocket Game>            | Major |  2  | <jocuni-p>                    |
+| <WEB>              | <Public API>                | Major |  2  | <All>                         |
+| <WEB>              | <Custom-made design system> | Minor |  1  | <mehernan>>                   |
+| <USER MANAGEMENTS> | <User management>           | Major |  2  | <mvisca-g, mehernan, dkurcbar>|
+| <USER MANAGEMENTS> | <2FA>                       | Minor |  1  | <mvisca-g>                    |
+| <AI>               | <AI Opponent>               | Major |  2  | <mvisca-g>                    |
+| <GAMING>           | <Game>                      | Major |  2  | <jocuni-p>                    |
+| <GAMING>           | <Remote players >           | Major |  2  | <jocuni-p>                    |
+| <GAMING>           | <Customisation options>     | Minor |  1  | <jocuni-p>                    |
+| <DEVOPS>           | <Backend as microservices>  | Major |  2  | <All>                         |
 
 **Total points**:  <19>
 
 ### Justification and implementation
 
 For each module:
-- **Module**: <PLACEHOLDER>
-  - **Why we chose it**: <PLACEHOLDER>
-  - **How it was implemented**: <PLACEHOLDER>
-  - **Who implemented it**: <PLACEHOLDER>
+- **IV.1 WEB:**: Framework
+  - **Why we chose it**: We chose to use a modern frontend framework to build a structured and maintainable Single Page Application. A framework like React allows us to break the UI into reusable components, manage state efficiently, and handle routing smoothly. This was essential to keep the frontend scalable as the project includes multiple pages such as authentication, profile, friends, and the game interface.
+  - **How it was implemented**: We built the frontend as a React SPA using Vite, organizing the application into reusable components (Navbar, pages, UI elements) and handling navigation with React Router. Global state (auth, friends) was managed using Zustand.
+  - **Who implemented it**: All of us
+
+- **IV.1 WEB:**: WebSocketGame
+  - **Why we chose it**: We chose to use a modern frontend framework to build a structured and maintainable Single Page Application. A framework like React allows us to break the UI into reusable components, manage state efficiently, and handle routing smoothly. This was essential to keep the frontend scalable as the project includes multiple pages such as authentication, profile, friends, and the game interface.
+  - **How it was implemented**: We used WebSockets to establish a persistent connection between client and server. Game state updates (player position, score, etc.) are sent in real time, allowing synchronization between players.
+  - **Who implemented it**: jocuni-p
+
+- **IV.1 WEB:**: PublicApi
+  - **Why we chose it**: We chose to implement a public API to make our backend accessible and modular. This allows external clients (including our own frontend) to interact with the system in a standardized way. It also encourages good API design practices and makes the system more extensible and testable.
+  - **How it was implemented**: We exposed a REST API through the gateway, where each service handles its own routes. The frontend communicates with the backend using HTTP requests for actions like authentication, profile, and friends.
+  - **Who implemented it**: All of us
+
+- **IV.1 WEB:**: Custom-made design system
+  - **Why we chose it**: We decided to create our own design system to ensure visual consistency across the application. By defining reusable UI components (buttons, cards, layouts), we improved development speed and maintainability. This also allowed us to create a unique visual identity aligned with the arcade/game theme of the project.
+  - **How it was implemented**: We created reusable UI components (buttons, cards, inputs) using Tailwind CSS, ensuring consistent styling across the app. These components are shared and reused in all pages.
+  - **Who implemented it**: mehernan
+
+- **IV.3 USER MANAGEMENT**: User management
+  - **Why we chose it**: User management is a fundamental part of any web application. We implemented features such as registration, login, profile management, and friendships to simulate a real-world platform. This module allowed us to handle authentication flows, user data, and relationships between users.
+  - **How it was implemented**: We implemented user features such as register, login, profile management, and friends using dedicated backend services. Authentication is handled with JWT, and user data is stored in SQLite.
+  - **Who implemented it**: mvisca-g, mehernan, dkurcbar
+
+- **IV.3 USER MANAGEMENT**: 2FA
+  - **Why we chose it**: We chose to implement Two-Factor Authentication to enhance the security of user accounts. This module allowed us to explore real-world authentication mechanisms such as TOTP and backup codes. It also reflects modern security standards used in production applications.
+  - **How it was implemented**: We added TOTP-based 2FA, generating a secret for each user and validating codes during login. Backup codes are also supported for recovery.
+  - **Who implemented it**: mvisca-g
+
+- **IV.4 ARTIFICIAL INTELLIGENCE**: AI Oponent
+  - **Why we chose it**: We included an AI opponent to allow users to play even when no other players are available. This improves user experience and ensures the game is always accessible. It also gave us the opportunity to experiment with basic AI logic and game behavior simulation.
+  - **How it was implemented**: We created a bot service that connects to the game via WebSockets and simulates player behavior by reacting to the game state.
+  - **Who implemented it**: mvisca-g
+
+- **IV.6 GAMING AND USER EXPERIENCE**: Game
+  - **Why we chose it**: Previously, we were working on the old subject, which asked us to create a Pong game. When we switched to the new subject, we continued with the game since we had already started working on it.
+  - **How it was implemented**: The game is rendered in the frontend (canvas-based), with logic for movement, collisions, and scoring. The backend synchronizes the state between players.
+  - **Who implemented it**: jocuni-p
+
+- **IV.6 GAMING AND USER EXPERIENCE**: Remote Players
+  - **Why we chose it**: This also was part of the subject but also to allow users to play against each other in real time. This module complements the WebSocket system and enhances the social aspect of the platform. It also introduces challenges such as synchronization, latency handling, and session management.
+  - **How it was implemented**: We used WebSockets to allow two players to connect to the same match, exchanging real-time updates to keep both views synchronized.
+  - **Who implemented it**: jocuni-p
+
+- **IV.6 GAMING AND USER EXPERIENCE**: Customisation options
+  - **Why we chose it**: We added customization options to improve user engagement and personalization. Allowing users to modify aspects such as their profile or in-game elements makes the experience more interactive and tailored, which is common in modern gaming platforms.
+  - **How it was implemented**: We allowed users to customize elements such as their profile (avatar, username) and prepared the structure for future game-related customization.
+  - **Who implemented it**: jocuni-p
+
+- **IV.7 DEVOPS**: Backend as microservices
+  - **Why we chose it**: We chose a microservices architecture to better structure the backend by separating responsibilities into independent services (auth, user, game, etc.). This approach improves scalability, maintainability, and fault isolation. It also allowed us to simulate a production-like environment using Docker and service orchestration.
+  - **How it was implemented**: We split the backend into independent services (auth, user, game, etc.), each running in its own Docker container. They communicate through a gateway and Redis when needed.
+  - **Who implemented it**: mvisca-g
 
 ---
 
@@ -312,11 +357,32 @@ Provide a detailed breakdown per person.
 - **Modules delivered**: <PLACEHOLDER>
 - **Notable challenges & solutions**: <PLACEHOLDER>
 
+### <PLACEHOLDER: login/name>
+- **Responsibilities**: <PLACEHOLDER>
+- **Features delivered**: <PLACEHOLDER>
+- **Modules delivered**: <PLACEHOLDER>
+- **Notable challenges & solutions**: <PLACEHOLDER>
+
+### <PLACEHOLDER: login/name>
+- **Responsibilities**: <PLACEHOLDER>
+- **Features delivered**: <PLACEHOLDER>
+- **Modules delivered**: <PLACEHOLDER>
+- **Notable challenges & solutions**: <PLACEHOLDER>
+
 ---
 
-## Resources
+## Resources && AI
+Throughout the project, we used AI tools as a support for learning and problem-solving, rather than as a replacement for our own understanding.
 
-### References
+AI was mainly used as an interactive learning resource. It allowed us to ask direct and specific questions when facing new concepts, which helped us quickly understand unfamiliar technologies such as frontend frameworks, state management, WebSockets, and Docker-based architectures. This was especially useful when working with tools or languages that we never used before and were new to all of us.
+
+Throughout the project, we used AI tools as a support for learning and problem-solving, rather than as a replacement for our own understanding.
+
+AI was mainly used as an interactive learning resource. It allowed us to ask direct and specific questions when facing new concepts, which helped us quickly understand unfamiliar technologies such as frontend frameworks, state management, WebSockets, and Docker-based architectures. This was especially useful when working with tools or languages that were new to some members of the team.
+
+Alongside AI, we relied on peer support and external learning resources. We occasionally received help from other students, especially when discussing concepts or debugging complex issues. We used YouTube tutorials and online documentation to reinforce our understanding and learn best practices.
+
+### References (link de joan)
 
 - React documentation: <PLACEHOLDER: link>
 - Vite documentation: <PLACEHOLDER: link>
@@ -328,20 +394,8 @@ Provide a detailed breakdown per person.
 - WebSocket reference: <PLACEHOLDER: link>
 - 42 ft_transcendence subject / evaluation notes: <PLACEHOLDER: link or internal reference>
 
-### AI usage (mandatory transparency)
-
-Describe exactly **how** AI was used:
-- **What tasks**: <PLACEHOLDER: e.g., refactoring suggestions, debugging, drafting docs>
-- **Where**: <PLACEHOLDER: folders/components/services affected>
-- **What was NOT done with AI**: <PLACEHOLDER>
-- **How outputs were validated**: <PLACEHOLDER: tests, peer review, manual verification>
-
 ---
 
 ## Known limitations
 
 - <PLACEHOLDER: e.g., no Safari support yet, missing feature X, performance constraint, etc.>
-
-## License
-
-<PLACEHOLDER: License or \"All rights reserved\" depending on your choice.>
