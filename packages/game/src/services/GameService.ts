@@ -568,6 +568,7 @@ export class GameService {
                 ballAcceleration: modeConfig.ballAcceleration,
                 hasInertia: modeConfig.hasInertia,
                 friction: modeConfig.friction,
+				accel: modeConfig.accel,
                 gameModeName: mode
             },
             paddleLeft: {
