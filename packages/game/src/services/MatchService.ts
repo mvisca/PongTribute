@@ -55,7 +55,11 @@ export class MatchService {
 		if (matchType === 'public') {
 			// Usamos '??' para usar CLASSIC si gameMode es undefined
 			// ?? significa: Si lo de la izquierda es null o undefined, usa lo de la derecha".
-			return this.joinPublicQueue(userId, gameMode ?? GameConstants.GAME_MODE.CLASSIC);
+			return this.joinPublicQueue(
+				userId,
+				gameMode ?? GameConstants.GAME_MODE.CLASSIC,
+				body.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
+			);
 		}
 		
 		if (matchType === 'local') {
@@ -83,7 +87,8 @@ export class MatchService {
 	*/
 	async joinPublicQueue(
 		userId: string,
-		gameModeName: GameConstants.GameModeType
+		gameModeName: GameConstants.GameModeType,
+		targetScore: number = GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
 	): Promise<MatchTypes.JoinQueueResponse> {
 		// Guard: Usuario no en partida activa?
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
@@ -138,7 +143,7 @@ export class MatchService {
 				created_at: Date.now(),
 				finished_at: null,
 				game_mode: gameModeName,
-				target_score: GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
+				target_score: targetScore,
 			};
 			
 			// PERSISTENCIA
