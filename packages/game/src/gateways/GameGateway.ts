@@ -130,10 +130,11 @@ export class GameGateway {
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
+			// FIX 1 RACE CONDITION
 			socket.on('close', async () => {
 				this.log.info({ matchId: payload.username }, 'Player disconnected');
 				try {
-					await this.gameService.handleDisconnect(userId, matchId);
+					await this.gameService.handleDisconnect(userId, matchId, socket);
 				} catch (err) {
 					this.log.error('Error in handleDisconnect');
 				}

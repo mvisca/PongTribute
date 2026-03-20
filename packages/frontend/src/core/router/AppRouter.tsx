@@ -77,7 +77,7 @@ export function AppRouter() {
 					<Route path='/profile/delete' element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
 					<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
 					<Route path='/history' element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-					<Route path='/2fa' element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />						<Route path='/history' element={<HistoryPage />} />
+					<Route path='/2fa' element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />
 					<Route path="/game/:matchId" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
 					
 					{/* 404 */}

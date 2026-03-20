@@ -82,7 +82,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
             }
 			removePending(senderId);
 			//dismiss(senderId);
-			useToastStore.getState().dismiss(senderId);
+			dismiss(senderId);
         } catch {
             showFeedback('Action failed', false);
         }

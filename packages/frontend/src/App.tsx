@@ -246,7 +246,7 @@ export default function App() {
 
 			case WEBSOCKET_EVENTS.MATCH_REJECTED:
 				useMatchStore.getState().setPendingEvent({ type: 'friend_rejected'});
-				new Audio('https://www.myinstants.com/media/sounds/chicken.mp3').play().catch(() => {});
+				new Audio('/chicken.mp3').play().catch(() => {});
 				warning('🐔'); 
 				break;
 			
@@ -268,7 +268,8 @@ export default function App() {
 		handleAcceptFriend,	handleRejectFriend,	setOnline,
 		updateProfile,		addFriend,			addPending,
 		removeFriend,		removePending,		info,
-		success,			warning,			action
+		success,			warning,			action,
+		error,				dismiss,
 	]);
 
 	const { isValidating } = useAuthValidation();

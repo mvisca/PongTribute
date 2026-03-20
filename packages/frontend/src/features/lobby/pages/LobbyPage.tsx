@@ -84,7 +84,7 @@ export default function LobbyPage() {
 			
 			case 'friend_expired':
 				clearPendingEvent();
-				setError(`${friendUsername} did not responde in time`);
+				setError(`${friendUsername} did not respond in time`);
 				setPendingMatchId('');
 				setStep('menu');
 				break;
@@ -95,7 +95,7 @@ export default function LobbyPage() {
 				setStep('menu');
 				break;
 		}
-	}, [pendingEvent, clearPendingEvent, navigate, friendUsername, friendAvatar]);
+	}, [pendingEvent, clearPendingEvent, navigate, friendUsername]);
 
 	// Main menu
 	const handleMenuSelect = (type: MatchType) => {

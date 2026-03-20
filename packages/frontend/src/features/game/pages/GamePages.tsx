@@ -6,6 +6,7 @@ import { useMatchStore } from '../../../features/lobby/store/matchStore';
 import { renderGame } from '../renderer/gameRender';
 import { GameConstants } from '@transcendence/shared/constants/game.constants.js';
 import { FriendsWidget } from '../../friends/components/FriendsWidget';
+import { AvatarDisplay } from '../../../shared/components/ui';
 
 const { GAME_ACTION, PLAYER_SIDE } = GameConstants;
 
@@ -32,11 +33,12 @@ export default function GamePage() {
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
-
-	const { status, matchInfo, gameOver, waitSeconds, error, gameStateRef, sendAction } = useGameSocket(matchId!);
+	const { status, matchInfo, gameOver, waitSeconds, error, gameStateRef, sendAction, disconnect } = useGameSocket(matchId!);
 
 	const setActiveMatchId = useMatchStore(s => s.setActiveMatchId);
 	const clearActiveMatchId = useMatchStore(s => s.clearActiveMatchId);
+
+	const [confirmingForfeit, setConfirmingForfeit] = useState(false);
 	const [disconnectCountdown, setDisconnectCountdown] = useState<number>(0);
 
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,6 +52,20 @@ export default function GamePage() {
 
 	// Keyboard input
 	const keysDown = useRef(new Set<string>());
+
+	const handleForfeitClick = useCallback(() => {
+		setConfirmingForfeit(true);
+	}, []);
+
+	const handleForfeitConfirm = useCallback(() => {
+		disconnect();			// Close ws
+		clearActiveMatchId();	// Releases navigation guard
+		navigate('/home');
+	}, [disconnect, clearActiveMatchId, navigate]);
+
+	const handleForfeitCancel = useCallback(() => {
+		setConfirmingForfeit(false);
+	}, []);
 
 	const handleKeyDown = useCallback((e: KeyboardEvent) => {
 		if (keysDown.current.has(e.key)) return; // prevent repeat
@@ -254,33 +270,26 @@ export default function GamePage() {
 			<div className='absolute top-4 left-4'>
 				<FriendsWidget />
 			</div>
+
 			<div className='flex flex-col items-center gap-8 ml-46'>
 				{matchInfo && (
 					<div className='flex items-center justify-center gap-80 w-[780px] mb-[-8px] z-10'>
 						<div className='flex items-center gap-2'>
-							<img
-								src={isPlayer1 ? (currentAvatar ?? '') : matchInfo.opponentAvatar}
-								alt='avatar'
-								className='w-12 h-12 rounded-full border border-purple-500 object-cover'
-								onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-							/>
+							<AvatarDisplay src={isPlayer1 ? (currentAvatar ?? '') : matchInfo.opponentAvatar} size='sm' />
 							<span className='text-purple-200 text-base'>
 								{isPlayer1 ? currentUsername : matchInfo.opponentUsername}
 							</span>
 						</div>
 						<div className='flex items-center gap-2 flex-row-reverse'>
-							<img
-								src={isPlayer1 ? matchInfo.opponentAvatar : (currentAvatar ?? '')}
-								alt='avatar'
-								className='w-12 h-12 rounded-full border border-purple-500 object-cover'
-								onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-							/>
+							<AvatarDisplay src={isPlayer1 ? matchInfo.opponentAvatar : (currentAvatar ?? '')} size='sm' />
 							<span className='text-purple-200 text-base'>
 								{isPlayer1 ? matchInfo.opponentUsername : currentUsername}
 							</span>
 						</div>
 					</div>
 				)}
+
+				{/* Canvas */}
 				<div className='arcade-screen relative'>
 					<canvas 
 						ref={canvasRef}
@@ -290,6 +299,38 @@ export default function GamePage() {
 					/>
 					{renderOverlay()}
 				</div>
+
+				{/* Forfeit button */}
+				{(status === 'playing' || status === 'joined' || status === 'opponent_disconnected') && (
+					<div className='flex items-center justify-center h-10 mt-1'>
+						{!confirmingForfeit
+							?  (
+								<button
+									className='text-xs text-purple-600 hover:text-red-400 transition-colors tracking-widest'
+									onClick={handleForfeitClick}
+								>
+									GIVE UP!
+								</button>
+							) : (
+								<div className='flex items-center gap-4'>
+									<span className='text-xs text-purple-300'>Abandon match?</span>
+									<button
+										className='text-xs text-red-400 hover:text-red-200 border border-red-700 px-3 py-1 rounded transition-colors'
+										onClick={handleForfeitConfirm}
+									>
+										CONFIRM
+									</button>
+									<button
+										className='text-xs text-purple-400 hover:text-purple-200 transition-colors'
+										onClick={handleForfeitCancel}
+									>
+										CANCEL
+									</button>
+								</div>
+							)
+						}
+					</div>
+				)}
 			</div>
 		</div>
 	);

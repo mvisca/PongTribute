@@ -238,17 +238,36 @@ export class GameService {
     * Gestiona la pérdida de conexión WebSocket (no intencionada).
     * Pausa el juego y comienza una cuenta atrás para declarar forfeit.
     */
-    public async handleDisconnect(userId: string, matchId?: string): Promise<void> {
+    // FIX 2 RACE CONDITION
+    public async handleDisconnect(userId: string, matchId?: string, closingSocket?: WebSocket): Promise<void> {
         const targetMatchId = matchId || this.findMatchIdByUserId(userId);
-        
+
         if (!targetMatchId)
             return;
-        
+
         const session = this.activeMatches.get(targetMatchId) as GameSession | null;
-        
+
         // Si ya terminó, ignoramos desconexiones residuales
         if (!session || session.gameState.status === GameConstants.GAME_STATUS.FINISHED) return;
-        
+
+        const isP1 = session.player1Id === userId;
+        const activeSocket = isP1 ? session.socketP1 : session.socketP2;
+
+        // Ignorar si el socket que cierra ya no es el activo (reconexión ganó la carrera)
+        if (closingSocket && activeSocket !== closingSocket) {
+            this.log.info({ userId, matchId: targetMatchId }, 'Stale socket close ignored');
+            return;
+        }
+
+        this.log.info({ // DEBUG
+            userId,
+            matchId: targetMatchId,
+            gameStatus: session.gameState.status,
+            isP1,
+            hasActiveSocket: activeSocket != null,
+            socketReadyState: activeSocket?.readyState ?? null,
+        }, 'handleDisconnect called — diagnose race condition');
+
         // Si es local, no hay reconexión ni rival remoto. Limpieza inmediata.
         if (session.isLocal) {
             this.stopGameLoop(session);

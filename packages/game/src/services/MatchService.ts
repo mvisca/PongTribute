@@ -87,7 +87,7 @@ export class MatchService {
 	): Promise<MatchTypes.JoinQueueResponse> {
 		// Guard: Usuario no en partida activa?
 		const activeMatch = await this.matchRepo.findActiveMatchByUserId(userId);
-		if (activeMatch) throw new SharedErrors.ConflictError('User already has an active match');
+		if (activeMatch) throw new SharedErrors.ConflictError('User already has an active match. If you just forfeited, you must cooldown 15 seconds.');
 		
 		const QUEUE_KEY = `match:queue:${gameModeName}`;
 		const TICKET_TIMESTAMP = Date.now();

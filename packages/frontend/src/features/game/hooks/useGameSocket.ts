@@ -49,6 +49,20 @@ export function useGameSocket(matchId: string) {
 		wsRef.current.send(JSON.stringify(payload));
 	}, [matchId]);
 
+	// To handle match abandonment
+	const disconnect = useCallback(() => {
+		wsRef.current?.close();
+		wsRef.current = null;
+	}, []);
+
+	// Keeps tokenRef updated
+	useEffect(() => {
+		const unsubscribe = useAuthStore.subscribe(
+			(state) => { tokenRef.current = state.accessToken; }
+		);
+		return unsubscribe;
+	}, []);
+
 	useEffect(() => {
 		const token = tokenRef.current;
 		if (!token || !matchId) return;
@@ -136,5 +150,5 @@ export function useGameSocket(matchId: string) {
 		};
 	}, [matchId]);
 
-	return { ...state, gameStateRef, sendAction };
+	return { ...state, gameStateRef, sendAction, disconnect };
 } 
