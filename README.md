@@ -205,10 +205,12 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 - <PLACEHOLDER: CI/CD, monitoring, logging, etc. if applicable>
 
 ### Justification for major technical choices
-- <PLACEHOLDER: why this frontend framework>
-- <PLACEHOLDER: why microservices vs monolith>
-- <PLACEHOLDER: why Redis and the selected DB>
-- <PLACEHOLDER: why nginx / HTTPS approach>
+- <REACT: We chose React because it provides a flexible and component-based architecture, which is ideal for building a dynamic Single Page Application (SPA).>
+- <MICROSERVICES: We opted for a microservices architecture to better separate concerns across different domains of the application (authentication, users, game, communications, etc.)>
+- <REDIS: We chose Redis over other data stores because it is specifically designed for high-performance, in-memory operations, which makes it ideal for real-time systems.>
+- <SQlite: We chose SQLite instead of more complex database systems (e.g., PostgreSQL or MySQL) because it provides a simple, embedded, and lightweight solution that integrates seamlessly with our architecture.>
+- <NGINX: We chose nginx over alternatives because it is a high-performance, lightweight, and widely adopted reverse proxy specifically optimized for handling concurrent connections.>
+- <HTTPS: We implemented HTTPS to align the project with modern web security standards, even during development.>
 
 ---
 
@@ -266,18 +268,23 @@ List **all implemented features**, who worked on them, and what they do.
 
 ---
 
-## Modules
-
-List all chosen modules (Major/Minor), points, justification, implementation notes, and owners.
-
 ### Selected modules and point calculation
 
-| Category | Module | Type | Points | Owner(s) |
-|---|---|---:|---:|---|
-| <PLACEHOLDER> | <PLACEHOLDER> | Major/Minor | 2/1 | <PLACEHOLDER> |
-| <PLACEHOLDER> | <PLACEHOLDER> | Major/Minor | 2/1 | <PLACEHOLDER> |
+| Category           | Module                      | Type  |Point| Owner(s)                   |
+|--------------------|-----------------------------|-------|-----|----------------------------|
+| <WEB>              | <FRAMEWORK>                 | Major |  2  | <All>                      |
+| <WEB>              | <WebSocket Game>            | Major |  2  | <Joan>                     |
+| <WEB>              | <Public API>                | Major |  2  | <All>                      |
+| <WEB>              | <Custom-made design system> | Minor |  1  | <Meritxell>                |
+| <USER MANAGEMENTS> | <User management>           | Major |  2  | <Martin, Meritxell, Diego> |
+| <USER MANAGEMENTS> | <2FA>                       | Minor |  1  | <Martin>                   |
+| <AI>               | <AI Opponent>               | Major |  2  | <Martin>                   |
+| <GAMIN>            | <Game>                      | Major |  2  | <Joan>                     |
+| <GAMIN>            | <Remote players >           | Major |  2  | <Joan>                     |
+| <GAMIN>            | <Customisation options>     | Minor |  1  | <Joan>                     |
+| <DEVOPS>           | <Backend as microservices>  | Major |  2  | <All>                      |
 
-**Total points**: <PLACEHOLDER: e.g., 14>
+**Total points**:  <19>
 
 ### Justification and implementation
 
@@ -338,4 +345,3 @@ Describe exactly **how** AI was used:
 ## License
 
 <PLACEHOLDER: License or \"All rights reserved\" depending on your choice.>
-
