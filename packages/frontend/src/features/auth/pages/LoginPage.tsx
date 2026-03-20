@@ -50,7 +50,8 @@ export default function LoginPage() {
 				.then(profile => setAvatar(profile.avatar ?? null))
 				.catch(() => {});
 
-			navigate('/profile');
+			//navigate('/profile');
+			navigate("/home")
 		} catch(err: any) {
 			setError(err?.message ?? 'Login failed');
 		}

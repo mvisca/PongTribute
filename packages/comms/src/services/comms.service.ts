@@ -11,6 +11,7 @@ import {
 	WebSocketEventsTypes,
 	TRANSCENDENCE_EVENTS,
 	TRANSCENDENCE_CHANNEL,
+	WEBSOCKET_EVENTS,
 	UserTypes
 } from '@transcendence/shared';
 import { createLogger, type AppLogger } from '@transcendence/shared';
@@ -22,6 +23,7 @@ import { createLogger, type AppLogger } from '@transcendence/shared';
 interface ExtendedWebSocket extends WebSocket {
 	isAlive: boolean;
 	userId: string;
+	username: string;
 }
 
 // ============================================================================
@@ -236,37 +238,24 @@ export class CommsService implements IEventService {
 
 		this.log.info({ userId, count: sockets.size }, 'Closing all user connections (logout)');
 
-		// Terminate each socket and clean
-		sockets.forEach(ws => {
+		// Snapshot to array - safe to iterate while handleDisconnect may mutate the Set
+		const closeTheseWs = [...sockets];
+
+		for (const ws of closeTheseWs) {
 			try {
 				if (ws.readyState === WebSocket.OPEN) {
-					ws.close(1008, 'Session closed on logout');
+					ws.close(1008, 'Session closed on logou');
 				}
 			} catch (err) {
 				this.log.warn({ err }, 'Error closing socket gracefully');
 			}
-
-			// Force terminate even if client is gone
+			// Force kill - the close event fires; handleDisconnect handles:
+			// - totalConnections--
+			// - connections map cleanup removing userId key
+			// - USER_DISCONNECTED publish (on last socket)
+			// - notifyPresenceChange(offline) (on last socket)
 			ws.terminate();
-
-			// Decrement counter
-			this.totalConnections = Math.max(0, this.totalConnections - 1); 
-		});
-
-		// Remove from connection map
-		this.connections.delete(userId);
-
-		// Publish USER_DISCONNECTED eacceptorIdvent for game service
-		const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
-			type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
-			timestamp: Date.now(),
-			source: 'comms-service',
-			targetUserId: userId,
-			payload: { userId }
-		};
-
-		this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
-			.catch(err => this.log.error({ err }, 'Error publishing USER_DISCONNECTED on logout'));
+		}
 	}	
 	
 	// ==========================================================================
@@ -368,6 +357,7 @@ export class CommsService implements IEventService {
 			const extWs = ws as ExtendedWebSocket;
 			extWs.isAlive = true;
 			extWs.userId = user.id;
+			extWs.username = user.username;
 			
 			// Registra conexión
 			if (!this.connections.has(user.id)) {
@@ -381,10 +371,18 @@ export class CommsService implements IEventService {
 				return;
 			}
 			
-			this.connections.get(user.id)!.add(extWs);
+			const userSockets = this.connections.get(user.id)!;
+			const wasOffline = userSockets.size === 0; // first socket for this user
+			userSockets.add(extWs);
 			this.totalConnections++;
-			
-		const rateLimit = { count: 0, resetAt: Date.now() + 1000 };
+
+			// First socket === user just came online
+			if (wasOffline) {
+				this.notifyPresenceChange(user.id, user.username, true)
+					.catch(err => this.log.error({ err, userId: user.id }, 'Error in presence notification'));
+			}
+
+			const rateLimit = { count: 0, resetAt: Date.now() + 1000 };
 
 			// Guards contra flooding y payloads gigantes.
 			// Cierra con 1009 si supera MAX_MESSAGE_SIZE_BYTES (4KB).
@@ -430,33 +428,97 @@ export class CommsService implements IEventService {
 
 		if (!sockets || !sockets.has(ws)) return;
 
-		if (sockets) {
-			sockets.delete(ws);
-			this.totalConnections--;
-		}
+		sockets.delete(ws);
+		this.totalConnections--;
 
-		// Si ya no quedan sockets para este usuario, porque cerró la ultima pestaña
-		if (sockets.size === 0) {
-			this.connections.delete(userId); // Limpieza local
+		// If user still has toher sockets open (multi-tab) do nothing more
+		if (sockets.size > 0) return;
 
-			this.log.info({ userId }, 'User fully disconnected');
+		// User doesn't have any ws opended: fully disconnected - clean up
+		this.connections.delete(userId);
+		this.log.info({ userId }, 'User fully disconnected');
 
-			// Publicar evento para limpieza INMEDIATA en Game/User (desconexion por cierre pestaña)
-			const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
-				type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
-				timestamp: Date.now(),
-				source: 'comms-service',
-				targetUserId: userId, // Esto es lo que lee Game
-				payload: { userId }
-			};
+		// Publish USER_DISCONNECTED for game service (existing behavior)
+		const event: TranscendenceEventsTypes.UserDisconnectedEvent = {
+			type: TRANSCENDENCE_EVENTS.USER_DISCONNECTED,
+			timestamp: Date.now(),
+			source: 'comms-service',
+			targetUserId: userId,
+			payload: { userId },
+		};
+	
+		this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
+			.catch(err => this.log.error({ err, userId }, 'Error in offline presence notification'));
 
-			// El servicio 'game' esta subscrito a esta publicacion
-			this.redis.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event))
-				.catch(err => this.log.error({ err }, 'Error publishing disconnected event'));
-		}
+		// Set offline and notify friends
+		this.notifyPresenceChange(userId, ws.username ?? userId, false)
+			.catch(err => this.log.error({ err, userId }, 'Error in offline presence notification'));
 	}
 	
-	// STATS
+	/** Notify presence change to user-service and friends. */
+	private async notifyPresenceChange(
+		userId: string,
+		username: string,
+		isOnline: boolean
+	): Promise<void> {
+		try {
+			// Update user isOnline status
+			await fetch(
+				`${CommsEnv.USER_SERVICE_URL()}/internal/users/${userId}/online-status`,
+				{
+					method: 'PATCH',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-Service-Secret': CommsEnv.SERVICE_SECRET(),
+					},
+					body: JSON.stringify({ isOnline }),
+					signal: AbortSignal.timeout(5000),
+				}
+			);
+		} catch (err) {
+			this.log.error({ err, userId, isOnline}, 'Failed to update online-status');
+		}
+
+		try {
+			// Get friends ids
+			const res = await fetch(
+				`${CommsEnv.USER_SERVICE_URL()}/internal/users/${userId}/friends`,
+				{
+					headers: { 'X-Service-Secret': CommsEnv.SERVICE_SECRET() },
+					signal: AbortSignal.timeout(5000),
+				}
+			);
+			if (!res.ok) {
+				this.log.warn({ userId, status: res.status }, 'Failed to fecth friends for presence');
+				return;
+			}
+			const data = (await res.json()) as { friendsIds: string[] };
+			const friendsIds = data.friendsIds ?? [];
+
+			if (friendsIds.length === 0) return;
+
+			const eventType = isOnline
+				? WEBSOCKET_EVENTS.FRIEND_ONLINE
+				: WEBSOCKET_EVENTS.FRIEND_OFFLINE;
+
+			const message = {
+				type: eventType,
+				timestamp: Date.now(),
+				payload: {
+					userId,
+					username,
+					avatar: '', // This goes to frontend, FriendsStore already have avatar in their store 
+				},
+			} satisfies WebSocketEventsTypes.FriendOnline | WebSocketEventsTypes.FriendOffline;
+
+			await this.broadcastToUsers(friendsIds, message);
+			this.log.info({ userId, isOnline, friendCount: friendsIds.length }, 'Presence broadcast sent');
+		} catch (err) {
+			this.log.error({ err, userId }, 'Failed to broadcast presence to friends');	
+		}
+	}
+
+	// STATS // TODO reviw usage
 	public getStats() {
 		return {
 			totalConnections: this.totalConnections,

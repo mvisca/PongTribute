@@ -55,8 +55,12 @@ export class MatchController {
                 return reply.status(200).send(result);
             }
             
-            // Para 'match_found', 'local' o 'private' -> 201
-            return reply.status(201).send(result);
+			// Para 'match_found', 'local' o 'private' -> 201
+			if ('outcome' in result && result.outcome === 'match_found' && 'match' in result) {
+				return reply.status(201).send(result.match);
+			}
+
+			return reply.status(201).send(result);
 
         } catch (error) {
             // El servicio lanza errores (Validation, Conflict, etc), aquí los capturamos
@@ -201,11 +205,11 @@ export class MatchController {
         const { userId } = req.params;
         
         // 2. Extraer Query (offset). Si es undefined, el servicio o schema maneja el default.
-        const { offset } = req.query;
+        const { offset, limit } = req.query;
 
 		try {
 			// 3. Llamar al servicio (si offset viene undefined, enviamos 0 al servicio)
-			const matches = await this.matchService.getMatchHistory(userId, offset ?? 0);
+			const matches = await this.matchService.getMatchHistory(userId, offset ?? 0, limit ?? 6);
 			
 			// 4. Responder
 			return reply.send({ matches });

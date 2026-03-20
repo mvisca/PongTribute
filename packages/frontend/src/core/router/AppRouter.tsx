@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './ProtectedRoute';
 
 import Navbar from '../../shared/components/Navbar';
@@ -16,46 +16,75 @@ import FriendsPage from '../../features/friends/pages/FriendsPage';
 import Footer from '../../shared/components/Footer';
 import PrivacyPage from '../../features/home/pages/PrivacyPage';
 import TermsPage from '../../features/home/pages/TermsPage';
+import LobbyPage from '../../features/lobby/pages/LobbyPage';
 import { useAuthStore } from '../auth/AuthStore';
 import TwoFactorPage from '../../features/auth/pages/TwoFactorPage';
 import HistoryPage from '../../features/auth/pages/HistoryPage';
+import DeleteAccountPage from '../../features/profile/pages/DeleteAccountPage';
+import Verify2FALoginPage from '../../features/auth/pages/Verify2FALoginPage';
+import GamePage from '../../features/game/pages/GamePages';
+import { LogedRedirect } from './LogedRedirect';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 	return (
-		<BrowserRouter>
-			<div className='flex flex-col h-screen'>
-				<Navbar />
-				<div className={`flex-1 overflow-y-auto ${isAuthenticated ? 'pt-14' : ''}`}>
-					<Routes>
-						{/* Root redirect */}
-						<Route path="/" element={<RootRedirect />} />
+		<div className='flex flex-col h-screen'>
+			<Navbar />
+			<div className={`flex-1 overflow-y-auto ${isAuthenticated ? 'pt-20' : ''}`}>
+				<Routes>
+					{/* Root redirect */}
+					<Route path="/" element={<RootRedirect />} />
 
-						{/* Public routes */}
-						<Route path='/welcome' element={<PublicHomePage />} />
-						<Route path="/login" element={<LoginPage />} />
-						<Route path="/register" element={<RegisterPage />} />
-						<Route path="/verify-2fa" element={<div>Verify 2FA Page</div>} />
-						<Route path="/forgot" element={<ForgotPasswordPage />} />
-						<Route path="/recover" element={<RecoverPasswordPage />} />
-						<Route path="/privacy" element={<PrivacyPage />} />
-						<Route path="/terms"   element={<TermsPage />} />
+					{/* Public routes */}
+					<Route path='/welcome' element={
+						<LogedRedirect>
+							<PublicHomePage />
+						</LogedRedirect>
+					}/>
+					<Route path="/login" element={
+						<LogedRedirect>
+							{<LoginPage />}
+						</LogedRedirect>
+					}/>
+					<Route path="/register" element={
+						<LogedRedirect>
+							<RegisterPage /> 
+						</LogedRedirect>
+					}/>
+					<Route path="/verify-2fa" element={						
+						<LogedRedirect>
+							<Verify2FALoginPage />
+						</LogedRedirect>
+					}/>
+					<Route path="/forgot" element={
+						<LogedRedirect>
+							<ForgotPasswordPage />
+						</LogedRedirect>
+					}/>
+					<Route path="/recover" element={
+						<LogedRedirect>
+							<RecoverPasswordPage />
+						</LogedRedirect>
+					}/>
+					<Route path="/privacy" element={<PrivacyPage />}/>
+					<Route path="/terms" element={<TermsPage />} />
 
-						{/* Protected routes */}
-						<Route path="/home" element={<ProtectedRoute><div>Coming soon</div></ProtectedRoute>} />
-						<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
-						<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
-						<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
-						<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
-						<Route path='/2fa' element={<TwoFactorPage />} />
-						<Route path='/history' element={<HistoryPage />} />
-						
-						{/* 404 */}
-						<Route path="*" element={<Navigate to="/" replace />} />
-					</Routes>
-				</div>
-				<Footer />
+					{/* Protected routes */}
+					<Route path="/home" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>}/>
+					<Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+					<Route path="/profile/edit" element={<ProtectedRoute><EditProfilePage /></ProtectedRoute>} />
+					<Route path="/profile/password" element={<ProtectedRoute><ChangePasswordPage /></ProtectedRoute>} />
+					<Route path='/profile/delete' element={<ProtectedRoute><DeleteAccountPage /></ProtectedRoute>} />
+					<Route path="/friends" element={<ProtectedRoute><FriendsPage /></ProtectedRoute>} />
+					<Route path='/history' element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+					<Route path='/2fa' element={<ProtectedRoute><TwoFactorPage /></ProtectedRoute>} />
+					<Route path="/game/:matchId" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />
+					
+					{/* 404 */}
+					<Route path="*" element={<Navigate to="/" replace />} />
+				</Routes>
 			</div>
-		</BrowserRouter>
+			<Footer />
+		</div>
 	);
 }

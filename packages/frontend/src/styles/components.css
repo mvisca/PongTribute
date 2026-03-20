@@ -94,9 +94,10 @@
 	FRIENDS LIST
 	============================================ */
 	.friend-item {
-		@apply flex items-center justify-between p-3 bg-purple-900 rounded-lg mb-2;
+		@apply flex items-center justify-between p-1 bg-purple-900 rounded-lg mb-1;
 	}
 	
+	/*
 	.online-dot {
 		@apply w-2 h-2 rounded-full bg-green-400;
 	}
@@ -104,4 +105,22 @@
 	.offline-dot {
 		@apply w-2 h-2 rounded-full bg-purple-600;
 	}
+	*/
+
+	.online-dot {
+		color: #4ade80;
+		text-shadow:
+			0 0 4px #4ade80,
+			0 0 10px #4ade80,
+			0 0 20px #22c55e;
+	}
+
+	.offline-dot {
+		color: #ef4444;
+		text-shadow:
+			0 0 4px #ef4444,
+			0 0 10px #ef4444,
+			0 0 20px #dc2626;
+	}	
+
 }

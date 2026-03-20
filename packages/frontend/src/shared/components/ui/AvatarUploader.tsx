@@ -10,11 +10,11 @@ interface Props {
 
 export default function AvatarUploader({ onFileChange, onError, currentSrc }: Props) {
 	const { base64, error, handleFile, clear } = useAvatarUpload();
-	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
-	const displaySrc = base64 || (base64 === '' ? DEFAULT : currentSrc ?? DEFAULT)
+
+	const displaySrc = base64 || (base64 === '' ? null : currentSrc ?? null)
 	// Show reset if: reset has not been pressed (base64 !== '')
 	// and there is a new image (base64 = something) or there is not a cuustom avatar (currentSrc !== DEFAULT)
-	const showReset = base64 !== '' && !!(base64 || (currentSrc && currentSrc !== DEFAULT))
+	const showReset = base64 !== '' && !!(base64 || currentSrc)
 
 	// Avoid call onFileChange on mount (prevents seting base64 on null without reset)
 	const isFirstRender = useRef(true);

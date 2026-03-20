@@ -43,50 +43,18 @@ export class UserEventHandler implements CommsEventHandler {
         event: TranscendenceEventsTypes.UserLoginEvent,
         commsService: CommsService
     ): Promise<void> {
-        this.log.info({ userId: event.targetUserId }, 'User online');
-
-        const friends = event.payload.friendsIds ?? [];
-
-        if (friends.length > 0) {
-            commsService.broadcastToUsers(friends, {
-                type: WEBSOCKET_EVENTS.FRIEND_ONLINE,
-                timestamp: event.timestamp,
-                payload: {
-                    userId: event.payload.userId,
-                    username: event.payload.username,
-                    avatar: event.payload.avatar,
-                },
-            } satisfies WebSocketEventsTypes.FriendOnline);
-            this.log.info({ count: friends.length }, 'Friends notified - online');
-        } else {
-            this.log.debug({ username: event.payload.username }, 'No friends to notify');
-        }
+        this.log.info({ userId: event.targetUserId }, 'User online event received');
+		// Now social presence is handled by CommsService.handleConnection() when user's ws connects
     }
 
     private async handleLogout(
         event: UserEvent,
         commsService: CommsService
     ): Promise<void> {
-        this.log.info({ userId: event.targetUserId }, 'User offline');
-
-        commsService.closeUserConnection(event.targetUserId);
-
-        const friends = event.payload.friendsIds ?? [];
-
-        if (friends.length > 0) {
-            commsService.broadcastToUsers(friends, {
-                type: WEBSOCKET_EVENTS.FRIEND_OFFLINE,
-                timestamp: event.timestamp,
-                payload: {
-                    userId: event.payload.userId,
-                    username: event.payload.username,
-                    avatar: event.payload.avatar,
-                },
-            } satisfies WebSocketEventsTypes.FriendOffline);
-            this.log.info({ count: friends.length }, 'Friends notified - offline');
-        } else {
-            this.log.debug({ username: event.payload.username }, 'No friends to notify');
-        }
+        this.log.info({ userId: event.targetUserId }, 'User offline event received');
+		// Close all ws connections for this user
+		// THis triggers handleDisconnect, sockets.size === 0, ofline presence notification
+		commsService.closeUserConnection(event.targetUserId);
     }
 
     private async handleProfileUpdated(

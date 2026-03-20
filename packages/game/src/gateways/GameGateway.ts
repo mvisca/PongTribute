@@ -76,7 +76,7 @@ export class GameGateway {
 			const payload = jwt.verify(token, GameEnv.JWT_SECRET()) as AuthTypes.AccessTokenPayload;
 
 			// 4b. Validar estructura del payload con TypeBox (igual que middlewares HTTP)
-			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadSchema, payload);
+			const isValid = Value.Check(AuthSchemas.AccessTokenPayloadUntypedSchema, payload);
 			if (!isValid) {
 				this.log.info('Connection rejected: invalid token structure');
 				socket.close(1008, 'Invalid token structure');
@@ -130,10 +130,11 @@ export class GameGateway {
 
 			// 7. EVENTO: DESCONEXION
 			// Se dispara si pierde internet o cierra la pestanya
+			// FIX 1 RACE CONDITION
 			socket.on('close', async () => {
 				this.log.info({ matchId: payload.username }, 'Player disconnected');
 				try {
-					await this.gameService.handleDisconnect(userId, matchId);
+					await this.gameService.handleDisconnect(userId, matchId, socket);
 				} catch (err) {
 					this.log.error('Error in handleDisconnect');
 				}

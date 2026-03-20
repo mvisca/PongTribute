@@ -28,7 +28,7 @@ INSERT OR IGNORE INTO users (
     'HAL',
     'bot@transcendence.local',
     '$2b$10$BOTUSER.NEVER.LOGIN.XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-    '',
+    'https://res.cloudinary.com/dayvpa0ql/image/upload/v1766352027/hal_a6chox.png',
     0,
     0,
     0,

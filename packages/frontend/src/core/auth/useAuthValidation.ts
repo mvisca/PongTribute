@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from './AuthStore';
 import { verifyToken } from '../../features/auth/api/authApi';
+import { refreshAccessToken } from '../../features/auth/api/authApi';
 
 export function useAuthValidation() {
 	const accessToken = useAuthStore(state => state.accessToken);
@@ -27,8 +28,14 @@ export function useAuthValidation() {
 			]);
 
 			if (!isValid) {
-				console.warn('[Auth] Token expired or invalid - logging out');
-				logout();
+				try {
+					const data = await refreshAccessToken();
+					useAuthStore.getState().setAccessToken(data.token);
+					useAuthStore.getState().setUser(data.user);
+				} catch {
+					console.warn('[Auth] Refresh failed - logging out');
+					logout();
+				}
 			}
 
 			// Finish validation

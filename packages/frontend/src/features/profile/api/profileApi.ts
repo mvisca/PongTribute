@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../core/api/client';
+import { apiRequestWithRefresh } from '../../../core/api/apiInterceptor';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 
 /**
@@ -11,7 +11,7 @@ export async function getProfile(
 	userId: string,
 	token: string
 ): Promise<UserTypes.UserPublic> {
-	return await apiRequest<UserTypes.UserPublic>(`/users/${userId}`, {
+	return await apiRequestWithRefresh<UserTypes.UserPublic>(`/users/${userId}`, {
 		method: 'GET',
 		token
 	});
@@ -29,9 +29,16 @@ export async function updateProfile(
 	body: UserTypes.UpdateUserBody,
 	token: string
 ): Promise<UserTypes.UserPublic> {
-	return await apiRequest<UserTypes.UserPublic>(`/users/${userId}`, {
+	return await apiRequestWithRefresh<UserTypes.UserPublic>(`/users/${userId}`, {
 		method: 'PUT',
 		body,
 		token,
 	});
+}
+
+export async function anonymizeAccount(userId: string, token: string): Promise<void> {
+    await apiRequestWithRefresh<void>(`/users/${userId}/anonymize`, {
+        method: 'PUT',
+        token,
+    });
 }

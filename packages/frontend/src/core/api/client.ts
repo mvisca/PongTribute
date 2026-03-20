@@ -1,10 +1,17 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://localhost';
+const BASE_URL = '/api';
 
 type RequestOptions = {
 	method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 	body?: unknown;
 	token?: string;
 };
+
+export class ApiError extends Error {
+	constructor(public readonly status: number, message: string) {
+		super(message);
+		this.name = 'ApiError';
+	}
+}
 
 export async function apiRequest<T>(
 	path: string,
@@ -44,7 +51,7 @@ export async function apiRequest<T>(
 		const error = await response.json().catch(() => ({
 			message: errorMessages[response.status] ?? response.statusText }));
 		
-		throw new Error(error.message ?? 'Request failed');
+		throw new ApiError(response.status, error.message ?? 'Request failed');
 	}
 
 	// 204 no content

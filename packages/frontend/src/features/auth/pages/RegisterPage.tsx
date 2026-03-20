@@ -22,7 +22,6 @@ type ErrorsState = {
 }
 
 export default function RegisterPage() {
-	const DEFAULT = import.meta.env.VITE_DEFAULT_AVATAR;
 	const navigate = useNavigate();
 	const authLogin = useAuthStore((state) => state.login);
 	const setAvatar = useAuthStore((state) => state.setAvatar);
@@ -111,7 +110,6 @@ export default function RegisterPage() {
 
 					<div className='-mt-3'>
 						<AvatarUploader
-							currentSrc={DEFAULT}
 							onFileChange={setAvatarBase64}
 							onError={(msg) => setError(msg)}
 						/>

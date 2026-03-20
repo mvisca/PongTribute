@@ -133,7 +133,7 @@ export namespace GameEnv {
 			ajv: {
 				customOptions: {
 					removeAdditional: 'all',
-					coerceTypes: false,
+					coerceTypes: true,
 					useDefaults: true
 				}
 			}

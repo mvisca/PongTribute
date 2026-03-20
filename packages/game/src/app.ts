@@ -73,7 +73,10 @@ export function buildApp(
 	});
 
 	// REGISTRO DE WEBSOCKETS
-	app.register(fastifyWebsocket);
+	app.register(fastifyWebsocket, {
+		options:
+		{ perMessageDeflate: false } // Disabels default ws message compression
+	});
 
 	// Hooks Globales (Logging Visual de Rutas)
 	app.addHook('onRoute', (route) => {
