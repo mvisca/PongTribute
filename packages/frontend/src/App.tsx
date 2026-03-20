@@ -171,7 +171,21 @@ export default function App() {
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_ACCEPT:
-				if (currentUserId === msg.payload.acceptorId) break;
+				if (currentUserId === msg.payload.acceptorId) {
+					// Fallback for secondary tabs
+					const friends = useFriendsStore.getState().friends;
+					if (!friends[msg.payload.requesterId]) {
+						const profile = await getProfile(msg.payload.requesterId, token!).catch(() => null);
+						addFriend({
+							userId: msg.payload.requesterId,
+							username: profile?.username ?? msg.payload.requesterId,
+							avatar: profile?.avatar ?? '',
+							isOnline: profile?.isOnline ?? false,
+						});
+					}
+					removePending(msg.payload.requesterId);
+					break;
+				}
 				// For the REQUESTER
 				const profile = await getProfile(msg.payload.acceptorId, token!)
 					.catch(() => null);
