@@ -19,11 +19,15 @@ export default function GamePage() {
 	const currentUsername = useAuthStore(state => state.user?.username);
 	const currentAvatar = useAuthStore(state => state.avatar);
 	
-	// Detectar pantalla pequeña
-	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
+	// Detectar pantalla pequeña y si tiene mouse/trackpad y keyboard
+	const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 1024 || hasNoKeyboard);
 	
 	useEffect(() => {
-		const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
+		const handleResize = () => {
+			const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+			setIsSmallScreen(window.innerWidth < 1024 || hasNoKeyboard);
+		};
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
@@ -147,9 +151,6 @@ export default function GamePage() {
 	// Register active match on mount
 	useEffect(() => {
 		if (matchId) setActiveMatchId(matchId);
-// test for reconnection resialence
-//		return () => clearActiveMatchId();
-//	}, [matchId, setActiveMatchId, clearActiveMatchId]);
 	}, [matchId, setActiveMatchId]);
 
 	// Clear on game end
@@ -251,7 +252,7 @@ export default function GamePage() {
 	return (
 		<div className='retro-bg h-full overflow-hidden relative flex items-center justify-center min-w-[1150px]'>
 			<div className='absolute top-4 left-4'>
-				<FriendsWidget /> {/** Tambien hay widget vacio aqui, no se debe completar? */}
+				<FriendsWidget />
 			</div>
 			<div className='flex flex-col items-center gap-8 ml-46'>
 				{matchInfo && (

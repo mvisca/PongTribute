@@ -46,10 +46,14 @@ export default function LobbyPage() {
 	const [friendAvatar, setFriendAvatar] = useState('');
 	const [pendingMatchId, setPendingMatchId] = useState('');
 
-	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 768);
+	const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 1024 || hasNoKeyboard);
 
 	useEffect(() => {
-		const handleResize = () => setIsSmallScreen(window.innerWidth < 768);
+		const handleResize = () => {
+			const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+			setIsSmallScreen(window.innerWidth < 1024 || hasNoKeyboard);
+		};
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
@@ -211,7 +215,6 @@ export default function LobbyPage() {
 		}
 	};
 
-	// Cancel friend challenge TODO si remueve el amigo y existe una invitacion creada a partida de amigo se debe cancelar la partida tambien // Si se está jugando no se puede cancelar porque hay una partida activa
 	const handleCancelInvite = async () => {
 		if (!token) return;
 		if (pendingMatchId) {
@@ -236,7 +239,6 @@ export default function LobbyPage() {
            case 'friend_setup':
                 return (
 					<>
-					{/** TODO add AVATAR here, rqeuires a new componente for setup */}
 					<MatchSetup
 					title={`CHALLENGE ${friendUsername.toUpperCase()}`}
 					onStart={handleFriendStart}
