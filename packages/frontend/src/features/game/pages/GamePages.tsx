@@ -147,8 +147,10 @@ export default function GamePage() {
 	// Register active match on mount
 	useEffect(() => {
 		if (matchId) setActiveMatchId(matchId);
-		return () => clearActiveMatchId();
-	}, [matchId, setActiveMatchId, clearActiveMatchId]);
+// test for reconnection resialence
+//		return () => clearActiveMatchId();
+//	}, [matchId, setActiveMatchId, clearActiveMatchId]);
+	}, [matchId, setActiveMatchId]);
 
 	// Clear on game end
 	useEffect(() => {

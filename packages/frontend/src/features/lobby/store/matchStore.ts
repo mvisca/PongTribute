@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 type MatchEvent = 
 	| { type: 'found';			matchId: string }
@@ -18,11 +19,20 @@ interface MatchStore {
 	clearActiveMatchId: () => void;
 }
 
-export const useMatchStore = create<MatchStore>((set) => ({
-	pendingEvent: null,
-	activeMatchId: null,
-	setPendingEvent: (event) => set({ pendingEvent: event }),
-	clearPendingEvent: () => set({ pendingEvent: null }),
-	setActiveMatchId: (id) => set({ activeMatchId: id }),
-	clearActiveMatchId: () => set({ activeMatchId: null})
-}));
+export const useMatchStore = create<MatchStore>()(
+	persist(
+		(set) => ({
+			pendingEvent: null,
+			activeMatchId: null,
+			setPendingEvent: (event) => set({ pendingEvent: event }),
+			clearPendingEvent: () => set({ pendingEvent: null }),
+			setActiveMatchId: (id) => set({ activeMatchId: id }),
+			clearActiveMatchId: () => set({ activeMatchId: null}),
+		}),
+		{
+			name: 'match-store',
+			// Only persist activeMatchId
+			partialize: (state) => ({ activeMatchId: state.activeMatchId }),
+		}
+	)
+);
