@@ -512,6 +512,7 @@ export class GameService {
         // 3. Aceleración progresiva
         if (config.ballAcceleration) {
             ball.speed *= (1 + config.ballAcceleration);
+			ball.speed = Math.min(ball.speed, config.ballSpeedBase * 3);
         }
         
         // 4. Recalcular vectores (usando DX/DY)
