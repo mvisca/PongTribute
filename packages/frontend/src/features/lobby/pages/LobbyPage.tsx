@@ -46,13 +46,15 @@ export default function LobbyPage() {
 	const [friendAvatar, setFriendAvatar] = useState('');
 	const [pendingMatchId, setPendingMatchId] = useState('');
 
-	const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-	const [isSmallScreen, setIsSmallScreen] = useState(window.innerWidth < 1024 || hasNoKeyboard);
+	const [isSmallScreen, setIsSmallScreen] = useState(() => {
+		const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+		return window.innerWidth < 1024 || window.innerHeight < 600 || hasNoKeyboard;
+	});
 
 	useEffect(() => {
 		const handleResize = () => {
 			const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-			setIsSmallScreen(window.innerWidth < 1024 || hasNoKeyboard);
+			setIsSmallScreen(window.innerWidth < 1024 || window.innerHeight < 600 || hasNoKeyboard);
 		};
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
