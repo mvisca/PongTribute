@@ -55,7 +55,11 @@ export class MatchService {
 		if (matchType === 'public') {
 			// Usamos '??' para usar CLASSIC si gameMode es undefined
 			// ?? significa: Si lo de la izquierda es null o undefined, usa lo de la derecha".
-			return this.joinPublicQueue(userId, gameMode ?? GameConstants.GAME_MODE.CLASSIC);
+			return this.joinPublicQueue(
+				userId,
+				gameMode ?? GameConstants.GAME_MODE.CLASSIC,
+				body.targetScore ?? GameConstants.GAME_CONSTANTS.SCORE.DEFAULT
+			);
 		}
 		
 		if (matchType === 'local') {
