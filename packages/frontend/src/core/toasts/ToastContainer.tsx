@@ -7,7 +7,7 @@ export function ToastContainer() {
 
 	return (
 
-		<div className='fixed bottom-4 right-4 flex flex-col gap-2 z-50'>
+		<div className='fixed bottom-16 right-4 flex flex-col gap-2 z-50'>
 			{toasts.map(toast =>
 				<ToastItem key={toast.id} toast={toast} />
 			)}
