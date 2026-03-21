@@ -12,7 +12,8 @@ import {
 	TranscendenceEventsTypes,
 	Utils,
 	BOT_USER_ID,
-	BOT_USERNAME
+	BOT_USERNAME,
+	BOT_AVATAR
 } from '@transcendence/shared';
 import { createLogger, type AppLogger } from '@transcendence/shared';
 import { GameEnv } from '../config.js';
@@ -457,7 +458,7 @@ export class MatchService {
 			player2: {
 				userId:   BOT_USER_ID,   // ID fijo del bot
 				username: BOT_USERNAME,
-				avatar:   '',
+				avatar:   BOT_AVATAR,
 				score:    0,
 				isWinner: false
 			},

@@ -6,4 +6,4 @@
 export const BOT_USER_ID   = '00000000-0000-0000-0000-000000000b07';
 export const BOT_USERNAME  = 'HAL';
 export const BOT_EMAIL     = 'bot@transcendence.local';
-export const BOT_AVATAR    = '';
+export const BOT_AVATAR    = 'https://res.cloudinary.com/dayvpa0ql/image/upload/v1766352027/hal_a6chox.png';
