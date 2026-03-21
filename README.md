@@ -138,7 +138,7 @@ pnpm redis:cli
 | <mehernan> | <Meritxell> | Product Owner   | < product vision, backlog, validation, stakeholder comms> |
 | <jocuni-p> | <Joan>      | Product Manager | < planning, tracking, removing blockers, facilitation>    |
 | <mvisca-g> | <Martin>    | Tech Lead       | < architecture, key decisions, code quality, reviews>     |
-| <dkurcbar> | <Diego>     | Developer       | <features implemented, ownership areas>                   |
+| <dkurcbar> | <Diego>     | Developer       | < features implemented, ownership areas>                  |
 
 ---
 
@@ -230,7 +230,7 @@ This approach allowed us to stay aligned while adapting to changes in both team 
                                     |
         ----------------------------+----------------------------
         |                           |                           |
-       hash                  user_id firends_id      player1_id player2_id
+       hash                  user_id firends_id       player1_id player2_id
         |                           |                           |
 +----------------------+   +----------------------+   +----------------------+
 |   refresh_tokens     |   |     friendships      |   |       matches        |
