@@ -9,7 +9,7 @@
 **Goal**: Build a modern, production-like web application that combines user management, real-time features, and gameplay—deployable with a single command via Docker Compose.
 
 **Key features (high-level)**:
-- **Authentication**: register/login/logout/refresh, **2FA (TOTP + backup codes)**, password reset by email.
+- **Authentication**: register/login/logout/refresh, **2FA (TOTP + backup code)**, password reset by email.
 - **User profile**: profile management, avatar upload, account deletion.
 - **Friends + presence**: friend requests/accept/reject/remove + online/offline presence via WebSockets.
 - **Game**: real-time Pong-like matches over WebSockets, matchmaking, match history, and a bot opponent.
@@ -17,7 +17,7 @@
 **Architecture (high-level)**:
 - **Frontend**: React SPA (Vite) served via `nginx`
 - **Backend**: Node.js services (containerized): `gateway`, `auth`, `user`, `game`, `comms`, `images`, `bot`
-- **Data stores**: Redis + SQLite (per-service) with Docker volume mounts  
+- **Data stores**: Redis + SQLite (game & user) with Docker volume mounts  
 - **Entry point**: `nginx` (ports **8080/8443**), reverse-proxying the internal services
 
 ---
@@ -98,7 +98,7 @@ make
 | `make nuke`         | Remove DB files, dev TLS certs, then `docker system prune -a -f --volumes`. Destructive. |
 | `make logs`         | Follow Docker Compose logs.                                                              |
 | `make ps`           | List running containers.                                                                 |
-| `make open-browser` | Open https://localhost in the default browser.                                           |
+| `make open-browser` | Open https://localhost:8443 in the default browser.                                           |
 | `make download`     | Pull required base images from AWS Public ECR.                                           |
 
 ### Run in development mode (optional)
@@ -107,26 +107,27 @@ If you have **Node.js** and **pnpm** installed, you can run services locally for
 
 ### Access
 
-- **Web app**: `https://localhost/`
-- **API (via gateway)**: `https://localhost/api/*`
+- **Web app**: `https://localhost:8443/`
+- **API (via gateway)**: `https://localhost:8443/api/*`
 - **WebSockets (via gateway)**:
-  - Comms: `wss://localhost/api/comms/ws`
-  - Game: `wss://localhost/api/game/ws`
-- **Docs (Swagger)**: `https://localhost/docs` (Basic Auth via `DOCS_USER` / `DOCS_PASS`)
-- **Healthcheck**: `https://localhost/health` (served by `nginx`)
+  - Comms: `wss://localhost:8443/api/comms/ws`
+  - Game: `wss://localhost:8443/api/game/ws`
+- **Docs (Swagger)**: `https://localhost:8443/docs` (Basic Auth via `DOCS_USER` / `DOCS_PASS`)
+- **Healthcheck**: `https://localhost:8443/health` (served by `nginx`)
 
 ### Troubleshooting
 
 - **See logs**:
 
 ```bash
-pnpm docker:logs
+docker compose logs
+docker compose logs -f {service name}
 ```
 
 - **Redis CLI**:
 
 ```bash
-pnpm redis:cli
+docker exec -it ft_transcendence_redis redis-cli
 ```
 
 ---
@@ -145,7 +146,7 @@ pnpm redis:cli
 ## Project Management
 
 **How we organized the work**:
-At the beginning of the project, the team worked in person on campus, where we collaboratively defined the initial architecture, shared ideas, and distributed responsibilities. Tasks were initially assigned at a high level:
+At the beginning of the project, the team worked in person on campus, where we collaboratively defined the initial architecture, shared ideas, and distributed responsibilities. Tasks were initially assigned according to the previous experience we had and what each person wanted most to do.
 
 - One member focused on the frontend development
 - One member focused on the game implementation
@@ -209,6 +210,7 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 ---
 
 ## Database Schema
+DB file: `docker/anonymous/volume/path` (path is configured via `USER_SERVICE_DB_*`).
                          +----------------------+
                          |        users         |
                          +----------------------+
@@ -250,7 +252,7 @@ This approach allowed us to stay aligned while adapting to changes in both team 
                                                       | created_at           |
                                                       | finished_at          |
                                                       +----------------------+
-                                          
+DB file: `packages/game/db/<game.db>` (path is configured via       `GAME_SERVICE_DB_*`).                                   
                             
         +--------------------+
         |      matches       |
@@ -274,28 +276,12 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 
 ### User service (SQLite)
 
-DB file: `packages/user/db/<user.db>` (path is configured via `USER_SERVICE_DB_*`).
-
-- `users`
-  - `id`, `username`, `email`, `password_hash`, `avatar`
-  - `is_online`, `is_deleted`
-  - `has_2fa_enabled`, `backup_code_hash`, `totp_secret`
-  - `last_logout_at`, `created_at`, `updated_at`
-- `refresh_tokens`
-  - `id`, `user_id`, `token_hash`, `expires_at`, `is_2fa_verified`, `created_at`
-- `friendships`
-  - `user_id`, `friend_id`, `initiator_id`, `status`, `created_at`, `updated_at`
+DB file: `docker/anonymous/volume/path` (path is configured via `USER_SERVICE_DB_*`).
 
 ### Game service (SQLite)
 
 DB file: `packages/game/db/<game.db>` (path is configured via `GAME_SERVICE_DB_*`).
 
-- `matches` (denormalized 1v1)
-  - `id`, `status`, `winner_id`
-  - `player1_*` fields (id/username/avatar/score)
-  - `player2_*` fields (id/username/avatar/score, nullable while waiting)
-  - `game_mode`, `target_score`, `created_at`, `finished_at`
-  - `id`, `name`, `status`, `winner_id`, `created_at`, `finished_at`
 
 ---
 
