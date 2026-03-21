@@ -331,89 +331,147 @@ DB file: `packages/game/db/<game.db>` (path is configured via `GAME_SERVICE_DB_*
 
 **Total points**:  24
 
-### Justification and implementation
+Justification and implementation
 
-For each module:
-- **IV.1 WEB:**: Framework
-  - **Why we chose it**: We chose to use a modern frontend framework to build a structured and maintainable Single Page Application. A framework like React allows us to break the UI into reusable components, manage state efficiently, and handle routing smoothly. This was essential to keep the frontend scalable as the project includes multiple pages such as authentication, profile, friends, and the game interface.
-  - **How it was implemented**: We built the frontend as a React SPA using Vite, organizing the application into reusable components (Navbar, pages, UI elements) and handling navigation with React Router. Global state (auth, friends) was managed using Zustand.
-  - **Who implemented it**: All of us
+IV.1 WEB — Framework (frontend + backend)
 
-- **IV.1 WEB:**: WebSocketGame
-  - **Why we chose it**: We chose to use a modern frontend framework to build a structured and maintainable Single Page Application. A framework like React allows us to break the UI into reusable components, manage state efficiently, and handle routing smoothly. This was essential to keep the frontend scalable as the project includes multiple pages such as authentication, profile, friends, and the game interface.
-  - **How it was implemented**: We used WebSockets to establish a persistent connection between client and server. Game state updates (player position, score, etc.) are sent in real time, allowing synchronization between players.
-  - **Who implemented it**: jocuni-p
+Why we chose it: We chose to use dedicated frameworks for both frontend and backend to ensure a structured, maintainable, and scalable codebase. A clear framework enforces architectural conventions, reduces boilerplate, and makes the system easier to reason about as it grows across multiple pages and services.
+How it was implemented: The frontend was built as a React 19 SPA using Vite, organized into reusable components and pages, with React Router for navigation and Zustand for global state management (auth, friends). The backend services are built with Fastify v5, which provides a fast, schema-first HTTP layer with plugin-based extensibility.
+Who implemented it: All
 
-- **IV.1 WEB:**: PublicApi
-  - **Why we chose it**: We chose to implement a public API to make our backend accessible and modular. This allows external clients (including our own frontend) to interact with the system in a standardized way. It also encourages good API design practices and makes the system more extensible and testable.
-  - **How it was implemented**: We exposed a REST API through the gateway, where each service handles its own routes. The frontend communicates with the backend using HTTP requests for actions like authentication, profile, and friends.
-  - **Who implemented it**: All of us
 
-- **IV.1 WEB:**: Custom-made design system
-  - **Why we chose it**: We decided to create our own design system to ensure visual consistency across the application. By defining reusable UI components (buttons, cards, layouts), we improved development speed and maintainability. This also allowed us to create a unique visual identity aligned with the arcade/game theme of the project.
-  - **How it was implemented**: We created reusable UI components (buttons, cards, inputs) using Tailwind CSS, ensuring consistent styling across the app. These components are shared and reused in all pages.
-  - **Who implemented it**: mehernan
+IV.1 WEB — Real-time features (WebSockets)
 
-- **IV.3 USER MANAGEMENT**: User management
-  - **Why we chose it**: User management is a fundamental part of any web application. We implemented features such as registration, login, profile management, and friendships to simulate a real-world platform. This module allowed us to handle authentication flows, user data, and relationships between users.
-  - **How it was implemented**: We implemented user features such as register, login, profile management, and friends using dedicated backend services. Authentication is handled with JWT, and user data is stored in SQLite.
-  - **Who implemented it**: mvisca-g, mehernan, dkurcbar
+Why we chose it: The project requires persistent, bidirectional communication between server and clients for social features (friend online status, friend requests, match invitations, chat) that must update in real time without polling. WebSockets are the natural fit for this class of problem.
+How it was implemented: We implemented a dedicated communications service (comms) built on @fastify/websocket. It maintains a Map<userId, Set<WebSocket>> to support multiple concurrent sessions per user. Inter-service events are broadcast via Redis pub/sub (TRANSCENDENCE_CHANNEL), and the comms service translates Redis events into targeted WebSocket messages to the relevant connected clients.
+Who implemented it: jocuni-p, mvisca-g, dkurcbar
 
-- **IV.3 USER MANAGEMENT**: 2FA
-  - **Why we chose it**: We chose to implement Two-Factor Authentication to enhance the security of user accounts. This module allowed us to explore real-world authentication mechanisms such as TOTP and backup codes. It also reflects modern security standards used in production applications.
-  - **How it was implemented**: We added TOTP-based 2FA, generating a secret for each user and validating codes during login. Backup codes are also supported for recovery.
-  - **Who implemented it**: mvisca-g
 
-- **IV.4 ARTIFICIAL INTELLIGENCE**: AI Oponent
-  - **Why we chose it**: We included an AI opponent to allow users to play even when no other players are available. This improves user experience and ensures the game is always accessible. It also gave us the opportunity to experiment with basic AI logic and game behavior simulation.
-  - **How it was implemented**: We created a bot service that connects to the game via WebSockets and simulates player behavior by reacting to the game state.
-  - **Who implemented it**: mvisca-g
+IV.1 WEB — WebSocket Game (real-time game)
 
-- **IV.6 GAMING AND USER EXPERIENCE**: Game
-  - **Why we chose it**: Previously, we were working on the old f, which asked us to create a Pong game. When we switched to the new subject, we continued with the game since we had already started working on it.
-  - **How it was implemented**: The game is rendered in the frontend (canvas-based), with logic for movement, collisions, and scoring. The backend synchronizes the state between players.
-  - **Who implemented it**: jocuni-p
+Why we chose it: A real-time multiplayer game requires frame-level synchronization between players with minimal latency. HTTP request/response is unsuitable for this; WebSockets allow the game server to push state updates continuously and receive player inputs without the overhead of repeated connections.
+How it was implemented: The game service exposes a dedicated WebSocket endpoint. Each match maintains an authoritative server-side game loop that computes physics, collisions, and scoring. Players send paddle movement events; the server broadcasts the canonical game state (GAME_UPDATE) to all participants on every tick, ensuring both clients render the same state.
+Who implemented it: jocuni-p
 
-- **IV.6 GAMING AND USER EXPERIENCE**: Remote Players
-  - **Why we chose it**: This also was part of the subject but also to allow users to play against each other in real time. This module complements the WebSocket system and enhances the social aspect of the platform. It also introduces challenges such as synchronization, latency handling, and session management.
-  - **How it was implemented**: We used WebSockets to allow two players to connect to the same match, exchanging real-time updates to keep both views synchronized.
-  - **Who implemented it**: jocuni-p
 
-- **IV.6 GAMING AND USER EXPERIENCE**: Customisation options
-  - **Why we chose it**: We added customization options to improve user engagement and personalization. Allowing users to modify aspects such as their profile or in-game elements makes the experience more interactive and tailored, which is common in modern gaming platforms.
-  - **How it was implemented**: We allowed users to customize elements such as their profile (avatar, username) and prepared the structure for future game-related customization.
-  - **Who implemented it**: jocuni-p
+IV.1 WEB — Notification system
 
-- **IV.7 DEVOPS**: Backend as microservices
-  - **Why we chose it**: We chose a microservices architecture to better structure the backend by separating responsibilities into independent services (auth, user, game, etc.). This approach improves scalability, maintainability, and fault isolation. It also allowed us to simulate a production-like environment using Docker and service orchestration.
-  - **How it was implemented**: We split the backend into independent services (auth, user, game, etc.), each running in its own Docker container. They communicate through a gateway and Redis when needed.
-  - **Who implemented it**: mvisca-g
+Why we chose it: Users need to be informed of relevant events (friend requests, match invitations, match results) without having to refresh or navigate. A centralized notification system makes the application feel responsive and keeps users engaged without requiring polling.
+How it was implemented: Notifications are delivered through the WebSocket connection established by the comms service. The frontend displays persistent action toasts (using senderId as toast ID to deduplicate) for events requiring user interaction (e.g. accepting/declining a friend request), and transient toasts for informational events. Dismissal is synchronized across handlers to avoid double-processing.
+Who implemented it: jocuni-p, mvisca-g
+
+
+IV.1 WEB — Custom-made design system
+
+Why we chose it: A consistent visual language across all pages was necessary to deliver a coherent user experience. Defining reusable components also accelerated development: once a component is built and styled, any team member can use it without re-implementing styling decisions.
+How it was implemented: We built a library of reusable UI components (NeonButton, ArcadeButton, FormCard, FormInput, PasswordInput, AvatarDisplay, AvatarUploader, PageContainer, AlertError, AlertSuccess, LoadingScreen, LinkButton) using Tailwind CSS utility classes, all exported from a central src/shared/components/ui/index.ts. The system follows a consistent arcade/retro aesthetic with a defined color palette, typography, and spacing.
+Who implemented it: mehernan, mvisca-g
+
+
+IV.2 ACCESSIBILITY — Support for additional browsers
+
+Why we chose it: Limiting compatibility to a single browser reduces the reach of the application and introduces invisible bugs for users on different platforms. Cross-browser testing ensures the application works correctly for all users regardless of their environment.
+How it was implemented: The application was tested and validated on at least two additional browsers beyond Chrome (Firefox and Safari/Edge). Browser-specific behaviors — particularly around WebSocket handling, canvas rendering, and CSS — were identified and resolved. Known limitations are documented.
+Who implemented it: mehernan, jocuni-p
+
+
+IV.3 USER MANAGEMENT — Standard user management
+
+Why we chose it: User management is the foundation of the platform. Without authentication and profile management, no personalized feature — matches, friends, statistics — can exist. This module establishes the identity layer that all other modules build on.
+How it was implemented: Users can register with email and password (hashed with bcrypt), log in with JWT-based authentication, update their profile (username, avatar), and upload a custom avatar stored via Cloudinary with a default fallback. Users can add/remove friends and see their online status in real time. Each user has a dedicated profile page displaying their information.
+Who implemented it: mvisca-g, mehernan, dkurcbar
+
+
+IV.3 USER MANAGEMENT — Two-Factor Authentication (2FA)
+
+Why we chose it: Passwords alone are insufficient for account security in a modern application. 2FA adds a second layer that protects accounts even if credentials are compromised. Implementing it exposed us to real-world authentication patterns like TOTP and recovery flows.
+How it was implemented: We implemented TOTP-based 2FA using a per-user secret. The login flow detects whether 2FA is enabled and, if so, requires a valid TOTP code before issuing the access token (via a short-lived provisional token). Setup, verification, and disabling are handled through dedicated endpoints. Backup codes are generated at setup and can be used to recover access and disable 2FA.
+Who implemented it: mvisca-g
+
+
+IV.4 ARTIFICIAL INTELLIGENCE — AI Opponent
+
+Why we chose it: An AI opponent ensures the game is always playable, even without a second human player. It improves solo user experience and reduces dependency on matchmaking. It also allowed us to explore game AI logic — balancing challenge with playability.
+How it was implemented: We created a standalone bot service that connects to a match via WebSocket using a self-signed JWT, playing as a regular participant from the game server's perspective. The bot reads the live game state (GAME_UPDATE) and computes paddle movement using configurable difficulty parameters: botSpeed (movement per frame), errorMargin (positional deviation to simulate imprecision), and reactionRate (how many ticks between target recalculations). Three difficulty levels are available: classic, speed, and pro.
+Who implemented it: jocuni-p
+
+
+IV.6 GAMING — Complete web-based game
+
+Why we chose it: A real-time multiplayer game is the core of the project. Pong was chosen as a well-understood game with clear rules and win conditions, allowing us to focus on the technical challenges of real-time synchronization rather than complex game logic.
+How it was implemented: The game is rendered on an HTML5 Canvas in the frontend. The backend game service runs the authoritative game loop (physics, collisions, scoring) and broadcasts state to all clients via WebSocket. The game supports 1v1 matches, local play, and matches against the bot. Win/loss conditions and match results are persisted in the database.
+Who implemented it: jocuni-p
+
+
+IV.6 GAMING — Remote players
+
+Why we chose it: Allowing two players on separate machines to play in real time is the defining feature of an online multiplayer platform. This module is what transforms a local game into a social, competitive experience.
+How it was implemented: Two players connect to the same match room on the game service via WebSocket. The server maintains the authoritative state and broadcasts it to both clients on every tick. Network disconnections are handled gracefully: if a player disconnects, the opponent is notified via GAME_OPPONENT_DISCONNECTED and given a configurable wait window before a forfeit is recorded.
+Who implemented it: jocuni-p
+
+
+IV.6 GAMING — Customisation options
+
+Why we chose it: Customization improves user engagement by giving players agency over their experience. Offering different game modes also adds replayability and allows the game to cater to different skill levels.
+How it was implemented: The game supports three distinct modes — classic, speed, and pro — each with different physics parameters and AI difficulty settings. Users can select the mode before a match begins. Default options are always available to ensure the game is immediately playable without configuration.
+Who implemented it: jocuni-p
+
+
+IV.7 DEVOPS — Backend as microservices
+
+Why we chose it: A microservices architecture separates concerns into independently deployable units, improving fault isolation, scalability, and maintainability. It also reflects production-grade practices and allowed the team to work on different services in parallel without constant conflicts.
+How it was implemented: The backend is split into six independent services — auth, user, game, comms, images, and bot — each in its own Docker container with its own database schema, configuration, and responsibilities. A dedicated gateway service routes all external traffic. Services communicate internally via HTTP (inter-service calls) and Redis pub/sub (async events). The entire stack is orchestrated with Docker Compose and starts with a single command.
+Who implemented it: All
+
+
+MODULE OF CHOICE — Centralized UI for OpenAPI Documentation
+
+Why we chose it: With six backend services each exposing their own API, documentation becomes fragmented and hard to navigate. A centralized documentation interface is essential for development, debugging, and evaluation — it provides a single place to explore and test all endpoints across the entire system.
+How it was implemented: Each service (auth, user, game, images) exposes its own OpenAPI JSON via @fastify/swagger. The gateway aggregates these at /docs, serving a unified Swagger UI with a custom dark theme that allows switching between service documentation. The gateway rewrites the server URLs in each JSON spec so that "Try it out" calls go through the gateway rather than directly to internal services, reflecting the real request flow.
+Who implemented it: dkurcbar
+
+
+MODULE OF CHOICE — Gateway & Secured Internal API
+
+Why we chose it: In a microservices architecture, having each service directly exposed creates security, routing, and observability problems. A gateway provides a single controlled entry point, enforces authentication before requests reach any service, and enables cross-cutting concerns (logging, rate limiting, request tracing) to be applied uniformly.
+How it was implemented: A dedicated gateway service acts as the sole external entry point. It validates JWT tokens on all protected routes before proxying to upstream services. Internal service-to-service communication uses a separate internal route prefix (not exposed externally), protected by a shared internal secret. The gateway also handles rate limiting via Redis and attaches request IDs for distributed tracing across service logs.
+Who implemented it: dkurcbar, jocuni-p, mvisca-g
+
+
+MODULE OF CHOICE — Shared Contract Library (@transcendence/shared)
+
+Why we chose it: In a distributed system with six independent services and a frontend, the biggest consistency risk is divergence — services using different names for the same events, different validation rules for the same fields, or different error shapes. We solved this at the architectural level with a dedicated shared package that acts as the single source of truth for all cross-service contracts.
+How it was implemented: @transcendence/shared is a compiled TypeScript package (with generated .d.ts declarations) consumed by all services and the frontend. It provides: typed event constants for Redis pub/sub and WebSocket (TRANSCENDENCE_EVENTS, WEBSOCKET_EVENTS); TypeBox schemas for all domain entities used for both runtime validation and static type inference; a centralized environment configuration system with typed accessors; a unified error class hierarchy (AppError and subtypes) ensuring consistent error response shapes; shared utilities (Redis client factory, RedisCache, UUID generators per entity, pino logger, normalizers); and a prebuild script that auto-generates JSON schemas from TypeBox definitions. Frontend imports use explicit subpath exports to avoid bundling Node.js modules.
+Who implemented it: mvisca-g, jocuni-p
 
 ---
 
-## Individual Contributions
 
-Provide a detailed breakdown per person.
+Individual Contributions
+jocuni-p / Joan
 
-### <PLACEHOLDER: jocuni-p/Joan>
-- **Responsibilities**: Product Manager
-- **Modules delivered**: Framework, websocket game, Public API, Game, Remote PLayers, customisation options. backend as microservices
-- **Notable challenges & solutions**: adaptar el proyecto al logger con pinu
+    Role: Product Manager
+    Modules delivered: Framework (f/b), Realtime WS, WebSocket Game, Notification System, Support for Additional Browsers, Standard User Management, AI Opponent, Complete Web-Based Game, Remote Players, Customisation Options, Backend as Microservices, Gateway & Secured Internal API, Shared Contract Library
+    Notable challenges & solutions: The most significant technical challenge was adapting all backend services to structured logging with Pino. Each service needed a consistent logger instance with child loggers carrying contextual metadata (service name, request ID, match ID) without coupling services to a specific logger setup. The solution was centralizing the logger factory in @transcendence/shared so every service consumes the same configuration while retaining per-service context.
 
-### <PLACEHOLDER: mehernan/Meritxell>
-- **Responsibilities**: Product Owner
-- **Modules delivered**: Fraework, Public API, custom-made desing system, user management,  backend as microservices
-- **Notable challenges & solutions**: The most challenging part for me was integrating the frontend with the backend. At that stage of the project, I was not very familiar with how frontend and backend communication works, especially when dealing with APIs, authentication tokens, and asynchronous requests. 
+mehernan / Meritxell
 
-### <PLACEHOLDER: dkurcbar/Diego>
-- **Responsibilities**: Developer
-- **Modules delivered**: Framework, Public Api, User management, Backend as microservices
-- **Notable challenges & solutions**: When I ran the nearly complete project on 42, we encountered errors. We were exposing ports 443 and 80, which aren't allowed on 42; we were using the user ID, and on 42 the maximum value is too large, so it caused an error.
+    Role: Product Owner
+    Modules delivered: Framework (f/b), Custom-made Design System, Support for Additional Browsers, Standard User Management, Backend as Microservices
+    Notable challenges & solutions: The most challenging part was integrating the frontend with the backend. At that stage of the project, I was not familiar with how frontend-backend communication works in a multi-service architecture — particularly around JWT authentication, token propagation in request headers, and handling asynchronous API responses correctly. Working through those flows deepened my understanding of how the auth layer intersects with every feature.
 
-### <PLACEHOLDER: mvisca-g/Martin>
-- **Responsibilities**: Tech Lead
-- **Modules delivered**: Framework, Public API, User Management, 2FA, AI Opponent, Backend as microservices.
-- **Notable challenges & solutions**: To find where the query param was lost and find the way to make it persistent. After four different approaches, registering app.decorateRequest('wsRawUrl', '') made the property persistent through all the request lifecycle. The req.raw.url was captured at gateway hook onRequest and stored safely 
+dkurcbar / Diego
+
+    Role: Developer
+    Modules delivered: Framework (f/b), Realtime WS, Standard User Management, Backend as Microservices, Centralized UI for OpenAPI Documentation, Gateway & Secured Internal API
+    Notable challenges & solutions: When deploying on 42's machines, we encountered two critical environment-specific issues. First, ports 443 and 80 are not available on 42's network — we had to adjust the nginx and Docker Compose configuration to use allowed ports. Second, the UUID generation for user IDs produced values exceeding the maximum integer allowed by 42's SQLite configuration — we resolved this by switching to a string-based UUID strategy consistent across all services.
+
+mvisca-g / Martin
+
+    Role: Tech Lead
+    Modules delivered: Framework (f/b), Realtime WS, Notification System, Custom-made Design System, Standard User Management, 2FA, AI Opponent, Backend as Microservices, Gateway & Secured Internal API, Shared Contract Library
+    Notable challenges & solutions: The hardest debugging session involved a query parameter (wsRawUrl) that was captured correctly in the gateway's onRequest hook but was lost by the time the WebSocket handler ran. After four different approaches, the root cause turned out to be that @fastify/websocket v11 instantiates a separate request object for the WS handler, so properties set in hooks don't persist into it. The fix was registering app.decorateRequest('wsRawUrl', '') to declare the property on the Fastify request prototype first, then assigning it in onRequest — making it available throughout the full request lifecycle including the WebSocket handler.
+
 
 ---
 
