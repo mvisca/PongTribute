@@ -261,7 +261,7 @@ export default function App() {
 			case WEBSOCKET_EVENTS.MATCH_REJECTED:
 				useMatchStore.getState().setPendingEvent({ type: 'friend_rejected'});
 				new Audio('/chicken.mp3').play().catch(() => {});
-				warning('🐔'); 
+				warning('🐔: Friend rejected challenge'); 
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:
