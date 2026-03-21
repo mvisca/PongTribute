@@ -138,10 +138,10 @@ docker exec -it ft_transcendence_redis redis-cli
 
 | 42 login   | Name        | Role(s)         | Responsibilities                                          |
 |------------|-------------|-----------------|-----------------------------------------------------------|
-| <mehernan> | <Meritxell> | Product Owner   | < product vision, backlog, validation, stakeholder comms> |
-| <jocuni-p> | <Joan>      | Product Manager | < planning, tracking, removing blockers, facilitation>    |
-| <mvisca-g> | <Martin>    | Tech Lead       | < architecture, key decisions, code quality, reviews>     |
-| <dkurcbar> | <Diego>     | Developer       | < features implemented, ownership areas>                  |
+| mehernan | Meritxell | Product Owner   | < product vision, backlog, validation, stakeholder comms> |
+| jocuni-p | Joan      | Product Manager | < planning, tracking, removing blockers, facilitation>    |
+| mvisca-g | Martin    | Tech Lead       | < architecture, key decisions, code quality, reviews>     |
+| dkurcbar | Diego     | Developer       | < features implemented, ownership areas>                  |
 
 ---
 
@@ -214,47 +214,28 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 
 ## Database Schema
 DB file: `docker/anonymous/volume/path` (path is configured via `USER_SERVICE_DB_*`).
-                         +----------------------+
-                         |        users         |
-                         +----------------------+
-                         | id (PK)              |
-                         | username             |
-                         | email                |
-                         | password_hash        |
-                         | avatar               |
-                         | is_online            |
-                         | is_deleted           |
-                         | has_2fa_enabled      |
-                         | totp_secret          |
-                         | backup_code_hash     |
-                         | last_logout_at       |
-                         | created_at           |
-                         | updated_at           |
-                         +----------+-----------+
-                                    |
-        ----------------------------+----------------------------
-        |                           |                           |
-       hash                  user_id firends_id       player1_id player2_id
-        |                           |                           |
-+----------------------+   +----------------------+   +----------------------+
-|   refresh_tokens     |   |     friendships      |   |       matches        |
-+----------------------+   +----------------------+   +----------------------+
-| id (PK)              |   | user_id (FK) --------+   | id (PK)              |
-| user_id (FK) --------+---| friend_id (FK) ------+   | status               |
-| token_hash           |   | initiator_id         |   | player1_id (FK) -----+
-| expires_at           |   | status               |   | player1_username     |
-| is_2fa_verified      |   | created_at           |   | player1_avatar       |
-| created_at           |   | updated_at           |   | player1_score        |
-+----------------------+   +----------+-----------+   | player2_id (FK) -----+
-                                                      | player2_username     |
-                                                      | player2_avatar       |
-                                                      | player2_score        |
-                                                      | winner_id            |
-                                                      | game_mode            |
-                                                      | target_score         |
-                                                      | created_at           |
-                                                      | finished_at          |
-                                                      +----------------------+
+                     +----------------------+
+                     |        users         |
+                     +----------------------+
+                     | id (PK)              |
+                     | username             |
+                     | email                |
+                     | password_hash        |
+                     | avatar               |
+                     | is_online            |
+                     | is_deleted           |
+                     | has_2fa_enabled      |
+                     | totp_secret          |
+                     | backup_code_hash     |
+                     | last_logout_at       |
+                     | created_at           |
+                     | updated_at           |
+                     +----------+-----------+
+                                |
+    ----------------------------+----------------------------
+    |                           |                           |
+   hash                user_id friends_id          player1_id player2_id
+    |                           |                           |
 DB file: `packages/game/db/<game.db>` (path is configured via       `GAME_SERVICE_DB_*`).                                   
                             
         +--------------------+
@@ -310,19 +291,19 @@ DB file: `packages/game/db/<game.db>` (path is configured via `GAME_SERVICE_DB_*
 
 | Category           | Module                      | Type  |Point| Owner(s)                      |
 |--------------------|-----------------------------|-------|-----|-------------------------------|
-| <WEB>              | <Framework>                 | Major |  2  | <All>                         |
-| <WEB>              | <WebSocket Game>            | Major |  2  | <jocuni-p>                    |
-| <WEB>              | <Public API>                | Major |  2  | <All>                         |
-| <WEB>              | <Custom-made design system> | Minor |  1  | <mehernan>>                   |
-| <USER MANAGEMENTS> | <User management>           | Major |  2  | <mvisca-g, mehernan, dkurcbar>|
-| <USER MANAGEMENTS> | <2FA>                       | Minor |  1  | <mvisca-g>                    |
-| <AI>               | <AI Opponent>               | Major |  2  | <mvisca-g>                    |
-| <GAMING>           | <Game>                      | Major |  2  | <jocuni-p>                    |
-| <GAMING>           | <Remote players >           | Major |  2  | <jocuni-p>                    |
-| <GAMING>           | <Customisation options>     | Minor |  1  | <jocuni-p>                    |
-| <DEVOPS>           | <Backend as microservices>  | Major |  2  | <All>                         |
+| WEB              | Framework                 | Major |  2  | All                         |
+| WEB              | WebSocket Game            | Major |  2  | jocuni-p                    |
+| WEB              | Public API                | Major |  2  | All                         |
+| WEB              | Custom-made design system | Minor |  1  | mehernan                   |
+| USER MANAGEMENTS | User management           | Major |  2  | mvisca-g, mehernan, dkurcbar|
+| USER MANAGEMENTS | 2FA                       | Minor |  1  | mvisca-g                    |
+| AI               | AI Opponent               | Major |  2  | mvisca-g                    |
+| GAMING           | Game                      | Major |  2  | jocuni-p                    |
+| GAMING           | Remote players            | Major |  2  | jocuni-p                    |
+| GAMING           | Customisation options     | Minor |  1  | jocuni-p                    |
+| DEVOPS           | Backend as microservices  | Major |  2  | All                         |
 
-**Total points**:  <19>
+**Total points**:  19
 
 ### Justification and implementation
 
@@ -363,7 +344,7 @@ For each module:
   - **Who implemented it**: mvisca-g
 
 - **IV.6 GAMING AND USER EXPERIENCE**: Game
-  - **Why we chose it**: Previously, we were working on the old subject, which asked us to create a Pong game. When we switched to the new subject, we continued with the game since we had already started working on it.
+  - **Why we chose it**: Previously, we were working on the old f, which asked us to create a Pong game. When we switched to the new subject, we continued with the game since we had already started working on it.
   - **How it was implemented**: The game is rendered in the frontend (canvas-based), with logic for movement, collisions, and scoring. The backend synchronizes the state between players.
   - **Who implemented it**: jocuni-p
 
