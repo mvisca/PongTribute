@@ -416,7 +416,7 @@ Provide a detailed breakdown per person.
 - **Notable challenges & solutions**: When I ran the nearly complete project on 42, we encountered errors. We were exposing ports 443 and 80, which aren't allowed on 42; we were using the user ID, and on 42 the maximum value is too large, so it caused an error.
 
 ### <PLACEHOLDER: mvisca-g/Martin>
-- **Responsibilities**: Architect
+- **Responsibilities**: Tech Lead
 - **Modules delivered**: Framework, Public API, User Management, 2FA, AI Opponent, Backend as microservices.
 - **Notable challenges & solutions**: To find where the query param was lost and find the way to make it persistent. After four different approaches, registering app.decorateRequest('wsRawUrl', '') made the property persistent through all the request lifecycle. The req.raw.url was captured at gateway hook onRequest and stored safely 
 
