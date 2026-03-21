@@ -202,7 +202,6 @@ services:
           VITE_API_URL: ${VITE_API_URL}
           VITE_WS_COMMS_URL: ${VITE_WS_COMMS_URL}
           VITE_WS_GAME_URL: ${VITE_WS_GAME_URL}
-          VITE_DEBUG: ${VITE_DEBUG}
           VITE_DEFAULT_AVATAR: ${VITE_DEFAULT_AVATAR}
       container_name: ft_transcendence_nginx
       restart: always
