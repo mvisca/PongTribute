@@ -316,10 +316,17 @@ export class GameService {
         rivalSocket?.send(msg);
         
         // 4. Iniciamos cuenta atrás para victoria automática
+        // Cancelar cualquier timeout previo para este matchId antes de crear uno nuevo
+        // (dos eventos 'close' rápidos pueden llegar antes de que la reconexión llegue)
+        const existingTimeout = this.disconnectTimeouts.get(targetMatchId);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+
         const timeoutId = setTimeout(() => {
             this.forfeitMatch(targetMatchId, userId);
-        }, GameConstants.GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT); 
-        
+        }, GameConstants.GAME_CONSTANTS.IN_MATCH_DISCONNECTION_TIMEOUT);
+
         this.disconnectTimeouts.set(targetMatchId, timeoutId);
     }
     
@@ -530,10 +537,11 @@ export class GameService {
         
         // Saca el que recibió el punto (o el que anotó, según prefieras, aquí saca el que anotó)
         const direction = (scorerSide === 'left') ? 1 : -1; 
-        
-        // USANDO DX/DY
-        game.ball.dx = direction * config.ballSpeedBase;
-        game.ball.dy = 0; 
+
+		// USANDO DX/DY
+		const angle = (Math.random() *2 - 1) * (Math.PI / 6);
+        game.ball.dx = direction * config.ballSpeedBase * Math.cos(angle);
+        game.ball.dy = config.ballSpeedBase * Math.sin(angle); 
     }
     
     // -------------------------------------------------------------------
@@ -551,7 +559,7 @@ export class GameService {
         const midX = fullConfig.CANVAS_WIDTH / 2;
         
         const isLeft = Math.random() < 0.5;
-        const angle = (Math.random() * 2 - 1) * (Math.PI / 4);
+        const angle = (Math.random() * 2 - 1) * (Math.PI / 6);
         
         return {
             id: matchId, 

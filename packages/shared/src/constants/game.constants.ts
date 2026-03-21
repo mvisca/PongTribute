@@ -60,7 +60,7 @@ export namespace GameConstants {
 		CANVAS_WIDTH:   800,
 		CANVAS_HEIGHT:  600,
 		PADDLE_WIDTH:   10,
-		PADDLE_HEIGHT:  60,
+		PADDLE_HEIGHT:  80,
 		BALL_RADIUS:    6,
 		WALL_MARGIN:    15,
 		FPS:            60,
