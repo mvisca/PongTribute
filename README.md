@@ -276,7 +276,7 @@ DB file: `packages/game/db/<game.db>` (path is configured via       `GAME_SERVIC
 
 ### User service (SQLite)
 
-DB file: `docker/anonimus/volume/path` (path is configured via `USER_SERVICE_DB_*`).
+DB file: `docker/anonymous/volume/path` (path is configured via `USER_SERVICE_DB_*`).
 
 ### Game service (SQLite)
 
