@@ -37,9 +37,9 @@ help:
 	@echo "  make ps           - List compose containers. Requires .env"
 	@echo "  make stop         - Stop containers (no remove). Use 'make up' to start again"
 	@echo "  make nuke         - Remove DB files (from .env paths), delete dev TLS certificates and then docker system prune -a -f --volumes. Requires .env"	@echo "  make env-export   - Exports GUI to the father env with eval <dollar>(make env-export)"
-	@echo "  make open-browser - Open http://localhost in your default browser"
+	@echo "  make open-browser - Open https://localhost:8443 in your default browser"
 	@echo "  make rebuild      - Force docker compose up -d --build (rebuild stack). Requires .env"
-	@echo "  make re           - Rebuild stack (docker compose up -d --build) and open http://localhost in your default browser"
+	@echo "  make re           - Rebuild stack (docker compose up -d --build) and open https://localhost:8443 in your default browser"
 	@echo "  make download     - Download required base images from AWS Public ECR and tag them locally"
 
 check-env:
