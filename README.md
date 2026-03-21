@@ -312,19 +312,24 @@ DB file: `packages/game/db/<game.db>` (path is configured via `GAME_SERVICE_DB_*
 
 | Category           | Module                      | Type  |Point| Owner(s)                      |
 |--------------------|-----------------------------|-------|-----|-------------------------------|
-| WEB              | Framework                 | Major |  2  | All                         |
-| WEB              | WebSocket Game            | Major |  2  | jocuni-p                    |
-| WEB              | Public API                | Major |  2  | All                         |
-| WEB              | Custom-made design system | Minor |  1  | mehernan                   |
-| USER MANAGEMENTS | User management           | Major |  2  | mvisca-g, mehernan, dkurcbar|
+| WEB              | Framework (f/b)               | Major |  2  | All                         |
+| WEB              | Realtime WS                   | Major |  2  | jocuni-p, mvisca-g, dkurcbar |
+| WEB              | WebSocket Game                | Major |  2  | jocuni-p                    |
+| WEB              | Notification System           | Minor |  1  | jocuni-p mvisca-g           |
+| WEB              | Custom-made design system | Minor |  1  | mehernan mvisca-g               |
+| ACCESSIBILITY    | Support for Additionl Browsers | Minor | 1 | mehernan jocuni-p |
+| USER MANAGEMENTS | Standard User management  | Major |  2  | all                         |
 | USER MANAGEMENTS | 2FA                       | Minor |  1  | mvisca-g                    |
-| AI               | AI Opponent               | Major |  2  | mvisca-g                    |
-| GAMING           | Game                      | Major |  2  | jocuni-p                    |
+| AI               | AI Opponent               | Major |  2  | jocuni-p                    |
+| GAMING           | Complete Web Based Game   | Major |  2  | jocuni-p                    |
 | GAMING           | Remote players            | Major |  2  | jocuni-p                    |
 | GAMING           | Customisation options     | Minor |  1  | jocuni-p                    |
 | DEVOPS           | Backend as microservices  | Major |  2  | All                         |
+| MODULE OF CHOICE | Centralized UI for OpenAPI Documentation  | Minior |  1  | dkurcbar |                         |
+| MODULE OF CHOICE | Gateway & Secured Internal API Rest | Minor | 1 | dkurcbar jocuni-p mvisca-g |
+| MODULE OF CHOICE | Shared Contract Library (TBsch) | Minor | 1 | mvisca-g jocuni-p |
 
-**Total points**:  19
+**Total points**:  24
 
 ### Justification and implementation
 
