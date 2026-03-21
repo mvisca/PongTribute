@@ -214,28 +214,49 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 
 ## Database Schema
 DB file: `docker/anonymous/volume/path` (path is configured via `USER_SERVICE_DB_*`).
-                     +----------------------+
-                     |        users         |
-                     +----------------------+
-                     | id (PK)              |
-                     | username             |
-                     | email                |
-                     | password_hash        |
-                     | avatar               |
-                     | is_online            |
-                     | is_deleted           |
-                     | has_2fa_enabled      |
-                     | totp_secret          |
-                     | backup_code_hash     |
-                     | last_logout_at       |
-                     | created_at           |
-                     | updated_at           |
-                     +----------+-----------+
-                                |
-    ----------------------------+----------------------------
-    |                           |                           |
-   hash                user_id friends_id          player1_id player2_id
-    |                           |                           |
+```text
+                        +----------------------+
+                         |        users         |
+                         +----------------------+
+                         | id (PK)              |
+                         | username             |
+                         | email                |
+                         | password_hash        |
+                         | avatar               |
+                         | is_online            |
+                         | is_deleted           |
+                         | has_2fa_enabled      |
+                         | totp_secret          |
+                         | backup_code_hash     |
+                         | last_logout_at       |
+                         | created_at           |
+                         | updated_at           |
+                         +----------+-----------+
+                                    |
+        ----------------------------+----------------------------
+        |                           |                           |
+       hash                user_id friends_id          player1_id player2_id
+        |                           |                           |
++----------------------+   +----------------------+   +----------------------+
+|    refresh_tokens    |   |     friendships      |   |        matches       |
++----------------------+   +----------------------+   +----------------------+
+| id (PK)              |   | user_id (FK) --------+   | id (PK)              |
+| user_id (FK) --------+---| friend_id (FK) ------+   | status               |
+| token_hash           |   | initiator_id         |   | player1_id (FK) -----+
+| expires_at           |   | status               |   | player1_username     |
+| is_2fa_verified      |   | created_at           |   | player1_avatar       |
+| created_at           |   | updated_at           |   | player1_score        |
++----------------------+   +----------+-----------+   | player2_id (FK) -----+
+                                                      | player2_username     |
+                                                      | player2_avatar       |
+                                                      | player2_score        |
+                                                      | winner_id            |
+                                                      | game_mode            |
+                                                      | target_score         |
+                                                      | created_at           |
+                                                      | finished_at          |
+                                                      +----------------------+
+```
 DB file: `packages/game/db/<game.db>` (path is configured via       `GAME_SERVICE_DB_*`).                                   
                             
         +--------------------+
