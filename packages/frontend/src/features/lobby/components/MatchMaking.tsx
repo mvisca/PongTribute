@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
+import { MatchConstants } from '@transcendence/shared/constants/match.constants.js';
 
-const QUEUE_TIMEOUT_S = 90;
+const QUEUE_TIMEOUT_S = MatchConstants.QUEUE_TIMEOUT_MS / 1000;
 
 interface Props {
 	gameMode: string;

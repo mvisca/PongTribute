@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AvatarDisplay } from '../../../shared/components/ui';
+import { MatchConstants } from '@transcendence/shared/constants/match.constants.js';
 
-const INVITE_TIMEOUT_S = 60;
+const INVITE_TIMEOUT_S = MatchConstants.PRIVATE_INVITATION_TIMEUT_MS / 1000;
 
 interface Props{
 	friendUsername: string;
