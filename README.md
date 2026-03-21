@@ -424,7 +424,7 @@ Alongside AI, we relied on peer support and external learning resources. We occa
 
 --
 
-## Limitatios
+## Limitations
 - There is a mistake in the user experience. There is a technical debt; an upgrade is needed for the connection management. When in an online game, the opponent disconnects, the waiting player waits 15 seconds, but if it disconnects and reconnects, the player starts playing vs the disconnected opponent. The game loses the pause state and stays playing.
 
 - One thing that was left out but would have improved the user experience: connection and disconnection notifications could be displayed as a widget below the friends list.
