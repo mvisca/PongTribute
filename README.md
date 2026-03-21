@@ -182,7 +182,6 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 - **Vite** (dev/build)
 - **Tailwind CSS**
 - **Zustand** (state management)
-- **BabylonJS** (game renderer)
 
 ### Backend
 - **Runtime**: Node.js
