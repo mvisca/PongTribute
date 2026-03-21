@@ -25,7 +25,7 @@ export default function FriendWaiting({friendUsername, friendAvatar, onCancel, o
 
 	return (
 		<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
-			<AvatarDisplay src={friendAvatar} size='lg' />
+			<AvatarDisplay src={friendAvatar} size='md' />
 			<h2 className='text-2xl tracking-widest'>WAITING FOR</h2>
 			<p className='text-xl text-purple-300 tracking-widest'>{friendUsername}</p>
 

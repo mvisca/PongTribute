@@ -156,7 +156,7 @@ export class FriendshipService {
 				return newFriendship;
 			}
 
-			throw new SharedErrors.ConflictError('Friendship already exists', 'friendship', {
+			throw new SharedErrors.ConflictError('Friendship already exists or is pending.', 'friendship', {
 				initiatorId,
 				friendId,
 				operation: 'createFriendship',

@@ -291,7 +291,7 @@ export class MatchService {
 		const activeMatchOpponent = await this.matchRepo.findActiveMatchByUserId(opponentId);
 		if (activeMatchOpponent)
 			throw new SharedErrors.ConflictError(
-			'Opponent is already in an active match',
+			'Opponent is already in an active match or waiting in the lobby',
 			'MatchService.createPrivatMatch',
 			{
 				userId: userId,
