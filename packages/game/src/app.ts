@@ -61,15 +61,6 @@ export function buildApp(
 			docExpansion: 'list',
 			deepLinking: false
 		},
-		theme: {
-			title: 'Transcendence Game API',
-			css: [
-				{
-					filename: 'swagger-custom.css',
-					content: SWAGGER_THEME_CSS
-				}
-			]
-		}
 	});
 
 	// REGISTRO DE WEBSOCKETS

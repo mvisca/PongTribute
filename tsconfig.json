@@ -32,8 +32,4 @@
 		{ "path": "./packages/bot" }
 
 	],
-	"files": [],
-	"exclude": [
-		"packages/images/**/*"
-	]
 }

@@ -39,15 +39,6 @@ export function buildApp(deps: ImagesAppDependencies): FastifyInstance {
 			docExpansion: 'list',
 			deepLinking: false
 		},
-		theme: {
-			title: 'Transcendence Images API',
-			css: [
-				{
-					filename: 'swagger-custom.css',
-					content: SWAGGER_THEME_CSS
-				}
-			]
-		}
 	});
 
 	app.addHook('onRoute', (route) => {
