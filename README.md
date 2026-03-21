@@ -75,6 +75,8 @@ The app is deployed using the **Makefile**. No Node.js or pnpm is required on th
 
 **Start the stack** (build images and start containers; no-op if already running):
 
+-  Note: The name of the head branch is `42-compatible`
+
 ```bash
 make
 # or: make up_build
@@ -166,6 +168,7 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 - <GitHubCodespaces: (early-stage frontend development and testing)>
 - <Notion: (architecture planning, diagrams, and shared notes)>
 - <Docker/DockerCompose (development and deployment environment)>
+
 
 **Communication**:
 - <Campus: (Initially, discussions were held in person on campus)>
