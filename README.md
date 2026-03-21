@@ -82,24 +82,24 @@ make
 
 **Makefile targets** (run `make help` for the full list):
 
-| Target | Description |
-|--------|-------------|
-| `make` / `make all` | Start stack (build + up), then open browser. No-op if already running. |
-| `make up_build` | Build images and start containers. No-op if already running. |
-| `make up` | Start containers only (no build). No-op if already running. |
-| `make build` | Build Docker images only. |
-| `make rebuild` | Force rebuild and start (`docker compose up -d --build`). |
-| `make re` | Rebuild stack and open browser. |
-| `make debug` | Build and start in foreground (logs in terminal). |
-| `make down` | Stop and remove containers and network. Keeps images and volumes. |
-| `make stop` | Stop containers (no remove). Use `make up` to start again. |
-| `make clean` | Down + remove locally built images. Keeps volumes (data). |
-| `make fclean` | Down + remove local images + remove volumes (full reset, data lost). |
-| `make nuke` | Remove DB files, dev TLS certs, then `docker system prune -a -f --volumes`. Destructive. |
-| `make logs` | Follow Docker Compose logs. |
-| `make ps` | List running containers. |
-| `make open-browser` | Open https://localhost in the default browser. |
-| `make download` | Pull required base images from AWS Public ECR. |
+| Target              | Description                                                                              |
+|---------------------|------------------------------------------------------------------------------------------|
+| `make` / `make all` | Start stack (build + up), then open browser. No-op if already running.                   |
+| `make up_build`     | Build images and start containers. No-op if already running.                             |
+| `make up`           | Start containers only (no build). No-op if already running.                              |
+| `make build`        | Build Docker images only.                                                                |
+| `make rebuild`      | Force rebuild and start (`docker compose up -d --build`).                                |
+| `make re`           | Rebuild stack and open browser.                                                          |
+| `make debug`        | Build and start in foreground (logs in terminal).                                        |
+| `make down`         | Stop and remove containers and network. Keeps images and volumes.                        |
+| `make stop`         | Stop containers (no remove). Use `make up` to start again.                               |
+| `make clean`        | Down + remove locally built images. Keeps volumes (data).                                |
+| `make fclean`       | Down + remove local images + remove volumes (full reset, data lost).                     |
+| `make nuke`         | Remove DB files, dev TLS certs, then `docker system prune -a -f --volumes`. Destructive. |
+| `make logs`         | Follow Docker Compose logs.                                                              |
+| `make ps`           | List running containers.                                                                 |
+| `make open-browser` | Open https://localhost in the default browser.                                           |
+| `make download`     | Pull required base images from AWS Public ECR.                                           |
 
 ### Run in development mode (optional)
 
@@ -128,8 +128,6 @@ pnpm docker:logs
 ```bash
 pnpm redis:cli
 ```
-
-- <PLACEHOLDER: common issues (certs, ports in use, UID/GID, volumes permissions, VITE_* URLs, etc.)>
 
 ---
 
@@ -212,8 +210,68 @@ This approach allowed us to stay aligned while adapting to changes in both team 
 ---
 
 ## Database Schema
-
-Provide a **visual diagram** or a clear description.
+                         +----------------------+
+                         |        users         |
+                         +----------------------+
+                         | id (PK)              |
+                         | username             |
+                         | email                |
+                         | password_hash        |
+                         | avatar               |
+                         | is_online            |
+                         | is_deleted           |
+                         | has_2fa_enabled      |
+                         | totp_secret          |
+                         | backup_code_hash     |
+                         | last_logout_at       |
+                         | created_at           |
+                         | updated_at           |
+                         +----------+-----------+
+                                    |
+        ----------------------------+----------------------------
+        |                           |                           |
+       hash                  user_id firends_id      player1_id player2_id
+        |                           |                           |
++----------------------+   +----------------------+   +----------------------+
+|   refresh_tokens     |   |     friendships      |   |       matches        |
++----------------------+   +----------------------+   +----------------------+
+| id (PK)              |   | user_id (FK) --------+   | id (PK)              |
+| user_id (FK) --------+---| friend_id (FK) ------+   | status               |
+| token_hash           |   | initiator_id         |   | player1_id (FK) -----+
+| expires_at           |   | status               |   | player1_username     |
+| is_2fa_verified      |   | created_at           |   | player1_avatar       |
+| created_at           |   | updated_at           |   | player1_score        |
++----------------------+   +----------+-----------+   | player2_id (FK) -----+
+                                                      | player2_username     |
+                                                      | player2_avatar       |
+                                                      | player2_score        |
+                                                      | winner_id            |
+                                                      | game_mode            |
+                                                      | target_score         |
+                                                      | created_at           |
+                                                      | finished_at          |
+                                                      +----------------------+
+                                          
+                            
+        +--------------------+
+        |      matches       |
+        +--------------------+
+        | id (PK)            |
+        | status             |
+        | player1_id (FK)    |
+        | player1_username   |
+        | player1_avatar     |
+        | player1_score      |
+        | player2_id (FK)    |
+        | player2_username   |
+        | player2_avatar     |
+        | player2_score      |
+        | winner_id          |
+        | game_mode          |
+        | target_score       |
+        | created_at         |
+        | finished_at        |
+        +--------------------+
 
 ### User service (SQLite)
 
@@ -238,10 +296,7 @@ DB file: `packages/game/db/<game.db>` (path is configured via `GAME_SERVICE_DB_*
   - `player1_*` fields (id/username/avatar/score)
   - `player2_*` fields (id/username/avatar/score, nullable while waiting)
   - `game_mode`, `target_score`, `created_at`, `finished_at`
-- `tournaments`
   - `id`, `name`, `status`, `winner_id`, `created_at`, `finished_at`
-- `tournament_participants`
-  - `tournament_id`, `user_id`, `alias`
 
 ---
 
@@ -345,29 +400,25 @@ For each module:
 
 Provide a detailed breakdown per person.
 
-### <PLACEHOLDER: login/name>
-- **Responsibilities**: <PLACEHOLDER>
-- **Features delivered**: <PLACEHOLDER>
-- **Modules delivered**: <PLACEHOLDER>
-- **Notable challenges & solutions**: <PLACEHOLDER>
+### <PLACEHOLDER: jocuni-p/Joan>
+- **Responsibilities**: Product Manager
+- **Modules delivered**: Framework, websocket game, Public API, Game, Remote PLayers, customisation options. backend as microservices
+- **Notable challenges & solutions**: adaptar el proyecto al logger con pinu
 
-### <PLACEHOLDER: login/name>
-- **Responsibilities**: <PLACEHOLDER>
-- **Features delivered**: <PLACEHOLDER>
-- **Modules delivered**: <PLACEHOLDER>
-- **Notable challenges & solutions**: <PLACEHOLDER>
+### <PLACEHOLDER: mehernan/Meritxell>
+- **Responsibilities**: Product Owner
+- **Modules delivered**: Fraework, Public API, custom-made desing system, user management,  backend as microservices
+- **Notable challenges & solutions**: The most challenging part for me was integrating the frontend with the backend. At that stage of the project, I was not very familiar with how frontend and backend communication works, especially when dealing with APIs, authentication tokens, and asynchronous requests. 
 
-### <PLACEHOLDER: login/name>
-- **Responsibilities**: <PLACEHOLDER>
-- **Features delivered**: <PLACEHOLDER>
-- **Modules delivered**: <PLACEHOLDER>
-- **Notable challenges & solutions**: <PLACEHOLDER>
+### <PLACEHOLDER: dkurcbar/Diego>
+- **Responsibilities**: Developer
+- **Modules delivered**: Framework, Public Api, User management, Backend as microservices
+- **Notable challenges & solutions**: When I ran the nearly complete project on 42, we encountered errors. We were exposing ports 443 and 80, which aren't allowed on 42; we were using the user ID, and on 42 the maximum value is too large, so it caused an error.
 
-### <PLACEHOLDER: login/name>
-- **Responsibilities**: <PLACEHOLDER>
-- **Features delivered**: <PLACEHOLDER>
-- **Modules delivered**: <PLACEHOLDER>
-- **Notable challenges & solutions**: <PLACEHOLDER>
+### <PLACEHOLDER: mvisca-g/Martin>
+- **Responsibilities**: Architect
+- **Modules delivered**: Framework, Public API, User Management, 2FA, AI Opponent, Backend as microservices.
+- **Notable challenges & solutions**: To find where the query param was lost and find the way to make it persistent. After four different approaches, registering app.decorateRequest('wsRawUrl', '') made the property persistent through all the request lifecycle. The req.raw.url was captured at gateway hook onRequest and stored safely 
 
 ---
 
@@ -382,20 +433,13 @@ AI was mainly used as an interactive learning resource. It allowed us to ask dir
 
 Alongside AI, we relied on peer support and external learning resources. We occasionally received help from other students, especially when discussing concepts or debugging complex issues. We used YouTube tutorials and online documentation to reinforce our understanding and learn best practices.
 
-### References (link de joan)
+### References (link to projects notes)
 
-- React documentation: <PLACEHOLDER: link>
-- Vite documentation: <PLACEHOLDER: link>
-- Tailwind CSS documentation: <PLACEHOLDER: link>
-- Fastify documentation: <PLACEHOLDER: link>
-- Docker Compose documentation: <PLACEHOLDER: link>
-- Nginx documentation: <PLACEHOLDER: link>
-- Redis documentation: <PLACEHOLDER: link>
-- WebSocket reference: <PLACEHOLDER: link>
-- 42 ft_transcendence subject / evaluation notes: <PLACEHOLDER: link or internal reference>
+- https://glaze-weather-506.notion.site/TRANSCENDENCE-2c2d7ac27c868021bca2e1aa313f8d20
 
----
+--
 
-## Known limitations
+## Limitatios
+- There is a mistake in the user experience. There is a technical debt; an upgrade is needed for the connection management. When in an online game, the opponent disconnects, the waiting player waits 15 seconds, but if it disconnects and reconnects, the player starts playing vs the disconnected opponent. The game loses the pause state and stays playing.
 
-- <PLACEHOLDER: e.g., no Safari support yet, missing feature X, performance constraint, etc.>
+- One thing that was left out but would have improved the user experience: connection and disconnection notifications could be displayed as a widget below the friends list.
