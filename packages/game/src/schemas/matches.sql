@@ -32,3 +32,11 @@ CREATE TABLE IF NOT EXISTS matches (
     created_at INTEGER NOT NULL,
     finished_at INTEGER
 );
+
+-- Índices para velocidad (Inspirados en indexes.sql [cite: 229])
+-- No tiene que recorrer toda la base (fila a fila) para encontrar algo
+-- sino que le permite saltar a las filas relevantes.
+CREATE INDEX IF NOT EXISTS idx_matches_status ON matches(status);
+CREATE INDEX IF NOT EXISTS idx_matches_p1 ON matches(player1_id);
+CREATE INDEX IF NOT EXISTS idx_matches_p2 ON matches(player2_id);
+CREATE INDEX IF NOT EXISTS idx_matches_finished ON matches(finished_at DESC);
