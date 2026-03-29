@@ -178,7 +178,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
                     <div className='border-t border-purple-700' />
                     <div>
                         <h2 className='retro-title-sm mb-1'>
-                            REQUESTS ({Object.keys(pending).length})
+                            FRIEND REQUEST ({Object.keys(pending).length})
                         </h2>
                         <div className='flex flex-col gap-1'>
                             {Object.values(pending).map(req => (

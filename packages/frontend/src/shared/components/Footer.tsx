@@ -13,7 +13,7 @@ export default function Footer() {
 
 				{/* Izquierda: autores y año */}
 				<div className='flex flex-col gap-1'>
-					<p>© {new Date().getFullYear()} PING🏓PONG</p>
+					<p>© {new Date().getFullYear()} PONG🏓TRIBUTE</p>
 					<div className='flex flex-wrap gap-3'>
 						{authors.map((a) => (
 							<a

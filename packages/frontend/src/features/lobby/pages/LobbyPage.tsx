@@ -21,10 +21,10 @@ const MENU_ITEMS: { type: MatchType; label: string }[] = [
 ];
 
 const SETUP_TITLES: Record<MatchType, string> = {
-	public:	 'ONLINE MATCH',
-	local:	 'LOCAL MATCH',
-	bot:	 'VS BOT',
-	private: 'CHALLENGE FRIEND',
+	public:	 'ONLINE MATCH SETTINGS',
+	local:	 'LOCAL MATCH SETTINGS',
+	bot:	 'BOT MATCH SETTINGS',
+	private: 'CHALLENGE SETTINGS FRIEND',
 };
 
 export default function LobbyPage() {
@@ -242,7 +242,7 @@ export default function LobbyPage() {
                 return (
 					<>
 					<MatchSetup
-					title={`CHALLENGE ${friendUsername.toUpperCase()}`}
+					title={`MATCH SETTINGS VS ${friendUsername.toUpperCase()}`}
 					onStart={handleFriendStart}
 					onBack={() => setStep('menu')}
 					loading={loading}
@@ -274,7 +274,7 @@ export default function LobbyPage() {
 			default:
 				return (
 					<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
-						<h1 className='text-2xl tracking-widest'style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #a855f7' }}>PING 🏓 PONG</h1>
+						<h1 className='text-2xl tracking-widest'style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #a855f7' }}>PONG🏓TRIBUTE</h1>
 						<div className='arcade-menu'>
 							{MENU_ITEMS.map(({ type, label }) => (
 								<button

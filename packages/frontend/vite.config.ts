@@ -53,13 +53,13 @@ export default defineConfig(({ command }) => ({
 		open: false,
 		proxy: {
 			'/api': {
-				target: 'https://localhost',
+				target: 'https://localhost:8443', // Ojo aquí, revisar
 				changeOrigin: true,
 				secure: false,
 				ws: true,
 			},
 			'/ws': {
-				target: 'wss://localhost',
+				target: 'wss://localhost:8443', // Ojo aquí, revisar
 				changeOrigin: true,
 				secure: false,
 				ws: true,

@@ -53,7 +53,7 @@ export default function Navbar() {
 		<>
 			<nav className='fixed top-0 left-0 right-0 z-50 bg-purple-900 border-b border-purple-700 px-6 py-3 flex items-center justify-between'>
 				<span className='text-purple-300 font-bold text-lg tracking-widest'>
-					PING🏓PONG
+					PONG🏓TRIBUTE
 				</span>
 
 				<div className='flex items-center gap-4 ml-auto'>
