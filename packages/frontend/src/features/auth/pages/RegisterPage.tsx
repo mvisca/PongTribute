@@ -12,6 +12,7 @@ import {
 	LinkButton,
 	AlertError,
 	AvatarUploader,
+	LoadingScreen,
 } from '../../../shared/components/ui';
 import { getProfile } from '../../profile/api/profileApi';
 
@@ -30,6 +31,7 @@ export default function RegisterPage() {
 	const [username, setUsername] = useState('');
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
+	const [loading, setLoading] = useState(false);
 	const [errors, setErrors] = useState<ErrorsState>({
 		username: '',
 		email: '',
@@ -62,10 +64,12 @@ export default function RegisterPage() {
 
 	async function handleRegister() {
 		setError('');
-
+		
 		// Validate inputs before submitting
 		if (!validateInputs()) return;
-
+		
+		setLoading(true);
+		
 		try {
 			const data = await register(username, email, password, avatarBase64 ?? undefined);
 			
@@ -78,9 +82,11 @@ export default function RegisterPage() {
 			navigate('/profile');
 
 		} catch (err: any) {
+			setLoading(false);
 			setError(err?.message ?? 'Register failed');
 		}
 	}
+	if (loading) return <LoadingScreen />;
 
 	return (
 		<PageContainer>

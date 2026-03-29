@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { login } from '../api/authApi';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { PageContainer, FormCard, FormInput, PasswordInput, ArcadeButton, LinkButton, AlertError } from '../../../shared/components/ui';
+import { PageContainer, FormCard, FormInput, PasswordInput, ArcadeButton, LinkButton, AlertError, LoadingScreen } from '../../../shared/components/ui';
 import { getProfile } from '../../profile/api/profileApi';
 
 export default function LoginPage() {
@@ -14,25 +14,28 @@ export default function LoginPage() {
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
+	const [loading, setLoading] = useState(false);
 
 	async function handleLogin() {
 		setError('');
-
+		
 		if (!email || !password) {
 			setError('Email and password are required');
 			return;
 		}
-
+		
 		if (!validate(email, Validators.email)) {
 			setError(Validators.email.message);
 			return;
 		}
-
+		
 		if (!validate(password, Validators.password)) {
 			setError(Validators.password.message);
 			return;
 		}
-
+		
+		setLoading(true);
+		
 		try{
 			const data = await login(email, password);
 			if ('twoFactorRequired' in data) {
@@ -52,10 +55,13 @@ export default function LoginPage() {
 
 			//navigate('/profile');
 			navigate("/home")
-		} catch(err: any) {
+		} catch (err: any) {
+			setLoading(false);
 			setError(err?.message ?? 'Login failed');
 		}
 	}
+
+	if (loading) return <LoadingScreen />;
 
 	return (
 		<PageContainer>

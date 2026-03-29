@@ -32,7 +32,9 @@ interface GameSession {
     loopId: NodeJS.Timeout | null;
     isLocal: boolean;
     inputP1: number; // -1 up; 0 none; 1 down
-    inputP2: number;
+	inputP2: number;
+	frozenUntil: number;
+	pendingReset: 'left' | 'right' | null; 
 }
 
 /**
@@ -98,11 +100,13 @@ export class GameService {
                         loopId: null,
                         gameState: this.createInitialState(matchId, match.targetScore, match.gameMode),
                         inputP1: 0,
-                        inputP2: 0,
+						inputP2: 0,
+						frozenUntil: 0,
+						pendingReset: null,
                     } satisfies GameSession;
                     this.activeMatches.set(matchId, session);
                 } else {
-                    // MATCH No Existe en DB, es juego local
+                    // MATCH No Existe en DB, es juego local/bot
                     const raw = await this.redis.get(`match:local:${matchId}`);
                     
                     // Re-check tras el segundo await: misma protección para partidas locales.
@@ -132,7 +136,9 @@ export class GameService {
                             loopId: null,
                             gameState: this.createInitialState(matchId, local.targetScore, local.gameMode),
                             inputP1: 0,
-                            inputP2: 0,
+							inputP2: 0,
+							frozenUntil: 0,
+							pendingReset: null,
                         } satisfies GameSession;
                         this.activeMatches.set(matchId, session);
                     }
@@ -392,38 +398,49 @@ export class GameService {
     private updatePhysics(session: GameSession): string | null {
         const { config, ball, paddleLeft, paddleRight } = session.gameState;
         
+		
         // A. Movimiento de Palas (Inercia)
         const paddleMaxY = config.height - config.paddleHeight;
         const paddles: [GameTypes.PaddleState, number][] = [
-            [paddleLeft, session.inputP1],
+			[paddleLeft, session.inputP1],
             [paddleRight, session.inputP2],
         ];
-
+		
         paddles.forEach(([paddle, input]) => {
-            if (config.hasInertia) {
-                if (input !== 0) {
-                    // Aceleración exponencial: cada tick añade más que el anterior
+			if (config.hasInertia) {
+				if (input !== 0) {
+					// Aceleración exponencial: cada tick añade más que el anterior
                     const progress = Math.min(Math.abs(paddle.dy) / config.paddleSpeed, 1);
                     const force = config.paddleSpeed * (config.accel ?? 0.12) * (1 + progress);
                     paddle.dy += input * force;
                     // Cap estricto a paddleSpeed
                     paddle.dy = Math.max(-config.paddleSpeed, Math.min(config.paddleSpeed, paddle.dy));
                 } else {
-                    // Friction: deceleración progresiva hasta parar
+					// Friction: deceleración progresiva hasta parar
                     paddle.dy *= (1 - (config.friction ?? 0.18));
                     if (Math.abs(paddle.dy) < 0.05) paddle.dy = 0; // snap a cero para evitar salidas de canvas
                 }
             }
             // (no-inertia: dy ya fue seteado directamente en processInput, no se toca aquí)
-
+			
             // Move — una sola vez
             paddle.y += paddle.dy;
-
+			
             // Clamp posición
             if (paddle.y < 0) { paddle.y = 0; paddle.dy = 0; }
             if (paddle.y > paddleMaxY) { paddle.y = paddleMaxY; paddle.dy = 0; }
         });
         
+		// Freeze check (breve pausa tras gol)
+		if (session.frozenUntil > 0) {
+			if (Date.now() < session.frozenUntil) return null; // aún esperando
+			// Tiempo cumplido → sacar bola
+			this.resetBall(session.gameState, session.pendingReset!);
+			session.frozenUntil = 0;
+			session.pendingReset = null;
+			return null;
+		}
+
         // B. Ball movement
         ball.x += ball.dx;
         ball.y += ball.dy;
@@ -477,9 +494,17 @@ export class GameService {
             // DEVOLVEMOS el ganador al loop principal
             return scorer === 'paddleLeft' ? session.player1Id : session.player2Id;
         } else {
-            this.resetBall(session.gameState, scorer === 'paddleLeft' ? 'left' : 'right');
-            return null;
-        }
+			//this.resetBall(session.gameState, scorer === 'paddleLeft' ? 'left' : 'right');
+			// Mover bola al centro (invisible durante el freeze)
+			session.gameState.ball.x = session.gameState.config.width / 2;
+			session.gameState.ball.y = session.gameState.config.height / 2;
+			session.gameState.ball.dx = 0;
+			session.gameState.ball.dy = 0;
+			// Freeze 1 segundo antes del saque
+			session.frozenUntil = Date.now() + 1000;
+			session.pendingReset = scorer === 'paddleLeft' ? 'left' : 'right';
+			return null;
+		}
     }
     
     /**
