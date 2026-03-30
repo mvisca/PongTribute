@@ -60,7 +60,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
             setSearchResult(null);
             setSearchInput('');
             showFeedback('Request sent!', true);
-        } catch (err: any) {
+		} catch (err: any) {
             setSearchError(err?.message ?? 'Failed to send request');
         }
     };
@@ -154,8 +154,8 @@ export function FriendsWidget( { onPlayToFather }: Props) {
                     <p className={`text-xs mt-1 ${feedback.ok ? 'text-green-400' : 'text-red-400'}`}>
                         {feedback.msg}
                     </p>
-                )}
-
+				)}
+				{/*
                 {searchResult && (
                     <div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
                         <div className='flex items-center gap-2'>
@@ -170,8 +170,31 @@ export function FriendsWidget( { onPlayToFather }: Props) {
                         </button>
                     </div>
                 )}
-            </div>
-
+				*/}
+				{searchResult && (
+					(() => {
+						const isAlreadyFriend = !!friends[searchResult.id];
+						if (isAlreadyFriend) {
+							return <p className='text-xs text-red-400 mt-1'>Already friends</p>;
+						}
+						return (
+							<div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
+								<div className='flex items-center gap-2'>
+									<AvatarDisplay src={searchResult.avatar} size='sm' />
+									<span className='text-[10px] text-purple-200'>{searchResult.username}</span>
+								</div>
+								<button
+									onClick={() => handleSendRequest(searchResult.id)}
+									className='arcade-btn-sm'
+								>
+									ADD
+								</button>
+							</div>
+						);
+					})()
+				)}
+			</div>
+			
             {/* PENDING REQUESTS */}
             {Object.keys(pending).length > 0 && (
                 <>
