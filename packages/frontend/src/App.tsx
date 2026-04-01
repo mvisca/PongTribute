@@ -128,12 +128,12 @@ export default function App() {
 			// Social presence
 			case WEBSOCKET_EVENTS.FRIEND_ONLINE:
 				setOnline(msg.payload.userId, true);
-				info(`${msg.payload.username} is online`);
+				info(`'${msg.payload.username}' is online`);
 				break;
 			
 			case WEBSOCKET_EVENTS.FRIEND_OFFLINE:
 				setOnline(msg.payload.userId, false);
-				info(`${msg.payload.username} is offline`);
+				info(`'${msg.payload.username}' is offline`);
 				break;
 
 			case WEBSOCKET_EVENTS.FRIEND_PROFILE_UPDATED:
@@ -150,7 +150,7 @@ export default function App() {
 				action({
 					id: msg.payload.senderId,
 					type: TOAST_TYPE.INFO,
-					message: `${msg.payload.senderUsername} wants to be your friend`,
+					message: `'${msg.payload.senderUsername}' wants to be your friend`,
 					duration: 0,
 					actions: [{ 
 						label: 'Accept',
@@ -195,7 +195,7 @@ export default function App() {
 					avatar: profile?.avatar ?? msg.payload.acceptorAvatar,
 					isOnline: profile?.isOnline ?? true,
 				});
-				success(`${msg.payload.acceptorUsername} is now your friend`);
+				success(`'${msg.payload.acceptorUsername}' is now your friend`);
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_REMOVE:
@@ -208,7 +208,7 @@ export default function App() {
 				action({
 					id: msg.payload.matchId,
 					type: TOAST_TYPE.INFO,
-					message: `${msg.payload.inviterUsername} challenges you to a ${msg.payload.gameMode} match`,
+					message: `'${msg.payload.inviterUsername}' challenges you to a ${msg.payload.gameMode} match`,
 					duration: 0,
 					expiresAt: msg.payload.expiresAt,
 					actions: [
@@ -261,7 +261,7 @@ export default function App() {
 			case WEBSOCKET_EVENTS.MATCH_REJECTED:
 				useMatchStore.getState().setPendingEvent({ type: 'friend_rejected'});
 				new Audio('/chicken.mp3').play().catch(() => {});
-				warning('🐔: Friend rejected challenge'); 
+				warning('🐔 Friend rejected challenge'); 
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:

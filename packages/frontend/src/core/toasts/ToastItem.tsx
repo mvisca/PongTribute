@@ -5,10 +5,10 @@ import { TOAST_VARIANT, TOAST_TYPE, TOAST_BUTTON_STYLE} from './toast.types';
 
 // Icons for severity
 const ICONS: Record<string, string> = {
-    [TOAST_TYPE.INFO]:    'ℹ',
-    [TOAST_TYPE.SUCCESS]: '✓',
-    [TOAST_TYPE.ERROR]:   '✕',
-    [TOAST_TYPE.WARNING]: '⚠',
+    [TOAST_TYPE.INFO]:    '🔔',  // 'ⓘ ℹ'
+    [TOAST_TYPE.SUCCESS]: '✅',   // '✓ ✔'
+    [TOAST_TYPE.ERROR]:   '❌', // '✕ 🚫'
+    [TOAST_TYPE.WARNING]: '⚠️', // '⚠'
 };
 
 // Color for severity
@@ -35,7 +35,7 @@ export function ToastItem({ toast }: { toast: Toast }) {
 		return () => clearTimeout(timer);
 	}, [toast.id, toast.duration]);
 
-	// Countdow for invitations with countdown
+	// Countdown for invitations with countdown
 	useEffect(() => {
 		// Only for action toasts with expiration timestamp
 		if (toast.variant !== TOAST_VARIANT.ACTION || !toast.expiresAt) return;
