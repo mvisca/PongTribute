@@ -21,7 +21,8 @@ export namespace GameConstants {
 
 	// runtime game status (not the same as match db status)
 	export const GAME_STATUS = {
-		WAITING:  'WAITING',
+		WAITING: 'WAITING',
+		COUNTDOWN: 'COUNTDOWN',
 		PLAYING:  'PLAYING',
 		PAUSED:   'PAUSED',
 		FINISHED: 'FINISHED',
@@ -31,7 +32,8 @@ export namespace GameConstants {
 
 	// websocket update type
 	export const GAME_UPDATE_TYPE = {
-		STATE_CHANGED:  'state_changed',
+		STATE_CHANGED: 'state_changed',
+		COUNTDOWN_TICK: 'countdown_tick',
 		SCORE_UPDATE:   'score_updated',
 		GAME_FINISHED:  'game_finished',
 		PAUSED:         'game_paused',

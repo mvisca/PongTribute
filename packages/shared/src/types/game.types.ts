@@ -64,6 +64,7 @@ export namespace GameTypes {
 		// Unimos dimensiones + reglas de modo para que el front tenga TODO el contexto
 		config: GameConfig & GameModeConfig;
 		targetScore: number;
+		countdownValue?: number;
 		status: GameConstants.GameStatus; // 'waiting' | 'playing' | 'paused' | 'finished'
 		winnerId?: UserTypes.UserId;  // UUID del usuario ganador (si finished)
 	}

@@ -206,6 +206,21 @@ export default function GamePage() {
 					</Overlay>
 				);
 			
+			case 'countdown':
+				return (
+					// bg-black/60: (semitransparente) para que los jugadores sigan viendo el tablero 
+					// y sus palas de fondo mientras se preparan.
+					// pointer-events-none: no queremos que este div intercepte clics accidentales 
+					// si tenemos lógica de ratón en el futuro.
+					// text-[10rem] y drop-shadow: Clases Tailwind para hacer el número masivo
+					//  (10 veces el tamaño base) y añade un brillo púrpura para que resalte.
+                    <div className='absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-lg pointer-events-none z-50'>
+                        <span className='text-[10rem] font-extrabold text-white animate-pulse drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]'>
+                            {gameStateRef.current?.countdownValue}
+                        </span>
+                    </div>
+                );
+			
 			case 'opponent_disconnected':
 				return (
 					<Overlay>
@@ -218,9 +233,11 @@ export default function GamePage() {
 			
 			case 'finished':
 				const won = gameOver?.winnerId === currentUserId;
-				const winnerText = isLocal
-					? (gameOver?.winnerId === matchInfo?.opponentId ? 'PLAYER 2️⃣ WINNS!' : 'PLAYER 1️⃣ WINNS!')
-					: (won ?  '🏆 YOU WIN!' : '🍷 YOU LOSE!');
+				// Si es local, mostramos un mensaje neutro. Si es online, mostramos Win/Lose.
+                const winnerText = isLocal
+				// 	? (gameOver?.winnerId === matchInfo?.opponentId ? 'PLAYER 2️⃣ WINNS!' : 'PLAYER 1️⃣ WINNS!')
+					? '🏁 MATCH FINISHED!'
+                    : (won ? '🏆 YOU WIN!' : '🍷 YOU LOSE!');
 				return (
 					<Overlay>
 						<p className='text-2xl mb-4'>{winnerText}</p>
@@ -237,7 +254,7 @@ export default function GamePage() {
 				return (
 					<Overlay>
 						<p className='text-red-400 mb-4'>{error || 'Connection lost'}</p>
-						<button className='arcade-btn px-6 py-2' onClick={() => navigate('/home')}>
+						<button className='arcade-btn px-6 py-2 text-base' onClick={() => navigate('/home')}>
 							BACK TO LOBBY
 						</button>
 					</Overlay>

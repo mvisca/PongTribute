@@ -29,7 +29,8 @@ interface GameSession {
     socketP1: WebSocket | null;
     socketP2: WebSocket | null;
     gameState: GameTypes.GameState;
-    loopId: NodeJS.Timeout | null;
+	loopId: NodeJS.Timeout | null;
+	countdownId: NodeJS.Timeout | null;
     isLocal: boolean;
     inputP1: number; // -1 up; 0 none; 1 down
 	inputP2: number;
@@ -97,7 +98,8 @@ export class GameService {
                         isLocal: false,
                         socketP1: null,
                         socketP2: null,
-                        loopId: null,
+						loopId: null,
+						countdownId: null,
                         gameState: this.createInitialState(matchId, match.targetScore, match.gameMode),
                         inputP1: 0,
 						inputP2: 0,
@@ -133,7 +135,8 @@ export class GameService {
                             isLocal: true,
                             socketP1: null,
                             socketP2: null,
-                            loopId: null,
+							loopId: null,
+							countdownId: null,
                             gameState: this.createInitialState(matchId, local.targetScore, local.gameMode),
                             inputP1: 0,
 							inputP2: 0,
@@ -190,7 +193,8 @@ export class GameService {
         
         const matchWaiting = session.gameState.status === GameConstants.GAME_STATUS.WAITING;
         const matchOn = session.gameState.status === GameConstants.GAME_STATUS.PAUSED
-                        || session.gameState.status === GameConstants.GAME_STATUS.PLAYING;
+			|| session.gameState.status === GameConstants.GAME_STATUS.PLAYING
+			|| session.gameState.status === GameConstants.GAME_STATUS.COUNTDOWN;
         const isLocalHuman = session.isLocal && !isBotMatch;
         const isLocalBotOrRemote = session.socketP1 && session.socketP2;
 
@@ -198,11 +202,11 @@ export class GameService {
             this.handleReconnection(session, matchId, isPlayer1);
         } else if (matchWaiting) {
             if (isLocalHuman && session.socketP1) {
-                // Local humano vs humano: comparten socket, arranca con P1
-                this.startGameLoop(session);
+				// Local humano vs humano: comparten socket, arranca con P1
+				this.startCountdown(session);
             } else if (isLocalBotOrRemote) {
                 // Remota o bot: ambos sockets deben estar conectados
-                this.startGameLoop(session);
+				this.startCountdown(session);
             }
         }
         
@@ -231,8 +235,14 @@ export class GameService {
             }
         } satisfies WebSocketEventsTypes.GameOpponentReconnected;
         
-        rivalSocket?.send(JSON.stringify(msg));
-        
+		rivalSocket?.send(JSON.stringify(msg));
+		
+        if (session.gameState.status === GameConstants.GAME_STATUS.COUNTDOWN) {
+			this.log.info({ matchId }, 'Reconnection during countdown: waiting for timer');
+			return; 
+		}
+
+    	// Solo arrancamos el loop si la partida ya debería estar en movimiento
         this.startGameLoop(session);
     }
     
@@ -375,6 +385,38 @@ export class GameService {
         }, 1000 / GameConstants.GAME_CONSTANTS.FPS);
     }
     
+
+	private startCountdown(session: GameSession) {
+		// A. Limpieza: por seguridad, llama a un método que limpie countdownId si ya existía
+		this.stopGameLoop(session);
+		
+		// B. Estado: Cambia session.gameState.status a COUNTDOWN
+		this.log.info({ matchId: session.matchId }, 'Starting game countdown');
+		session.gameState.status = GameConstants.GAME_STATUS.COUNTDOWN; // Aseguramos estado countdown
+		
+		// C. Variable de control
+		let count = 3;
+		// Sincroniza el valor inicial
+		session.gameState.countdownValue = count;
+		
+		// Avisar del cambio de estado a COUNTDOWN
+		this.broadcastState(session, GameConstants.GAME_UPDATE_TYPE.STATE_CHANGED);
+
+		// E. El Intervalo:
+		session.countdownId = setInterval(() => {
+			if (count > 1) {
+				count--;
+				session.gameState.countdownValue = count; // Actualizo la fuente de la verdad
+				this.broadcastState(session, GameConstants.GAME_UPDATE_TYPE.COUNTDOWN_TICK);
+			} else {
+				// El contador llegó a 0 (después de mostrar el 1)
+				session.gameState.countdownValue = 0;
+				this.stopGameLoop(session); // Limpia el countdownId
+				this.startGameLoop(session); // Cambia a PLAYING y arranca física de juego
+			}
+		}, 1000);
+	}
+
     /**
     * Helper para limpiar el intervalo de NodeJS y liberar la referencia.
     */
@@ -383,7 +425,11 @@ export class GameService {
         if (session.loopId) {
             clearInterval(session.loopId);
             session.loopId = null;
-        }
+		}
+		if (session.countdownId) {
+        clearInterval(session.countdownId);
+        session.countdownId = null;
+    	}
     }
     
     
@@ -392,7 +438,7 @@ export class GameService {
     // -------------------------------------------------------------------
     
     /**
-    * Calcula un frame de física: movimiento, colisiones y puntuación.
+    * Calcula frame de física: movimiento, colisiones y puntuación.
     * @returns string con el ID del ganador si se alcanzó el targetScore, o null.
     */
     private updatePhysics(session: GameSession): string | null {

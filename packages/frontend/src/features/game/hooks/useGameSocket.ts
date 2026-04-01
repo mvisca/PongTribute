@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { WS_GAME_URL } from '../../../core/ws/wsUrls';
 import type { WebSocketEventsTypes, GameTypes } from '@transcendence/shared/types/index.js';
-import type { GameConstants as GC } from '@transcendence/shared/constants/game.constants.js';
+import { GameConstants as GC } from '@transcendence/shared/constants/game.constants.js';
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 
 
@@ -15,7 +15,7 @@ export interface MatchInfo {
 	playerSide: 'left' | 'right';
 }
 
-export type GameStatus = 'connecting' | 'joined' | 'playing' | 'finished' | 'opponent_disconnected' | 'error';
+export type GameStatus = 'connecting' | 'joined' | 'countdown' | 'playing' | 'finished' | 'opponent_disconnected' | 'error';
 
 interface GameSocketState {
 	status: GameStatus;
@@ -54,6 +54,17 @@ export function useGameSocket(matchId: string) {
 		wsRef.current?.close();
 		wsRef.current = null;
 	}, []);
+
+
+	// Instancia el sonido. Define la referencia vacía especificando el tipo de TypeScript
+	const beepSound = useRef<HTMLAudioElement | null>(null);
+
+	// Inicializa el audio solo una vez al montar el hook
+	useEffect(() => {
+		beepSound.current = new Audio('/p5.mp3');
+	}, []);
+
+
 
 	// Keeps tokenRef updated
 	useEffect(() => {
@@ -100,10 +111,26 @@ export function useGameSocket(matchId: string) {
 					
 					case WEBSOCKET_EVENTS.GAME_UPDATE:
 						gameStateRef.current = msg.payload.gameState;
-						setState(s => s.status !== 'playing'
-							? { ...s, status: 'playing', gameState: msg.payload.gameState }
-							: s								
-						);
+
+						const isTick = msg.payload.updateType === GC.GAME_UPDATE_TYPE.COUNTDOWN_TICK;
+						const isInitialCountdown = msg.payload.updateType === GC.GAME_UPDATE_TYPE.STATE_CHANGED 
+												&& msg.payload.gameState.status === GC.GAME_STATUS.COUNTDOWN;
+
+						// Si es un tick (2, 1) o el inicio de la cuenta atrás (3)
+						if (isTick || isInitialCountdown) {
+							if (beepSound.current) {
+								beepSound.current.currentTime = 0;
+								beepSound.current.play().catch(e => console.warn('Audio bloqueado', e));
+							}
+							
+							setState(s => ({ ...s, status: 'countdown', gameState: msg.payload.gameState }));
+						}
+						else if (msg.payload.gameState.status === GC.GAME_STATUS.PLAYING) {
+							setState(s => s.status !== 'playing'
+								? { ...s, status: 'playing', gameState: msg.payload.gameState }
+								: s
+							);
+						}
 						break;
 
 					case WEBSOCKET_EVENTS.GAME_OVER:
