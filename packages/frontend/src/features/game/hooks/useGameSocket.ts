@@ -15,7 +15,7 @@ export interface MatchInfo {
 	playerSide: 'left' | 'right';
 }
 
-export type GameStatus = 'connecting' | 'joined' | 'countdown' | 'playing' | 'finished' | 'opponent_disconnected' | 'error';
+export type GameStatus = 'connecting' | 'joined' | 'countdown' | 'playing' | 'paused' | 'finished' | 'opponent_disconnected' | 'error';
 
 interface GameSocketState {
 	status: GameStatus;
@@ -130,6 +130,13 @@ export function useGameSocket(matchId: string) {
 								? { ...s, status: 'playing', gameState: msg.payload.gameState }
 								: s
 							);
+						}
+						// Manejo de pausa
+						else if (msg.payload.updateType === GC.GAME_UPDATE_TYPE.PAUSED) {
+							setState(s => ({ ...s, status: 'paused' }));
+						}
+						else if (msg.payload.updateType === GC.GAME_UPDATE_TYPE.RESUMED) {
+							setState(s => ({ ...s, status: 'playing' }));
 						}
 						break;
 

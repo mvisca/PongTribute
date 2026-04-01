@@ -80,6 +80,7 @@ export default function GamePage() {
 				case 's': case 'S': sendAction(GAME_ACTION.MOVE_DOWN, PLAYER_SIDE.LEFT); break;
 				case 'ArrowUp': sendAction(GAME_ACTION.MOVE_UP, PLAYER_SIDE.RIGHT); e.preventDefault(); break;
 				case 'ArrowDown': sendAction(GAME_ACTION.MOVE_DOWN, PLAYER_SIDE.RIGHT); e.preventDefault(); break;
+				case ' ': e.preventDefault(); sendAction(GAME_ACTION.PAUSE_TOGGLE); break;
 			}
 		} else {
 			switch (e.key) {
@@ -231,6 +232,16 @@ export default function GamePage() {
 					</Overlay>
 				)
 			
+			case 'paused':
+				return (
+					<div className='absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-lg z-50'>
+						<span className='text-6xl font-extrabold text-white drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]'>
+							PAUSED
+						</span>
+						<p className='text-purple-400 text-sm mt-4'>Press SPACE to resume</p>
+					</div>
+				);
+			
 			case 'finished':
 				const won = gameOver?.winnerId === currentUserId;
 				// Si es local, mostramos un mensaje neutro. Si es online, mostramos Win/Lose.
@@ -320,7 +331,7 @@ export default function GamePage() {
 				</div>
 
 				{/* Forfeit button */}
-				{(status === 'playing' || status === 'joined' || status === 'opponent_disconnected') && (
+				{(status === 'playing' || status === 'paused' || status === 'joined' || status === 'opponent_disconnected') && (
 					<div className='flex items-center justify-center h-10 mt-1'>
 						{!confirmingForfeit
 							?  (
