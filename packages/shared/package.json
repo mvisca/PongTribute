@@ -12,10 +12,8 @@
 		"./*": "./dist/*"
 	},
 	"scripts": {
-		"prebuild": "tsx scripts/generate-json-schemas.ts",
 		"build": "tsc",
-		"build:schemas": "tsx scripts/generate-json-schemas.ts",
-		"postbuild": "echo 'OK - Shared compilado y contratos generados'"
+		"postbuild": "echo 'OK - Shared compilado'"
 	},
 	"devDependencies": {
 		"@types/bcryptjs": "3.0.0",
