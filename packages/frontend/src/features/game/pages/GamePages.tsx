@@ -71,6 +71,11 @@ export default function GamePage() {
 
 	const handleKeyDown = useCallback((e: KeyboardEvent) => {
 		if (keysDown.current.has(e.key)) return; // prevent repeat
+
+		// Guard: No capturar si el foco está en un input/textarea/select
+		const tag = (e.target as HTMLElement)?.tagName;
+			if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+			
 		keysDown.current.add(e.key);
 
 		if (isLocal) {
@@ -93,6 +98,9 @@ export default function GamePage() {
 	const handleKeyUp = useCallback((e: KeyboardEvent) => {
 		keysDown.current.delete(e.key);
 
+		const tag = (e.target as HTMLElement)?.tagName;
+		if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+		
 		if (isLocal) {
 			// Left paddle (w-W-s-S)
 			if (['w', 'W', 's', 'S'].includes(e.key)) {
