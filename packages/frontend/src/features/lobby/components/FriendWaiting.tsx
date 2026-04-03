@@ -7,35 +7,43 @@ const INVITE_TIMEOUT_S = MatchConstants.PRIVATE_INVITATION_TIMEOUT_MS / 1000;
 interface Props{
 	friendUsername: string;
 	friendAvatar: string;
+	rejectedBy?: string;
+	expired?: boolean;
+	onExpired?: () => void;
 	onCancel: () => void;
 	onPlayBot: () => void;
 }
 
-export default function FriendWaiting({friendUsername, friendAvatar, onCancel, onPlayBot}: Props) {
+export default function FriendWaiting({friendUsername, friendAvatar, rejectedBy, expired, onExpired, onCancel, onPlayBot}: Props) {
 	const [remaining, setRemaining] = useState(INVITE_TIMEOUT_S);
 
 	useEffect(() => {
+		if (rejectedBy || expired) return;
 		const interval = setInterval(() => {
 			setRemaining(s => {
-				if (s <= 1) { clearInterval(interval); return 0; }
+				if (s <= 1) { clearInterval(interval); onExpired?.(); return 0; }
 				return s - 1;
 			});
 		}, 1000);
 		return () => clearInterval(interval);
-	}, []);
+	}, [rejectedBy, expired, onExpired]);
 
 	return (
 		<div className='w-full h-full flex flex-col items-center justify-center gap-8'>
-			<AvatarDisplay src={friendAvatar} size='md' />
 			<h2 className='text-2xl tracking-widest'>WAITING FOR</h2>
+			<AvatarDisplay src={friendAvatar} size='md' />
 			<p className='text-xl text-purple-300 tracking-widest'>{friendUsername}</p>
 
 			<div className='text-4xl font-bold tracking-widest'>
-				{remaining > 0 ? `${remaining}s` : '–'}
+				{rejectedBy ? '–' : remaining > 0 ? `${remaining}s` : '–'}
 			</div>
 
-			{remaining === 0 && (
-				<p className='text-sm text-yellow-400'>Friend did not respond</p>
+			{rejectedBy && (
+				<p className='text-base text-yellow-500'>{rejectedBy} declined your invitation</p>
+			)}
+
+			{!rejectedBy && (expired || remaining === 0) && (
+				<p className='text-base text-yellow-500'>Friend did not respond - Expired request</p>
 			)}
 
 			<div className='flex gap-8 mt-4'>

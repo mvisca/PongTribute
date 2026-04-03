@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { createMatch, leaveQueue, cancelMatch } from '../../game/api/gameApi';
@@ -45,6 +45,28 @@ export default function LobbyPage() {
 	const [friendUsername, setFriendUsername] = useState('');
 	const [friendAvatar, setFriendAvatar] = useState('');
 	const [pendingMatchId, setPendingMatchId] = useState('');
+	
+	// Visual feedback states for event outcomes
+	const [friendRejected, setFriendRejected] = useState(false);
+	const [friendExpired, setFriendExpired] = useState(false);
+	const [queueExpired, setQueueExpired] = useState(false);
+
+	// Timer for delayed step transitions (timeout/rejected/expired)
+	const transitionTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+	const clearTransitionTimer = () => {
+		if (transitionTimer.current) {
+			clearTimeout(transitionTimer.current);
+			transitionTimer.current = undefined;
+		}
+	};
+
+	const resetFeedbackStates = () => {
+		setFriendRejected(false);
+		setFriendExpired(false);
+		setQueueExpired(false);
+	};
+
 
 	const [isSmallScreen, setIsSmallScreen] = useState(() => {
 		const hasNoKeyboard = !window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -60,6 +82,11 @@ export default function LobbyPage() {
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
+	// Cleanup transition timer on unmount
+	useEffect(() => {
+		return () => clearTransitionTimer();
+	}, []);
+
 	useEffect(() => {
 		if (!pendingEvent) return;
 
@@ -72,23 +99,23 @@ export default function LobbyPage() {
 			
 			case 'queue_timeout':
 				clearPendingEvent();
-				setError(pendingEvent.reason || 'Queue timed out - no opponent found');
-				setStep('setup');
+				if (!queueExpired) setQueueExpired(true); // fallback si el evento llegó antes
 				break;
-
+			
 			case 'friend_rejected':
 				clearPendingEvent();
-				setError(`${friendUsername} declined the invitation`);
 				setPendingMatchId('');
-				setStep('menu');
-				{/** Could stay in current step waiting for cance or play bot... */}
+				setFriendRejected(true);
+				transitionTimer.current = setTimeout(() => {
+					setFriendRejected(false);
+					setStep('menu');
+				}, 3000);
 				break;
 			
 			case 'friend_expired':
 				clearPendingEvent();
-				setError(`${friendUsername} did not respond in time`);
 				setPendingMatchId('');
-				setStep('menu');
+				if (!friendExpired) setFriendExpired(true); // fallback
 				break;
 			
 			case 'friend_cancelled':
@@ -101,6 +128,8 @@ export default function LobbyPage() {
 
 	// Main menu
 	const handleMenuSelect = (type: MatchType) => {
+		clearTransitionTimer();
+		resetFeedbackStates();
 		setMatchType(type);
 		setError('');
 		setStep('setup');
@@ -141,6 +170,8 @@ export default function LobbyPage() {
 	// Cancel public queue
 	const handleCancelQueue = async () => {
 		if (!token) return;
+		clearTransitionTimer();
+		resetFeedbackStates();
 		try { await leaveQueue(token); } catch {}
 		clearPendingEvent(); // In case an event arrives during cancell 
 		setStep('setup');
@@ -149,6 +180,8 @@ export default function LobbyPage() {
 	// Play vs bot (from matchmaking or friend_waiting)
 	const handlePlayBot = async () => {
 		if (!token) return;
+		clearTransitionTimer();
+		resetFeedbackStates();
 		setLoading(true);
 
 		// In case click comes from friend challenge
@@ -181,6 +214,8 @@ export default function LobbyPage() {
 
 	// Friend challenge from friend widget
 	const handleFriendChallenge = (id: string, username: string, avatar: string) => {
+		clearTransitionTimer();
+		resetFeedbackStates();
 		setFriendId(id);
 		setFriendUsername(username);
 		setFriendAvatar(avatar);
@@ -219,12 +254,33 @@ export default function LobbyPage() {
 
 	const handleCancelInvite = async () => {
 		if (!token) return;
+		clearTransitionTimer();
+		resetFeedbackStates();
 		if (pendingMatchId) {
 			try { await cancelMatch(pendingMatchId, token); } catch {}
 			setPendingMatchId('');
 		}
 		setStep('menu');
 	}
+
+	const handleQueueExpired = () => {
+		if (queueExpired) return; // guard contra doble llamada
+		setQueueExpired(true);
+		transitionTimer.current = setTimeout(() => {
+			setQueueExpired(false);
+			setStep('setup');
+		}, 3500);
+	};
+
+	const handleFriendExpired = () => {
+		if (friendExpired) return;
+		setFriendExpired(true);
+		setPendingMatchId('');
+		transitionTimer.current = setTimeout(() => {
+			setFriendExpired(false);
+			setStep('menu');
+		}, 3500);
+	};
 
 	// Render
 	const renderScreen = () => {
@@ -233,6 +289,8 @@ export default function LobbyPage() {
 				return (
 					<MatchMaking
 						gameMode={gameMode}
+						expired={queueExpired}
+						onExpired={handleQueueExpired}
 						onCancel={handleCancelQueue}
 						onPlayBot={handlePlayBot}
 					/>
@@ -255,6 +313,9 @@ export default function LobbyPage() {
                     <FriendWaiting
                         friendUsername={friendUsername}
 						friendAvatar={friendAvatar}
+						rejectedBy={friendRejected ? friendUsername : undefined}
+						expired={friendExpired}
+						onExpired={handleFriendExpired}
                         onCancel={handleCancelInvite}
                         onPlayBot={handlePlayBot}
                     />
