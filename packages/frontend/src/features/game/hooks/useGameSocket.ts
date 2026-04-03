@@ -6,6 +6,24 @@ import { GameConstants as GC } from '@transcendence/shared/constants/game.consta
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 
 
+let audioCtx: AudioContext | null = null;
+
+function playBeep(freq: number, durationMs: number) {
+    if (!audioCtx) audioCtx = new AudioContext();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';  // tipo de onda elegida
+    osc.frequency.value = freq;
+    const dur = durationMs / 1000;
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + dur);
+}
+
+
 export interface MatchInfo {
 	matchId: string;
 	opponentId: string;
@@ -54,16 +72,6 @@ export function useGameSocket(matchId: string) {
 		wsRef.current?.close();
 		wsRef.current = null;
 	}, []);
-
-
-	// Instancia el sonido. Define la referencia vacía especificando el tipo de TypeScript
-	const beepSound = useRef<HTMLAudioElement | null>(null);
-
-	// Inicializa el audio solo una vez al montar el hook
-	useEffect(() => {
-		beepSound.current = new Audio('/p5.mp3');
-	}, []);
-
 
 
 	// Keeps tokenRef updated
@@ -118,19 +126,18 @@ export function useGameSocket(matchId: string) {
 
 						// Si es un tick (2, 1) o el inicio de la cuenta atrás (3)
 						if (isTick || isInitialCountdown) {
-							if (beepSound.current) {
-								beepSound.current.currentTime = 0;
-								beepSound.current.play().catch(e => console.warn('Audio bloqueado', e));
-							}
-							
+							playBeep(600, 100);
 							setState(s => ({ ...s, status: 'countdown', gameState: msg.payload.gameState }));
 						}
 						else if (msg.payload.gameState.status === GC.GAME_STATUS.PLAYING) {
-							setState(s => s.status !== 'playing'
-								? { ...s, status: 'playing', gameState: msg.payload.gameState }
-								: s
-							);
+							setState(s => {
+								if (s.status === 'countdown') playBeep(600, 800);
+								return s.status !== 'playing'
+									? { ...s, status: 'playing', gameState: msg.payload.gameState }
+									: s;
+							});
 						}
+							
 						// Manejo de pausa
 						else if (msg.payload.updateType === GC.GAME_UPDATE_TYPE.PAUSED) {
 							setState(s => ({ ...s, status: 'paused' }));
