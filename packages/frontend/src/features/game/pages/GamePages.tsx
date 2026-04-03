@@ -187,6 +187,12 @@ export default function GamePage() {
 		}
 	}, [status, clearActiveMatchId]);
 	
+	// Auto-redirect to lobby after game over
+	useEffect(() => {
+		if (status !== 'finished') return;
+		const timer = setTimeout(() => navigate('/home'), 5000);
+		return () => clearTimeout(timer);
+	}, [status, navigate]);
 	
 	// Opponent discconnected countdown
 	useEffect(() => {
@@ -234,7 +240,7 @@ export default function GamePage() {
 				return (
 					<Overlay>
 						<p className='text-lg'>Opponent disconnected</p>
-						<p className='text-sm text-purple-400 mt-2'>
+						<p className='text-base text-yellow-500 mt-2'>
 							Waiting for reconnection... {disconnectCountdown}s
 						</p>
 					</Overlay>
@@ -243,10 +249,10 @@ export default function GamePage() {
 			case 'paused':
 				return (
 					<div className='absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-lg z-50'>
-						<span className='text-6xl font-extrabold text-white drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]'>
+						<span className='text-5xl font-extrabold text-white drop-shadow-[0_0_20px_rgba(168,85,247,0.8)]'>
 							PAUSED
 						</span>
-						<p className='text-purple-400 text-sm mt-4'>Press SPACE to resume</p>
+						<p className='text-yellow-500 text-base mt-4'>Press SPACE to resume</p>
 					</div>
 				);
 			
@@ -254,14 +260,17 @@ export default function GamePage() {
 				const won = gameOver?.winnerId === currentUserId;
 				// Si es local, mostramos un mensaje neutro. Si es online, mostramos Win/Lose.
                 const winnerText = isLocal
-				// 	? (gameOver?.winnerId === matchInfo?.opponentId ? 'PLAYER 2️⃣ WINNS!' : 'PLAYER 1️⃣ WINNS!')
 					? '🏁 MATCH FINISHED!'
                     : (won ? '🏆 YOU WIN!' : '🍷 YOU LOSE!');
 				return (
 					<Overlay>
-						<p className='text-2xl mb-4'>{winnerText}</p>
-						<p className='text-lg mb-6'>
-							{gameOver?.player1Score} - {gameOver?.player2Score}
+						<p className='text-4xl font-extrabold mb-6'
+							style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #a855f7' }}>
+							 {winnerText}
+						</p>
+						<p className='text-3xl mb-8'
+							style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7' }}>
+							 {gameOver?.player1Score} - {gameOver?.player2Score}
 						</p>
 						<button className='arcade-btn px-6 py-2 text-base' onClick={() => navigate('/home')}>
 							BACK TO LOBBY
@@ -272,7 +281,7 @@ export default function GamePage() {
 			case 'error':
 				return (
 					<Overlay>
-						<p className='text-red-400 mb-4'>{error || 'Connection lost'}</p>
+						<p className='text-base text-red-500 mb-4'>{error || 'Connection lost'}</p>
 						<button className='arcade-btn px-6 py-2 text-base' onClick={() => navigate('/home')}>
 							BACK TO LOBBY
 						</button>
