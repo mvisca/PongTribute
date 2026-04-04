@@ -6,7 +6,8 @@ import { useMatchStore } from '../../../features/lobby/store/matchStore';
 import { renderGame } from '../renderer/gameRender';
 import { GameConstants } from '@transcendence/shared/constants/game.constants.js';
 import { FriendsWidget } from '../../friends/components/FriendsWidget';
-import { AvatarDisplay } from '../../../shared/components/ui';
+import { AvatarDisplay, TimeoutBar } from '../../../shared/components/ui';
+import { FEEDBACK_LOBBY_MS } from '../../../shared/constants/ui.constants';
 
 const { GAME_ACTION, PLAYER_SIDE } = GameConstants;
 
@@ -190,7 +191,7 @@ export default function GamePage() {
 	// Auto-redirect to lobby after game over
 	useEffect(() => {
 		if (status !== 'finished') return;
-		const timer = setTimeout(() => navigate('/home'), 5000);
+		const timer = setTimeout(() => navigate('/home'), FEEDBACK_LOBBY_MS);
 		return () => clearTimeout(timer);
 	}, [status, navigate]);
 	
@@ -345,6 +346,10 @@ export default function GamePage() {
 						className='w-full h-full rounded-lg'
 					/>
 					{renderOverlay()}
+					<TimeoutBar
+						active={status === 'finished'}
+						durationMs={FEEDBACK_LOBBY_MS}
+					/>
 				</div>
 
 				{/* Forfeit button */}

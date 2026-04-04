@@ -8,6 +8,7 @@ import { FriendEntry } from '../store/friendsStore';
 import { FriendItem } from './FriendItem';
 import { AvatarDisplay } from '../../../shared/components/ui';
 import { useToastStore } from '../../../core/toasts';
+import { FEEDBACK_WIDGET_MS } from '../../../shared/constants/ui.constants';
 
 interface Props {
 	onPlayToFather?: (friendId: string, friendUsername: string, friendAvatar: string) => void;
@@ -34,7 +35,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 
 	const showFeedback = (msg: string, ok: boolean) => {
 		setFeedback({ msg, ok });
-		setTimeout(() => setFeedback(null), 3000);
+		setTimeout(() => setFeedback(null), FEEDBACK_WIDGET_MS);
 	};
 
     const handleSearch = async () => {
@@ -155,22 +156,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
                         {feedback.msg}
                     </p>
 				)}
-				{/*
-                {searchResult && (
-                    <div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
-                        <div className='flex items-center gap-2'>
-                            <AvatarDisplay src={searchResult.avatar} size='sm' />
-                            <span className='text-[10px] text-purple-200'>{searchResult.username}</span>
-                        </div>
-                        <button
-                            onClick={() => handleSendRequest(searchResult.id)}
-                            className='arcade-btn-sm'
-                        >
-                            ADD
-                        </button>
-                    </div>
-                )}
-				*/}
+				
 				{searchResult && (
 					(() => {
 						const isAlreadyFriend = !!friends[searchResult.id];

@@ -5,7 +5,16 @@ import type { WebSocketEventsTypes, GameTypes } from '@transcendence/shared/type
 import { GameConstants as GC } from '@transcendence/shared/constants/game.constants.js';
 import { WEBSOCKET_EVENTS } from '@transcendence/shared/constants/event.constants.js';
 
-
+/*
+* El AudioContext es la "tarjeta de sonido virtual" del navegador. 
+* Es costoso de crear, por eso se instancia una sola vez y se reutiliza. 
+* Todas las llamadas a playBeep comparten el mismo contexto.
+* Cada llamada a playBeep crea un sonido descartable que se auto-destruye, 
+* todo controlado por el reloj interno del AudioContext que es extremadamente 
+* preciso (resolución de microsegundos).
+* Una vez que el oscilador se detiene, el navegador lo descarta automáticamente 
+* de la memoria — no hay que hacer cleanup manual.
+*/
 let audioCtx: AudioContext | null = null;
 
 function playBeep(freq: number, durationMs: number) {

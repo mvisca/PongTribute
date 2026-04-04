@@ -6,10 +6,10 @@ import { GameConstants } from '@transcendence/shared/constants/game.constants.js
 import MatchSetup, { type ValidScore } from '../components/MatchSetup';
 import MatchMaking from '../components/MatchMaking';
 import FriendWaiting from '../components/FriendWaiting';
-import { AvatarDisplay } from '../../../shared/components/ui';
 import { useMatchStore } from '../store/matchStore';
 import { FriendsWidget } from '../../friends/components/FriendsWidget';
-
+import { FEEDBACK_LOBBY_MS } from '../../../shared/constants/ui.constants';
+import { AvatarDisplay, TimeoutBar } from '../../../shared/components/ui';
 
 type MatchType = 'public' | 'local' | 'bot' | 'private';
 type Step = 'menu' | 'setup' | 'matchmaking' | 'friend_setup' | 'friend_waiting';
@@ -99,23 +99,18 @@ export default function LobbyPage() {
 			
 			case 'queue_timeout':
 				clearPendingEvent();
-				if (!queueExpired) setQueueExpired(true); // fallback si el evento llegó antes
+				//if (!queueExpired) setQueueExpired(true); // fallback si el evento llegó antes
 				break;
 			
 			case 'friend_rejected':
 				clearPendingEvent();
-				setPendingMatchId('');
-				setFriendRejected(true);
-				transitionTimer.current = setTimeout(() => {
-					setFriendRejected(false);
-					setStep('menu');
-				}, 3000);
+				if (!friendRejected) handleFriendRejected();
 				break;
 			
 			case 'friend_expired':
 				clearPendingEvent();
 				setPendingMatchId('');
-				if (!friendExpired) setFriendExpired(true); // fallback
+				//if (!friendExpired) setFriendExpired(true); // fallback
 				break;
 			
 			case 'friend_cancelled':
@@ -269,7 +264,7 @@ export default function LobbyPage() {
 		transitionTimer.current = setTimeout(() => {
 			setQueueExpired(false);
 			setStep('setup');
-		}, 3500);
+		}, FEEDBACK_LOBBY_MS);
 	};
 
 	const handleFriendExpired = () => {
@@ -279,9 +274,19 @@ export default function LobbyPage() {
 		transitionTimer.current = setTimeout(() => {
 			setFriendExpired(false);
 			setStep('menu');
-		}, 3500);
+		}, FEEDBACK_LOBBY_MS);
 	};
 
+	const handleFriendRejected = () => {
+		if (friendRejected) return;
+		setFriendRejected(true);
+		setPendingMatchId('');
+		transitionTimer.current = setTimeout(() => {
+			setFriendRejected(false);
+			setStep('menu');
+		}, FEEDBACK_LOBBY_MS);
+	};
+	
 	// Render
 	const renderScreen = () => {
 		switch (step) {
@@ -377,6 +382,10 @@ export default function LobbyPage() {
 				)}
 				<div className='arcade-screen'>
 					{renderScreen()}
+					<TimeoutBar
+						active={queueExpired || friendExpired || friendRejected}
+						durationMs={FEEDBACK_LOBBY_MS}
+					/>
 				</div>
 			</div>
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Toast, ToastAction } from './toast.types.js';
 import { TOAST_TYPE, TOAST_VARIANT } from './toast.types.js';
+import { TOAST_GENERAL_MS } from '../../shared/constants/ui.constants.js';
 
 interface ToastState {
 	toasts: Toast[];
@@ -18,7 +19,7 @@ export const useToastStore = create<ToastState>((set) => ({
 	dismiss: (id) => 
 		set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
 
-	info: (message, duration = 3000) =>
+	info: (message, duration = TOAST_GENERAL_MS) =>
 		set((state) => ({ toasts: [...state.toasts, {
 			id: crypto.randomUUID(),
 			variant: TOAST_VARIANT.SIMPLE,
@@ -27,7 +28,7 @@ export const useToastStore = create<ToastState>((set) => ({
 			duration
 		}]})),
 	
-	success: (message, duration = 3000) => 
+	success: (message, duration = TOAST_GENERAL_MS) => 
 		set((state) => ({ toasts: [...state.toasts, {
 			id: crypto.randomUUID(),
 			variant: TOAST_VARIANT.SIMPLE,
@@ -36,7 +37,7 @@ export const useToastStore = create<ToastState>((set) => ({
 			duration
 		}]})),
 	
-	error: (message, duration = 4000) => 
+	error: (message, duration = TOAST_GENERAL_MS) => 
 		set((state) => ({ toasts: [...state.toasts, {
 			id: crypto.randomUUID(),
 			variant: TOAST_VARIANT.SIMPLE,
@@ -45,7 +46,7 @@ export const useToastStore = create<ToastState>((set) => ({
 			duration
 		}]})),
 	
-	warning: (message, duration = 3500) =>
+	warning: (message, duration = TOAST_GENERAL_MS) =>
 		set((state) => ({ toasts: [...state.toasts, {
 			id: crypto.randomUUID(),
 			variant: TOAST_VARIANT.SIMPLE,

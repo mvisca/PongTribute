@@ -10,6 +10,7 @@ import {
 	LinkButton,
 	AlertError,
 } from '../../../shared/components/ui';
+import { NAVIGATE_AFTER_MS } from '../../../shared/constants/ui.constants';
 
 export default function RecoverPasswordPage() {
 	const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function RecoverPasswordPage() {
 		try {
 			await confirmPasswordReset(token!, password);
 			setSuccess(true);
-			setTimeout(() => navigate('/login'), 2000);
+			setTimeout(() => navigate('/login'), NAVIGATE_AFTER_MS);
 		} catch (err: any) {
 			setError(err?.message ?? 'Reset failed. Link may have expired.');
 		}

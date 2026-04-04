@@ -11,3 +11,4 @@ export { default as LoadingScreen } from './LoadingScreen';
 export { default as AvatarDisplay } from './AvatarDisplay';
 export { default as AvatarUploader } from './AvatarUploader';
 export { default as Footer } from '../Footer';
+export { default as TimeoutBar } from './TimeoutBar';

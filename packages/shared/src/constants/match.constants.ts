@@ -7,12 +7,12 @@ export namespace MatchConstants {
 	/**
 	 * Timeout de permanencia en las 3 colas redis 
 	*/
-	export const QUEUE_TIMEOUT_MS = 20000; // 30 seg
+	export const QUEUE_TIMEOUT_MS = 20000; // 20 seg
 
 	/**
 	 * Timeout de invitacion privada si invitado no hace nada
 	 */
-	export const PRIVATE_INVITATION_TIMEOUT_MS = 20000; // 30 seg
+	export const PRIVATE_INVITATION_TIMEOUT_MS = 20000; // 20 seg
 
 	/**
 	 * Slots para partidas\

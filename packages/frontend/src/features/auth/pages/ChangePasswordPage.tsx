@@ -11,6 +11,7 @@ import {
 	LinkButton,
 	AlertError,
 } from '../../../shared/components/ui';
+import { NAVIGATE_AFTER_MS } from '../../../shared/constants/ui.constants';
 
 export default function ChangePasswordPage() {
 	const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function ChangePasswordPage() {
 			setUser({ ...currentUser!, ...data.user });
 			setAccessToken(data.token);
 			setSuccess(true);
-			setTimeout(() => navigate('/profile'), 1500);
+			setTimeout(() => navigate('/profile'), NAVIGATE_AFTER_MS);
 		} catch (err: any) {
 			setError(err?.message ?? 'Failed to change password');
 		}
