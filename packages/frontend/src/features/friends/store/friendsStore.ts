@@ -13,11 +13,22 @@ export interface FriendInvite {
 	senderAvatar: string;
 }
 
+export interface MatchInviteEntry {
+	matchId: string;
+	inviterId: string;
+	inviterUsername: string;
+	inviterAvatar: string;
+	gameMode: string;
+	expiresAt?: number;
+}
+
 interface FriendsState {
 	// Accepted friends
 	friends: Record<string, FriendEntry>
 	// Pending incoming requests (key=senderId)
 	pending: Record<string, FriendInvite>
+	// Pending match invitations (key=matchId)
+	matchInvites: Record<string, MatchInviteEntry>
 	// Actions
 	setFriends: (entries: FriendEntry[]) => void;
 	setPending: (entries: Array<FriendInvite>) => void;
@@ -27,15 +38,19 @@ interface FriendsState {
 	addPending: (entry: FriendInvite) => void;
 	removeFriend: (userId: string) => void;
 	removePending: (userId: string) => void;
+	addMatchInvite: (entry: MatchInviteEntry) => void;
+	removeMatchInvite: (matchId: string) => void;
 	reset: () => void;
 }
 
 const EMPTY: FriendsState['friends'] = {};
 const EMPTY_PENDING: FriendsState['pending'] = {};
+const EMPTY_MATCH_INVITES: FriendsState['matchInvites'] = {};
 
 export const useFriendsStore = create<FriendsState>((set) => ({
 	friends: EMPTY,
 	pending: EMPTY_PENDING,
+	matchInvites: EMPTY_MATCH_INVITES,
 
 	setFriends: (entries) =>
 		set({ friends: Object.fromEntries(entries.map(e => [e.userId, e])) }),
@@ -77,5 +92,15 @@ export const useFriendsStore = create<FriendsState>((set) => ({
 			return { pending: next };
 		}),
 	
-	reset: () => set({ friends: EMPTY, pending: EMPTY_PENDING }),
+	addMatchInvite: (entry) =>
+		set((state) => ({ matchInvites: { ...state.matchInvites, [entry.matchId]: entry } })),
+
+	removeMatchInvite: (matchId) =>
+		set((state) => {
+			const next = { ...state.matchInvites };
+			delete next[matchId];
+			return { matchInvites: next };
+		}),
+	
+	reset: () => set({ friends: EMPTY, pending: EMPTY_PENDING, matchInvites: EMPTY_MATCH_INVITES }),
 }));

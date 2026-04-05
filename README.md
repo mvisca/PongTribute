@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by jocuni-p, dkurcbar, mvisca-g and mehernan.*
+*This project has been created as part of the 42 curriculum by jocuni-p, dKurbi, mvisca and meriusky.*
 
 ## Description
 

@@ -18,7 +18,7 @@ import {
 } from './core/toasts';
 
 import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
-import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
+import { useFriendsStore, FriendEntry, FriendInvite, MatchInviteEntry } from './features/friends/store/friendsStore';
 import { getProfile } from './features/profile/api/profileApi';
 import { useMatchStore } from './features/lobby/store/matchStore';
 import { acceptMatch, rejectMatch } from './features/game/api/gameApi';
@@ -48,6 +48,10 @@ export default function App() {
 	const removeFriend = useFriendsStore(state => state.removeFriend);
 	const removePending = useFriendsStore(state => state.removePending);
 
+	const addMatchInvite = useFriendsStore(state => state.addMatchInvite);
+	const removeMatchInvite = useFriendsStore(state => state.removeMatchInvite);
+	
+	
 	const loadFriendships = useCallback(async () => {
 		if (!token) return;
 
@@ -205,36 +209,15 @@ export default function App() {
 			
 			// Match events
 			case WEBSOCKET_EVENTS.MATCH_INVITE:
-				action({
-					id: msg.payload.matchId,
-					type: TOAST_TYPE.INFO,
-					message: `'${msg.payload.inviterUsername}' challenges you to a ${msg.payload.gameMode} match`,
-					duration: 0,
+				addMatchInvite({
+					matchId: msg.payload.matchId,
+					inviterId: msg.payload.inviterId,
+					inviterUsername: msg.payload.inviterUsername,
+					inviterAvatar: msg.payload.inviterAvatar,
+					gameMode: msg.payload.gameMode,
 					expiresAt: msg.payload.expiresAt,
-					actions: [
-						{
-							label: 'Accept',
-							onClick: async () => {
-								if (!token) return;
-								try {
-									const result = await acceptMatch(msg.payload.matchId, token);
-									if ('id' in result) navigate(`/game/${result.id}`);
-								} catch {
-									error('Failed to accept invitation');
-								}
-							},
-							style: TOAST_BUTTON_STYLE.PRIMARY
-						},
-						{
-							label: 'Reject',
-							onClick: async () => {
-								if (!token) return;
-								try { await rejectMatch(msg.payload.matchId, token); } catch {}
-							},
-							style: TOAST_BUTTON_STYLE.DANGER
-						}
-					]
 				});
+				info(`'${msg.payload.inviterUsername}' challenges you to a ${msg.payload.gameMode} match`);
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_FOUND:
@@ -265,7 +248,8 @@ export default function App() {
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:
-				dismiss(msg.payload.matchId);
+				//dismiss(msg.payload.matchId);
+				removeMatchInvite(msg.payload.matchId);
 				if (msg.payload.reason === 'invitation_expired') {
 					useMatchStore.getState().setPendingEvent({ type: 'friend_expired' });
 				} else {
@@ -283,7 +267,8 @@ export default function App() {
 		updateProfile,		addFriend,			addPending,
 		removeFriend,		removePending,		info,
 		success,			warning,			action,
-		error,				dismiss,
+		error, 				dismiss, 			addMatchInvite,
+		removeMatchInvite
 	]);
 
 	const { isValidating } = useAuthValidation();

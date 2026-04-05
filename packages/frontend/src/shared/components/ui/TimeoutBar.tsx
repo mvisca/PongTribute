@@ -3,9 +3,11 @@ import { useEffect, useState } from 'react';
 interface Props {
 	active: boolean;
 	durationMs: number;
+	color?: string;
+	height?: string;
 }
 
-export default function TimeoutBar({ active, durationMs }: Props) {
+export default function TimeoutBar({ active, durationMs, color = 'bg-yellow-500', height = 'h-[2px]' }: Props) {
 	const [started, setStarted] = useState(false);
 
 	useEffect(() => {
@@ -20,9 +22,9 @@ export default function TimeoutBar({ active, durationMs }: Props) {
 	if (!active) return null;
 
 	return (
-		<div className='absolute bottom-0 left-0 right-0 h-[2px] z-50'>
+		<div className={`absolute bottom-0 left-0 right-0 ${height} z-50`}>
 			<div
-				className='h-full bg-yellow-500 ml-auto'
+				className={`h-full ${color} ml-auto`}
 				style={{
 					width: started ? '0%' : '100%',
 					transition: started ? `width ${durationMs}ms linear` : 'none',

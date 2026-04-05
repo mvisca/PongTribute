@@ -1,12 +1,14 @@
 // packages/frontend/src/features/friends/components/FriendsWidget.tsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { useFriendsStore } from '../store/friendsStore';
+import { useFriendsStore, MatchInviteEntry } from '../store/friendsStore';
+import { acceptMatch, rejectMatch } from '../../game/api/gameApi';
+import { useNavigate } from 'react-router-dom';
 import { sendFriendRequest, findUserByUsername, respondFriendRequest, removeFriend } from '../api/friendsApi';
 import { getProfile } from '../../profile/api/profileApi';
 import { FriendEntry } from '../store/friendsStore';
 import { FriendItem } from './FriendItem';
-import { AvatarDisplay } from '../../../shared/components/ui';
+import { AvatarDisplay, TimeoutBar } from '../../../shared/components/ui';
 import { useToastStore } from '../../../core/toasts';
 import { FEEDBACK_WIDGET_MS } from '../../../shared/constants/ui.constants';
 
@@ -23,6 +25,27 @@ export function FriendsWidget( { onPlayToFather }: Props) {
     const removePending   = useFriendsStore(state => state.removePending);
     const removeFriendStore = useFriendsStore(state => state.removeFriend);
     const addFriend       = useFriendsStore(state => state.addFriend);
+	
+	const matchInvites = useFriendsStore(state => state.matchInvites);
+	const removeMatchInvite = useFriendsStore(state => state.removeMatchInvite);
+	const navigate = useNavigate();
+
+	useEffect(() => {
+		const invites = Object.values(matchInvites);
+		if (invites.length === 0) return;
+
+		const interval = setInterval(() => {
+			const now = Date.now();
+			invites.forEach(inv => {
+				if (inv.expiresAt && inv.expiresAt <= now) {
+					removeMatchInvite(inv.matchId);
+				}
+			});
+		}, 1000);
+
+		return () => clearInterval(interval);
+	}, [matchInvites, removeMatchInvite]);
+	
 	
 	const dismiss 		  = useToastStore(state => state.dismiss);
 
@@ -82,7 +105,6 @@ export function FriendsWidget( { onPlayToFather }: Props) {
                 showFeedback('Friend added!', true);
             }
 			removePending(senderId);
-			//dismiss(senderId);
 			dismiss(senderId);
         } catch {
             showFeedback('Action failed', false);
@@ -99,6 +121,29 @@ export function FriendsWidget( { onPlayToFather }: Props) {
         }
     };
 
+	const handleAcceptMatch = async (matchId: string) => {
+		if (!token) return;
+		try {
+			const result = await acceptMatch(matchId, token);
+			removeMatchInvite(matchId);
+			dismiss(matchId);
+			if ('id' in result) navigate(`/game/${result.id}`);
+		} catch {
+			showFeedback('Failed to accept', false);
+		}
+	};
+
+	const handleRejectMatch = async (matchId: string) => {
+		if (!token) return;
+		try {
+			await rejectMatch(matchId, token);
+			removeMatchInvite(matchId);
+			dismiss(matchId);
+		} catch {
+			showFeedback('Failed to reject', false);
+		}
+	};
+	
     return (
         <div className='bg-purple-950 rounded-xl shadow-lg w-56 flex flex-col gap-3 p-3'>
 
@@ -181,7 +226,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 				)}
 			</div>
 			
-            {/* PENDING REQUESTS */}
+            {/* FRIEND REQUEST */}
             {Object.keys(pending).length > 0 && (
                 <>
                     <div className='border-t border-purple-700' />
@@ -215,7 +260,52 @@ export function FriendsWidget( { onPlayToFather }: Props) {
                         </div>
                     </div>
                 </>
-            )}
+			)}
+			
+			{/* MATCH REQUESTS */}
+			{Object.keys(matchInvites).length > 0 && (
+				<>
+					<div className='border-t border-purple-700' />
+					<div>
+						<h2 className='retro-title-sm mb-1'>
+							MATCH REQUEST ({Object.keys(matchInvites).length})
+						</h2>
+						<div className='flex flex-col gap-1'>
+							{Object.values(matchInvites).map(inv => (
+								<div key={inv.matchId} className='flex items-center justify-between p-2 bg-purple-900 rounded-lg relative overflow-hidden'>
+									<div className='flex items-center gap-2'>
+										<AvatarDisplay src={inv.inviterAvatar} size='sm' />
+										<div className='flex flex-col'>
+											<span className='text-[10px] text-purple-200'>{inv.inviterUsername}</span>
+											<span className='text-[9px] text-purple-400'>{inv.gameMode}</span>
+										</div>
+									</div>
+									<div className='flex flex-col items-end gap-1'>
+										<button
+											onClick={() => handleRejectMatch(inv.matchId)}
+											className='text-[10px] text-red-400 hover:text-red-200 px-2'
+										>
+											REJECT
+										</button>
+										<button
+											onClick={() => handleAcceptMatch(inv.matchId)}
+											className='arcade-btn-sm'
+										>
+											ACCEPT
+										</button>
+									</div>
+									<TimeoutBar
+										active={!!inv.expiresAt}
+										durationMs={inv.expiresAt ? Math.max(0, inv.expiresAt - Date.now()) : 0}
+										color='bg-cyan-400'
+										height='h-[1px]'
+									/>
+								</div>
+							))}
+						</div>
+					</div>
+				</>
+			)}
 
         </div>
     );
