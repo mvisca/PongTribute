@@ -99,7 +99,6 @@ export default function LobbyPage() {
 			
 			case 'queue_timeout':
 				clearPendingEvent();
-				//if (!queueExpired) setQueueExpired(true); // fallback si el evento llegó antes
 				break;
 			
 			case 'friend_rejected':
@@ -110,7 +109,6 @@ export default function LobbyPage() {
 			case 'friend_expired':
 				clearPendingEvent();
 				setPendingMatchId('');
-				//if (!friendExpired) setFriendExpired(true); // fallback
 				break;
 			
 			case 'friend_cancelled':

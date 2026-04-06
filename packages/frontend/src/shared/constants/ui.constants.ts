@@ -12,5 +12,5 @@ export const FEEDBACK_LOBBY_MS = 3500;
 /** Post-action redirects: change password, reset password */
 export const NAVIGATE_AFTER_MS = 2500;
 
-/** Default toast duration (all types except ACTION) */
-export const TOAST_GENERAL_MS = 3500;
+/** Default toast duration (all types) */
+export const TOAST_GENERAL_MS = 4000;

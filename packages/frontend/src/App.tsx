@@ -11,17 +11,14 @@ import { useAuthValidation } from './core/auth/useAuthValidation';
 import { useWebSocket } from './core/ws/useWebSocket';
 import { useAuthStore } from './core/auth/AuthStore';
 import { 
-	TOAST_BUTTON_STYLE, 
-	TOAST_TYPE, 
 	ToastContainer, 
 	useToastStore,
 } from './core/toasts';
 
-import { getFriendships, respondFriendRequest } from './features/friends/api/friendsApi';
-import { useFriendsStore, FriendEntry, FriendInvite, MatchInviteEntry } from './features/friends/store/friendsStore';
+import { getFriendships } from './features/friends/api/friendsApi';
+import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
 import { getProfile } from './features/profile/api/profileApi';
 import { useMatchStore } from './features/lobby/store/matchStore';
-import { acceptMatch, rejectMatch } from './features/game/api/gameApi';
 
 export default function App() {
 	const navigate = useNavigate();
@@ -33,11 +30,8 @@ export default function App() {
 	const activeMatchId = useMatchStore(state => state.activeMatchId);
 	
 	const info = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.info);
-	const error = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.error);
 	const success = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.success);
 	const warning = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.warning);
-	const action = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.action);
-	const dismiss = useToastStore((state: ReturnType<typeof useToastStore.getState>) => state.dismiss);
 	
 	const setFriends = useFriendsStore(state => state.setFriends);
 	const setPending = useFriendsStore(state => state.setPending);
@@ -94,39 +88,6 @@ export default function App() {
 		} catch { };
 	}, [token, currentUserId, setFriends, setPending]);
 
-	const handleAcceptFriend = useCallback(async (
-		senderId: string,
-		senderUsername: string,
-		senderAvatar: string
-	) => {
-		if (!token) return;
-		try {
-			await respondFriendRequest(senderId, true, token);
-			removePending(senderId);
-			const profile= await getProfile(senderId, token).catch(() => null);
-			addFriend({ 
-				userId: senderId,
-				username: profile?.username ?? senderUsername,
-				avatar: profile?.avatar ?? senderAvatar,
-				isOnline: profile?.isOnline ?? false
-			} satisfies FriendEntry);
-			dismiss(senderId);
-		} catch {
-			error('Failed to accept request');
-		} 
-	}, [token, error, dismiss, removePending, addFriend]);
-
-	const handleRejectFriend = useCallback(async (senderId: string) => {
-		if (!token) return;
-		try {
-			await respondFriendRequest(senderId, false, token);
-			removePending(senderId);
-			dismiss(senderId);
-		} catch {
-			error('Failed to reject request');
-		}
-	}, [token, removePending, error, dismiss]);
-
 	const handleWsMessage = useCallback(async (msg: WebSocketEventsTypes.AnyWsMessage) => {
 		switch (msg.type) {
 			// Social presence
@@ -151,27 +112,7 @@ export default function App() {
 					senderUsername: msg.payload.senderUsername,
 					senderAvatar: msg.payload.senderAvatar,
 				});
-				action({
-					id: msg.payload.senderId,
-					type: TOAST_TYPE.INFO,
-					message: `'${msg.payload.senderUsername}' wants to be your friend`,
-					duration: 0,
-					actions: [{ 
-						label: 'Accept',
-						onClick: () => handleAcceptFriend(
-							msg.payload.senderId,
-							msg.payload.senderUsername,
-							msg.payload.senderAvatar
-						),
-						style: TOAST_BUTTON_STYLE.PRIMARY
-					}, {
-						label: 'Reject',
-						onClick: () => handleRejectFriend(
-							msg.payload.senderId
-						),
-						style: TOAST_BUTTON_STYLE.DANGER
-					}]
-				});
+				info(`'${msg.payload.senderUsername}' wants to be your friend`);
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_ACCEPT:
@@ -217,7 +158,7 @@ export default function App() {
 					gameMode: msg.payload.gameMode,
 					expiresAt: msg.payload.expiresAt,
 				});
-				info(`'${msg.payload.inviterUsername}' challenges you to a ${msg.payload.gameMode} match`);
+				info(`'${msg.payload.inviterUsername}' wants to play with you`);
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_FOUND:
@@ -263,12 +204,11 @@ export default function App() {
 				break;
 		}
 	}, [
-		handleAcceptFriend,	handleRejectFriend,	setOnline,
+		setOnline,
 		updateProfile,		addFriend,			addPending,
 		removeFriend,		removePending,		info,
-		success,			warning,			action,
-		error, 				dismiss, 			addMatchInvite,
-		removeMatchInvite
+		success,			warning,		
+		addMatchInvite,		removeMatchInvite
 	]);
 
 	const { isValidating } = useAuthValidation();

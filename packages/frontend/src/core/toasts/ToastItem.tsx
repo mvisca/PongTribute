@@ -31,7 +31,7 @@ export function ToastItem({ toast }: { toast: Toast }) {
 		// Programs dismiss after 'duration' ms
 		const timer = setTimeout(() => dismiss(toast.id), toast.duration);
 
-		// Cleanup: if the toast is colsed before the timeout, the timer is cancelled
+		// Cleanup: if the toast is closed before the timeout, the timer is cancelled
 		return () => clearTimeout(timer);
 	}, [toast.id, toast.duration]);
 
