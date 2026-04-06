@@ -127,6 +127,7 @@ export default function RegisterPage() {
 							onChange={(value) => { setPassword(value); clearErrors();}}
 							placeholder='Password'
 							error={errors.password}
+							onKeyDown={(e) => { if (e.key === 'Enter') handleRegister(); }}
 						/>
 					</div>
 

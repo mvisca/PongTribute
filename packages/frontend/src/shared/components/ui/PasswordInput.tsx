@@ -2,24 +2,26 @@ import { useState } from 'react';
 import AlertError from './AlertError';
 
 interface Props {
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  error?: string;
+  	value: string;
+  	onChange: (v: string) => void;
+  	placeholder?: string;
+	error?: string;
+	onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
-export default function PasswordInput({ value, onChange, placeholder = 'Password', error = '' }: Props) {
+export default function PasswordInput({ value, onChange, placeholder = 'Password', error = '', onKeyDown  }: Props) {
   const [show, setShow] = useState(false);
 
   return (
     <div className='mb-4'>
       <div className='relative'>
         <input
-          type={show ? 'text' : 'password'}
-          className='input pr-12'
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
+			type={show ? 'text' : 'password'}
+			className='input pr-12'
+			placeholder={placeholder}
+			value={value}
+			onChange={(e) => onChange(e.target.value)}
+			onKeyDown={onKeyDown}
         />
         <button
           type='button'

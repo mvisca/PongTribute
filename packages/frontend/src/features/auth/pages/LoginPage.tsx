@@ -74,7 +74,11 @@ export default function LoginPage() {
 					<AlertError message={error} />
 					<FormInput value={email} onChange={(v) => { setEmail(v); setError(''); }} placeholder='Email' error={''} />
 					<div className='-mt-2'>
-						<PasswordInput value={password} onChange={(v) => { setPassword(v); setError(''); }} placeholder='Password' />
+						<PasswordInput
+							value={password}
+							onChange={(v) => { setPassword(v); setError(''); }}
+							placeholder='Password'
+							onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }} />
 					</div>
 					<div className='flex justify-center mt-4'>
 						<ArcadeButton onClick={handleLogin}>LOGIN</ArcadeButton>
