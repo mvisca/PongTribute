@@ -12,16 +12,7 @@
 		"outDir": "./dist",
 		"rootDir": "./src",
 		"composite": true,
-		"baseUrl": ".",
-		"paths": {
-			"@transcendence/shared": [
-				"../shared/dist/index.d.ts"
-			],
-			"@transcendence/shared/*": [
-				"../shared/dist/*"
-			]
-		}
-	},
+},
 	"include": [
 		"src/**/*"
 		//"test/test-game.ts",

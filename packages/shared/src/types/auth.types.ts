@@ -13,7 +13,16 @@ export namespace AuthTypes {
 	
 	/** Params de rutas con :id */
 	export type UserIdParams = Static<typeof AuthSchemas.UserIdParams>;
-	
+
+	/** Providers OAUTH soportados: '42' | 'google' | 'github' */
+	export type OAuthProviderName = typeof AuthConstants.OAUTH_PROVIDERS[number];
+
+	/** Método de autenticación del usuario 
+	 * 'local' = email + password, resto = OAuth provider
+	 * Compartido con user-service (campo authProvider en DB)
+	*/
+	export type AuthProvider = 'local' | OAuthProviderName;
+
 	// ========================================================================
 	// LOGIN / LOGOUT
 	// ========================================================================

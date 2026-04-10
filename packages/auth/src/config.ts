@@ -91,6 +91,9 @@ export namespace AuthEnv {
 	export function TOKEN_EXPIRY(): number { return cnf().TOKEN_EXPIRY; }
 	export function REFRESH_TOKEN_EXPIRY(): number { return cnf().REFRESH_TOKEN_EXPIRY; }
 	export function UNIQUE_SESSION(): boolean { return cnf().UNIQUE_SESSION; }
+	export function OAUTH_42_REDIRECT_URI(): string { return cnf().OAUTH_42_REDIRECT_URI; }
+	export function OAUTH_42_CLIENT_ID(): string { return cnf().OAUTH_42_CLIENT_ID; }
+	export function OAUTH_42_CLIENT_SECRET(): string { return cnf().OAUTH_42_CLIENT_SECRET; }
 
 	// USER SERVICE
 	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
