@@ -145,7 +145,7 @@ export default function App() {
 	
 			case WEBSOCKET_EVENTS.FRIEND_REMOVE:
 				removeFriend(msg.payload.removerId);
-				warning('A friendship has ended');
+				warning(`'${msg.payload.removerUsername}' removed you as friend`);
 				break;
 			
 			// Match events
@@ -185,7 +185,7 @@ export default function App() {
 			case WEBSOCKET_EVENTS.MATCH_REJECTED:
 				useMatchStore.getState().setPendingEvent({ type: 'friend_rejected'});
 				new Audio('/chicken.mp3').play().catch(() => {});
-				warning('🐔 Friend rejected challenge'); 
+				warning(`🐔 '${msg.payload.rejectorUsername}' rejected your challenge`);
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:

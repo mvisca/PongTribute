@@ -178,7 +178,8 @@ export class MatchEventHandler implements CommsEventHandler {
 			timestamp: event.timestamp,
 			payload: {
 				matchId: event.payload.matchId,
-				rejectorId: event.payload.rejectorId
+				rejectorId: event.payload.rejectorId,
+				rejectorUsername: event.payload.rejectorUsername
 			}
 		};
 

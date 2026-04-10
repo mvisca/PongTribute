@@ -98,6 +98,7 @@ export namespace TranscendenceEventsTypes {
 		payload: {
 			removerId: UserTypes.UserId;
 			removedId: UserTypes.UserId;
+			removerUsername: string;
 		};
 	}
 
@@ -147,6 +148,7 @@ export namespace TranscendenceEventsTypes {
 			matchId: string;
 			rejectorId: string;
 			inviterId: string;
+			rejectorUsername: string;
 		};
 	}
 
@@ -260,6 +262,7 @@ export namespace WebSocketEventsTypes {
 		payload: {
 			removerId: UserTypes.UserId;
 			removedId: UserTypes.UserId;
+			removerUsername: string;
 		}
 	}
 
@@ -313,6 +316,7 @@ export namespace WebSocketEventsTypes {
 		payload: {
 			matchId: string;
 			rejectorId: string;
+			rejectorUsername: string;
 		};
 	}
 

@@ -62,21 +62,27 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 	};
 
     const handleSearch = async () => {
-        if (!token || !searchInput.trim()) return;
-        setSearchError('');
-        setSearchResult(null);
-        setSearchLoading(true);
-        try {
-            const user = await findUserByUsername(searchInput.trim(), token);
-            if (user.id === currentUserId) setSearchError("That's you!");
-            else setSearchResult(user);
-        } catch {
-            setSearchError('User not found');
-        } finally {
-            setSearchLoading(false);
-        }
-    };
-
+		if (!token || !searchInput.trim()) return;
+		setSearchError('');
+		setSearchResult(null);
+		setSearchLoading(true);
+		try {
+			const user = await findUserByUsername(searchInput.trim(), token);
+			if (user.id === currentUserId) {
+				setSearchInput('');
+				showFeedback("That's you!", false);
+			} else if (friends[user.id]) {
+				setSearchInput('');
+				showFeedback('Already friends!', false);
+			} else {
+				setSearchResult(user);
+			}
+		} catch {
+			setSearchError('User not found');
+		} finally {
+			setSearchLoading(false);
+		}
+	};
     const handleSendRequest = async (friendId: string) => {
         if (!token) return;
         try {
@@ -174,22 +180,13 @@ export function FriendsWidget( { onPlayToFather }: Props) {
             {/* ADD FRIEND */}
             <div>
                 <h2 className='retro-title-sm mb-1'>ADD FRIEND</h2>
-                <div className='flex gap-2'>
                     <input
-                        className='input-sm mb-3 w-32'
-                        placeholder='Username'
+                        className='input-sm mb-3 w-full'
+                        placeholder='Username + Enter'
                         value={searchInput}
                         onChange={(e) => { setSearchInput(e.target.value); setSearchError(''); setSearchResult(null); setFeedback(null); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !searchLoading) handleSearch(); }} // ← añadir
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !searchLoading) handleSearch(); }}
                     />
-                    <button
-                        onClick={handleSearch}
-                        disabled={searchLoading || !searchInput.trim()}
-                        className='arcade-btn-sm disabled:opacity-50 disabled:cursor-not-allowed'
-                    >
-                        {searchLoading ? '...' : '+'}
-                    </button>
-                </div>
 
                 {searchError && (
                     <p className='text-xs text-red-400 mt-1'>{searchError}</p>
@@ -203,12 +200,12 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 				)}
 				
 				{searchResult && (
-					(() => {
-						const isAlreadyFriend = !!friends[searchResult.id];
-						if (isAlreadyFriend) {
-							return <p className='text-xs text-red-400 mt-1'>Already friends</p>;
-						}
-						return (
+					// (() => {
+					// 	const isAlreadyFriend = !!friends[searchResult.id];
+					// 	if (isAlreadyFriend) {
+					// 		return <p className='text-xs text-red-400 mt-1'>Already friends</p>;
+					// 	}
+					// 	return (
 							<div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
 								<div className='flex items-center gap-2'>
 									<AvatarDisplay src={searchResult.avatar} size='sm' />
@@ -221,8 +218,8 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 									ADD
 								</button>
 							</div>
-						);
-					})()
+					// 	);
+					// })()
 				)}
 			</div>
 			

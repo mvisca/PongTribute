@@ -106,6 +106,7 @@ export class FriendshipEventHandler implements CommsEventHandler {
 			payload: {
 				removerId: event.payload.removerId,
 				removedId: event.payload.removedId,
+				removerUsername: event.payload.removerUsername
 			},
 		};
 

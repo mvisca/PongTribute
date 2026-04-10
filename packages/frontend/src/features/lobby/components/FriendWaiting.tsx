@@ -33,18 +33,15 @@ export default function FriendWaiting({friendUsername, friendAvatar, rejectedBy,
 			<h2 className='text-2xl tracking-widest'>WAITING FOR</h2>
 			<AvatarDisplay src={friendAvatar} size='md' />
 			<p className='text-xl text-purple-300 tracking-widest'>{friendUsername}</p>
-
-			<div className='text-4xl font-bold tracking-widest'>
-				{rejectedBy ? '–' : remaining > 0 ? `${remaining}s` : '–'}
+			
+			<div className='text-4xl font-bold tracking-normal h-[3rem] flex items-center justify-center'>
+				{rejectedBy
+					? <span className='text-base font-normal text-yellow-500'>{rejectedBy} declined your invitation</span>
+					: (expired || remaining === 0)
+						? <span className='text-base font-normal text-yellow-500'>Friend did not respond - Expired request</span>
+						: `${remaining}s`
+				}
 			</div>
-
-			{rejectedBy && (
-				<p className='text-base text-yellow-500'>{rejectedBy} declined your invitation</p>
-			)}
-
-			{!rejectedBy && (expired || remaining === 0) && (
-				<p className='text-base text-yellow-500'>Friend did not respond - Expired request</p>
-			)}
 
 			<div className='flex gap-8 mt-4'>
 				<button

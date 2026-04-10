@@ -89,7 +89,8 @@ export class FriendshipService {
 
 	private async publishFriendRemoved(
 		removerId: UserTypes.UserId,
-		removedId: UserTypes.UserId
+		removedId: UserTypes.UserId,
+		removerUsername: string
 	): Promise<void> {
 		if (!this.redisClient) return;
 
@@ -100,6 +101,7 @@ export class FriendshipService {
 			payload: {
 				removerId,
 				removedId,
+				removerUsername,
 			},
 		} satisfies TranscendenceEventsTypes.FriendRemovedEvent;
 
@@ -287,9 +289,10 @@ export class FriendshipService {
 		// 1. Borrar de BD
         await this.friendshipRepo.delete(sortedUserId, sortedFriendId);
 
-        // 2. Disparar evento
-        this.publishFriendRemoved(currentUserId, friendId)
-            .catch(err => this.log.error({ err }, 'Error publishing friend remove event'));
+		// 2. Disparar evento
+		const remover = await this.userService.findUserById(currentUserId);
+		this.publishFriendRemoved(currentUserId, friendId, remover.username)
+			.catch(err => this.log.error({ err }, 'Error publishing friend remove event'));
 	}
 }
 

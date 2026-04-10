@@ -600,7 +600,8 @@ export class MatchService {
 				payload: {
 					matchId: match.id,
 					rejectorId: userId,              // El que rechaza (player2)
-					inviterId: match.player1.userId   // El creador (player1)
+					inviterId: match.player1.userId,   // El creador (player1)
+					rejectorUsername: match.player2!.username
 				}
 			} satisfies TranscendenceEventsTypes.MatchRejectedEvent;
 			
