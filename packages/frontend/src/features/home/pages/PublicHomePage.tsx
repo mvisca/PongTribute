@@ -7,7 +7,7 @@ export default function PublicHomePage() {
 	return (
 		<div className='retro-bg flex flex-col items-center justify-center min-h-screen gap-8 px-8'>
 			<h1 className='text-2xl text-white text-purple-400' style={{ textShadow: '0 0 10px #a855f7, 0 0 20px #a855f7, 0 0 40px #a855f7' }}>PONG🏓TRIBUTE</h1>
-			<p className='text-purple-400'>42's famous Transcendence</p>
+			<p className='text-purple-500 text-xl'>42's famous Transcendence</p>
 			
 			<div className='relative w-64 h-40 border border-purple-600 overflow-hidden bg-purple-950/50'>
 				<div className='absolute left-1/2 top-0 bottom-0 border-l-2 border-dashed border-purple-700' />

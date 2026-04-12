@@ -49,11 +49,14 @@ export interface IFriendshipRepository {
 	 */
 	findByUser(userId: UserTypes.UserId): Promise<FriendshipTypes.Friendship[]>;
 
-	/**
-	 * El 'passwordHash' se incluye para validar la 'password' del usuario.
-	 */
 	findByUserAndStatus(
 		userId: UserTypes.UserId,
 		status: FriendshipStatus
 	): Promise<FriendshipTypes.Friendship[]>;
+
+	/**
+	 * Elimina friendships stale (rejected/pending) más antiguas que maxAgeDays.
+	 * Retorna el número de filas eliminadas.
+	 */
+	cleanStale(maxAgeDays: number): Promise<number>;
 }

@@ -62,6 +62,11 @@ export namespace FriendshipTypes {
 	export type DeleteFriendshipParams = Static<typeof FriendshipSchemas.DeleteFriendshipParams>;
 
 	/**
+	 * Params HTTP para cancelar una solicitud pendiente enviada
+	 */
+	export type CancelFriendshipParams = Static<typeof FriendshipSchemas.CancelFriendshipParams>;
+	
+	/**
 	 * Body HTTP para actualizar (aceptar/rechazar) una amistad pendiente
 	 */
 	export type UpdateFriendshipBody = Static<typeof FriendshipSchemas.UpdateFriendshipBody>;

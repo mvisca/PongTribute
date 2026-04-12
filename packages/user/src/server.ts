@@ -71,6 +71,19 @@ async function start() {
 					app!.log.error({ err }, '[USER] Error during expired refresh token cleanup');
 				}
 			}, 1000 * 60 * 60);
+
+			// Limpieza de friendships stale (rejected/pending > 30 días) cada 24h
+			setInterval(async () => {
+				try {
+					const deleted = await friendshipRepo.cleanStale(30);
+					if (deleted > 0) {
+						app!.log.info({ deleted }, '[USER] Stale friendships cleaned');
+					}
+				} catch (err) {
+					// Si falla, logea error sin crashear
+					app!.log.error({ err }, '[USER] Error during stale friendship cleanup');
+				}
+			}, 1000 * 60 * 60 * 24); // 24 horas
 		}
 	} catch (err) {
 		const msg = err instanceof Error ? err.message : err;

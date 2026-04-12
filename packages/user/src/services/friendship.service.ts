@@ -110,6 +110,46 @@ export class FriendshipService {
 
 	}
 
+	private async publishFriendRequestCancelled(
+		cancellerId: UserTypes.UserId,
+		receiverId: UserTypes.UserId
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		const event: TranscendenceEventsTypes.FriendRequestCancelledEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REQUEST_CANCEL,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				cancellerId,
+				receiverId,
+			},
+		};
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		this.log.info({ cancellerId, receiverId }, 'FRIEND_REQUEST_CANCEL published');
+	}
+
+	private async publishFriendRequestDeclined(
+		declinerId: UserTypes.UserId,
+		initiatorId: UserTypes.UserId
+	): Promise<void> {
+		if (!this.redisClient) return;
+
+		const event: TranscendenceEventsTypes.FriendRequestDeclinedEvent = {
+			type: TRANSCENDENCE_EVENTS.FRIEND_REQUEST_DECLINED,
+			timestamp: Date.now(),
+			source: 'user-service',
+			payload: {
+				declinerId,
+				initiatorId,
+			},
+		};
+
+		await this.redisClient.publish(TRANSCENDENCE_CHANNEL, JSON.stringify(event));
+		this.log.info({ declinerId, initiatorId }, 'FRIEND_REQUEST_DECLINED published');
+	}
+
 	private isFriendshipStatus(value: unknown): value is FriendshipStatus {
 		return (Object.values(FRIENDSHIP_STATUS) as FriendshipStatus[]).includes(
 			value as FriendshipStatus
@@ -144,17 +184,32 @@ export class FriendshipService {
 		if (existing) {
 			// Permitir crear si fue rechazada
 			if (existing.status === FRIENDSHIP_STATUS.REJECTED) {
-				// Delete existing friendship
+				const COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
+				const rejectedAt = existing.updatedAt instanceof Date
+					? existing.updatedAt.getTime()
+					: new Date(existing.updatedAt).getTime();
+
+				if (Date.now() - rejectedAt < COOLDOWN_MS) {
+					throw new SharedErrors.ConflictError(
+						'Cannot send a friend request to this user at this time',
+						'friendship',
+						{
+							initiatorId,
+							friendId,
+							operation: 'createFriendship'
+						}
+					);
+				}
+
+				// Cooldown expirado: borrar rejected y crear nueva
 				await this.friendshipRepo.delete(existing.userId, existing.friendId);
-				// Crear nueva friendship
 				const newFriendship = await this.friendshipRepo.create({
 					initiatorId,
 					friendId,
 					status: FRIENDSHIP_STATUS.PENDING
 				});
-				
 				this.publishFriendRequest(initiatorId, initiatorUsername, friendId)
-					.catch(err => console.error('[FriendshipService] Error publishing request:', err));
+					.catch(err => this.log.error({ err }, 'Error publishing friend request event'));
 				return newFriendship;
 			}
 
@@ -230,10 +285,13 @@ export class FriendshipService {
         });
 
         // 2. Disparar evento SOLO si aceptó
-        if (accepted) {
-            this.publishFriendAccepted(currentUserId, currentUsername, friendship.initiatorId)
-                .catch(err => this.log.error({ err }, 'Error publishing friend accept event'));
-        }
+		if (accepted) {
+			this.publishFriendAccepted(currentUserId, currentUsername, friendship.initiatorId)
+				.catch(err => this.log.error({ err }, 'Error publishing friend accept event'));
+		} else {
+			this.publishFriendRequestDeclined(currentUserId, friendship.initiatorId)
+				.catch(err => this.log.error({ err }, 'Error publishing friend request declined event'));
+		}
 
         return updatedFriendship;
 	}
@@ -293,6 +351,50 @@ export class FriendshipService {
 		const remover = await this.userService.findUserById(currentUserId);
 		this.publishFriendRemoved(currentUserId, friendId, remover.username)
 			.catch(err => this.log.error({ err }, 'Error publishing friend remove event'));
+	}
+
+	async cancelFriendRequest(
+		initiatorId: UserTypes.UserId,
+		friendId: UserTypes.UserId
+	): Promise<void> {
+		const [sortedUserId, sortedFriendId] = this.sortIds(initiatorId, friendId);
+		const friendship = await this.friendshipRepo.findByUserAndFriend(sortedUserId, sortedFriendId);
+
+		if (!friendship) {
+			throw new SharedErrors.NotFoundError('Friend request does not exist', 'friendship', {
+				initiatorId,
+				friendId,
+				operation: 'cancelFriendRequest'
+			});
+		}
+
+		if (friendship.status !== FRIENDSHIP_STATUS.PENDING) {
+			throw new SharedErrors.ConflictError('Only pending requests can be cancelled', 'friendship', {
+				initiatorId,
+				friendId,
+				operation: 'cancelFriendRequest',
+				currentStatus: friendship.status
+			});
+		}
+
+		if (friendship.initiatorId !== initiatorId) {
+			throw new SharedErrors.ValidationError(
+				'Only the request initiator can cancel it',
+				'friendship',
+				{
+					initiatorId,
+					actualInitiator: friendship.initiatorId,
+					operation: 'cancelFriendRequest'
+				}
+			);
+		}
+
+		// 1. Borrar de BD
+		await this.friendshipRepo.delete(sortedUserId, sortedFriendId);
+
+		// 2. Notificar al receptor para que borre de su pending
+		this.publishFriendRequestCancelled(initiatorId, friendId)
+			.catch(err => this.log.error({ err }, 'Error publishing friend request cancel event'));
 	}
 }
 

@@ -110,6 +110,24 @@ export namespace FriendshipSchemas {
 		security: [{ bearerAuth: [] }]
 	}
 
+	// DELETE /friendships/:friendId/cancel - Cancelar solicitud pendiente enviada
+	export const CancelFriendshipParams = Type.Object({
+		friendId: UuidField
+	});
+
+	export const CancelFriendshipSchema = {
+		description: 'Cancela una solicitud de amistad pendiente enviada por el usuario autenticado',
+		tags: ['Friendship'],
+		params: CancelFriendshipParams,
+		response: {
+			204: Type.Null(),
+			401: ErrorSchemas.Unauthorized,
+			404: ErrorSchemas.NotFound,
+			409: ErrorSchemas.Conflict
+		},
+		security: [{ bearerAuth: [] }]
+	};
+
 	// Alias temporal para mantener compatibilidad con capas aún no migradas
 	export const AcceptFriendshipParams = UpdateFriendshipParams;
 	export const AcceptFriendshipBody = UpdateFriendshipBody;

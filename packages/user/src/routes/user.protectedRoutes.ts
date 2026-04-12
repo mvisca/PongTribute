@@ -85,4 +85,9 @@ export const protectedRoutes: FastifyPluginAsync<UserAppDependencies> = async (a
 		schema: FriendshipSchemas.DeleteFriendshipSchema,
 		handler: friendshipController.deleteFriendship.bind(friendshipController)
 	});
+
+	app.delete('/friendships/:friendId/cancel', {
+		schema: FriendshipSchemas.CancelFriendshipSchema,
+		handler: friendshipController.cancelFriendRequest.bind(friendshipController)
+	});
 }

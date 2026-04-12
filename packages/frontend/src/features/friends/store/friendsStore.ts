@@ -13,6 +13,12 @@ export interface FriendInvite {
 	senderAvatar: string;
 }
 
+export interface SentRequest {
+	receiverId: string;
+	receiverUsername: string;
+	receiverAvatar: string;
+}
+
 export interface MatchInviteEntry {
 	matchId: string;
 	inviterId: string;
@@ -29,6 +35,8 @@ interface FriendsState {
 	pending: Record<string, FriendInvite>
 	// Pending match invitations (key=matchId)
 	matchInvites: Record<string, MatchInviteEntry>
+	// Outgoing pending requests (key=receiverId)
+	sentRequests: Record<string, SentRequest>
 	// Actions
 	setFriends: (entries: FriendEntry[]) => void;
 	setPending: (entries: Array<FriendInvite>) => void;
@@ -40,17 +48,22 @@ interface FriendsState {
 	removePending: (userId: string) => void;
 	addMatchInvite: (entry: MatchInviteEntry) => void;
 	removeMatchInvite: (matchId: string) => void;
+	setSentRequests: (entries: SentRequest[]) => void;
+	addSentRequest: (entry: SentRequest) => void;
+	removeSentRequest: (receiverId: string) => void;
 	reset: () => void;
 }
 
 const EMPTY: FriendsState['friends'] = {};
 const EMPTY_PENDING: FriendsState['pending'] = {};
 const EMPTY_MATCH_INVITES: FriendsState['matchInvites'] = {};
+const EMPTY_SENT: FriendsState['sentRequests'] = {};
 
 export const useFriendsStore = create<FriendsState>((set) => ({
 	friends: EMPTY,
 	pending: EMPTY_PENDING,
 	matchInvites: EMPTY_MATCH_INVITES,
+	sentRequests: EMPTY_SENT,
 
 	setFriends: (entries) =>
 		set({ friends: Object.fromEntries(entries.map(e => [e.userId, e])) }),
@@ -102,5 +115,20 @@ export const useFriendsStore = create<FriendsState>((set) => ({
 			return { matchInvites: next };
 		}),
 	
-	reset: () => set({ friends: EMPTY, pending: EMPTY_PENDING, matchInvites: EMPTY_MATCH_INVITES }),
+		
+	setSentRequests: (entries) =>
+		set({ sentRequests: Object.fromEntries(entries.map(e => [e.receiverId, e])) }),
+		
+	addSentRequest: (entry) =>
+		set((state) => ({ sentRequests: { ...state.sentRequests, [entry.receiverId]: entry } })),
+		
+	removeSentRequest: (receiverId) =>
+		set((state) => {
+			const next = { ...state.sentRequests };
+			delete next[receiverId];
+			return { sentRequests: next };
+		}),
+		
+	reset: () => set({ friends: EMPTY, pending: EMPTY_PENDING, sentRequests: EMPTY_SENT, matchInvites: EMPTY_MATCH_INVITES }),
+
 }));

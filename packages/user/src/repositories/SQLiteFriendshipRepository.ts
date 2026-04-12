@@ -180,4 +180,21 @@ export class SQLiteFriendshipRepository implements IFriendshipRepository {
 			FriendshipMapper.rowToFriendshipResponse(row as FriendshipTypes.FriendshipRow)
 		);
 	}
+
+	/**
+	 * Elimina friendships con status 'rejected' o 'pending'
+	 * cuyo updated_at supere maxAgeDays días.
+	 */
+	async cleanStale(maxAgeDays: number): Promise<number> {
+		const cutoff = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000)
+			.toISOString();
+
+		const result = this.db.prepare(`
+			DELETE FROM friendships
+			WHERE status IN (?, ?)
+			AND updated_at < ?
+		`).run(FRIENDSHIP_STATUS.REJECTED, FRIENDSHIP_STATUS.PENDING, cutoff);
+
+		return result.changes;
+	}
 }

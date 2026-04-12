@@ -6,13 +6,14 @@ import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 
 // FRIENDS STORE Zustand
-import { FriendEntry, FriendInvite, useFriendsStore } from '../store/friendsStore';
+import { FriendEntry, FriendInvite, useFriendsStore, SentRequest } from '../store/friendsStore';
 // FRIENDS API
 import {
 	sendFriendRequest,
 	respondFriendRequest,
 	removeFriend,
-	findUserByUsername
+	findUserByUsername,
+	cancelFriendRequest
 } from '../api/friendsApi';
 
 // FRIENDS Components
@@ -42,7 +43,9 @@ export default function FriendsPage() {
 	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
 	const removePendingStore 				= useFriendsStore(state => state.removePending);
 	const addFriendStore 					= useFriendsStore(state => state.addFriend);
-
+	const sentRequests = useFriendsStore(state => state.sentRequests);
+	const removeSentRequestStore = useFriendsStore(state => state.removeSentRequest);
+	
 	const navigate = useNavigate();
 	const dismiss = useToastStore(state => state.dismiss);
 
@@ -124,22 +127,33 @@ export default function FriendsPage() {
 	};
 
 	const handleSendRequest = async (friendId: string) => {
-
 		if (!token) return;
 
 		try {
-
 			await sendFriendRequest(friendId, token);
+			const addSentRequest = useFriendsStore.getState().addSentRequest;
+			addSentRequest({
+				receiverId: friendId,
+				receiverUsername: searchResult?.username ?? friendId,
+				receiverAvatar: searchResult?.avatar ?? '',
+			});
 			setSearchResult(null);
 			setSearchInput('');
-
 		} catch (err: any) {
-
 			setSearchError(err?.message ?? 'Failed to send request');
-
 		}
 	};
 
+	const handleCancelRequest = async (receiverId: string) => {
+		if (!token) return;
+		try {
+			await cancelFriendRequest(receiverId, token);
+			removeSentRequestStore(receiverId);
+		} catch (err: any) {
+			setError(err?.message ?? 'Failed to cancel request');
+		}
+	};
+	
 	if (loading)
 		return <LoadingScreen />;
 
@@ -243,6 +257,32 @@ export default function FriendsPage() {
 								onRespond={handleRespond}
 							/>
 
+						))}
+
+					</FormCard>
+
+				)}
+
+				{/* SENT REQUESTS */}
+				{Object.keys(sentRequests).length > 0 && (
+
+					<FormCard title={`SENT (${Object.keys(sentRequests).length})`}>
+
+						{Object.values(sentRequests).map(req => (
+							<div key={req.receiverId} className='friend-item'>
+								<div className='flex items-center gap-3'>
+									<AvatarDisplay src={req.receiverAvatar} size='sm' />
+									<span className='text-sm text-purple-200'>
+										{req.receiverUsername}
+									</span>
+								</div>
+								<button
+									onClick={() => handleCancelRequest(req.receiverId)}
+									className='text-xs text-red-400 hover:text-red-200 px-2'
+								>
+									CANCEL
+								</button>
+							</div>
 						))}
 
 					</FormCard>

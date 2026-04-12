@@ -102,6 +102,23 @@ export namespace TranscendenceEventsTypes {
 		};
 	}
 
+	export interface FriendRequestCancelledEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.FRIEND_REQUEST_CANCEL;
+		payload: {
+			cancellerId: UserTypes.UserId;
+			receiverId: UserTypes.UserId;
+		};
+	}
+
+	export interface FriendRequestDeclinedEvent extends EventsTypes.BaseEvent {
+		type: typeof TRANSCENDENCE_EVENTS.FRIEND_REQUEST_DECLINED;
+		payload: {
+			declinerId: UserTypes.UserId;
+			initiatorId: UserTypes.UserId;
+		};
+	}
+
+
 	// ── Match ───────────────────────────────────────────────────────────────
 
 	export interface MatchFoundEvent extends EventsTypes.BaseEvent {
@@ -186,7 +203,9 @@ export namespace TranscendenceEventsTypes {
 		| MatchBotRequestedEvent
 		| FriendRequestEvent
 		| FriendAcceptedEvent
-		| FriendRemovedEvent;
+		| FriendRemovedEvent
+		| FriendRequestCancelledEvent
+		| FriendRequestDeclinedEvent;
 }
 
 // ============================================================================
@@ -264,6 +283,20 @@ export namespace WebSocketEventsTypes {
 			removedId: UserTypes.UserId;
 			removerUsername: string;
 		}
+	}
+
+	export interface FriendRequestCancelled extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_REQUEST_CANCEL;
+		payload: {
+			cancellerId: UserTypes.UserId;
+		};
+	}
+
+	export interface FriendRequestDeclined extends EventsTypes.BaseEvent {
+		type: typeof WEBSOCKET_EVENTS.FRIEND_REQUEST_DECLINED;
+		payload: {
+			declinerId: UserTypes.UserId;
+		};
 	}
 
 	// ── Notificaciones de partida ───────────────────────────────────────────
@@ -374,6 +407,8 @@ export namespace WebSocketEventsTypes {
 		| FriendRequest
 		| FriendAccepted
 		| FriendRemoved
+		| FriendRequestCancelled
+		| FriendRequestDeclined
 		| MatchFound
 		| MatchQueueTimeout
 		| MatchStarted

@@ -108,5 +108,28 @@ export class FriendshipController {
 			return SharedErrors.handleError(err, reply);
 		}
 	}
+
+	// ============================================================================
+	// CANCEL FRIEND REQUEST
+	// ============================================================================
+	async cancelFriendRequest(
+		request: FastifyRequest,
+		reply: FastifyReply
+	): Promise<void> {
+		try {
+			const user = request.user as AuthTypes.AccessTokenPayload;
+
+			if (!user.id)
+				return reply.code(401).send({ error: 'Unauthorized', message: 'Usuario no autenticado' });
+
+			const { friendId } = request.params as FriendshipTypes.CancelFriendshipParams;
+
+			await this.friendshipService.cancelFriendRequest(user.id, friendId);
+
+			return reply.code(204).send();
+		} catch (err) {
+			return SharedErrors.handleError(err, reply);
+		}
+	}
 }
 

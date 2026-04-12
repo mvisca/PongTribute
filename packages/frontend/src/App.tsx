@@ -16,7 +16,7 @@ import {
 } from './core/toasts';
 
 import { getFriendships } from './features/friends/api/friendsApi';
-import { useFriendsStore, FriendEntry, FriendInvite } from './features/friends/store/friendsStore';
+import { useFriendsStore, FriendEntry, FriendInvite, SentRequest } from './features/friends/store/friendsStore';
 import { getProfile } from './features/profile/api/profileApi';
 import { useMatchStore } from './features/lobby/store/matchStore';
 
@@ -41,6 +41,8 @@ export default function App() {
 	const addPending = useFriendsStore(state => state.addPending);
 	const removeFriend = useFriendsStore(state => state.removeFriend);
 	const removePending = useFriendsStore(state => state.removePending);
+	const setSentRequests = useFriendsStore(state => state.setSentRequests);
+	const removeSentRequest = useFriendsStore(state => state.removeSentRequest);
 
 	const addMatchInvite = useFriendsStore(state => state.addMatchInvite);
 	const removeMatchInvite = useFriendsStore(state => state.removeMatchInvite);
@@ -85,8 +87,26 @@ export default function App() {
 			);
 
 			setPending(enrichedPending);
+
+			// Outgoing pending requests (sent by me)
+			const outgoingPending = pendingRes.friendships
+				.filter(friend => friend.initiatorId === currentUserId);
+			const enrichedSent = await Promise.all(
+				outgoingPending.map(async (friend) => {
+					const receiverId = friend.userId === currentUserId ? friend.friendId : friend.userId;
+					const profile = await getProfile(receiverId, token).catch(() => null);
+					return {
+						receiverId,
+						receiverUsername: profile?.username ?? receiverId,
+						receiverAvatar: profile?.avatar ?? '',
+					} satisfies SentRequest;
+				})
+			);
+			setSentRequests(enrichedSent);
+
+
 		} catch { };
-	}, [token, currentUserId, setFriends, setPending]);
+	}, [token, currentUserId, setFriends, setPending, setSentRequests]);
 
 	const handleWsMessage = useCallback(async (msg: WebSocketEventsTypes.AnyWsMessage) => {
 		switch (msg.type) {
@@ -141,11 +161,19 @@ export default function App() {
 					isOnline: profile?.isOnline ?? true,
 				});
 				success(`'${msg.payload.acceptorUsername}' is now your friend`);
+				removeSentRequest(msg.payload.acceptorId);
 				break;
 	
 			case WEBSOCKET_EVENTS.FRIEND_REMOVE:
 				removeFriend(msg.payload.removerId);
-				warning(`'${msg.payload.removerUsername}' removed you as friend`);
+				break;
+			
+			case WEBSOCKET_EVENTS.FRIEND_REQUEST_CANCEL:
+				removePending(msg.payload.cancellerId);
+				break;
+			
+			case WEBSOCKET_EVENTS.FRIEND_REQUEST_DECLINED:
+				removeSentRequest(msg.payload.declinerId);
 				break;
 			
 			// Match events
@@ -184,8 +212,9 @@ export default function App() {
 
 			case WEBSOCKET_EVENTS.MATCH_REJECTED:
 				useMatchStore.getState().setPendingEvent({ type: 'friend_rejected'});
-				new Audio('/chicken.mp3').play().catch(() => {});
-				warning(`🐔 '${msg.payload.rejectorUsername}' rejected your challenge`);
+				//new Audio('/chicken.mp3').play().catch(() => {});
+				//warning(`🐔 '${msg.payload.rejectorUsername}' rejected your challenge`);
+				warning(`'${msg.payload.rejectorUsername}' rejected your challenge`);
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:
@@ -207,7 +236,7 @@ export default function App() {
 		setOnline,
 		updateProfile,		addFriend,			addPending,
 		removeFriend,		removePending,		info,
-		success,			warning,		
+		success,			warning,			removeSentRequest,
 		addMatchInvite,		removeMatchInvite
 	]);
 

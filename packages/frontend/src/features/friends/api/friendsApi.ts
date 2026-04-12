@@ -33,6 +33,13 @@ export async function removeFriend(friendId: string, token: string) {
 	});
 }
 
+export async function cancelFriendRequest(friendId: string, token: string) {
+	return await apiRequestWithRefresh<void>(`/friendships/${friendId}/cancel`, {
+		method: 'DELETE',
+		token,
+	});
+}
+
 export async function findUserByUsername(username: string, token: string) {
 	return await apiRequestWithRefresh<UserTypes.UserPublic>(`/users/username/${username}`, {
 		token

@@ -9,10 +9,12 @@ import {
 } from '@transcendence/shared';
 import { createLogger, type AppLogger } from '@transcendence/shared';
 
-type FriendshipEvent = 
-| TranscendenceEventsTypes.FriendRequestEvent
-| TranscendenceEventsTypes.FriendAcceptedEvent
-| TranscendenceEventsTypes.FriendRemovedEvent;
+type FriendshipEvent =
+	| TranscendenceEventsTypes.FriendRequestEvent
+	| TranscendenceEventsTypes.FriendAcceptedEvent
+	| TranscendenceEventsTypes.FriendRemovedEvent
+	| TranscendenceEventsTypes.FriendRequestCancelledEvent
+	| TranscendenceEventsTypes.FriendRequestDeclinedEvent;
 
 export class FriendshipEventHandler implements CommsEventHandler {
 	private log: AppLogger = createLogger('FriendshipEventHandler');
@@ -20,7 +22,9 @@ export class FriendshipEventHandler implements CommsEventHandler {
 	eventTypes = [
 		TRANSCENDENCE_EVENTS.FRIEND_REQUEST,
 		TRANSCENDENCE_EVENTS.FRIEND_ACCEPT,
-		TRANSCENDENCE_EVENTS.FRIEND_REMOVE
+		TRANSCENDENCE_EVENTS.FRIEND_REMOVE,
+		TRANSCENDENCE_EVENTS.FRIEND_REQUEST_CANCEL,
+		TRANSCENDENCE_EVENTS.FRIEND_REQUEST_DECLINED
 	];
 	
 	async handle(
@@ -47,6 +51,20 @@ export class FriendshipEventHandler implements CommsEventHandler {
 			case TRANSCENDENCE_EVENTS.FRIEND_REMOVE:
 				await this.handleFriendRemove(
 					friendshipEvent as TranscendenceEventsTypes.FriendRemovedEvent,
+					commsService
+				);
+				break;
+			
+			case TRANSCENDENCE_EVENTS.FRIEND_REQUEST_CANCEL:
+				await this.handleFriendRequestCancel(
+					friendshipEvent as TranscendenceEventsTypes.FriendRequestCancelledEvent,
+					commsService
+				);
+				break;
+			
+			case TRANSCENDENCE_EVENTS.FRIEND_REQUEST_DECLINED:
+				await this.handleFriendRequestDeclined(
+					friendshipEvent as TranscendenceEventsTypes.FriendRequestDeclinedEvent,
 					commsService
 				);
 				break;
@@ -114,6 +132,40 @@ export class FriendshipEventHandler implements CommsEventHandler {
 			[event.payload.removedId],
 			wsMessage
 		);
+	}
+
+	private async handleFriendRequestCancel(
+		event: TranscendenceEventsTypes.FriendRequestCancelledEvent,
+		commsService: CommsService
+	): Promise<void> {
+		this.log.info({ cancellerId: event.payload.cancellerId, receiverId: event.payload.receiverId }, 'Friend request cancelled');
+		const wsMessage: WebSocketEventsTypes.FriendRequestCancelled = {
+			type: WEBSOCKET_EVENTS.FRIEND_REQUEST_CANCEL,
+			timestamp: event.timestamp,
+			payload: {
+				cancellerId: event.payload.cancellerId,
+			},
+		};
+
+		// Notificar solo al receptor
+		commsService.broadcastToUsers([event.payload.receiverId], wsMessage);
+	}
+
+	private async handleFriendRequestDeclined(
+		event: TranscendenceEventsTypes.FriendRequestDeclinedEvent,
+		commsService: CommsService
+	): Promise<void> {
+		this.log.info({ declinerId: event.payload.declinerId, initiatorId: event.payload.initiatorId }, 'Friend request declined');
+		const wsMessage: WebSocketEventsTypes.FriendRequestDeclined = {
+			type: WEBSOCKET_EVENTS.FRIEND_REQUEST_DECLINED,
+			timestamp: event.timestamp,
+			payload: {
+				declinerId: event.payload.declinerId,
+			},
+		};
+
+		// Notificar solo al invitador original
+		commsService.broadcastToUsers([event.payload.initiatorId], wsMessage);
 	}
 
 }

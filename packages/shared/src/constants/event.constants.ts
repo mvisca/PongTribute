@@ -21,7 +21,9 @@ export const TRANSCENDENCE_EVENTS = {
 	// --Friendship-- 
 	FRIEND_REQUEST: 'redis:friend:request',
 	FRIEND_ACCEPT: 'redis:friend:accept',
-	FRIEND_REMOVE: 'redis:friend:remove'
+	FRIEND_REMOVE: 'redis:friend:remove',
+	FRIEND_REQUEST_CANCEL: 'redis:friend:request_cancel',
+	FRIEND_REQUEST_DECLINED: 'redis:friend:request_declined'
 } as const;
 // Este 'as const' dice al compilador que este objeto es inmutable 
 // y que infiera sus valores como "Literales de String" (ej. el 
@@ -46,6 +48,8 @@ export const WEBSOCKET_EVENTS = {
 	FRIEND_REQUEST: 'friend:request', 
 	FRIEND_ACCEPT: 'friend:accept',
 	FRIEND_REMOVE: 'friend:remove',
+	FRIEND_REQUEST_CANCEL: 'friend:request_cancel',
+	FRIEND_REQUEST_DECLINED: 'friend:request_declined',
 
 	// --Sala d espera / Notificaciones de partida--
 	MATCH_JOINED: 'match:joined',
