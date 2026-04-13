@@ -218,7 +218,6 @@ export default function App() {
 				break;
 			
 			case WEBSOCKET_EVENTS.MATCH_CANCELLED:
-				//dismiss(msg.payload.matchId);
 				removeMatchInvite(msg.payload.matchId);
 				if (msg.payload.reason === 'invitation_expired') {
 					useMatchStore.getState().setPendingEvent({ type: 'friend_expired' });
