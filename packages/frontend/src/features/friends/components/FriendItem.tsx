@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { AvatarDisplay } from '../../../shared/components/ui';
 import { FriendEntry } from '../store/friendsStore';
 
@@ -5,10 +6,11 @@ type Props = {
 	entry: FriendEntry;
 	onRemove?: (friendId: string) => void;
 	onPlayFromChild?: (friendId: string, friendUsername: string, friendAvatar: string) => void;
-	playLabel?: 'PLAY';
 }
 
-export function FriendItem({ entry, onRemove, onPlayFromChild, playLabel = 'PLAY' }: Props) {
+export function FriendItem({ entry, onRemove, onPlayFromChild }: Props) {
+	const { t } = useTranslation('common');
+
 	return (
 		<div className='friend-item'>
 			{/* Izquierda: avatar + info */}
@@ -27,7 +29,7 @@ export function FriendItem({ entry, onRemove, onPlayFromChild, playLabel = 'PLAY
 						className='text-[10px] text-red-400 hover:text-red-200 transition-colors'
 						onClick={() => onRemove(entry.userId)}
 					>
-						REMOVE
+						{t('remove')}
 					</button>
 				)}
 				{onPlayFromChild && entry.isOnline && (
@@ -35,7 +37,7 @@ export function FriendItem({ entry, onRemove, onPlayFromChild, playLabel = 'PLAY
 						className='arcade-btn-sm'
 						onClick={() => onPlayFromChild(entry.userId, entry.username, entry.avatar)}
 					>
-						{playLabel}
+						{t('play')}
 					</button>
 				)}
 			</div>

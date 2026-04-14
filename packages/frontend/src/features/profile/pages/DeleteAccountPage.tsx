@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation, Trans } from 'react-i18next';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { anonymizeAccount } from '../api/profileApi';
 import {
@@ -12,6 +13,7 @@ import {
 } from '../../../shared/components/ui';
 
 export default function DeleteAccountPage() {
+    const { t } = useTranslation('profile');
     const navigate = useNavigate();
     const userId   = useAuthStore((state) => state.user?.id);
     const token    = useAuthStore((state) => state.accessToken);
@@ -20,6 +22,8 @@ export default function DeleteAccountPage() {
     const [input,   setInput]   = useState('');
     const [error,   setError]   = useState('');
     const [loading, setLoading] = useState(false);
+
+    const confirmWord = t('deleteConfirmWord');
 
     const handleConfirm = async () => {
         if (!userId || !token) return;
@@ -30,7 +34,7 @@ export default function DeleteAccountPage() {
             logout();
             navigate('/welcome');
         } catch {
-            setError('Failed to delete account. Please try again.');
+            setError(t('deleteFailed'));
         } finally {
             setLoading(false);
         }
@@ -38,38 +42,45 @@ export default function DeleteAccountPage() {
 
     return (
         <PageContainer>
-            <FormCard title='DELETE ACCOUNT'>
+            <FormCard title={t('deleteTitle')}>
 
                 <AlertError message={error} />
 
                 <p className='text-sm text-purple-300 text-center mb-2'>
-                    This action is <span className='text-red-400 font-bold'>irreversible</span>.
-                    Your account and personal data will be permanently deleted.
+                    <Trans
+                        i18nKey='deleteWarning'
+                        ns='profile'
+                        components={{ 1: <strong className='text-red-400' /> }}
+                    />
                 </p>
 
-                <p className='text-xs text-purple-400 text-center mb-6'>
-                    Type <span className='text-white font-mono'>DELETE</span> to confirm.
+                <p className='text-sm text-purple-300 text-center mb-6'>
+                    <Trans
+                        i18nKey='deleteTypeConfirm'
+                        ns='profile'
+                        components={{ 1: <strong className='text-purple-100' /> }}
+                    />
                 </p>
 
                 <FormInput
                     value={input}
                     onChange={(v) => setInput(v)}
-                    placeholder='DELETE'
+                    placeholder={confirmWord}
                     error=''
                 />
 
                 <div className='flex flex-col gap-4 mt-6'>
                     <ArcadeButton
                         onClick={handleConfirm}
-                        disabled={input !== 'DELETE' || loading}
+                        disabled={input !== confirmWord || loading}
                         loading={loading}
                     >
-                        CONFIRM DELETE
+                        {t('confirmDelete')}
                     </ArcadeButton>
                 </div>
 
                 <div className='mt-6 text-right'>
-                    <LinkButton onClick={() => navigate('/profile')}>← Back</LinkButton>
+                    <LinkButton onClick={() => navigate('/profile')}>{t('backToProfile', { ns: 'common' })}</LinkButton>
                 </div>
 
             </FormCard>

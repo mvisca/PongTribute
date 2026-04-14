@@ -1,5 +1,6 @@
 // packages/frontend/src/features/friends/components/FriendsWidget.tsx
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { useFriendsStore, MatchInviteEntry } from '../store/friendsStore';
 import { acceptMatch, rejectMatch } from '../../game/api/gameApi';
@@ -16,18 +17,21 @@ interface Props {
 	onPlayToFather?: (friendId: string, friendUsername: string, friendAvatar: string) => void;
 }
 
-export function FriendsWidget( { onPlayToFather }: Props) {
-    const token           = useAuthStore(state => state.accessToken);
-    const currentUserId   = useAuthStore(state => state.user?.id);
+export function FriendsWidget({ onPlayToFather }: Props) {
+	const { t } = useTranslation('friends');
+	const { t: tCommon } = useTranslation('common');
 
-    const friends         = useFriendsStore(state => state.friends);
-    const pending         = useFriendsStore(state => state.pending);
-    const removePending   = useFriendsStore(state => state.removePending);
-    const removeFriendStore = useFriendsStore(state => state.removeFriend);
+	const token = useAuthStore(state => state.accessToken);
+	const currentUserId = useAuthStore(state => state.user?.id);
+
+	const friends = useFriendsStore(state => state.friends);
+	const pending = useFriendsStore(state => state.pending);
+	const removePending = useFriendsStore(state => state.removePending);
+	const removeFriendStore = useFriendsStore(state => state.removeFriend);
 	const addFriend = useFriendsStore(state => state.addFriend);
 	const sentRequests = useFriendsStore(state => state.sentRequests);
 	const removeSentRequest = useFriendsStore(state => state.removeSentRequest);
-	
+
 	const matchInvites = useFriendsStore(state => state.matchInvites);
 	const removeMatchInvite = useFriendsStore(state => state.removeMatchInvite);
 	const navigate = useNavigate();
@@ -47,23 +51,23 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 
 		return () => clearInterval(interval);
 	}, [matchInvites, removeMatchInvite]);
-	
-	
-	const dismiss 		  = useToastStore(state => state.dismiss);
 
-    const [searchInput,   setSearchInput]   = useState('');
-    const [searchResult,  setSearchResult]  = useState<{ id: string; username: string; avatar: string } | null>(null);
-    const [searchError,   setSearchError]   = useState('');
-    const [searchLoading, setSearchLoading] = useState(false);
-    const [feedback,      setFeedback]      = useState<{ msg: string; ok: boolean } | null>(null);
-	
+
+	const dismiss = useToastStore(state => state.dismiss);
+
+	const [searchInput, setSearchInput] = useState('');
+	const [searchResult, setSearchResult] = useState<{ id: string; username: string; avatar: string } | null>(null);
+	const [searchError, setSearchError] = useState('');
+	const [searchLoading, setSearchLoading] = useState(false);
+	const [feedback, setFeedback] = useState<{ msg: string; ok: boolean } | null>(null);
+
 
 	const showFeedback = (msg: string, ok: boolean) => {
 		setFeedback({ msg, ok });
 		setTimeout(() => setFeedback(null), FEEDBACK_WIDGET_MS);
 	};
 
-    const handleSearch = async () => {
+	const handleSearch = async () => {
 		if (!token || !searchInput.trim()) return;
 		setSearchError('');
 		setSearchResult(null);
@@ -72,20 +76,20 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 			const user = await findUserByUsername(searchInput.trim(), token);
 			if (user.id === currentUserId) {
 				setSearchInput('');
-				showFeedback("That's you!", false);
+				showFeedback(t('thatsYou'), false);
 			} else if (friends[user.id]) {
 				setSearchInput('');
-				showFeedback('Already friends!', false);
+				showFeedback(t('alreadyFriends'), false);
 			} else {
 				setSearchResult(user);
 			}
 		} catch {
-			setSearchError('User not found');
+			setSearchError(t('userNotFound'));
 		} finally {
 			setSearchLoading(false);
 		}
 	};
-    const handleSendRequest = async (friendId: string) => {
+	const handleSendRequest = async (friendId: string) => {
 		if (!token) return;
 		try {
 			await sendFriendRequest(friendId, token);
@@ -97,51 +101,51 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 			});
 			setSearchResult(null);
 			setSearchInput('');
-			showFeedback('Request sent!', true);
+			showFeedback(t('requestSent'), true);
 		} catch (err: any) {
-			setSearchError(err?.message ?? 'Failed to send request');
+			setSearchError(err?.message ?? t('failedToSend'));
 		}
 	};
 
-    const handleRespond = async (senderId: string, accepted: boolean) => {
-        if (!token) return;
-        try {
-            await respondFriendRequest(senderId, accepted, token);
-            if (accepted) {
-                const invite  = pending[senderId];
-                const profile = await getProfile(senderId, token).catch(() => null);
-                addFriend({
-                    userId:   senderId,
-                    username: profile?.username ?? invite?.senderUsername ?? senderId,
-                    avatar:   profile?.avatar   ?? invite?.senderAvatar   ?? '',
-                    isOnline: profile?.isOnline ?? false,
-                } satisfies FriendEntry);
-                showFeedback('Friend added!', true);
-            }
+	const handleRespond = async (senderId: string, accepted: boolean) => {
+		if (!token) return;
+		try {
+			await respondFriendRequest(senderId, accepted, token);
+			if (accepted) {
+				const invite = pending[senderId];
+				const profile = await getProfile(senderId, token).catch(() => null);
+				addFriend({
+					userId: senderId,
+					username: profile?.username ?? invite?.senderUsername ?? senderId,
+					avatar: profile?.avatar ?? invite?.senderAvatar ?? '',
+					isOnline: profile?.isOnline ?? false,
+				} satisfies FriendEntry);
+				showFeedback(t('friendAdded'), true);
+			}
 			removePending(senderId);
 			dismiss(senderId);
-        } catch {
-            showFeedback('Action failed', false);
-        }
-    };
-
-    const handleRemove = async (friendId: string) => {
-        if (!token) return;
-        try {
-            await removeFriend(friendId, token);
-            removeFriendStore(friendId);
-        } catch {
-            showFeedback('Failed to remove friend', false);
-        }
+		} catch {
+			showFeedback(t('actionFailed'), false);
+		}
 	};
-	
+
+	const handleRemove = async (friendId: string) => {
+		if (!token) return;
+		try {
+			await removeFriend(friendId, token);
+			removeFriendStore(friendId);
+		} catch {
+			showFeedback(t('failedToRemove'), false);
+		}
+	};
+
 	const handleCancelRequest = async (receiverId: string) => {
 		if (!token) return;
 		try {
 			await cancelFriendRequest(receiverId, token);
 			removeSentRequest(receiverId);
 		} catch {
-			showFeedback('Failed to cancel request', false);
+			showFeedback(t('failedToCancel'), false);
 		}
 	};
 
@@ -153,7 +157,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 			dismiss(matchId);
 			if ('id' in result) navigate(`/game/${result.id}`);
 		} catch {
-			showFeedback('Failed to accept', false);
+			showFeedback(t('failedToAccept'), false);
 		}
 	};
 
@@ -164,126 +168,118 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 			removeMatchInvite(matchId);
 			dismiss(matchId);
 		} catch {
-			showFeedback('Failed to reject', false);
+			showFeedback(t('failedToReject'), false);
 		}
 	};
-	
-    return (
-        <div className='bg-purple-950 rounded-xl shadow-lg w-56 flex flex-col gap-3 p-3'>
 
-            {/* FRIENDS LIST */}
-            <div>
-                <h2 className='retro-title-sm mb-1 p-2'>
-                    FRIENDS ({Object.keys(friends).length})
-                </h2>
-                {Object.keys(friends).length === 0 ? (
-                    <p className='text-[13px] text-purple-400 text-center py-2'>No friends yet</p>
-                ) : (
-                    <div className='flex flex-col gap-1'>
-                        {Object.values(friends).map(entry => (
-                            <FriendItem
-                                key={entry.userId}
-                                entry={entry}
-                                onRemove={handleRemove}
-                                onPlayFromChild={(id, username, avatar) => onPlayToFather?.(id, username, avatar)}
-                                playLabel='PLAY'
-                            />
-                        ))}
-                    </div>
-                )}
-            </div>
+	return (
+		<div className='bg-purple-950 rounded-xl shadow-lg w-56 flex flex-col gap-3 p-3'>
 
-            <div className='border-t border-purple-700' />
+			{/* FRIENDS LIST */}
+			<div>
+				<h2 className='retro-title-sm mb-1 p-2'>
+					{t('friendsTitle', { count: Object.keys(friends).length })}
+				</h2>
+				{Object.keys(friends).length === 0 ? (
+					<p className='text-[13px] text-purple-400 text-center py-2'>{t('noFriends')}</p>
+				) : (
+					<div className='flex flex-col gap-1'>
+						{Object.values(friends).map(entry => (
+							<FriendItem
+								key={entry.userId}
+								entry={entry}
+								onRemove={handleRemove}
+								onPlayFromChild={(id, username, avatar) => onPlayToFather?.(id, username, avatar)}
 
-            {/* ADD FRIEND */}
-            <div>
-                <h2 className='retro-title-sm mb-1'>ADD FRIEND</h2>
-                    <input
-                        className='input-sm mb-3 w-full'
-                        placeholder='Username + Enter'
-                        value={searchInput}
-                        onChange={(e) => { setSearchInput(e.target.value); setSearchError(''); setSearchResult(null); setFeedback(null); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && !searchLoading) handleSearch(); }}
-                    />
-
-                {searchError && (
-                    <p className='text-xs text-red-400 mt-1'>{searchError}</p>
-                )}
-
-                {/* FEEDBACK ← añadir */}
-                {feedback && (
-                    <p className={`text-xs mt-1 ${feedback.ok ? 'text-green-400' : 'text-red-400'}`}>
-                        {feedback.msg}
-                    </p>
-				)}
-				
-				{searchResult && (
-					// (() => {
-					// 	const isAlreadyFriend = !!friends[searchResult.id];
-					// 	if (isAlreadyFriend) {
-					// 		return <p className='text-xs text-red-400 mt-1'>Already friends</p>;
-					// 	}
-					// 	return (
-							<div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
-								<div className='flex items-center gap-2'>
-									<AvatarDisplay src={searchResult.avatar} size='sm' />
-									<span className='text-[10px] text-purple-200'>{searchResult.username}</span>
-								</div>
-								<button
-									onClick={() => handleSendRequest(searchResult.id)}
-									className='arcade-btn-sm'
-								>
-									ADD
-								</button>
-							</div>
-					// 	);
-					// })()
+							/>
+						))}
+					</div>
 				)}
 			</div>
-			
-            {/* FRIEND REQUEST */}
-            {Object.keys(pending).length > 0 && (
-                <>
-                    <div className='border-t border-purple-700' />
-                    <div>
-                        <h2 className='retro-title-sm mb-1'>
-                            REQUEST ({Object.keys(pending).length})
-                        </h2>
-                        <div className='flex flex-col gap-1'>
-                            {Object.values(pending).map(req => (
-                                <div key={req.senderId} className='flex items-center justify-between p-2 bg-purple-900 rounded-lg'>
-                                    <div className='flex items-center gap-2'>
-                                        <AvatarDisplay src={req.senderAvatar} size='sm' />
-                                        <span className='text-[10px] text-purple-200'>{req.senderUsername}</span>
-                                    </div>
-                                    <div className='flex flex-col items-end gap-1'>
-                                        <button
-                                            onClick={() => handleRespond(req.senderId, false)}
-                                            className='text-[10px] text-red-400 hover:text-red-200 px-2'
-                                        >
-                                            REJECT
-                                        </button>
-                                        <button
-                                            onClick={() => handleRespond(req.senderId, true)}
-                                            className='arcade-btn-sm'
-                                        >
-                                            ACCEPT
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </>
+
+			<div className='border-t border-purple-700' />
+
+			{/* ADD FRIEND */}
+			<div>
+				<h2 className='retro-title-sm mb-1'>{t('addFriend')}</h2>
+				<input
+					className='input-sm mb-3 w-full'
+					placeholder={t('searchPlaceholder')}
+					value={searchInput}
+					onChange={(e) => { setSearchInput(e.target.value); setSearchError(''); setSearchResult(null); setFeedback(null); }}
+					onKeyDown={(e) => { if (e.key === 'Enter' && !searchLoading) handleSearch(); }}
+				/>
+
+				{searchError && (
+					<p className='text-xs text-red-400 mt-1'>{searchError}</p>
+				)}
+
+				{/* FEEDBACK */}
+				{feedback && (
+					<p className={`text-xs mt-1 ${feedback.ok ? 'text-green-400' : 'text-red-400'}`}>
+						{feedback.msg}
+					</p>
+				)}
+
+				{searchResult && (
+					<div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
+						<div className='flex items-center gap-2'>
+							<AvatarDisplay src={searchResult.avatar} size='sm' />
+							<span className='text-[10px] text-purple-200'>{searchResult.username}</span>
+						</div>
+						<button
+							onClick={() => handleSendRequest(searchResult.id)}
+							className='arcade-btn-sm'
+						>
+							{tCommon('add')}
+						</button>
+					</div>
+				)}
+			</div>
+
+			{/* FRIEND REQUEST */}
+			{Object.keys(pending).length > 0 && (
+				<>
+					<div className='border-t border-purple-700' />
+					<div>
+						<h2 className='retro-title-sm mb-1'>
+							{t('requestsTitle', { count: Object.keys(pending).length })}
+						</h2>
+						<div className='flex flex-col gap-1'>
+							{Object.values(pending).map(req => (
+								<div key={req.senderId} className='flex items-center justify-between p-2 bg-purple-900 rounded-lg'>
+									<div className='flex items-center gap-2'>
+										<AvatarDisplay src={req.senderAvatar} size='sm' />
+										<span className='text-[10px] text-purple-200'>{req.senderUsername}</span>
+									</div>
+									<div className='flex flex-col items-end gap-1'>
+										<button
+											onClick={() => handleRespond(req.senderId, false)}
+											className='text-[10px] text-red-400 hover:text-red-200 px-2'
+										>
+											{tCommon('reject')}
+										</button>
+										<button
+											onClick={() => handleRespond(req.senderId, true)}
+											className='arcade-btn-sm'
+										>
+											{tCommon('accept')}
+										</button>
+									</div>
+								</div>
+							))}
+						</div>
+					</div>
+				</>
 			)}
-			
+
 			{/* SENT REQUESTS */}
 			{Object.keys(sentRequests).length > 0 && (
 				<>
 					<div className='border-t border-purple-700' />
 					<div>
 						<h2 className='retro-title-sm mb-1'>
-							SENT ({Object.keys(sentRequests).length})
+							{t('sentTitle', { count: Object.keys(sentRequests).length })}
 						</h2>
 						<div className='flex flex-col gap-1'>
 							{Object.values(sentRequests).map(req => (
@@ -296,7 +292,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 										onClick={() => handleCancelRequest(req.receiverId)}
 										className='text-[10px] text-red-400 hover:text-red-200 px-2'
 									>
-										CANCEL
+										{tCommon('cancel')}
 									</button>
 								</div>
 							))}
@@ -311,7 +307,7 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 					<div className='border-t border-purple-700' />
 					<div>
 						<h2 className='retro-title-sm mb-1'>
-							MATCH REQUEST ({Object.keys(matchInvites).length})
+							{t('matchRequestTitle', { count: Object.keys(matchInvites).length })}
 						</h2>
 						<div className='flex flex-col gap-1'>
 							{Object.values(matchInvites).map(inv => (
@@ -328,13 +324,13 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 											onClick={() => handleRejectMatch(inv.matchId)}
 											className='text-[10px] text-red-400 hover:text-red-200 px-2'
 										>
-											REJECT
+											{tCommon('reject')}
 										</button>
 										<button
 											onClick={() => handleAcceptMatch(inv.matchId)}
 											className='arcade-btn-sm'
 										>
-											ACCEPT
+											{tCommon('accept')}
 										</button>
 									</div>
 									<TimeoutBar
@@ -350,6 +346,6 @@ export function FriendsWidget( { onPlayToFather }: Props) {
 				</>
 			)}
 
-        </div>
-    );
+		</div>
+	);
 }

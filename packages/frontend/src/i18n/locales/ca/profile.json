@@ -1,0 +1,21 @@
+{
+	"editProfile": "EDITAR PERFIL",
+	"changePassword": "CANVIAR CONTRASENYA",
+	"deleteAccount": "ELIMINAR COMPTE",
+	"history": "HISTORIAL",
+	"failedToLoadProfile": "No s'ha pogut carregar el perfil",
+	"deleteTitle": "ELIMINAR COMPTE",
+	"deleteWarning": "Aquesta acció és <1>irreversible</1>. El teu compte i les teves dades personals s'eliminaran permanentment.",
+	"deleteTypeConfirm": "Escriu <1>ELIMINAR</1> per confirmar.",
+	"deleteConfirmWord": "ELIMINAR",
+	"confirmDelete": "CONFIRMAR ELIMINACIÓ",
+	"deleteFailed": "No s'ha pogut eliminar el compte. Torna-ho a provar.",
+	"historyTitle": "HISTORIAL",
+	"noMatches": "No s'han trobat partides",
+	"win": "VICTÒRIA",
+	"loss": "DERROTA",
+	"prevPage": "← ANTERIOR",
+	"nextPage": "SEGÜENT →",
+	"page": "Pàgina {{current}}",
+	"failedToLoadHistory": "No s'ha pogut carregar l'historial de partides"
+}

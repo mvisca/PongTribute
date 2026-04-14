@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { getMatchHistory, PAGE_SIZE } from '../../profile/api/matchApi';
 import type { MatchTypes } from '@transcendence/shared/types/match.types.js';
@@ -12,6 +13,7 @@ import {
 } from '../../../shared/components/ui';
 
 export default function HistoryPage() {
+    const { t } = useTranslation('profile');
     const navigate    = useNavigate();
     const userId      = useAuthStore((state) => state.user?.id);
     const token       = useAuthStore((state) => state.accessToken);
@@ -32,7 +34,7 @@ export default function HistoryPage() {
                 setMatches(data);
                 setHasMore(data.length === PAGE_SIZE);
             } catch {
-                setError('Failed to load match history');
+                setError(t('failedToLoadHistory'));
             } finally {
                 setLoading(false);
             }
@@ -44,13 +46,13 @@ export default function HistoryPage() {
 
     return (
         <PageContainer>
-            <FormCard title='HISTORY'>
+            <FormCard title={t('historyTitle')}>
 
                 <AlertError message={error} />
 
                 {matches.length === 0 ? (
                     <p className='text-sm text-purple-400 text-center py-4'>
-                        No matches found
+                        {t('noMatches')}
                     </p>
                 ) : (
                     <div className='flex flex-col gap-2 mt-2'>
@@ -70,13 +72,13 @@ export default function HistoryPage() {
                                 >
                                     <div className='flex justify-between items-center'>
                                         <span className={won ? 'text-green-400' : 'text-red-400'}>
-                                            {won ? 'WIN' : 'LOSS'}
+                                            {won ? t('win') : t('loss')}
                                         </span>
                                         <span className='text-purple-300 tracking-widest'>
                                             {me?.score ?? 0} — {rival?.score ?? 0}
                                         </span>
                                         <span className='text-white text-xs'>
-                                            {rival?.username ?? 'Unknown'}
+                                            {rival?.username ?? t('unknown', { ns: 'common' })}
                                         </span>
                                     </div>
                                     <div className='flex justify-between mt-1 text-xs text-purple-600'>
@@ -89,33 +91,32 @@ export default function HistoryPage() {
                             );
                         })}
                     </div>
-				)}
-				
+                )}
+
                 {/* Paginación */}
                 <div className='flex justify-between items-center mt-6'>
                     <LinkButton
                         onClick={() => setPage((p) => Math.max(0, p - 1))}
                         disabled={page === 0}
                     >
-                        ← PREV
+                        {t('prevPage')}
                     </LinkButton>
                     <span className='text-sm text-purple-500'>
-                        Page {page + 1}
+                        {t('page', { current: page + 1 })}
                     </span>
                     <LinkButton
                         onClick={() => setPage((p) => p + 1)}
                         disabled={!hasMore}
                     >
-                        NEXT →
+                        {t('nextPage')}
                     </LinkButton>
                 </div>
 
                 <div className='mt-6 text-right'>
                     <LinkButton onClick={() => navigate('/profile')}>
-                        ← Back to profile
+                        {t('backToProfile', { ns: 'common' })}
                     </LinkButton>
                 </div>
-
 
             </FormCard>
         </PageContainer>

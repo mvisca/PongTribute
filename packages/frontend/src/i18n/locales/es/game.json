@@ -1,0 +1,17 @@
+{
+    "connecting": "Conectando...",
+    "waitingForStart": "Esperando a que empiece la partida...",
+    "vs": "VS {{opponent}}",
+    "opponentDisconnected": "Oponente desconectado",
+    "waitingReconnection": "Esperando reconexión... {{seconds}}s",
+    "paused": "PAUSA",
+    "pressSpaceToResume": "Pulsa ESPACIO para continuar",
+    "matchFinished": "🏁 ¡PARTIDA FINALIZADA!",
+    "youWin": "🏆 ¡HAS GANADO!",
+    "youLose": "🍷 ¡HAS PERDIDO!",
+    "backToLobby": "VOLVER AL LOBBY",
+    "giveUp": "¡RENDIRSE!",
+    "abandonMatch": "¿Abandonar partida?",
+    "desktopRequired": "Se requiere ordenador",
+    "desktopExplanation": "Este juego necesita una pantalla más grande para jugar. Ábrelo en un ordenador de sobremesa o portátil."
+}

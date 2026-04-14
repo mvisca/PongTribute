@@ -1,0 +1,9 @@
+{
+    "friendOnline": "'{{name}}' está en línea",
+    "friendOffline": "'{{name}}' está desconectado",
+    "friendRequest": "'{{name}}' quiere ser tu amigo",
+    "friendAccepted": "'{{name}}' ahora es tu amigo",
+    "matchInvite": "'{{name}}' quiere jugar contigo",
+    "matchRejected": "'{{name}}' rechazó tu desafío",
+    "matchCancelled": "Partida cancelada"
+}

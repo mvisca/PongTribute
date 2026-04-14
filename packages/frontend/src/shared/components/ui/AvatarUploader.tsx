@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAvatarUpload } from '../../hooks/useAvatarUpload';
 import AvatarDisplay from './AvatarDisplay';
 
@@ -9,11 +10,12 @@ interface Props {
 }
 
 export default function AvatarUploader({ onFileChange, onError, currentSrc }: Props) {
+	const { t } = useTranslation('common');
 	const { base64, error, handleFile, clear } = useAvatarUpload();
 
 	const displaySrc = base64 || (base64 === '' ? null : currentSrc ?? null)
 	// Show reset if: reset has not been pressed (base64 !== '')
-	// and there is a new image (base64 = something) or there is not a cuustom avatar (currentSrc !== DEFAULT)
+	// and there is a new image (base64 = something) or there is not a custom avatar (currentSrc !== DEFAULT)
 	const showReset = base64 !== '' && !!(base64 || currentSrc)
 
 	// Avoid call onFileChange on mount (prevents seting base64 on null without reset)
@@ -30,7 +32,7 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 		onFileChange(base64 === '' ? null : base64);
 	}, [base64]);
 
-	// To track erros
+	// To track errors
 	useEffect(() => {
 		if (error) onError?.(error);
 	}, [error]);
@@ -44,12 +46,12 @@ export default function AvatarUploader({ onFileChange, onError, currentSrc }: Pr
 					onClick={() => { clear(); }}
 					className='text-xs text-purple-400 hover:text-purple-200'
 				>
-					Reset
+					{t('reset')}
 				</button>
 			}
 
 			<label className='cursor-pointer px-4 py-2 text-xs text-purple-300 hover:text-white transition-colors'>
-			<span className='arcade-btn px-4 py-2 text-xs'>SELECT IMAGE</span>
+			<span className='arcade-btn px-4 py-2 text-xs'>{t('selectImage')}</span>
 			<input
 				type='file'
 				className='hidden'

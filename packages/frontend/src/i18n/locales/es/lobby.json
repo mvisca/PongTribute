@@ -1,0 +1,33 @@
+{
+    "playOnline": "JUGAR ONLINE",
+    "localMatch": "PARTIDA LOCAL",
+    "playVsBot": "JUGAR VS BOT",
+
+    "onlineSettings": "AJUSTES DE PARTIDA ONLINE",
+    "localSettings": "AJUSTES DE PARTIDA LOCAL",
+    "botSettings": "AJUSTES DE PARTIDA VS BOT",
+    "challengeSettings": "AJUSTES DE DESAFÍO A AMIGO",
+    "matchSettingsVs": "AJUSTES DE PARTIDA VS {{username}}",
+
+    "classic": "Clásico",
+    "speed": "Velocidad",
+    "pro": "Pro",
+    "scoreLimit": "Límite de puntuación: {{score}}",
+    "scoreFixed": "Puntuación: {{score}} (fija)",
+    "start": "INICIAR",
+
+    "searchingOpponent": "BUSCANDO OPONENTE",
+    "mode": "Modo: {{mode}}",
+    "noOpponentFound": "No se encontró oponente - Solicitud caducada",
+
+    "waitingFor": "ESPERANDO A",
+    "declinedInvitation": "{{username}} rechazó tu invitación",
+    "expiredRequest": "Tu amigo no respondió - Solicitud caducada",
+
+    "failedToCreate": "No se pudo crear la partida",
+    "failedToCreateBot": "No se pudo crear la partida contra bot",
+    "failedToSendInvitation": "No se pudo enviar la invitación",
+
+    "desktopRequired": "Se requiere ordenador para jugar",
+    "desktopRequirements": "🖥️ Se requiere pantalla grande + ⌨️ teclado"
+}

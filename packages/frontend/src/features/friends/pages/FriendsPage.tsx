@@ -1,332 +1,330 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { UserTypes } from '@transcendence/shared/types/user.types.js';
 
-// AUTH STORE Zustand
 import { useAuthStore } from '../../../core/auth/AuthStore';
 
-// FRIENDS STORE Zustand
 import { FriendEntry, FriendInvite, useFriendsStore, SentRequest } from '../store/friendsStore';
-// FRIENDS API
 import {
-	sendFriendRequest,
-	respondFriendRequest,
-	removeFriend,
-	findUserByUsername,
-	cancelFriendRequest
+    sendFriendRequest,
+    respondFriendRequest,
+    removeFriend,
+    findUserByUsername,
+    cancelFriendRequest
 } from '../api/friendsApi';
 
-// FRIENDS Components
 import { FriendItem } from '../components/FriendItem';
 
 import {
-	PageContainer,
-	FormCard,
-	FormInput,
-	ArcadeButton,
-	NeonButton,
-	AlertError,
-	AvatarDisplay,
-	LoadingScreen
+    PageContainer,
+    FormCard,
+    FormInput,
+    ArcadeButton,
+    NeonButton,
+    AlertError,
+    AvatarDisplay,
+    LoadingScreen
 } from '../../../shared/components/ui';
 
 import { useToastStore } from '../../../core/toasts';
 import { getProfile } from '../../profile/api/profileApi';
 
 export default function FriendsPage() {
+    const { t } = useTranslation('friends');
+    const { t: tCommon } = useTranslation('common');
 
-	const token = useAuthStore((state) => state.accessToken);
-	const currentUserId = useAuthStore((state) => state.user?.id);
+    const token = useAuthStore((state) => state.accessToken);
+    const currentUserId = useAuthStore((state) => state.user?.id);
 
-	const friends							= useFriendsStore(state => state.friends);
-	const pending							= useFriendsStore(state => state.pending);
-	const removeFriendStore 				= useFriendsStore(state => state.removeFriend);
-	const removePendingStore 				= useFriendsStore(state => state.removePending);
-	const addFriendStore 					= useFriendsStore(state => state.addFriend);
-	const sentRequests = useFriendsStore(state => state.sentRequests);
-	const removeSentRequestStore = useFriendsStore(state => state.removeSentRequest);
-	
-	const navigate = useNavigate();
-	const dismiss = useToastStore(state => state.dismiss);
+    const friends                           = useFriendsStore(state => state.friends);
+    const pending                           = useFriendsStore(state => state.pending);
+    const removeFriendStore                 = useFriendsStore(state => state.removeFriend);
+    const removePendingStore                = useFriendsStore(state => state.removePending);
+    const addFriendStore                    = useFriendsStore(state => state.addFriend);
+    const sentRequests = useFriendsStore(state => state.sentRequests);
+    const removeSentRequestStore = useFriendsStore(state => state.removeSentRequest);
 
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
+    const navigate = useNavigate();
+    const dismiss = useToastStore(state => state.dismiss);
 
-	const [searchInput, setSearchInput] = useState('');
-	const [searchResult, setSearchResult] = useState<UserTypes.UserPublic | null>(null);
-	const [searchError, setSearchError] = useState('');
-	const [searchLoading, setSearchLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-	useEffect(() => {
-		setLoading(false);
-	}, []);
+    const [searchInput, setSearchInput] = useState('');
+    const [searchResult, setSearchResult] = useState<UserTypes.UserPublic | null>(null);
+    const [searchError, setSearchError] = useState('');
+    const [searchLoading, setSearchLoading] = useState(false);
 
-	const handleRemove = async (friendId: string) => {
-		if (!token) return;
+    useEffect(() => {
+        setLoading(false);
+    }, []);
 
-		try {
-			await removeFriend(friendId, token);
-			removeFriendStore(friendId);
-		} catch (err: any) {
-			setError(err?.message ?? 'Failed to remove friend');
-		}
-	};
+    const handleRemove = async (friendId: string) => {
+        if (!token) return;
 
-	const handleRespond = async (senderId: string, accepted: boolean) => {
-		if (!token) return;
+        try {
+            await removeFriend(friendId, token);
+            removeFriendStore(friendId);
+        } catch (err: any) {
+            setError(err?.message ?? t('failedToRemove'));
+        }
+    };
 
-		try {
-			await respondFriendRequest(senderId, accepted, token);
-			if (accepted) {
-				const invite = pending[senderId];
-				const profile = await getProfile(senderId, token).catch(() => null);
+    const handleRespond = async (senderId: string, accepted: boolean) => {
+        if (!token) return;
 
-				if (invite) {
-					addFriendStore({ 
-						userId: senderId,
-						username: profile?.username ?? invite?.senderUsername ?? senderId,
-						avatar: profile?.avatar ?? invite?.senderAvatar ?? '',
-						isOnline: profile?.isOnline ?? false
-					} satisfies FriendEntry);
-				}
-			}
-			removePendingStore(senderId);
-			dismiss(senderId);
+        try {
+            await respondFriendRequest(senderId, accepted, token);
+            if (accepted) {
+                const invite = pending[senderId];
+                const profile = await getProfile(senderId, token).catch(() => null);
 
-		} catch (err: any) {
-			setError(err?.message ?? 'Failed to respond to friend request');
-		}
-	};
+                if (invite) {
+                    addFriendStore({
+                        userId: senderId,
+                        username: profile?.username ?? invite?.senderUsername ?? senderId,
+                        avatar: profile?.avatar ?? invite?.senderAvatar ?? '',
+                        isOnline: profile?.isOnline ?? false
+                    } satisfies FriendEntry);
+                }
+            }
+            removePendingStore(senderId);
+            dismiss(senderId);
 
-	const handleSearch = async () => {
+        } catch (err: any) {
+            setError(err?.message ?? t('failedToRespond'));
+        }
+    };
 
-		if (!token || !searchInput.trim()) return;
+    const handleSearch = async () => {
 
-		setSearchError('');
-		setSearchResult(null);
-		setSearchLoading(true);
+        if (!token || !searchInput.trim()) return;
 
-		try {
+        setSearchError('');
+        setSearchResult(null);
+        setSearchLoading(true);
 
-			const user = await findUserByUsername(searchInput.trim(), token);
+        try {
 
-			if (user.id === currentUserId)
-				setSearchError("That's you!");
-			else
-				setSearchResult(user);
+            const user = await findUserByUsername(searchInput.trim(), token);
 
-		} catch {
+            if (user.id === currentUserId)
+                setSearchError(t('thatsYou'));
+            else
+                setSearchResult(user);
 
-			setSearchError('User not found');
+        } catch {
 
-		} finally {
+            setSearchError(t('userNotFound'));
 
-			setSearchLoading(false);
+        } finally {
 
-		}
-	};
+            setSearchLoading(false);
 
-	const handleSendRequest = async (friendId: string) => {
-		if (!token) return;
+        }
+    };
 
-		try {
-			await sendFriendRequest(friendId, token);
-			const addSentRequest = useFriendsStore.getState().addSentRequest;
-			addSentRequest({
-				receiverId: friendId,
-				receiverUsername: searchResult?.username ?? friendId,
-				receiverAvatar: searchResult?.avatar ?? '',
-			});
-			setSearchResult(null);
-			setSearchInput('');
-		} catch (err: any) {
-			setSearchError(err?.message ?? 'Failed to send request');
-		}
-	};
+    const handleSendRequest = async (friendId: string) => {
+        if (!token) return;
 
-	const handleCancelRequest = async (receiverId: string) => {
-		if (!token) return;
-		try {
-			await cancelFriendRequest(receiverId, token);
-			removeSentRequestStore(receiverId);
-		} catch (err: any) {
-			setError(err?.message ?? 'Failed to cancel request');
-		}
-	};
-	
-	if (loading)
-		return <LoadingScreen />;
+        try {
+            await sendFriendRequest(friendId, token);
+            const addSentRequest = useFriendsStore.getState().addSentRequest;
+            addSentRequest({
+                receiverId: friendId,
+                receiverUsername: searchResult?.username ?? friendId,
+                receiverAvatar: searchResult?.avatar ?? '',
+            });
+            setSearchResult(null);
+            setSearchInput('');
+        } catch (err: any) {
+            setSearchError(err?.message ?? t('failedToSend'));
+        }
+    };
 
-	return (
-		<PageContainer>
-			<div className='flex flex-col gap-6 w-full max-w-[420px]'>
+    const handleCancelRequest = async (receiverId: string) => {
+        if (!token) return;
+        try {
+            await cancelFriendRequest(receiverId, token);
+            removeSentRequestStore(receiverId);
+        } catch (err: any) {
+            setError(err?.message ?? t('failedToCancel'));
+        }
+    };
 
-				<AlertError message={error} />
+    if (loading)
+        return <LoadingScreen />;
 
-				{/* FRIENDS LIST */}
-				<FormCard title={`FRIENDS (${Object.keys(friends).length})`}>
+    return (
+        <PageContainer>
+            <div className='flex flex-col gap-6 w-full max-w-[420px]'>
 
+                <AlertError message={error} />
 
-					{Object.keys(friends).length === 0 ? (
+                {/* FRIENDS LIST */}
+                <FormCard title={t('friendsTitle', { count: Object.keys(friends).length })}>
 
-						<p className='text-sm text-purple-400 text-center py-4'>
-							No friends yet
-						</p>
+                    {Object.keys(friends).length === 0 ? (
 
-					) : (
+                        <p className='text-sm text-purple-400 text-center py-4'>
+                            {t('noFriends')}
+                        </p>
 
-						Object.values(friends).map(entry => (
-							<FriendItem
-								key={entry.userId}
-								entry={entry}
-								onRemove={handleRemove}
-							/>
-						))
+                    ) : (
 
-					)}
+                        Object.values(friends).map(entry => (
+                            <FriendItem
+                                key={entry.userId}
+                                entry={entry}
+                                onRemove={handleRemove}
+                            />
+                        ))
 
-				</FormCard>
+                    )}
 
-				{/* ADD FRIEND */}
-				<FormCard title='ADD FRIEND'>
+                </FormCard>
 
-					<div className='flex gap-10 items-start'>
+                {/* ADD FRIEND */}
+                <FormCard title={t('addFriend')}>
 
-						<FormInput
-							value={searchInput}
-							onChange={(value) => {
-								setSearchInput(value);
-								setSearchError('');
-								setSearchResult(null);
-							}}
-							placeholder='Search by username'
-							error={searchError}
-						/>
+                    <div className='flex gap-10 items-start'>
 
-						<button
-							onClick={handleSearch}
-							disabled={searchLoading || !searchInput.trim()}
-							className='arcade-btn px-8 py-[0.6rem] text-sm self-start disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap'
-						>
-							{searchLoading ? '...' : 'SEARCH'}
-						</button>
+                        <FormInput
+                            value={searchInput}
+                            onChange={(value) => {
+                                setSearchInput(value);
+                                setSearchError('');
+                                setSearchResult(null);
+                            }}
+                            placeholder={t('searchByUsername')}
+                            error={searchError}
+                        />
 
-					</div>
+                        <button
+                            onClick={handleSearch}
+                            disabled={searchLoading || !searchInput.trim()}
+                            className='arcade-btn px-8 py-[0.6rem] text-sm self-start disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap'
+                        >
+                            {searchLoading ? '...' : tCommon('search')}
+                        </button>
 
-					{searchResult && (
+                    </div>
 
-						<div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
+                    {searchResult && (
 
-							<div className='flex items-center gap-3'>
-								<AvatarDisplay src={searchResult.avatar} size='sm' />
-								<span className='text-sm text-purple-200'>
-									{searchResult.username}
-								</span>
-							</div>
+                        <div className='flex items-center justify-between mt-3 p-3 bg-purple-900 rounded-lg'>
 
-							<ArcadeButton onClick={() => handleSendRequest(searchResult.id)}>
-								ADD
-							</ArcadeButton>
+                            <div className='flex items-center gap-3'>
+                                <AvatarDisplay src={searchResult.avatar} size='sm' />
+                                <span className='text-sm text-purple-200'>
+                                    {searchResult.username}
+                                </span>
+                            </div>
 
-						</div>
+                            <ArcadeButton onClick={() => handleSendRequest(searchResult.id)}>
+                                {tCommon('add')}
+                            </ArcadeButton>
 
-					)}
-					
-					{/* BACK BUTTON */}
-					<div className="flex justify-end mb-3">
-						<button
-							onClick={() => navigate('/profile')}
-							className="text-purple-300 hover:text-white text-sm"
-						>
-							← BACK
-						</button>
-					</div>
+                        </div>
 
-				</FormCard>
+                    )}
 
-				{/* PENDING REQUESTS */}
-				{Object.keys(pending).length > 0 && (
+                    {/* BACK BUTTON */}
+                    <div className="flex justify-end mb-3">
+                        <button
+                            onClick={() => navigate('/profile')}
+                            className="text-purple-300 hover:text-white text-sm"
+                        >
+                            {tCommon('back')}
+                        </button>
+                    </div>
 
-					<FormCard title={`REQUESTS (${Object.keys(pending).length})`}>
+                </FormCard>
 
-						{Object.values(pending).map(req => (
+                {/* PENDING REQUESTS */}
+                {Object.keys(pending).length > 0 && (
 
-							<PendingItem
-								key={req.senderId}
-								entry={req}
-								onRespond={handleRespond}
-							/>
+                    <FormCard title={t('requestsTitle', { count: Object.keys(pending).length })}>
 
-						))}
+                        {Object.values(pending).map(req => (
 
-					</FormCard>
+                            <PendingItem
+                                key={req.senderId}
+                                entry={req}
+                                onRespond={handleRespond}
+                            />
 
-				)}
+                        ))}
 
-				{/* SENT REQUESTS */}
-				{Object.keys(sentRequests).length > 0 && (
+                    </FormCard>
 
-					<FormCard title={`SENT (${Object.keys(sentRequests).length})`}>
+                )}
 
-						{Object.values(sentRequests).map(req => (
-							<div key={req.receiverId} className='friend-item'>
-								<div className='flex items-center gap-3'>
-									<AvatarDisplay src={req.receiverAvatar} size='sm' />
-									<span className='text-sm text-purple-200'>
-										{req.receiverUsername}
-									</span>
-								</div>
-								<button
-									onClick={() => handleCancelRequest(req.receiverId)}
-									className='text-xs text-red-400 hover:text-red-200 px-2'
-								>
-									CANCEL
-								</button>
-							</div>
-						))}
+                {/* SENT REQUESTS */}
+                {Object.keys(sentRequests).length > 0 && (
 
-					</FormCard>
+                    <FormCard title={t('sentTitle', { count: Object.keys(sentRequests).length })}>
 
-				)}
+                        {Object.values(sentRequests).map(req => (
+                            <div key={req.receiverId} className='friend-item'>
+                                <div className='flex items-center gap-3'>
+                                    <AvatarDisplay src={req.receiverAvatar} size='sm' />
+                                    <span className='text-sm text-purple-200'>
+                                        {req.receiverUsername}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => handleCancelRequest(req.receiverId)}
+                                    className='text-xs text-red-400 hover:text-red-200 px-2'
+                                >
+                                    {tCommon('cancel')}
+                                </button>
+                            </div>
+                        ))}
 
-			</div>
-		</PageContainer>
-	);
+                    </FormCard>
+
+                )}
+
+            </div>
+        </PageContainer>
+    );
 }
 
 function PendingItem({
-	entry,
-	onRespond
+    entry,
+    onRespond
 }: {
-	entry: FriendInvite;
-	onRespond: (id: string, accepted: boolean) => void;
+    entry: FriendInvite;
+    onRespond: (id: string, accepted: boolean) => void;
 }) {
 
-	return (
-		<div className='friend-item'>
+    return (
+        <div className='friend-item'>
 
-			<div className='flex items-center gap-3'>
-				<AvatarDisplay src={entry.senderAvatar} size='sm' />
-				<span className='text-sm text-purple-200'>
-					{entry.senderUsername}
-				</span>
-			</div>
+            <div className='flex items-center gap-3'>
+                <AvatarDisplay src={entry.senderAvatar} size='sm' />
+                <span className='text-sm text-purple-200'>
+                    {entry.senderUsername}
+                </span>
+            </div>
 
-			<div className='flex gap-2'>
+            <div className='flex gap-2'>
 
-				<NeonButton onClick={() => onRespond(entry.senderId, true)}>
-					✓
-				</NeonButton>
+                <NeonButton onClick={() => onRespond(entry.senderId, true)}>
+                    ✓
+                </NeonButton>
 
-				<button
-					onClick={() => onRespond(entry.senderId, false)}
-					className='text-xs text-red-400 hover:text-red-200 px-2'
-				>
-					✕
-				</button>
+                <button
+                    onClick={() => onRespond(entry.senderId, false)}
+                    className='text-xs text-red-400 hover:text-red-200 px-2'
+                >
+                    ✕
+                </button>
 
-			</div>
+            </div>
 
-		</div>
-	);
+        </div>
+    );
 }

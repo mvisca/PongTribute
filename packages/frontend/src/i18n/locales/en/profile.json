@@ -1,0 +1,23 @@
+{
+    "editProfile": "EDIT PROFILE",
+    "changePassword": "CHANGE PASSWORD",
+    "deleteAccount": "DELETE ACCOUNT",
+    "history": "HISTORY",
+    "failedToLoadProfile": "Failed to load profile",
+
+    "deleteTitle": "DELETE ACCOUNT",
+    "deleteWarning": "This action is <1>irreversible</1>. Your account and personal data will be permanently deleted.",
+    "deleteTypeConfirm": "Type <1>DELETE</1> to confirm.",
+    "deleteConfirmWord": "DELETE",
+    "confirmDelete": "CONFIRM DELETION",
+    "deleteFailed": "Failed to delete account. Please try again.",
+
+    "historyTitle": "HISTORY",
+    "noMatches": "No matches found",
+    "win": "WIN",
+    "loss": "LOSS",
+    "prevPage": "← PREVIOUS",
+    "nextPage": "NEXT →",
+    "page": "Page {{current}}",
+    "failedToLoadHistory": "Failed to load match history"
+}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { PageContainer, FormCard, LinkButton, ArcadeButton, AlertError, FormInput, PasswordInput, LoadingScreen } from '../../../shared/components/ui';
 import { enable2FA, verify2FASetup, disable2FA } from '../api/authApi';
@@ -7,6 +8,7 @@ import { Validators, validate } from '@transcendence/shared/utils/validators.js'
 import type { AuthTypes } from '@transcendence/shared/types/auth.types.js';
 
 export default function TwoFactorPage() {
+    const { t } = useTranslation('auth');
     const navigate = useNavigate();
     const user = useAuthStore((state) => state.user);
     const userId = useAuthStore((state) => state.user?.id);
@@ -18,15 +20,15 @@ export default function TwoFactorPage() {
     const [setupData, setSetupData] = useState<AuthTypes.Enable2FAResponse | null>(null);
     const [totpCode, setTotpCode] = useState('');
     const [disablePassword, setDisablePassword] = useState('');
-	const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-	useEffect(() => {
-		if (!user?.has2FAEnabled && !setupData) {
-			setLoading(true);
-			handleStartActivation().finally(() => setLoading(false));
-		}
-	}, []);
-	
+    useEffect(() => {
+        if (!user?.has2FAEnabled && !setupData) {
+            setLoading(true);
+            handleStartActivation().finally(() => setLoading(false));
+        }
+    }, []);
+
     async function handleStartActivation() {
         setError('');
         if (!userId || !token) return;
@@ -34,9 +36,10 @@ export default function TwoFactorPage() {
             const data = await enable2FA(userId, token);
             setSetupData(data);
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to start 2FA setup');
+            setError(err instanceof Error ? err.message : t('failedToStart2FA'));
         }
     }
+
     async function handleConfirmSetup() {
         setError('');
         if (!userId || !token || !setupData) return;
@@ -52,7 +55,7 @@ export default function TwoFactorPage() {
             setTotpCode('');
             navigate('/profile');
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to confirm 2FA');
+            setError(err instanceof Error ? err.message : t('failedToConfirm2FA'));
         }
     }
 
@@ -60,7 +63,7 @@ export default function TwoFactorPage() {
         setError('');
         if (!userId || !token) return;
         if (!disablePassword) {
-            setError('Password is required to disable 2FA');
+            setError(t('passwordRequiredToDisable'));
             return;
         }
         try {
@@ -70,22 +73,22 @@ export default function TwoFactorPage() {
             setDisablePassword('');
             navigate('/profile');
         } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : 'Failed to disable 2FA');
+            setError(err instanceof Error ? err.message : t('failedToDisable2FA'));
         }
     }
 
-	if (loading) {
-		return ( <LoadingScreen /> );
-	}
+    if (loading) {
+        return ( <LoadingScreen /> );
+    }
 
     return (
         <PageContainer>
-            <FormCard title= {user?.has2FAEnabled ? '2FA is enabled' : '2FA is disabled'}>
+            <FormCard title={user?.has2FAEnabled ? t('twoFactorEnabled') : t('twoFactorDisabled')}>
                 <AlertError message={error} />
                 {setupData && (
                     <div className="mt-6 flex flex-col items-center gap-4">
                         <p className="text-sm text-purple-200 text-center">
-                            Step 1: Scan this QR code with your authenticator app.
+                            {t('step1ScanQR')}
                         </p>
 
                         <img
@@ -95,7 +98,7 @@ export default function TwoFactorPage() {
                         />
 
                         <p className="text-sm text-purple-200 text-center mt-2">
-                            Step 2: Enter the 6-digit code from your app.
+                            {t('step2EnterCode')}
                         </p>
                         <div className="-mt-2 w-full max-w-[200px]">
                             <FormInput
@@ -104,20 +107,20 @@ export default function TwoFactorPage() {
                                     const next = v.replace(/\D/g, '').slice(0, 6);
                                     setTotpCode(next);
                                     setError('');
-                                  }}
+                                }}
                                 placeholder="000000"
                                 error=""
                             />
                         </div>
                         <div className="text-sm text-purple-200 text-center max-w-xs">
-                        <p className="mb-1">Keep save your backup code:</p>
-                        <p className="font-mono text-sm text-purple-100 mb-1">
-                            {setupData.backupCode}
-                        </p>
+                            <p className="mb-1">{t('keepBackupCode')}</p>
+                            <p className="font-mono text-sm text-purple-100 mb-1">
+                                {setupData.backupCode}
+                            </p>
                         </div>
                         <div className="flex justify-center mt-4">
                             <ArcadeButton onClick={handleConfirmSetup} disabled={totpCode.length !== 6}>
-                                CONFIRM 2FA
+                                {t('confirm2FA')}
                             </ArcadeButton>
                         </div>
                     </div>
@@ -125,25 +128,25 @@ export default function TwoFactorPage() {
                 {user?.has2FAEnabled && (
                     <div className="mt-6 flex flex-col items-center gap-4">
                         <p className="text-xs text-purple-400 text-center">
-                            Enter your password to disable it.
+                            {t('enterPasswordToDisable')}
                         </p>
                         <div className="-mt-2 w-full max-w-[280px]">
                             <PasswordInput
                                 value={disablePassword}
                                 onChange={(v) => { setDisablePassword(v); setError(''); }}
-                                placeholder="Your password"
+                                placeholder={t('yourPassword')}
                             />
                         </div>
-						
+
                         <div className="flex justify-center mt-4">
                             <ArcadeButton onClick={handleDisable2FA} disabled={!disablePassword.trim()}>
-                                DISABLE 2FA
+                                {t('disable2FA')}
                             </ArcadeButton>
                         </div>
                     </div>
                 )}
                 <div className="mt-6 text-right">
-                	<LinkButton onClick={() => navigate('/profile')}>← Back to profile</LinkButton>
+                    <LinkButton onClick={() => navigate('/profile')}>{t('backToProfile', { ns: 'common' })}</LinkButton>
                 </div>
             </FormCard>
         </PageContainer>

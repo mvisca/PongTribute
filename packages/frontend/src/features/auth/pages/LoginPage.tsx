@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Validators, validate } from '@transcendence/shared/utils/validators.js';
 import { login } from '../api/authApi';
 import { useAuthStore } from '../../../core/auth/AuthStore';
@@ -7,6 +8,7 @@ import { PageContainer, FormCard, FormInput, PasswordInput, ArcadeButton, LinkBu
 import { getProfile } from '../../profile/api/profileApi';
 
 export default function LoginPage() {
+	const { t } = useTranslation('auth');
 	const navigate = useNavigate();
 	const authLogin = useAuthStore((state) => state.login);
 	const setAvatar = useAuthStore((state) => state.setAvatar);
@@ -20,7 +22,7 @@ export default function LoginPage() {
 		setError('');
 		
 		if (!email || !password) {
-			setError('Email and password are required');
+			setError(t('emailAndPasswordRequired'));
 			return;
 		}
 		
@@ -57,7 +59,7 @@ export default function LoginPage() {
 			navigate("/home")
 		} catch (err: any) {
 			setLoading(false);
-			setError(err?.message ?? 'Login failed');
+			setError(err?.message ?? t('loginFailed'));
 		}
 	}
 
@@ -66,27 +68,23 @@ export default function LoginPage() {
 	return (
 		<PageContainer>
 			<div className='flex flex-col items-center'>
-				{/* <h1 className='retro-title mb-10'>
-					WELCOME TO <br /> PING🏓PONG
-				</h1> */}
-
-				<FormCard title='LOGIN'>
+				<FormCard title={t('login')}>
 					<AlertError message={error} />
-					<FormInput value={email} onChange={(v) => { setEmail(v); setError(''); }} placeholder='Email' error={''} />
+					<FormInput value={email} onChange={(v) => { setEmail(v); setError(''); }} placeholder={t('email')} error={''} />
 					<div className='-mt-2'>
 						<PasswordInput
 							value={password}
 							onChange={(v) => { setPassword(v); setError(''); }}
-							placeholder='Password'
+							placeholder={t('password')}
 							onKeyDown={(e) => { if (e.key === 'Enter') handleLogin(); }} />
 					</div>
 					<div className='flex justify-center mt-4'>
-						<ArcadeButton onClick={handleLogin}>LOGIN</ArcadeButton>
+						<ArcadeButton onClick={handleLogin}>{t('login')}</ArcadeButton>
 					</div>
 
 					<div className='mt-4 flex justify-between text-sm text-purple-300'>
-						<LinkButton onClick={() => navigate('/register')}>Create account</LinkButton>
-						<LinkButton onClick={() => navigate('/forgot')}>Forgot password?</LinkButton>
+						<LinkButton onClick={() => navigate('/register')}>{t('createAccount')}</LinkButton>
+						<LinkButton onClick={() => navigate('/forgot')}>{t('forgotPassword')}</LinkButton>
 					</div>
 				</FormCard>
 			</div>

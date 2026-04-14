@@ -1,0 +1,22 @@
+{
+    "friendsTitle": "FRIENDS ({{count}})",
+    "noFriends": "No friends yet",
+    "addFriend": "ADD FRIEND",
+    "searchByUsername": "Search by username",
+    "searchPlaceholder": "Username + Enter",
+    "requestsTitle": "REQUESTS ({{count}})",
+    "sentTitle": "SENT ({{count}})",
+    "matchRequestTitle": "MATCH REQUEST ({{count}})",
+    "thatsYou": "That's you!",
+    "alreadyFriends": "Already friends!",
+    "userNotFound": "User not found",
+    "requestSent": "Request sent!",
+    "friendAdded": "Friend added!",
+    "actionFailed": "Action failed",
+    "failedToRemove": "Failed to remove friend",
+    "failedToRespond": "Failed to respond to friend request",
+    "failedToSend": "Failed to send request",
+    "failedToCancel": "Failed to cancel request",
+    "failedToAccept": "Failed to accept match",
+    "failedToReject": "Failed to reject match"
+}

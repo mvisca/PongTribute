@@ -1,0 +1,17 @@
+{
+    "connecting": "Connecting...",
+    "waitingForStart": "Waiting for game to start...",
+    "vs": "VS {{opponent}}",
+    "opponentDisconnected": "Opponent disconnected",
+    "waitingReconnection": "Waiting for reconnection... {{seconds}}s",
+    "paused": "PAUSED",
+    "pressSpaceToResume": "Press SPACE to resume",
+    "matchFinished": "🏁 MATCH FINISHED!",
+    "youWin": "🏆 YOU WIN!",
+    "youLose": "🍷 YOU LOSE!",
+    "backToLobby": "BACK TO LOBBY",
+    "giveUp": "GIVE UP!",
+    "abandonMatch": "Abandon match?",
+    "desktopRequired": "Desktop required",
+    "desktopExplanation": "This game needs a larger screen to play. Open it on a desktop or laptop."
+}

@@ -1,0 +1,21 @@
+{
+	"editProfile": "MODIFIER LE PROFIL",
+	"changePassword": "CHANGER LE MOT DE PASSE",
+	"deleteAccount": "SUPPRIMER LE COMPTE",
+	"history": "HISTORIQUE",
+	"failedToLoadProfile": "Impossible de charger le profil",
+	"deleteTitle": "SUPPRIMER LE COMPTE",
+	"deleteWarning": "Cette action est <1>irréversible</1>. Votre compte et vos données personnelles seront supprimés définitivement.",
+	"deleteTypeConfirm": "Tapez <1>SUPPRIMER</1> pour confirmer.",
+	"deleteConfirmWord": "SUPPRIMER",
+	"confirmDelete": "CONFIRMER LA SUPPRESSION",
+	"deleteFailed": "Impossible de supprimer le compte. Veuillez réessayer.",
+	"historyTitle": "HISTORIQUE",
+	"noMatches": "Aucun match trouvé",
+	"win": "VICTOIRE",
+	"loss": "DÉFAITE",
+	"prevPage": "← PRÉC",
+	"nextPage": "SUIV →",
+	"page": "Page {{current}}",
+	"failedToLoadHistory": "Impossible de charger l'historique des matchs"
+}

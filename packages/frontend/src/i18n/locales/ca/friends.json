@@ -1,0 +1,22 @@
+{
+	"friendsTitle": "AMICS ({{count}})",
+	"noFriends": "Encara no tens amics",
+	"addFriend": "AFEGIR AMIC",
+	"searchByUsername": "Cerca per nom d'usuari",
+	"searchPlaceholder": "Nom d'usuari + Intro",
+	"requestsTitle": "SOL·LICITUDS ({{count}})",
+	"sentTitle": "ENVIADES ({{count}})",
+	"matchRequestTitle": "SOL·LICITUD DE PARTIT ({{count}})",
+	"thatsYou": "Ets tu!",
+	"alreadyFriends": "Ja sou amics!",
+	"userNotFound": "Usuari no trobat",
+	"requestSent": "Sol·licitud enviada!",
+	"friendAdded": "Amic afegit!",
+	"actionFailed": "Acció fallida",
+	"failedToRemove": "No s'ha pogut eliminar l'amic",
+	"failedToRespond": "No s'ha pogut respondre a la sol·licitud d'amistat",
+	"failedToSend": "No s'ha pogut enviar la sol·licitud",
+	"failedToCancel": "No s'ha pogut cancel·lar la sol·licitud",
+	"failedToAccept": "No s'ha pogut acceptar el partit",
+	"failedToReject": "No s'ha pogut rebutjar el partit"
+}

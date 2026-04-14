@@ -1,0 +1,21 @@
+{
+	"editProfile": "EDITAR PERFIL",
+	"changePassword": "CAMBIAR CONTRASEÑA",
+	"deleteAccount": "ELIMINAR CUENTA",
+	"history": "HISTORIAL",
+	"failedToLoadProfile": "No se pudo cargar el perfil",
+	"deleteTitle": "ELIMINAR CUENTA",
+	"deleteWarning": "Esta acción es <1>irreversible</1>. Tu cuenta y tus datos personales se eliminarán permanentemente.",
+	"deleteTypeConfirm": "Escribe <1>ELIMINAR</1> para confirmar.",
+	"deleteConfirmWord": "ELIMINAR",
+	"confirmDelete": "CONFIRMAR ELIMINACIÓN",
+	"deleteFailed": "No se pudo eliminar la cuenta. Inténtalo de nuevo.",
+	"historyTitle": "HISTORIAL",
+	"noMatches": "No se encontraron partidas",
+	"win": "VICTORIA",
+	"loss": "DERROTA",
+	"prevPage": "← ANTERIOR",
+	"nextPage": "SIGUIENTE →",
+	"page": "Página {{current}}",
+	"failedToLoadHistory": "No se pudo cargar el historial de partidas"
+}

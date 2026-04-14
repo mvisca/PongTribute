@@ -1,0 +1,22 @@
+{
+	"friendsTitle": "AMIGOS ({{count}})",
+	"noFriends": "Aún no tienes amigos",
+	"addFriend": "AÑADIR AMIGO",
+	"searchByUsername": "Buscar por nombre de usuario",
+	"searchPlaceholder": "Nombre de usuario + Intro",
+	"requestsTitle": "SOLICITUDES ({{count}})",
+	"sentTitle": "ENVIADAS ({{count}})",
+	"matchRequestTitle": "SOLICITUD DE PARTIDA ({{count}})",
+	"thatsYou": "¡Eres tú!",
+	"alreadyFriends": "¡Ya son amigos!",
+	"userNotFound": "Usuario no encontrado",
+	"requestSent": "¡Solicitud enviada!",
+	"friendAdded": "¡Amigo añadido!",
+	"actionFailed": "Acción fallida",
+	"failedToRemove": "No se pudo eliminar al amigo",
+	"failedToRespond": "No se pudo responder a la solicitud de amistad",
+	"failedToSend": "No se pudo enviar la solicitud",
+	"failedToCancel": "No se pudo cancelar la solicitud",
+	"failedToAccept": "No se pudo aceptar la partida",
+	"failedToReject": "No se pudo rechazar la partida"
+}

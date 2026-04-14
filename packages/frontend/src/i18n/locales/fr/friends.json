@@ -1,0 +1,22 @@
+{
+	"friendsTitle": "AMIS ({{count}})",
+	"noFriends": "Aucun ami pour le moment",
+	"addFriend": "AJOUTER UN AMI",
+	"searchByUsername": "Rechercher par nom d'utilisateur",
+	"searchPlaceholder": "Nom d'utilisateur + Entrée",
+	"requestsTitle": "DEMANDES ({{count}})",
+	"sentTitle": "ENVOYÉES ({{count}})",
+	"matchRequestTitle": "DEMANDE DE MATCH ({{count}})",
+	"thatsYou": "C'est vous !",
+	"alreadyFriends": "Déjà amis !",
+	"userNotFound": "Utilisateur introuvable",
+	"requestSent": "Demande envoyée !",
+	"friendAdded": "Ami ajouté !",
+	"actionFailed": "Action échouée",
+	"failedToRemove": "Impossible de supprimer l'ami",
+	"failedToRespond": "Impossible de répondre à la demande d'ami",
+	"failedToSend": "Impossible d'envoyer la demande",
+	"failedToCancel": "Impossible d'annuler la demande",
+	"failedToAccept": "Impossible d'accepter le match",
+	"failedToReject": "Impossible de refuser le match"
+}

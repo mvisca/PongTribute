@@ -1,0 +1,33 @@
+{
+    "playOnline": "JUGAR EN LÍNIA",
+    "localMatch": "PARTIDA LOCAL",
+    "playVsBot": "JUGAR VS BOT",
+
+    "onlineSettings": "CONFIGURACIÓ PARTIDA EN LÍNIA",
+    "localSettings": "CONFIGURACIÓ PARTIDA LOCAL",
+    "botSettings": "CONFIGURACIÓ PARTIDA VS BOT",
+    "challengeSettings": "CONFIGURACIÓ DE REPTE A AMIC",
+    "matchSettingsVs": "CONFIGURACIÓ DE PARTIDA VS {{username}}",
+
+    "classic": "Clàssic",
+    "speed": "Velocitat",
+    "pro": "Pro",
+    "scoreLimit": "Límit de puntuació: {{score}}",
+    "scoreFixed": "Puntuació: {{score}} (fixa)",
+    "start": "INICIAR",
+
+    "searchingOpponent": "BUSCANT OPONENT",
+    "mode": "Mode: {{mode}}",
+    "noOpponentFound": "No s'ha trobat cap oponent - Sol·licitud caducada",
+
+    "waitingFor": "ESPERANT",
+    "declinedInvitation": "{{username}} ha rebutjat la teva invitació",
+    "expiredRequest": "L'amic no ha respost - Sol·licitud caducada",
+
+    "failedToCreate": "No s'ha pogut crear la partida",
+    "failedToCreateBot": "No s'ha pogut crear la partida contra el bot",
+    "failedToSendInvitation": "No s'ha pogut enviar la invitació",
+
+    "desktopRequired": "Cal ordinador per jugar",
+    "desktopRequirements": "🖥️ Cal pantalla gran + ⌨️ teclat"
+}

@@ -1,0 +1,17 @@
+{
+    "connecting": "Connectant...",
+    "waitingForStart": "Esperant que comenci la partida...",
+    "vs": "VS {{opponent}}",
+    "opponentDisconnected": "Oponent desconnectat",
+    "waitingReconnection": "Esperant la reconnexió... {{seconds}}s",
+    "paused": "PAUSA",
+    "pressSpaceToResume": "Prem ESPAI per continuar",
+    "matchFinished": "🏁 PARTIDA ACABADA!",
+    "youWin": "🏆 HAS GUANYAT!",
+    "youLose": "🍷 HAS PERDUT!",
+    "backToLobby": "TORNAR AL LOBBY",
+    "giveUp": "RENDIR-SE!",
+    "abandonMatch": "Abandonar la partida?",
+    "desktopRequired": "Cal ordinador",
+    "desktopExplanation": "Aquest joc necessita una pantalla més gran per jugar. Obre'l en un ordinador de sobretaula o portàtil."
+}

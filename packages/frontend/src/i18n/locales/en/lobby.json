@@ -1,0 +1,33 @@
+{
+    "playOnline": "PLAY ONLINE",
+    "localMatch": "LOCAL MATCH",
+    "playVsBot": "PLAY VS BOT",
+
+    "onlineSettings": "ONLINE MATCH SETTINGS",
+    "localSettings": "LOCAL MATCH SETTINGS",
+    "botSettings": "BOT MATCH SETTINGS",
+    "challengeSettings": "CHALLENGE SETTINGS FRIEND",
+    "matchSettingsVs": "MATCH SETTINGS VS {{username}}",
+
+    "classic": "Classic",
+    "speed": "Speed",
+    "pro": "Pro",
+    "scoreLimit": "Score Limit: {{score}}",
+    "scoreFixed": "Score: {{score}} (fixed)",
+    "start": "START",
+
+    "searchingOpponent": "SEARCHING OPPONENT",
+    "mode": "Mode: {{mode}}",
+    "noOpponentFound": "No opponent found - Expired request",
+
+    "waitingFor": "WAITING FOR",
+    "declinedInvitation": "{{username}} declined your invitation",
+    "expiredRequest": "Friend did not respond - Expired request",
+
+    "failedToCreate": "Failed to create match",
+    "failedToCreateBot": "Failed to create bot match",
+    "failedToSendInvitation": "Failed to send invitation",
+
+    "desktopRequired": "Desktop required to play",
+    "desktopRequirements": "🖥️ Large screen + ⌨️ Keyboard required"
+}
