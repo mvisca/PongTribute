@@ -223,13 +223,15 @@ export function FriendsWidget({ onPlayToFather }: Props) {
 
 				{searchResult && (
 					<div className='flex items-center justify-between mt-2 p-2 bg-purple-900 rounded-lg'>
-						<div className='flex items-center gap-2'>
+						<div className='flex items-center gap-2 min-w-0'>
 							<AvatarDisplay src={searchResult.avatar} size='sm' />
-							<span className='text-[10px] text-purple-200'>{searchResult.username}</span>
+							<span className='text-[10px] text-purple-200 truncate' title={searchResult.username}>
+								{searchResult.username}
+							</span>
 						</div>
 						<button
 							onClick={() => handleSendRequest(searchResult.id)}
-							className='arcade-btn-sm'
+							className='arcade-btn-sm shrink-0 ml-2'
 						>
 							{tCommon('add')}
 						</button>
@@ -248,11 +250,13 @@ export function FriendsWidget({ onPlayToFather }: Props) {
 						<div className='flex flex-col gap-1'>
 							{Object.values(pending).map(req => (
 								<div key={req.senderId} className='flex items-center justify-between p-2 bg-purple-900 rounded-lg'>
-									<div className='flex items-center gap-2'>
+									<div className='flex items-center gap-2 min-w-0'>
 										<AvatarDisplay src={req.senderAvatar} size='sm' />
-										<span className='text-[10px] text-purple-200'>{req.senderUsername}</span>
+										<span className='text-[10px] text-purple-200 truncate' title={req.senderUsername}>
+											{req.senderUsername}
+										</span>
 									</div>
-									<div className='flex flex-col items-end gap-1'>
+									<div className='flex flex-col items-end gap-1 shrink-0 ml-2'>
 										<button
 											onClick={() => handleRespond(req.senderId, false)}
 											className='text-[10px] text-red-400 hover:text-red-200 px-2'
@@ -284,13 +288,15 @@ export function FriendsWidget({ onPlayToFather }: Props) {
 						<div className='flex flex-col gap-1'>
 							{Object.values(sentRequests).map(req => (
 								<div key={req.receiverId} className='flex items-center justify-between p-2 bg-purple-900 rounded-lg'>
-									<div className='flex items-center gap-2'>
+									<div className='flex items-center gap-2 min-w-0'>
 										<AvatarDisplay src={req.receiverAvatar} size='sm' />
-										<span className='text-[10px] text-purple-200'>{req.receiverUsername}</span>
+										<span className='text-[10px] text-purple-200 truncate' title={req.receiverUsername}>
+											{req.receiverUsername}
+										</span>
 									</div>
 									<button
 										onClick={() => handleCancelRequest(req.receiverId)}
-										className='text-[10px] text-red-400 hover:text-red-200 px-2'
+										className='text-[10px] text-red-400 hover:text-red-200 px-2 shrink-0 ml-2'
 									>
 										{tCommon('cancel')}
 									</button>
@@ -312,14 +318,16 @@ export function FriendsWidget({ onPlayToFather }: Props) {
 						<div className='flex flex-col gap-1'>
 							{Object.values(matchInvites).map(inv => (
 								<div key={inv.matchId} className='flex items-center justify-between p-2 bg-purple-900 rounded-lg relative overflow-hidden'>
-									<div className='flex items-center gap-2'>
+									<div className='flex items-center gap-2 min-w-0'>
 										<AvatarDisplay src={inv.inviterAvatar} size='sm' />
-										<div className='flex flex-col'>
-											<span className='text-[10px] text-purple-200'>{inv.inviterUsername}</span>
+										<div className='flex flex-col min-w-0'>
+											<span className='text-[10px] text-purple-200 truncate' title={inv.inviterUsername}>
+												{inv.inviterUsername}
+											</span>
 											<span className='text-[9px] text-purple-400'>{inv.gameMode}</span>
 										</div>
 									</div>
-									<div className='flex flex-col items-end gap-1'>
+									<div className='flex flex-col items-end gap-1 shrink-0 ml-2'>
 										<button
 											onClick={() => handleRejectMatch(inv.matchId)}
 											className='text-[10px] text-red-400 hover:text-red-200 px-2'
