@@ -67,7 +67,7 @@ export default function MatchSetup({
                         max={TARGET_SCORES.length -1}
                         value={scoreIndex}
                         onChange={(e) => setScoreIndex(Number(e.target.value))}
-                        className='w-full h-[2px] accent-purple-400 cursor-pointer'
+                        className='w-full range-slider cursor-pointer'
                     />
                 </div>
             )}
