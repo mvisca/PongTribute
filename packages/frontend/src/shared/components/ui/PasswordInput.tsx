@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import AlertError from './AlertError';
 
 interface Props {
@@ -9,7 +10,8 @@ interface Props {
 	onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
-export default function PasswordInput({ value, onChange, placeholder = 'Password', error = '', onKeyDown  }: Props) {
+export default function PasswordInput({ value, onChange, placeholder, error = '', onKeyDown }: Props) {
+  const { t } = useTranslation('common');
   const [show, setShow] = useState(false);
 
   return (
@@ -28,7 +30,7 @@ export default function PasswordInput({ value, onChange, placeholder = 'Password
           onClick={() => setShow(s => !s)}
           className='absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-200 text-xs'
         >
-          {show ? 'Hide' : 'Show'}
+          {show ? t('hide') : t('show')}
         </button>
       </div>
       <AlertError message={error ?? ''} />

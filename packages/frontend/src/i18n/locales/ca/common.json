@@ -20,5 +20,7 @@
 	"unknown": "Desconegut",
 	"connectionLost": "Connexió perduda",
 	"profileNotFound": "No s'ha trobat el perfil",
-	"noSessionFound": "No s'ha trobat cap sessió d'usuari"
+	"noSessionFound": "No s'ha trobat cap sessió d'usuari",
+	"show": "Mostrar",
+	"hide": "Amagar"
 }

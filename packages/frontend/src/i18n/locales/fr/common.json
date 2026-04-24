@@ -20,5 +20,7 @@
 	"unknown": "Inconnu",
 	"connectionLost": "Connexion perdue",
 	"profileNotFound": "Profil introuvable",
-	"noSessionFound": "Aucune session utilisateur trouvée"
+	"noSessionFound": "Aucune session utilisateur trouvée",
+	"show": "Afficher",
+	"hide": "Masquer"
 }
