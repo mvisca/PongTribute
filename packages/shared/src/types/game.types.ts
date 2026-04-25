@@ -84,7 +84,6 @@ export namespace GameTypes {
 	export interface GameInputPayload {
 		gameId: string;
 		action: GameConstants.GameAction;
-		
 		// Opcional porque en online 'classic' lo deduce del socketID.
 		// Obligatorio para lógica 'local'. Ha de saber que pala se movió del 'local'
 		playerSide?: GameConstants.PlayerSide;

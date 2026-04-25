@@ -20,6 +20,8 @@ import { useFriendsStore, FriendEntry, FriendInvite, SentRequest } from './featu
 import { getProfile } from './features/profile/api/profileApi';
 import { useMatchStore } from './features/lobby/store/matchStore';
 
+import { soundManager } from './features/game/audio/soundManager';
+
 export default function App() {
     const { t } = useTranslation('toasts');
     const navigate = useNavigate();
@@ -177,7 +179,8 @@ export default function App() {
                     inviterAvatar: msg.payload.inviterAvatar,
                     gameMode: msg.payload.gameMode,
                     expiresAt: msg.payload.expiresAt,
-                });
+				});
+				soundManager.matchInvite();
                 info(t('matchInvite', { name: msg.payload.inviterUsername }));
                 break;
 

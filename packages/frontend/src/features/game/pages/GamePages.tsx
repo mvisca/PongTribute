@@ -9,6 +9,7 @@ import { GameConstants } from '@transcendence/shared/constants/game.constants.js
 import { FriendsWidget } from '../../friends/components/FriendsWidget';
 import { AvatarDisplay, TimeoutBar } from '../../../shared/components/ui';
 import { FEEDBACK_LOBBY_MS } from '../../../shared/constants/ui.constants';
+import { soundManager } from '../audio/soundManager';
 
 const { GAME_ACTION, PLAYER_SIDE } = GameConstants;
 
@@ -176,6 +177,25 @@ export default function GamePage() {
             clearActiveMatchId();
         }
     }, [status, clearActiveMatchId]);
+
+	// Jingle de fin de partida
+	// Se ejecuta solo cuando status cambia a 'finished'.
+	// En partidas locales no hay ganador personal → silencio.
+	useEffect(() => {
+		if (status !== 'finished') return;
+		if (isLocal) return;
+
+		if (gameOver?.winnerId === currentUserId) {
+			soundManager.victory();
+		} else {
+			soundManager.defeat();
+		}
+	}, [status]);
+	// Dependencia solo 'status': queremos que suene exactamente una vez,
+	// en el momento en que status pasa a 'finished'.
+	// gameOver y currentUserId ya están disponibles en ese momento
+	// porque el servidor los envía juntos con GAME_OVER.
+
 
     useEffect(() => {
         if (status !== 'finished') return;
