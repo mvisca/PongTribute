@@ -1,6 +1,12 @@
-*This project has been created as part of the 42 curriculum by jocuni-p, dKurbi, mvisca and meriusky.*
+
+
+
+<img width="1187" height="868" alt="Captura de pantalla 2026-04-29 a las 16 44 24" src="https://github.com/user-attachments/assets/1bb33be1-508c-4b67-a074-36c3bf317be5" />
+
+
 
 ## Description
+*This project has been created as part of the 42 curriculum by jocuni-p, dKurbi, mvisca and meriusky.*
 
 **Project name**: Transcendence
 
@@ -74,8 +80,6 @@ Core variables (see `.env.example` for the full list):
 The app is deployed using the **Makefile**. No Node.js or pnpm is required on the host; everything runs inside Docker.
 
 **Start the stack** (build images and start containers; no-op if already running):
-
--  Note: The name of the head branch is `42-compatible`
 
 ```bash
 make
