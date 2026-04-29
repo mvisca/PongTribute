@@ -84,13 +84,13 @@ export const soundManager = {
         const gain = c.createGain();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(800, t); //300
-        osc.frequency.exponentialRampToValueAtTime(100, t + 0.4); //60 +0.25
+        osc.frequency.exponentialRampToValueAtTime(100, t + 0.4);
         gain.gain.setValueAtTime(0.25, t); // 0.45
-        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4); // +0.25
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
         osc.connect(gain);
         gain.connect(c.destination);
         osc.start(t);
-        osc.stop(t + 0.4); // 0.25
+        osc.stop(t + 0.4);
     },
 
     // Saque — tono ascendente breve (alerta de inicio de rally)
@@ -112,7 +112,7 @@ export const soundManager = {
 
     // Tick de countdown (3, 2, 1) — beep corto neutro
     countdownBeep(): void {
-        makeOsc(880, 'sine', 0.3, // 600, 'square', 0.3
+        makeOsc(880, 'sine', 0.3,
             getCtx().currentTime,
             getCtx().currentTime + 0.12
         );
@@ -120,7 +120,7 @@ export const soundManager = {
 
     // "GO!" — beep más largo y agudo al arrancar
     go(): void {
-        makeOsc(1200, 'sine', 0.35, // 900, 'square', 0.4
+        makeOsc(1200, 'sine', 0.35,
             getCtx().currentTime,
             getCtx().currentTime + 0.35
         );

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Friendship Request Flow — ft_transcendence</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0118;
+    color: #e2d4f0;
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  h1 {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    text-align: center;
+    color: #c084fc;
+    margin-bottom: 8px;
+    text-shadow: 0 0 20px rgba(192, 132, 252, 0.5);
+    letter-spacing: 2px;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 11px;
+    color: #7c3aed;
+    margin-bottom: 40px;
+    letter-spacing: 1px;
+  }
+
+  .diagram-container {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 48px;
+  }
+
+  /* ── Section ─────────────────────────────── */
+  .section {
+    background: linear-gradient(135deg, rgba(30, 10, 60, 0.8), rgba(15, 5, 35, 0.9));
+    border: 1px solid rgba(139, 92, 246, 0.25);
+    border-radius: 12px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #8b5cf6, transparent);
+  }
+
+  .section-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: #a78bfa;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title .badge {
+    background: #7c3aed;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 8px;
+  }
+
+  /* ── Flow rows ───────────────────────────── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  /* ── Nodes ───────────────────────────────── */
+  .node {
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 240px;
+    max-width: 400px;
+    position: relative;
+  }
+
+  .node-action {
+    background: rgba(139, 92, 246, 0.15);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    color: #d8b4fe;
+  }
+
+  .node-decision {
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    color: #fde68a;
+    transform: rotate(0deg);
+    clip-path: polygon(12% 0%, 88% 0%, 100% 50%, 88% 100%, 12% 100%, 0% 50%);
+    padding: 18px 40px;
+  }
+
+  .node-success {
+    background: rgba(34, 197, 94, 0.12);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    color: #86efac;
+  }
+
+  .node-error {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+  }
+
+  .node-neutral {
+    background: rgba(100, 116, 139, 0.15);
+    border: 1px solid rgba(100, 116, 139, 0.35);
+    color: #cbd5e1;
+  }
+
+  .node-cron {
+    background: rgba(6, 182, 212, 0.12);
+    border: 1px solid rgba(6, 182, 212, 0.35);
+    color: #67e8f9;
+    border-style: dashed;
+  }
+
+  .node-ws {
+    background: rgba(244, 114, 182, 0.12);
+    border: 1px solid rgba(244, 114, 182, 0.35);
+    color: #f9a8d4;
+  }
+
+  .node-silent {
+    background: rgba(139, 92, 246, 0.08);
+    border: 1px dashed rgba(139, 92, 246, 0.25);
+    color: #a78bfa;
+    font-style: italic;
+  }
+
+  /* ── Arrows ──────────────────────────────── */
+  .arrow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    color: #6d28d9;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .arrow .label {
+    font-size: 9px;
+    color: #a78bfa;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* ── Branch (horizontal split) ───────────── */
+  .branch {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .branch-path {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    flex: 1;
+    min-width: 220px;
+    max-width: 340px;
+  }
+  .branch-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+  }
+  .branch-label.yes {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+  .branch-label.no {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+  .branch-label.accept {
+    background: rgba(34, 197, 94, 0.2);
+    color: #86efac;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+  .branch-label.reject {
+    background: rgba(251, 191, 36, 0.2);
+    color: #fde68a;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+  }
+  .branch-label.cancel {
+    background: rgba(100, 116, 139, 0.2);
+    color: #cbd5e1;
+    border: 1px solid rgba(100, 116, 139, 0.3);
+  }
+
+  /* ── Detail note ─────────────────────────── */
+  .note {
+    font-size: 10px;
+    color: #7c3aed;
+    text-align: center;
+    max-width: 320px;
+    line-height: 1.6;
+    padding: 8px 16px;
+    border-left: 2px solid rgba(124, 58, 237, 0.3);
+  }
+
+  /* ── Legend ───────────────────────────────── */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 5, 35, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(139, 92, 246, 0.15);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 10px;
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+  }
+
+  /* ── Horizontal divider arrow ────────────── */
+  .h-connector {
+    width: 40px;
+    height: 2px;
+    background: #6d28d9;
+    position: relative;
+    align-self: center;
+    margin-top: 36px;
+  }
+
+  /* ── Timestamp ───────────────────────────── */
+  .timestamp {
+    text-align: center;
+    font-size: 9px;
+    color: #4c1d95;
+    margin-top: 32px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<h1>FRIENDSHIP REQUEST FLOW</h1>
+<p class="subtitle">ft_transcendence — Decisiones de implementación</p>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- LEGEND                                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="legend">
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(139,92,246,0.4); border: 1px solid rgba(139,92,246,0.6);"></div>
+	<span style="color:#d8b4fe;">Acción usuario / API</span>
+</div>
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(251,191,36,0.3); border: 1px solid rgba(251,191,36,0.5);"></div>
+	<span style="color:#fde68a;">Decisión</span>
+</div>
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.5);"></div>
+	<span style="color:#86efac;">Éxito / DB write</span>
+</div>
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(239,68,68,0.3); border: 1px solid rgba(239,68,68,0.5);"></div>
+	<span style="color:#fca5a5;">Error / Bloqueo</span>
+</div>
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(244,114,182,0.3); border: 1px solid rgba(244,114,182,0.5);"></div>
+	<span style="color:#f9a8d4;">WebSocket event</span>
+</div>
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(6,182,212,0.3); border: 1px solid rgba(6,182,212,0.5); border-style: dashed;"></div>
+	<span style="color:#67e8f9;">Cron / Automático</span>
+</div>
+<div class="legend-item">
+	<div class="legend-dot" style="background: rgba(139,92,246,0.1); border: 1px dashed rgba(139,92,246,0.3);"></div>
+	<span style="color:#a78bfa;">Silencioso (sin notificación)</span>
+</div>
+</div>
+
+<div class="diagram-container">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 1: SEND REQUEST                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge">FLOW 1</span>
+      ENVÍO DE FRIEND REQUEST
+    </div>
+
+    <div class="flow">
+      <div class="node node-action">👤 User A busca a User B por username<br><small>FriendsWidget / FriendsPage → handleSearch()</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-action">📤 User A pulsa ADD<br><small>POST /api/friendships { friendId }</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-decision">¿Existe relación previa<br>entre A y B?</div>
+
+      <div class="branch">
+        <!-- NO existe -->
+        <div class="branch-path">
+          <span class="branch-label no">NO EXISTE</span>
+          <div class="arrow">▼</div>
+          <div class="node node-success">✅ INSERT friendship<br>status = PENDING<br>initiatorId = A</div>
+          <div class="arrow">▼</div>
+          <div class="node node-ws">📡 Redis → FRIEND_REQUEST<br>→ Comms WS → User B</div>
+          <div class="arrow">▼</div>
+          <div class="node node-action">User B ve solicitud en<br>su lista PENDING</div>
+        </div>
+
+        <!-- SÍ existe PENDING -->
+        <div class="branch-path">
+          <span class="branch-label cancel">PENDING / ACCEPTED</span>
+          <div class="arrow">▼</div>
+          <div class="node node-error">❌ 409 Conflict<br>"Friendship already exists or is pending"</div>
+        </div>
+
+        <!-- SÍ existe REJECTED -->
+        <div class="branch-path">
+          <span class="branch-label reject">REJECTED</span>
+          <div class="arrow">▼</div>
+          <div class="node node-decision">¿Han pasado<br>30 días?</div>
+          <div class="arrow">▼</div>
+          <div class="branch">
+            <div class="branch-path">
+              <span class="branch-label no">< 30 DÍAS</span>
+              <div class="arrow">▼</div>
+              <div class="node node-error">❌ 409 Conflict<br>"Cannot send a friend request<br>to this user at this time"</div>
+              <div class="note">Mensaje neutro.<br>No revela si fue rechazo.</div>
+            </div>
+            <div class="branch-path">
+              <span class="branch-label yes">≥ 30 DÍAS</span>
+              <div class="arrow">▼</div>
+              <div class="node node-success">🔄 DELETE rejected<br>→ INSERT nueva PENDING</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 2: RESPONSE                        -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge">FLOW 2</span>
+      RESPUESTA DEL RECEPTOR (User B)
+    </div>
+
+    <div class="flow">
+      <div class="node node-action">👤 User B ve PENDING request<br><small>FRIEND REQUEST section en widget</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-decision">¿User B acepta<br>o rechaza?</div>
+
+      <div class="branch">
+        <div class="branch-path">
+          <span class="branch-label accept">ACCEPT ✓</span>
+          <div class="arrow">▼</div>
+          <div class="node node-success">✅ UPDATE status = ACCEPTED<br><small>PATCH /api/friendships/:friendId</small></div>
+          <div class="arrow">▼</div>
+          <div class="node node-ws">📡 FRIEND_ACCEPT<br>→ WS a User A (el initiator)</div>
+          <div class="arrow">▼</div>
+          <div class="node node-action">Ambos ven al otro<br>en su FRIENDS list</div>
+        </div>
+
+        <div class="branch-path">
+          <span class="branch-label reject">REJECT ✕</span>
+          <div class="arrow">▼</div>
+          <div class="node node-error">⚠️ UPDATE status = REJECTED<br>updatedAt = now()</div>
+          <div class="arrow">▼</div>
+          <div class="node node-neutral">Fila permanece en DB<br>30 días (cooldown anti-spam)</div>
+          <div class="note">User A no recibe notificación<br>del rechazo. Discreción total.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 3: CANCEL REQUEST                  -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge">FLOW 3</span>
+      CANCELACIÓN POR EL INICIADOR (User A)
+    </div>
+
+    <div class="flow">
+      <div class="node node-action">👤 User A ve sus SENT REQUESTS<br><small>Nueva sección en widget/page</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-action">🚫 User A pulsa CANCEL<br><small>DELETE /api/friendships/:friendId/cancel</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-decision">¿Es el initiator<br>y status = PENDING?</div>
+
+      <div class="branch">
+        <div class="branch-path">
+          <span class="branch-label yes">SÍ</span>
+          <div class="arrow">▼</div>
+          <div class="node node-success">🗑️ DELETE fila de DB</div>
+          <div class="arrow">▼</div>
+          <div class="node node-ws">📡 FRIEND_REQUEST_CANCEL<br>→ WS a User B</div>
+          <div class="arrow">▼</div>
+          <div class="node node-silent">User B: solicitud desaparece<br>silenciosamente de su lista pending</div>
+        </div>
+
+        <div class="branch-path">
+          <span class="branch-label no">NO</span>
+          <div class="arrow">▼</div>
+          <div class="node node-error">❌ 403 / 409<br>No autorizado o no es pending</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 4: FRIEND REMOVAL                  -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge">FLOW 4</span>
+      ELIMINACIÓN DE AMIGO
+    </div>
+
+    <div class="flow">
+      <div class="node node-action">👤 User A elimina a User B<br><small>DELETE /api/friendships/:friendId</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-success">🗑️ DELETE fila ACCEPTED de DB</div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-ws">📡 FRIEND_REMOVE → WS a User B</div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-silent">User B: amigo desaparece de su lista<br>❌ SIN TOAST — eliminación silenciosa<br><small>removeFriend() actualiza store, sin warning()</small></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 5: CRON CLEANUP                    -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="section">
+    <div class="section-title">
+      <span class="badge">CRON</span>
+      LIMPIEZA AUTOMÁTICA — CADA 24H
+    </div>
+
+    <div class="flow">
+      <div class="node node-cron">⏰ setInterval 24h<br><small>user/server.ts — mismo patrón que token cleanup</small></div>
+
+      <div class="arrow">▼</div>
+
+      <div class="node node-cron">DELETE FROM friendships<br>WHERE status IN ('rejected', 'pending')<br>AND updated_at &lt; now() - 30 días</div>
+
+      <div class="branch">
+        <div class="branch-path">
+          <div class="node node-neutral">🗑️ Rejected &gt; 30d<br>Limpia cooldown expirado<br>User A puede reintentar</div>
+        </div>
+        <div class="branch-path">
+          <div class="node node-neutral">🗑️ Pending &gt; 30d<br>Solicitudes olvidadas<br>sin respuesta</div>
+        </div>
+      </div>
+
+      <div class="note" style="margin-top: 16px;">Trazabilidad: las rejected permanecen 30 días<br>para detectar patrones de acoso/spam.<br>Misma regla 30d para ambos estados = una sola query.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LEGEND                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(139,92,246,0.4); border: 1px solid rgba(139,92,246,0.6);"></div>
+      <span style="color:#d8b4fe;">Acción usuario / API</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(251,191,36,0.3); border: 1px solid rgba(251,191,36,0.5);"></div>
+      <span style="color:#fde68a;">Decisión</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.5);"></div>
+      <span style="color:#86efac;">Éxito / DB write</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(239,68,68,0.3); border: 1px solid rgba(239,68,68,0.5);"></div>
+      <span style="color:#fca5a5;">Error / Bloqueo</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(244,114,182,0.3); border: 1px solid rgba(244,114,182,0.5);"></div>
+      <span style="color:#f9a8d4;">WebSocket event</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(6,182,212,0.3); border: 1px solid rgba(6,182,212,0.5); border-style: dashed;"></div>
+      <span style="color:#67e8f9;">Cron / Automático</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(139,92,246,0.1); border: 1px dashed rgba(139,92,246,0.3);"></div>
+      <span style="color:#a78bfa;">Silencioso (sin notificación)</span>
+    </div>
+  </div>
+
+</div>
+
+<p class="timestamp">ft_transcendence · Friendship Flow v1.0 · Abril 2026</p>
+
+</body>
+</html>
