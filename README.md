@@ -101,7 +101,6 @@ cp .env.example .env
 
 The app is deployed using the **Makefile**. No Node.js or pnpm is required on the host; everything runs inside Docker.
 
-> **Note:** The name of the head branch is `42-compatible`
 
 **Start the stack** (build images and start containers; no-op if already running):
 
