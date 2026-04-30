@@ -1,8 +1,5 @@
 <img width="1187" height="868" alt="Captura de pantalla 2026-04-29 a las 16 44 24" src="https://github.com/user-attachments/assets/1bb33be1-508c-4b67-a074-36c3bf317be5" />
 
-*This project has been created as part of the 42 curriculum by jocuni-p, dKurbi, mvisca and meriusky.*
-
----
 
 ## Table of Contents
 
@@ -23,10 +20,12 @@
 - [Resources & AI](#resources--ai)
 - [Design Process](#design-process)
 - [Limitations](#limitations)
+- [Annex — Post-evaluation features](#annex--post-evaluation-features)
 
 ---
 
 ## Description
+*This project has been created as part of the 42 curriculum by jocuni-p, dKurbi, mvisca and meriusky.*
 
 **Project name**: Transcendence
 
@@ -605,14 +604,14 @@ Alongside AI, we relied on peer support and external learning resources: help fr
 ### Wireframe — Browser layout
 *Initial wireframe sketched at the start of the project to outline the distribution of views in the browser.*
 
-<img src="docs/assets/transcendence_wireframe.png" alt="Wireframe of browser layout" width="700"/>
+<img src="docs/assets/transcendence_wireframe.png" alt="Wireframe of browser layout" width="100%"/>
 
 ---
 
 ### Game Service — Architecture overview
 *High-level diagram of the Game Service and its role within the broader system.*
 
-<img src="docs/assets/game_service_graph.png" alt="Game Service architecture diagram" width="700"/>
+<img src="docs/assets/game_service_graph.png" alt="Game Service architecture diagram" width="100%"/>
 
 </details>
 
@@ -625,5 +624,24 @@ Alongside AI, we relied on peer support and external learning resources: help fr
 
 - **Connection management debt:** When a player disconnects during an online game, the waiting player waits 15 seconds. If the disconnected player reconnects within that window, the game loses the paused state and resumes against the already-disconnected opponent.
 - **Missing UX improvement:** Connection and disconnection notifications could be displayed as a widget below the friends list, but this was left out of scope.
+
+</details>
+
+---
+
+## Annex — Post-evaluation features
+
+<details>
+<summary>View post-evaluation features</summary>
+
+*Features implemented after the project evaluation, as continued development.*
+
+| Feature | Description |
+|---|---|
+| Internationalisation (i18next) | UI available in 4 languages via i18next. |
+| Match countdown | Visual countdown displayed at the start of each match. |
+| Match sound effects | Audio feedback throughout the game: countdown beeps, serve, bounces, score/goal, and victory/defeat jingles. |
+| Match request list widget | Incoming match requests displayed as an inline widget. |
+| Visual timeout timelines | Animated progress timelines added to end-of-match screens, wait timeout views, and the match invitation acceptance timeout. |
 
 </details>
