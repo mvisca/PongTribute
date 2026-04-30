@@ -1,3 +1,5 @@
+<img width="1187" height="868" alt="Captura de pantalla 2026-04-29 a las 16 44 24" src="https://github.com/user-attachments/assets/1bb33be1-508c-4b67-a074-36c3bf317be5" />
+
 *This project has been created as part of the 42 curriculum by jocuni-p, dKurbi, mvisca and meriusky.*
 
 ---
@@ -19,6 +21,7 @@
 - [Individual Contributions](#individual-contributions)
 - [Project Management](#project-management)
 - [Resources & AI](#resources--ai)
+- [Design Process](#design-process)
 - [Limitations](#limitations)
 
 ---
@@ -195,6 +198,9 @@ docker exec -it ft_transcendence_redis redis-cli
 
 ## Features List
 
+<details>
+<summary>View features list</summary>
+
 | Feature                             | Description                                     |
 |-------------------------------------|-------------------------------------------------|
 | Auth: register/login/logout/refresh | Secure auth flows (JWT + refresh tokens).       |
@@ -209,9 +215,14 @@ docker exec -it ft_transcendence_redis redis-cli
 | Match history                       | Persisted match records and history UI.         |
 | Bot opponent                        | Bot connects via WS and plays matches.          |
 
+</details>
+
 ---
 
 ## Selected Modules & Points
+
+<details>
+<summary>View modules, points and justifications</summary>
 
 | Category           | Module                                    | Type  | Points | Owner(s)                       |
 |--------------------|-------------------------------------------|-------|--------|--------------------------------|
@@ -235,7 +246,7 @@ docker exec -it ft_transcendence_redis redis-cli
 **Total points: 24**
 
 <details>
-<summary>Module justifications and implementation details</summary>
+<summary>Module justifications and implementation details (expand)</summary>
 
 ### IV.1 WEB — Framework (frontend + backend)
 
@@ -397,6 +408,8 @@ docker exec -it ft_transcendence_redis redis-cli
 
 </details>
 
+</details>
+
 ---
 
 ## Database Schema
@@ -484,12 +497,17 @@ DB file path configured via `GAME_SERVICE_DB_*`.
 
 ## Team Information
 
+<details>
+<summary>View team information</summary>
+
 | 42 login   | Name      | Role            | Responsibilities                                            |
 |------------|-----------|-----------------|-------------------------------------------------------------|
 | mehernan   | Meritxell | Product Owner   | Product vision, backlog, validation, stakeholder comms      |
 | jocuni-p   | Joan      | Product Manager | Planning, tracking, removing blockers, facilitation         |
 | mvisca-g   | Martin    | Tech Lead       | Architecture, key decisions, code quality, reviews          |
 | dkurcbar   | Diego     | Developer       | Features implemented, ownership areas                       |
+
+</details>
 
 ---
 
@@ -575,8 +593,26 @@ AI was mainly used as an interactive learning resource — asking direct and spe
 
 Alongside AI, we relied on peer support and external learning resources: help from other students when discussing concepts or debugging complex issues, YouTube tutorials, and official documentation.
 
-**References:**
-- [Project notes on Notion](https://glaze-weather-506.notion.site/TRANSCENDENCE-2c2d7ac27c868021bca2e1aa313f8d20)
+</details>
+
+---
+
+## Design Process
+
+<details>
+<summary>View design process diagrams</summary>
+
+### Wireframe — Browser layout
+*Initial wireframe sketched at the start of the project to outline the distribution of views in the browser.*
+
+<img src="docs/assets/transcendence_wireframe.png" alt="Wireframe of browser layout" width="700"/>
+
+---
+
+### Game Service — Architecture overview
+*High-level diagram of the Game Service and its role within the broader system.*
+
+<img src="docs/assets/game_service_graph.png" alt="Game Service architecture diagram" width="700"/>
 
 </details>
 
@@ -584,5 +620,10 @@ Alongside AI, we relied on peer support and external learning resources: help fr
 
 ## Limitations
 
+<details>
+<summary>View known limitations</summary>
+
 - **Connection management debt:** When a player disconnects during an online game, the waiting player waits 15 seconds. If the disconnected player reconnects within that window, the game loses the paused state and resumes against the already-disconnected opponent.
 - **Missing UX improvement:** Connection and disconnection notifications could be displayed as a widget below the friends list, but this was left out of scope.
+
+</details>
