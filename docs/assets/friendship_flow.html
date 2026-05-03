@@ -274,44 +274,46 @@
 </head>
 <body>
 
-<h1>FRIENDSHIP REQUEST FLOW</h1>
+<h1>FRIENDSHIP REQUEST COMPLETE FLOW</h1>
 <p class="subtitle">ft_transcendence — Decisiones de implementación</p>
 
-<!-- ═══════════════════════════════════════════ -->
-<!-- LEGEND                                      -->
-<!-- ═══════════════════════════════════════════ -->
-<div class="legend">
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(139,92,246,0.4); border: 1px solid rgba(139,92,246,0.6);"></div>
-	<span style="color:#d8b4fe;">Acción usuario / API</span>
-</div>
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(251,191,36,0.3); border: 1px solid rgba(251,191,36,0.5);"></div>
-	<span style="color:#fde68a;">Decisión</span>
-</div>
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.5);"></div>
-	<span style="color:#86efac;">Éxito / DB write</span>
-</div>
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(239,68,68,0.3); border: 1px solid rgba(239,68,68,0.5);"></div>
-	<span style="color:#fca5a5;">Error / Bloqueo</span>
-</div>
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(244,114,182,0.3); border: 1px solid rgba(244,114,182,0.5);"></div>
-	<span style="color:#f9a8d4;">WebSocket event</span>
-</div>
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(6,182,212,0.3); border: 1px solid rgba(6,182,212,0.5); border-style: dashed;"></div>
-	<span style="color:#67e8f9;">Cron / Automático</span>
-</div>
-<div class="legend-item">
-	<div class="legend-dot" style="background: rgba(139,92,246,0.1); border: 1px dashed rgba(139,92,246,0.3);"></div>
-	<span style="color:#a78bfa;">Silencioso (sin notificación)</span>
-</div>
-</div>
+
 
 <div class="diagram-container">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- LEGEND                                      -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(139,92,246,0.4); border: 1px solid rgba(139,92,246,0.6);"></div>
+      <span style="color:#d8b4fe;">Acción usuario / API</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(251,191,36,0.3); border: 1px solid rgba(251,191,36,0.5);"></div>
+      <span style="color:#fde68a;">Decisión</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(34,197,94,0.3); border: 1px solid rgba(34,197,94,0.5);"></div>
+      <span style="color:#86efac;">Éxito / DB write</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(239,68,68,0.3); border: 1px solid rgba(239,68,68,0.5);"></div>
+      <span style="color:#fca5a5;">Error / Bloqueo</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(244,114,182,0.3); border: 1px solid rgba(244,114,182,0.5);"></div>
+      <span style="color:#f9a8d4;">WebSocket event</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(6,182,212,0.3); border: 1px solid rgba(6,182,212,0.5); border-style: dashed;"></div>
+      <span style="color:#67e8f9;">Cron / Automático</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background: rgba(139,92,246,0.1); border: 1px dashed rgba(139,92,246,0.3);"></div>
+      <span style="color:#a78bfa;">Silencioso (sin notificación)</span>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════════════════════ -->
   <!-- SECTION 1: SEND REQUEST                    -->
