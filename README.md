@@ -617,13 +617,11 @@ Alongside AI, we relied on peer support and external learning resources: help fr
 ---
 
 ### Friendship Request — Complete flow
-*Click the image to view the full interactive flow on GitHub Pages.*
+*Click the image to view the full interactive flow.*
 
-<a href="https://jocuni-p.github.io/ft_transcendence/docs/assets/screencapture-127-0-0-1-5500-docs-assets-friendship-flow-html-2026-05-03-12_33_01.png" target="_blank">
+<a href="https://github.com/user-attachments/assets/72b1647c-3a03-4059-83a7-7489a4f557b7" target="_blank">
   <img src="docs/assets/friendship_flow_preview.png" alt="Friendship Request flow — click to view full diagram" width="100%"/>
 </a>
->>>>>>ATENCIÓN>>>>: Cuando pongamos el repo como 'Public', subir docs/assets/friendship_flow.html a GitHub Pages y linkarle esta imagen.
-
 ---
 
 ## Limitations
