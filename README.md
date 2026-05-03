@@ -622,6 +622,7 @@ Alongside AI, we relied on peer support and external learning resources: help fr
 <a href="https://github.com/user-attachments/assets/72b1647c-3a03-4059-83a7-7489a4f557b7" target="_blank">
   <img src="docs/assets/friendship_flow_preview.png" alt="Friendship Request flow — click to view full diagram" width="100%"/>
 </a>
+
 ---
 
 ## Limitations
