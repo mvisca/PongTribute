@@ -31,9 +31,27 @@ export class Intra42Provider implements IOAuthProvider {
 		return `${INTRA42_URLS.authorize}?${params.toString()}`;
 	}
 
-	public exchangeCode(code: string): Promise<string> {
+	public async exchangeCode(code: string): Promise<string> {
+		const params = new URLSearchParams({
+			grant_type: 'authorization_code',
+			client_id: AuthEnv.OAUTH_42_CLIENT_ID(),
+			client_secret: AuthEnv.OAUTH_42_CLIENT_SECRET(),
+			code: code,
+			redirect_uri: AuthEnv.OAUTH_42_REDIRECT_URI(),
+		});
 
-		return Promise.resolve('');
+		const response = await fetch(INTRA42_URLS.token, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: params.toString(),
+		});
+
+		if (!response.ok) {
+			throw new Error(`42 token exchange failed: ${response.status} ${response.statusText}`);
+		}
+
+		const data = await response.json();
+		return data.access_token as string;
 	}
 
 	public async getProfile(accessToken: string): Promise<OAuthProfile> {

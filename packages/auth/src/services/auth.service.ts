@@ -133,6 +133,11 @@ export class AuthService {
 		user: UserTypes.UserInternal,
 		is2FAVerified: boolean = false
 	): Promise<TokenPair> {
+
+	/** Completa el proceso de login para OAuth (siempre con 2FA verificado) */
+	public async completeLoginForOAuth(user: UserTypes.UserInternal): Promise<TokenPair> {
+		return this.completeLogin(user, true);
+	}
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION() === true) {
 			await this.deleteRefreshTokensById(user.id);
