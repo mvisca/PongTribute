@@ -139,6 +139,29 @@ export default function RegisterPage() {
 						</ArcadeButton>
 					</div>
 
+					{/* OAuth Divider */}
+					<div className='relative my-6'>
+						<div className='absolute inset-0 flex items-center'>
+							<span className='w-full border-t border-purple-800'></span>
+						</div>
+						<div className='relative flex justify-center text-sm'>
+							<span className='px-2 bg-black text-purple-400'>or continue with</span>
+						</div>
+					</div>
+
+					{/* OAuth Buttons */}
+					<div className='flex flex-col gap-3'>
+						<a href='/api/auth/oauth/42/authorize' className='w-full'>
+							<ArcadeButton className='w-full'>Sign in with 42</ArcadeButton>
+						</a>
+						<a href='/api/auth/oauth/google/authorize' className='w-full'>
+							<ArcadeButton className='w-full'>Sign in with Google</ArcadeButton>
+						</a>
+						<a href='/api/auth/oauth/github/authorize' className='w-full'>
+							<ArcadeButton className='w-full'>Sign in with GitHub</ArcadeButton>
+						</a>
+					</div>
+
 					<div className='mt-6 text-right'>
 						<LinkButton onClick={() => navigate('/login')}>← Back to login</LinkButton>
 					</div>

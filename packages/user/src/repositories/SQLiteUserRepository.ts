@@ -66,6 +66,12 @@ export class SQLiteUserRepository implements IUserRepository {
 		const now_ts = Date.now();
 		const nowSeconds = Math.floor(Date.now() / 1000);
 
+		// Release oauth identity from any deleted user so the UNIQUE index doesn't block
+		this.db.prepare(`
+			UPDATE users SET auth_provider = 'local', oauth_id = NULL
+			WHERE auth_provider = ? AND oauth_id = ? AND is_deleted = 1
+		`).run(data.authProvider, data.oauthId);
+
 		this.db.prepare(`
 			INSERT INTO users (
 				id, username, email, password_hash, auth_provider, oauth_id, avatar,
@@ -200,7 +206,9 @@ export class SQLiteUserRepository implements IUserRepository {
 				updated_at = ?,
 				is_deleted = ?,
 				is_online = ?,
-				has_2fa_enabled = ?
+				has_2fa_enabled = ?,
+				auth_provider = ?,
+				oauth_id = ?
 			WHERE id = ?
 		`).run(
 			anonName,
@@ -210,6 +218,8 @@ export class SQLiteUserRepository implements IUserRepository {
 			1,
 			0,
 			0,
+			'local',
+			null,
 			id
 		);
 

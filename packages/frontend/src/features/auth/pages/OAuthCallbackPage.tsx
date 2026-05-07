@@ -1,33 +1,36 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
+import { getProfile } from '../../profile/api/profileApi';
 import LoadingScreen from '../../../shared/components/ui/LoadingScreen';
 
 export const OAuthCallbackPage = () => {
 	const navigate = useNavigate();
-	const { login } = useAuthStore();
+	const { login, setAvatar } = useAuthStore();
 
 	useEffect(() => {
 		const processCallback = async () => {
 			try {
-				// Parse URL params
 				const params = new URLSearchParams(window.location.search);
 				const token = params.get('token');
 				const error = params.get('error');
 
-				// Handle error case
 				if (error || !token) {
-					console.error('OAuth callback error:', error);
 					navigate('/login?error=oauth_failed', { replace: true });
 					return;
 				}
 
-				// JWT uses base64url — replace url-safe chars before atob
+				// JWT uses base64url — normalize before atob
 				const base64url = token.split('.')[1];
 				const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
 				const payload = JSON.parse(atob(base64));
 
 				login(payload, token);
+
+				getProfile(payload.id, token)
+					.then(profile => setAvatar(profile.avatar ?? null))
+					.catch(() => null);
+
 				navigate('/home', { replace: true });
 
 			} catch {
@@ -36,7 +39,7 @@ export const OAuthCallbackPage = () => {
 		};
 
 		processCallback();
-	}, [login, navigate]);
+	}, [login, navigate, setAvatar]);
 
 	return <LoadingScreen />;
 };

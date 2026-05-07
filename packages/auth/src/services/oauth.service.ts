@@ -105,8 +105,11 @@ export class OAuthService {
 
 			if (oauthResponse.ok) {
 				const user = await oauthResponse.json() as UserTypes.UserInternal;
-				this.log.info({ userId: user.id, provider }, 'Found existing OAuth user');
-				return user;
+				if (!user.isDeleted) {
+					this.log.info({ userId: user.id, provider }, 'Found existing OAuth user');
+					return user;
+				}
+				this.log.info({ userId: user.id, provider }, 'OAuth user is deleted, creating new account');
 			}
 
 			// Caso 2: Buscar usuario por email
@@ -117,25 +120,27 @@ export class OAuthService {
 
 			if (emailResponse.ok) {
 				const user = await emailResponse.json() as UserTypes.UserInternal;
+				if (!user.isDeleted) {
+					// Vincular OAuth al usuario existente
+					const linkResponse = await fetch(
+						`${userServiceUrl}/internal/users/${user.id}/link-oauth`,
+						{
+							method: 'POST',
+							headers: { ...headers, 'Content-Type': 'application/json' },
+							body: JSON.stringify({ provider, oauthId: profile.providerId }),
+							signal: AbortSignal.timeout(5000)
+						}
+					);
 
-				// Vincular OAuth al usuario existente
-				const linkResponse = await fetch(
-					`${userServiceUrl}/internal/users/${user.id}/link-oauth`,
-					{
-						method: 'POST',
-						headers: { ...headers, 'Content-Type': 'application/json' },
-						body: JSON.stringify({ provider, oauthId: profile.providerId }),
-						signal: AbortSignal.timeout(5000)
+					if (!linkResponse.ok) {
+						throw new Error('Failed to link OAuth to existing user');
 					}
-				);
 
-				if (!linkResponse.ok) {
-					throw new Error('Failed to link OAuth to existing user');
+					const updatedUser = await linkResponse.json() as UserTypes.UserInternal;
+					this.log.info({ userId: updatedUser.id, provider }, 'Linked OAuth to existing user');
+					return updatedUser;
 				}
-
-				const updatedUser = await linkResponse.json() as UserTypes.UserInternal;
-				this.log.info({ userId: updatedUser.id, provider }, 'Linked OAuth to existing user');
-				return updatedUser;
+				this.log.info({ userId: user.id, provider }, 'Email matches deleted user, creating new account');
 			}
 
 			// Caso 3: Crear nuevo usuario OAuth
