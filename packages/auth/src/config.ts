@@ -94,6 +94,12 @@ export namespace AuthEnv {
 	export function OAUTH_42_REDIRECT_URI(): string { return cnf().OAUTH_42_REDIRECT_URI; }
 	export function OAUTH_42_CLIENT_ID(): string { return cnf().OAUTH_42_CLIENT_ID; }
 	export function OAUTH_42_CLIENT_SECRET(): string { return cnf().OAUTH_42_CLIENT_SECRET; }
+	export function OAUTH_GOOGLE_REDIRECT_URI(): string { return cnf().OAUTH_GOOGLE_REDIRECT_URI; }
+	export function OAUTH_GOOGLE_CLIENT_ID(): string { return cnf().OAUTH_GOOGLE_CLIENT_ID; }
+	export function OAUTH_GOOGLE_CLIENT_SECRET(): string { return cnf().OAUTH_GOOGLE_CLIENT_SECRET; }
+	export function OAUTH_GITHUB_REDIRECT_URI(): string { return cnf().OAUTH_GITHUB_REDIRECT_URI; }
+	export function OAUTH_GITHUB_CLIENT_ID(): string { return cnf().OAUTH_GITHUB_CLIENT_ID; }
+	export function OAUTH_GITHUB_CLIENT_SECRET(): string { return cnf().OAUTH_GITHUB_CLIENT_SECRET; }
 
 	// USER SERVICE
 	export function USER_SERVICE_URL(): string { return cnf().USER_SERVICE_URL; }
