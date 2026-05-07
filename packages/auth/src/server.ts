@@ -4,6 +4,7 @@ import { Utils } from '@transcendence/shared';
 import { buildApp } from './app.js';
 import { AuthEnv } from './config.js';
 import { AuthService } from './services/auth.service.js';
+import { OAuthService } from './services/oauth.service.js';
 import { TokenCleanupService } from './services/token-cleanup.service.js';
 import { MailerService } from './services/mailer.service.js';
 import { createMailerClient } from './utils/mailer.js';
@@ -40,9 +41,10 @@ async function start() {
 		// Crear AuthService con Redis inyectado
 		// Services construidos antes de buildApp (buildApp los necesita como deps)
 		const authService = new AuthService(redisClient, mailerService);
+		const oauthService = new OAuthService(redisClient, authService);
 
 		// Construir app
-		app = buildApp({ redisClient, authService, mailerService });
+		app = buildApp({ redisClient, authService, oauthService, mailerService });
 
 		// Arrancar el servidor
 		await app.listen({
