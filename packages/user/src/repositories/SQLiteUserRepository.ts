@@ -324,6 +324,14 @@ export class SQLiteUserRepository implements IUserRepository {
 		`).get(normalizedEmail) as UserTypes.UserRow | undefined;
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
+
+	/** Search by OAuth provider and ID, return internal user (with private fields) */
+	async findByOAuth(provider: AuthTypes.AuthProvider, oauthId: string): Promise<UserTypes.UserInternal | null> {
+		const row = this.db.prepare(`
+			SELECT * FROM users WHERE auth_provider = ? AND oauth_id = ?
+		`).get(provider, oauthId) as UserTypes.UserRow | undefined;
+		return row ? UserMapper.rowToInternal(row) : null;
+	}
 	
 	/** Search by USERNAME and return public user (without private fields) */
 	async findUserByUsername(username: string): Promise<UserTypes.UserPublic | null> {

@@ -58,6 +58,9 @@ export interface IUserRepository {
     /** Buscar usuario por email (con passwordHash) - alias */
     findUserByEmail(email: string): Promise<UserTypes.UserInternal | null>;
 
+    /** Buscar usuario por OAuth provider e ID */
+    findByOAuth(provider: AuthTypes.AuthProvider, oauthId: string): Promise<UserTypes.UserInternal | null>;
+
 	/** Returns the lastLogoutAt of a userId (timestamp in milliseconds) */
 	getLastLogoutAt(userId:string): Promise<number | null>;
 
