@@ -5,11 +5,13 @@ import { login } from '../api/authApi';
 import { useAuthStore } from '../../../core/auth/AuthStore';
 import { PageContainer, FormCard, FormInput, PasswordInput, ArcadeButton, LinkButton, AlertError, LoadingScreen } from '../../../shared/components/ui';
 import { getProfile } from '../../profile/api/profileApi';
+import { useTranslation } from 'react-i18next';
 
 export default function LoginPage() {
 	const navigate = useNavigate();
 	const authLogin = useAuthStore((state) => state.login);
 	const setAvatar = useAuthStore((state) => state.setAvatar);
+	const { t } = useTranslation('auth');
 
 	const [email, setEmail] = useState('');
 	const [password, setPassword] = useState('');
@@ -83,6 +85,29 @@ export default function LoginPage() {
 					<div className='mt-4 flex justify-between text-sm text-purple-300'>
 						<LinkButton onClick={() => navigate('/register')}>Create account</LinkButton>
 						<LinkButton onClick={() => navigate('/forgot')}>Forgot password?</LinkButton>
+					</div>
+
+					{/* OAuth Divider */}
+					<div className='relative my-6'>
+						<div className='absolute inset-0 flex items-center'>
+							<span className='w-full border-t border-purple-800'></span>
+						</div>
+						<div className='relative flex justify-center text-sm'>
+							<span className='px-2 bg-black text-purple-400'>{t('orContinueWith')}</span>
+						</div>
+					</div>
+
+					{/* OAuth Buttons */}
+					<div className='flex flex-col gap-3'>
+						<a href='/api/auth/oauth/42/authorize' className='w-full'>
+							<ArcadeButton className='w-full'>{t('loginWith42')}</ArcadeButton>
+						</a>
+						<a href='/api/auth/oauth/google/authorize' className='w-full'>
+							<ArcadeButton className='w-full'>{t('loginWithGoogle')}</ArcadeButton>
+						</a>
+						<a href='/api/auth/oauth/github/authorize' className='w-full'>
+							<ArcadeButton className='w-full'>{t('loginWithGithub')}</ArcadeButton>
+						</a>
 					</div>
 				</FormCard>
 			</div>

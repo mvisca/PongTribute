@@ -24,6 +24,7 @@ import DeleteAccountPage from '../../features/profile/pages/DeleteAccountPage';
 import Verify2FALoginPage from '../../features/auth/pages/Verify2FALoginPage';
 import GamePage from '../../features/game/pages/GamePages';
 import { LogedRedirect } from './LogedRedirect';
+import { OAuthCallbackPage } from '../../features/auth/pages/OAuthCallbackPage';
 
 export function AppRouter() {
 	const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -66,6 +67,7 @@ export function AppRouter() {
 							<RecoverPasswordPage />
 						</LogedRedirect>
 					}/>
+					<Route path="/auth/callback" element={<OAuthCallbackPage />} />
 					<Route path="/privacy" element={<PrivacyPage />}/>
 					<Route path="/terms" element={<TermsPage />} />
 
