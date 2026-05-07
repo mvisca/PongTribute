@@ -133,11 +133,6 @@ export class AuthService {
 		user: UserTypes.UserInternal,
 		is2FAVerified: boolean = false
 	): Promise<TokenPair> {
-
-	/** Completa el proceso de login para OAuth (siempre con 2FA verificado) */
-	public async completeLoginForOAuth(user: UserTypes.UserInternal): Promise<TokenPair> {
-		return this.completeLogin(user, true);
-	}
 		// borrar refresh tokens de sesiones previas si UNIQUE_SESSION es true
 		if (AuthEnv.UNIQUE_SESSION() === true) {
 			await this.deleteRefreshTokensById(user.id);
@@ -173,7 +168,7 @@ export class AuthService {
 			payload: {
 				userId: user.id,
 				username: user.username,
-				avatar: user.avatar,
+				avatar: user.avatar ?? '',
 				email: user.email,
 				lastLogoutAt: user.lastLogoutAt,
 				isOnline: user.isOnline,
@@ -191,7 +186,12 @@ export class AuthService {
 		// Crear user payload y par tokens
 		return this.generateTokenPair(user, is2FAVerified);
 	}
-	
+
+	/** Completa el proceso de login para OAuth (siempre con 2FA verificado) */
+	public async completeLoginForOAuth(user: UserTypes.UserInternal): Promise<TokenPair> {
+		return this.completeLogin(user, true);
+	}
+
 	// VERIFICA PASSWORD
 	
 	/** Verify password against hash */
@@ -756,6 +756,14 @@ export class AuthService {
 			});
 		}
 		
+		if (!user.passwordHash) {
+			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
+				operation: 'login',
+				reason: 'oauthAccount',
+				userId: user.id
+			});
+		}
+
 		const valid = await this.verifyPassword(password, user.passwordHash);
 		if (!valid) {
 			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
@@ -860,7 +868,7 @@ export class AuthService {
 					userId: user.id,
 					username: user.username,
 					email: user.email,
-					avatar: user.avatar,
+					avatar: user.avatar ?? '',
 					lastLogoutAt: user.lastLogoutAt,
 					isOnline: false,
 					friendsIds
@@ -937,9 +945,12 @@ export class AuthService {
 		newPassword: string
 	):Promise<TokenPair> {
 		const user = await this.fetchUserById(userId);
-		
+
+		if (!user.passwordHash)
+			throw new SharedErrors.ValidationError('Cannot change password for OAuth account', 'password');
+
 		const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
-		
+
 		if (!isPasswordValid) {
 			throw new SharedErrors.UnauthorizedError(`Password actual incorrecta`, {
 				userId,
@@ -1195,9 +1206,12 @@ export class AuthService {
 		// Recuperar user
 		const user = await this.fetchUserById(userId);
 		
+		if (!user.passwordHash)
+			throw new SharedErrors.ValidationError('Cannot disable 2FA for OAuth account', 'password');
+
 		// Verificar password vs passwordHash
 		const valid = await this.verifyPassword(password, user.passwordHash);
-		
+
 		if (!valid) {
 			throw new SharedErrors.UnauthorizedError('Credenciales inválidas', {
 				userId,

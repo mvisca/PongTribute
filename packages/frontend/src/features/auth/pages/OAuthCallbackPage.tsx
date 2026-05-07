@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../../core/auth/AuthStore';
-import { LoadingScreen } from '../../../shared/components/ui/LoadingScreen';
+import LoadingScreen from '../../../shared/components/ui/LoadingScreen';
 
 export const OAuthCallbackPage = () => {
 	const navigate = useNavigate();
@@ -22,19 +22,15 @@ export const OAuthCallbackPage = () => {
 					return;
 				}
 
-				// Decode JWT payload (without verification)
-				const payloadBase64 = token.split('.')[1];
-				const payloadJson = atob(payloadBase64);
-				const payload = JSON.parse(payloadJson);
+				// JWT uses base64url — replace url-safe chars before atob
+				const base64url = token.split('.')[1];
+				const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+				const payload = JSON.parse(atob(base64));
 
-				// Login with decoded payload
-				await login(payload, token);
-
-				// Redirect to home
+				login(payload, token);
 				navigate('/home', { replace: true });
 
-			} catch (err) {
-				console.error('OAuth callback processing failed:', err);
+			} catch {
 				navigate('/login?error=oauth_failed', { replace: true });
 			}
 		};

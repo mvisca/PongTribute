@@ -65,7 +65,7 @@ export class OAuthService {
 			}
 
 			// Validar que el provider sea válido
-			if (!AuthConstants.OAUTH_PROVIDERS.includes(provider as AuthTypes.AuthProvider)) {
+			if (!AuthConstants.OAUTH_PROVIDERS.includes(provider as AuthTypes.OAuthProviderName)) {
 				this.log.warn({ state, provider }, 'Invalid OAuth provider in state token');
 				throw new SharedErrors.UnauthorizedError('Invalid OAuth provider');
 			}
@@ -93,17 +93,14 @@ export class OAuthService {
 		profile: OAuthProfile,
 		provider: AuthTypes.AuthProvider
 	): Promise<UserTypes.UserInternal> {
-		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), 5000);
+		const userServiceUrl = AuthEnv.USER_SERVICE_URL();
+		const headers = { 'X-Service-Secret': AuthEnv.SERVICE_SECRET() };
 
 		try {
 			// Caso 1: Buscar usuario por OAuth (provider + providerId)
 			const oauthResponse = await fetch(
-				`http://user-service/internal/users/by-oauth/${provider}/${profile.providerId}`,
-				{
-					headers: { 'X-Service-Secret': AuthEnv.SERVICE_SECRET() },
-					signal: controller.signal
-				}
+				`${userServiceUrl}/internal/users/by-oauth/${provider}/${profile.providerId}`,
+				{ headers, signal: AbortSignal.timeout(5000) }
 			);
 
 			if (oauthResponse.ok) {
@@ -114,11 +111,8 @@ export class OAuthService {
 
 			// Caso 2: Buscar usuario por email
 			const emailResponse = await fetch(
-				`http://user-service/internal/users/by-email/${profile.email}`,
-				{
-					headers: { 'X-Service-Secret': AuthEnv.SERVICE_SECRET() },
-					signal: controller.signal
-				}
+				`${userServiceUrl}/internal/users/by-email/${profile.email}`,
+				{ headers, signal: AbortSignal.timeout(5000) }
 			);
 
 			if (emailResponse.ok) {
@@ -126,15 +120,12 @@ export class OAuthService {
 
 				// Vincular OAuth al usuario existente
 				const linkResponse = await fetch(
-					`http://user-service/internal/users/${user.id}/link-oauth`,
+					`${userServiceUrl}/internal/users/${user.id}/link-oauth`,
 					{
 						method: 'POST',
-						headers: {
-							'Content-Type': 'application/json',
-							'X-Service-Secret': AuthEnv.SERVICE_SECRET()
-						},
+						headers: { ...headers, 'Content-Type': 'application/json' },
 						body: JSON.stringify({ provider, oauthId: profile.providerId }),
-						signal: controller.signal
+						signal: AbortSignal.timeout(5000)
 					}
 				);
 
@@ -148,12 +139,9 @@ export class OAuthService {
 			}
 
 			// Caso 3: Crear nuevo usuario OAuth
-			const createResponse = await fetch('http://user-service/internal/users/create-oauth', {
+			const createResponse = await fetch(`${userServiceUrl}/internal/users/create-oauth`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Service-Secret': AuthEnv.SERVICE_SECRET()
-				},
+				headers: { ...headers, 'Content-Type': 'application/json' },
 				body: JSON.stringify({
 					username: profile.username,
 					email: profile.email,
@@ -161,11 +149,12 @@ export class OAuthService {
 					oauthId: profile.providerId,
 					avatar: profile.avatar
 				}),
-				signal: controller.signal
+				signal: AbortSignal.timeout(5000)
 			});
 
 			if (!createResponse.ok) {
-				throw new Error('Failed to create OAuth user');
+				const errBody = await createResponse.json().catch(() => ({})) as { message?: string };
+				throw new Error(`Failed to create OAuth user: ${errBody.message ?? createResponse.statusText}`);
 			}
 
 			const newUser = await createResponse.json() as UserTypes.UserInternal;
@@ -173,10 +162,8 @@ export class OAuthService {
 			return newUser;
 
 		} catch (err) {
-			this.log.error({ err, profile, provider }, 'Failed to upsert OAuth user');
+			this.log.error({ err, provider, email: profile.email }, 'Failed to upsert OAuth user');
 			throw new Error('Failed to complete OAuth login');
-		} finally {
-			clearTimeout(timeoutId);
 		}
 	}
 

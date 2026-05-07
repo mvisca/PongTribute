@@ -50,7 +50,7 @@ export class Intra42Provider implements IOAuthProvider {
 			throw new Error(`42 token exchange failed: ${response.status} ${response.statusText}`);
 		}
 
-		const data = await response.json();
+		const data = await response.json() as Record<string, unknown>;
 		return data.access_token as string;
 	}
 

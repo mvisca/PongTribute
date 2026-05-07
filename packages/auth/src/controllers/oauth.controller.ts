@@ -4,6 +4,14 @@ import { OAuthService } from "../services/oauth.service.js";
 import { IOAuthProvider } from "../providers/oauth.provider.js";
 import { AuthEnv } from "../index.js";
 
+function frontendUrl(): string {
+	try {
+		return new URL(AuthEnv.OAUTH_42_REDIRECT_URI()).origin;
+	} catch {
+		return 'https://localhost:8443';
+	}
+}
+
 export class OAuthController {
 
 	private oauthService: OAuthService;
@@ -20,7 +28,7 @@ export class OAuthController {
 			const { provider } = request.params as { provider: string };
 
 			// Validate provider
-			if (!AuthConstants.OAUTH_PROVIDERS.includes(provider as AuthTypes.AuthProvider)) {
+			if (!AuthConstants.OAUTH_PROVIDERS.includes(provider as AuthTypes.OAuthProviderName)) {
 				return reply.code(400).send({ error: 'Invalid OAuth provider' });
 			}
 
@@ -35,7 +43,7 @@ export class OAuthController {
 
 			// Redirect to provider
 			const authUrl = providerInstance.getAuthorizationUrl(state);
-			return reply.redirect(302, authUrl);
+			return reply.redirect(authUrl);
 
 		} catch (err) {
 			return reply.code(500).send({ error: 'OAuth authorization failed' });
@@ -50,8 +58,7 @@ export class OAuthController {
 
 			// Validate required parameters
 			if (!code || !state) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=missing_params`);
+				return reply.redirect(`${frontendUrl()}/login?error=missing_params`);
 			}
 
 			// Validate and consume state token
@@ -59,15 +66,13 @@ export class OAuthController {
 			try {
 				providerName = await this.oauthService.validateAndConsumeStateToken(state);
 			} catch (err) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=invalid_state`);
+				return reply.redirect(`${frontendUrl()}/login?error=invalid_state`);
 			}
 
 			// Get provider instance
 			const providerInstance = this.providers.get(provider);
 			if (!providerInstance) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=invalid_provider`);
+				return reply.redirect(`${frontendUrl()}/login?error=invalid_provider`);
 			}
 
 			// Exchange code for access token
@@ -75,8 +80,7 @@ export class OAuthController {
 			try {
 				accessToken = await providerInstance.exchangeCode(code);
 			} catch (err) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=exchange_failed`);
+				return reply.redirect(`${frontendUrl()}/login?error=exchange_failed`);
 			}
 
 			// Get user profile
@@ -84,8 +88,7 @@ export class OAuthController {
 			try {
 				profile = await providerInstance.getProfile(accessToken);
 			} catch (err) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=profile_failed`);
+				return reply.redirect(`${frontendUrl()}/login?error=profile_failed`);
 			}
 
 			// Upsert user
@@ -93,8 +96,7 @@ export class OAuthController {
 			try {
 				user = await this.oauthService.upsertOAuthUser(profile, providerName);
 			} catch (err) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=upsert_failed`);
+				return reply.redirect(`${frontendUrl()}/login?error=upsert_failed`);
 			}
 
 			// Complete OAuth login
@@ -102,17 +104,14 @@ export class OAuthController {
 			try {
 				tokens = await this.oauthService.completeOAuthLogin(user);
 			} catch (err) {
-				const frontendUrl = AuthEnv.CORS_ORIGIN();
-				return reply.redirect(302, `${frontendUrl}/login?error=login_failed`);
+				return reply.redirect(`${frontendUrl()}/login?error=login_failed`);
 			}
 
 			// Redirect to frontend with access token
-			const frontendUrl = AuthEnv.CORS_ORIGIN();
-			return reply.redirect(302, `${frontendUrl}/auth/callback?token=${tokens.accessToken}`);
+			return reply.redirect(`${frontendUrl()}/auth/callback?token=${tokens.accessToken}`);
 
 		} catch (err) {
-			const frontendUrl = AuthEnv.CORS_ORIGIN();
-			return reply.redirect(302, `${frontendUrl}/login?error=oauth_failed`);
+			return reply.redirect(`${frontendUrl()}/login?error=oauth_failed`);
 		}
 	}
 }

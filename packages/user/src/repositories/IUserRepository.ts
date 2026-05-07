@@ -61,6 +61,19 @@ export interface IUserRepository {
     /** Buscar usuario por OAuth provider e ID */
     findByOAuth(provider: AuthTypes.AuthProvider, oauthId: string): Promise<UserTypes.UserInternal | null>;
 
+    /** Crear usuario OAuth (sin password) */
+    createOAuthUser(data: {
+        id: string;
+        username: string;
+        email: string;
+        authProvider: string;
+        oauthId: string;
+        avatar?: string;
+    }): Promise<UserTypes.UserInternal>;
+
+    /** Vincular identidad OAuth a usuario existente */
+    linkOAuthIdentity(userId: string, provider: string, oauthId: string): Promise<UserTypes.UserInternal>;
+
 	/** Returns the lastLogoutAt of a userId (timestamp in milliseconds) */
 	getLastLogoutAt(userId:string): Promise<number | null>;
 

@@ -2,28 +2,29 @@ import { FastifyPluginAsync } from "fastify";
 import { OAuthController } from "../controllers/oauth.controller.js";
 import { AuthAppDependencies } from "../app.js";
 import { Intra42Provider } from "../providers/intra42.provider.js";
-import { OAuthService } from "../services/oauth.service.js";
+import { GoogleProvider } from "../providers/google.provider.js";
+import { GitHubProvider } from "../providers/github.provider.js";
+import { IOAuthProvider } from "../providers/oauth.provider.js";
 
 export const oauthRoutes: FastifyPluginAsync<AuthAppDependencies> = async (app, opts) => {
 
-	// Create providers map
-	const providers = new Map<string, any>();
-	providers.set('42', new Intra42Provider());
+	const providers = new Map<string, IOAuthProvider>([
+		['42',     new Intra42Provider()],
+		['google', new GoogleProvider()],
+		['github', new GitHubProvider()],
+	]);
 
-	// Create OAuth controller
 	const oauthController = new OAuthController(opts.oauthService, providers);
 
 	// ============================================================================
-	// PUBLIC OAUTH ROUTES
+	// PUBLIC OAUTH ROUTES — prefix '/api' → full path '/api/auth/oauth/...'
 	// ============================================================================
 
-	/** Redirect to OAuth provider authorization URL */
-	app.get('/oauth/:provider/authorize', {
+	app.get('/auth/oauth/:provider/authorize', {
 		handler: oauthController.authorize.bind(oauthController)
 	});
 
-	/** OAuth callback handler */
-	app.get('/oauth/:provider/callback', {
+	app.get('/auth/oauth/:provider/callback', {
 		handler: oauthController.callback.bind(oauthController)
 	});
 };

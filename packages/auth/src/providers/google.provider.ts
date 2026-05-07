@@ -50,7 +50,7 @@ export class GoogleProvider implements IOAuthProvider {
 			throw new Error(`Google token exchange failed: ${response.status} ${response.statusText}`);
 		}
 
-		const data = await response.json();
+		const data = await response.json() as Record<string, unknown>;
 		return data.access_token as string;
 	}
 
