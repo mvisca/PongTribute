@@ -398,4 +398,23 @@ export class UserService {
 		});
 		return user;
 	}
+
+	async findByOAuth(provider: string, oauthId: string): Promise<UserTypes.UserInternal | null> {
+		return await this.userRepo.findByOAuth(provider as any, oauthId);
+	}
+
+	async createOAuthUser(data: {
+		username: string;
+		email: string;
+		authProvider: string;
+		oauthId: string;
+		avatar?: string;
+	}): Promise<UserTypes.UserInternal> {
+		const userId = Utils.generateUserId();
+		return await this.userRepo.createOAuthUser({ id: userId, ...data });
+	}
+
+	async linkOAuthIdentity(userId: string, provider: string, oauthId: string): Promise<UserTypes.UserInternal> {
+		return await this.userRepo.linkOAuthIdentity(userId, provider, oauthId);
+	}
 }

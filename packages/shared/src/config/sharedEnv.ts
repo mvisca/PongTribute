@@ -44,6 +44,15 @@ interface EnvVars {
 	PROVISIONAL_TOKEN_LIFETIME: number;
 	BCRYPT_ROUNDS: number;
 	UNIQUE_SESSION: boolean;
+	OAUTH_42_CLIENT_ID: string;
+	OAUTH_42_REDIRECT_URI: string;
+	OAUTH_42_CLIENT_SECRET: string;
+	OAUTH_GOOGLE_CLIENT_ID: string;
+	OAUTH_GOOGLE_REDIRECT_URI: string;
+	OAUTH_GOOGLE_CLIENT_SECRET: string;
+	OAUTH_GITHUB_CLIENT_ID: string;
+	OAUTH_GITHUB_REDIRECT_URI: string;
+	OAUTH_GITHUB_CLIENT_SECRET: string;
 
 	// USER SERVICE
 	USER_SERVICE_URL: string;
@@ -89,18 +98,25 @@ interface EnvVars {
 	RESET_TTL_SECONDS: number;
 };
 
+/** Setea undefined los secretos.*/
 type DefaultVars = Omit<
-EnvVars, 
-| 'JWT_SECRET' 
+EnvVars,
+| 'JWT_SECRET'
 | 'SERVICE_SECRET'
 | 'COOKIE_SECRET'
 | 'REDIS_PASSWORD'
+| 'OAUTH_42_CLIENT_SECRET'
+| 'OAUTH_GOOGLE_CLIENT_SECRET'
+| 'OAUTH_GITHUB_CLIENT_SECRET'
 > & {
 	JWT_SECRET: undefined;
 	SERVICE_SECRET: undefined;
 	COOKIE_SECRET: undefined;
 	REDIS_PASSWORD: undefined;
-};
+	OAUTH_42_CLIENT_SECRET: undefined;
+	OAUTH_GOOGLE_CLIENT_SECRET: undefined;
+	OAUTH_GITHUB_CLIENT_SECRET: undefined;
+}; 
 
 const DEFAULTS: DefaultVars = {
 	// GLOBAL
@@ -119,17 +135,26 @@ const DEFAULTS: DefaultVars = {
 	PROVISIONAL_TOKEN_LIFETIME: 60,
 	BCRYPT_ROUNDS: 10,
 	UNIQUE_SESSION: true,
+	OAUTH_42_CLIENT_ID: '',
+	OAUTH_42_REDIRECT_URI: 'https://localhost:8443/api/auth/oauth/42/callback',
+	OAUTH_42_CLIENT_SECRET: undefined,
+	OAUTH_GOOGLE_CLIENT_ID: '',
+	OAUTH_GOOGLE_REDIRECT_URI: 'https://localhost:8443/api/auth/oauth/google/callback',
+	OAUTH_GOOGLE_CLIENT_SECRET: undefined,
+	OAUTH_GITHUB_CLIENT_ID: '',
+	OAUTH_GITHUB_REDIRECT_URI: 'https://localhost:8443/api/auth/oauth/github/callback',
+	OAUTH_GITHUB_CLIENT_SECRET: undefined,
 
 	// USER SERVICE
 	USER_SERVICE_URL: 'http://localhost:3001',
 	USER_SERVICE_PORT: 3001,
 	USER_SERVICE_HOST: 'localhost',
-	USER_SERVICE_DB_PATH: '.', //CAMBIO: antes era './db-data' OJO DEBERIA VERIFICARSE
+	USER_SERVICE_DB_PATH: '.',
 	USER_SERVICE_DB_FILENAME: 'user.db',
 	USER_SERVICE_DB_FULL_PATH: './db-data/user.db',
 
 	// IMAGE SERVICE
-	IMAGE_SERVICE_URL: 'localhost:3004',
+	IMAGE_SERVICE_URL: 'http://localhost:3004',
 	IMAGE_SERVICE_PORT: 3004,
 	IMAGE_SERVICE_HOST: 'localhost',
 	CLOUDINARY_URL: 'Cloudinary_URL',
@@ -142,7 +167,7 @@ const DEFAULTS: DefaultVars = {
 	GAME_SERVICE_URL: 'http://localhost:3003',
 	GAME_SERVICE_PORT: 3003,
 	GAME_SERVICE_HOST: 'localhost',
-	GAME_SERVICE_DB_PATH: './packages/game',  //CAMBIO: lo pongo dentro del microservicio
+	GAME_SERVICE_DB_PATH: './packages/game',
 	GAME_SERVICE_DB_FILENAME: 'game.db',
 	GAME_SERVICE_DB_FULL_PATH: './packages/game/db-data/game.db',
 
@@ -167,17 +192,16 @@ export type EnvironmentVars = typeof DEFAULTS;
 // ==================================================
 
 export namespace SharedEnv {
-	
-	// DUDA Los llamados a build() están todos en try catch adecuados?
-	
+
 	// Construye y retorna el objeto de configuración leyendo variables de entorno.
 	export function build() {
 		const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
 		const isTest = process.env.NODE_ENV === 'test';
-		const isProduction = process.env.NODE_ENV === 'production';
+		const isProduction = process.env.NODE_ENV === 'production'; // TODO,no se usa, debería?
 		
-		// Retorna el valor de la variable de entorno parseado, o el default en desarrollo; falla en producción si no está definida.
-		// Requiere un secret obligatorio sin fallback en ningún entorno.
+		// Retorna el valor de la variable de entorno parseado.
+		// En desarrollo, devuelve el default si no está definida.
+		// En producción, falla si no está definida.
 		function requireSecret(envValue: string | undefined, varName: string): string {
 			if (envValue !== undefined && envValue.trim() !== '') {
 				return envValue;
@@ -433,6 +457,15 @@ export namespace SharedEnv {
 			PROVISIONAL_TOKEN_LIFETIME: envOr(process.env.PROVISIONAL_TOKEN_LIFETIME, DEFAULTS.PROVISIONAL_TOKEN_LIFETIME, 'PROVISIONAL_TOKEN_LIFETIME'),
 			BCRYPT_ROUNDS: envOr(process.env.BCRYPT_ROUNDS, DEFAULTS.BCRYPT_ROUNDS, 'BCRYPT_ROUNDS'),
 			UNIQUE_SESSION: envOr(process.env.UNIQUE_SESSION, DEFAULTS.UNIQUE_SESSION, 'UNIQUE_SESSION'),
+			OAUTH_42_REDIRECT_URI: envOr(process.env.OAUTH_42_REDIRECT_URI, DEFAULTS.OAUTH_42_REDIRECT_URI, 'OAUTH_42_REDIRECT_URI'),
+			OAUTH_42_CLIENT_ID: envOr(process.env.OAUTH_42_CLIENT_ID, DEFAULTS.OAUTH_42_CLIENT_ID, 'OAUTH_42_CLIENT_ID'),
+			OAUTH_42_CLIENT_SECRET: requireSecret(process.env.OAUTH_42_CLIENT_SECRET, 'OAUTH_42_CLIENT_SECRET'),
+			OAUTH_GOOGLE_REDIRECT_URI: envOr(process.env.OAUTH_GOOGLE_REDIRECT_URI, DEFAULTS.OAUTH_GOOGLE_REDIRECT_URI, 'OAUTH_GOOGLE_REDIRECT_URI'),
+			OAUTH_GOOGLE_CLIENT_ID: envOr(process.env.OAUTH_GOOGLE_CLIENT_ID, DEFAULTS.OAUTH_GOOGLE_CLIENT_ID, 'OAUTH_GOOGLE_CLIENT_ID'),
+			OAUTH_GOOGLE_CLIENT_SECRET: requireSecret(process.env.OAUTH_GOOGLE_CLIENT_SECRET, 'OAUTH_GOOGLE_CLIENT_SECRET'),
+			OAUTH_GITHUB_REDIRECT_URI: envOr(process.env.OAUTH_GITHUB_REDIRECT_URI, DEFAULTS.OAUTH_GITHUB_REDIRECT_URI, 'OAUTH_GITHUB_REDIRECT_URI'),
+			OAUTH_GITHUB_CLIENT_ID: envOr(process.env.OAUTH_GITHUB_CLIENT_ID, DEFAULTS.OAUTH_GITHUB_CLIENT_ID, 'OAUTH_GITHUB_CLIENT_ID'),
+			OAUTH_GITHUB_CLIENT_SECRET: requireSecret(process.env.OAUTH_GITHUB_CLIENT_SECRET, 'OAUTH_GITHUB_CLIENT_SECRET'),
 
 			// USER SERVICE
 			USER_SERVICE_URL: envOr(process.env.USER_SERVICE_URL, DEFAULTS.USER_SERVICE_URL, 'USER_SERVICE_URL'),

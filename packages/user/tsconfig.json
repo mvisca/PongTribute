@@ -25,13 +25,7 @@
 		// referencias de proyecto 
 		"composite": true,
 		
-		// paths
-		"baseUrl": ".",
-		"paths": {
-			"@transcendence/shared": ["../shared/dist/index.d.ts"],
-			"@transcendence/shared/*": ["../shared/dist/*"]
-		}
-	},
+},
 
 	"include": ["src/**/*", "../shared/src/errors"],
 	

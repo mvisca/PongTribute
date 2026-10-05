@@ -80,9 +80,28 @@ export const internalRoutes: FastifyPluginAsync<UserAppDependencies> = async (ap
 	// UPDATE LAST LOGOUT AT
 	// ============================================================================
 
-	app.put('/users/:id/logout', { 
+	app.put('/users/:id/logout', {
 		schema: AuthSchemas.UpdateLastLogoutAtSchema,
 		handler: controller.updateLastLogoutAt.bind(controller)
+	});
+
+	// ============================================================================
+	// OAUTH INTERNALS
+	// ============================================================================
+
+	// Find user by OAuth provider + ID
+	app.get('/users/by-oauth/:provider/:oauthId', {
+		handler: controller.findByOAuth.bind(controller)
+	});
+
+	// Create OAuth user (no password)
+	app.post('/users/create-oauth', {
+		handler: controller.createOAuthUser.bind(controller)
+	});
+
+	// Link OAuth identity to existing user
+	app.post('/users/:id/link-oauth', {
+		handler: controller.linkOAuthIdentity.bind(controller)
 	});
 
 };

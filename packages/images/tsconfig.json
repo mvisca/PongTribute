@@ -14,12 +14,7 @@
 		"declarationMap": true,
 		"sourceMap": true,
 		"composite": true,
-		"baseUrl": ".",
-		"paths": {
-			"@transcendence/shared": ["../shared/dist/index.d.ts"],
-			"@transcendence/shared/*": ["../shared/dist/*"]
-		}
-	},
+},
 	"include": ["src/**/*"],
 	"exclude": [
 		"node_modules",

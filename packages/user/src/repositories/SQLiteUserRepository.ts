@@ -1,4 +1,4 @@
-import { Utils, UserTypes, UserConstants, SharedErrors } from "@transcendence/shared";
+import { Utils, UserTypes, UserConstants, SharedErrors, AuthTypes } from "@transcendence/shared";
 import { getDatabase, UserMapper } from "../index.js";
 import { IUserRepository } from './IUserRepository.js';
 import { UserEnv } from '../config.js';
@@ -23,41 +23,91 @@ export class SQLiteUserRepository implements IUserRepository {
 	async create(data: UserTypes.CreateUserBody): Promise<UserTypes.UserPublic> {
 		const now = new Date().toISOString();
 		const nowSeconds = Math.floor(Date.now() / 1000);
-		
-		const newUser: UserTypes.UserInternal = {
+
+		const now_ts = Date.now();
+
+		this.db.prepare(`
+			INSERT INTO users (
+				id, username, email, password_hash, auth_provider, oauth_id, avatar,
+				is_online, is_deleted, last_logout_at, created_at, updated_at)
+			VALUES (
+				@id, @username, LOWER(@email), @password_hash, @auth_provider, @oauth_id, @avatar,
+				0, 0, @last_logout_at, @created_at, @updated_at)
+		`).run({
 			id: data.id,
 			username: Utils.UserNormalizer.usernameForStorage(data.username),
 			email: Utils.UserNormalizer.email(data.email),
+			password_hash: data.passwordHash ?? null,
+			auth_provider: data.authProvider ?? 'local',
+			oauth_id: data.oauthId ?? null,
 			avatar: Utils.UserNormalizer.avatar(data.avatar) || UserEnv.CLOUDINARY_DEFAULT_AVATAR(),
-			passwordHash: data.passwordHash,
-			isOnline: false,
-			isDeleted: false,
-			has2FAEnabled: false,
-			is2FAVerified: false,
-			totpSecret: undefined,
-			createdAt: now,
-			lastLogoutAt: nowSeconds,
-			updatedAt: now
-		};
-		
-		const row = UserMapper.internalToRow(newUser);
+			last_logout_at: nowSeconds,
+			created_at: now_ts,
+			updated_at: now_ts,
+		});
 
-		// omit 'has2FAEnabled' & 'totpSecret' fields so the table default values are used
+		const created = await this.findUserById(data.id);
+
+		if (!created)
+			throw new SharedErrors.NotFoundError(`Could not retrieve user after create: ${data.id}`);
+
+		return created;
+	}
+
+	/** Create OAuth user (no password) */
+	async createOAuthUser(data: {
+		id: string;
+		username: string;
+		email: string;
+		authProvider: string;
+		oauthId: string;
+		avatar?: string;
+	}): Promise<UserTypes.UserInternal> {
+		const now_ts = Date.now();
+		const nowSeconds = Math.floor(Date.now() / 1000);
+
+		// Release oauth identity from any deleted user so the UNIQUE index doesn't block
+		this.db.prepare(`
+			UPDATE users SET auth_provider = 'local', oauth_id = NULL
+			WHERE auth_provider = ? AND oauth_id = ? AND is_deleted = 1
+		`).run(data.authProvider, data.oauthId);
+
 		this.db.prepare(`
 			INSERT INTO users (
-				id, username, email, password_hash, avatar,
+				id, username, email, password_hash, auth_provider, oauth_id, avatar,
 				is_online, is_deleted, last_logout_at, created_at, updated_at)
 			VALUES (
-				@id, @username, LOWER(@email), @password_hash, @avatar,
-				@is_online, @is_deleted, @last_logout_at, @created_at, @updated_at)
-		`).run(row);
+				@id, @username, LOWER(@email), NULL, @auth_provider, @oauth_id, @avatar,
+				0, 0, @last_logout_at, @created_at, @updated_at)
+		`).run({
+			id: data.id,
+			username: Utils.UserNormalizer.usernameForStorage(data.username),
+			email: Utils.UserNormalizer.email(data.email),
+			auth_provider: data.authProvider,
+			oauth_id: data.oauthId,
+			avatar: data.avatar ?? UserEnv.CLOUDINARY_DEFAULT_AVATAR(),
+			last_logout_at: nowSeconds,
+			created_at: now_ts,
+			updated_at: now_ts,
+		});
 
-		const created = await this.findUserById(row.id);
-			
+		const created = await this.findUserByIdInternal(data.id);
 		if (!created)
-			throw new SharedErrors.NotFoundError(`Could not retrieve user: ${UserMapper.internalToResponse(newUser)}`);
-			
+			throw new SharedErrors.NotFoundError(`Could not retrieve OAuth user after create: ${data.id}`);
 		return created;
+	}
+
+	/** Link OAuth identity to existing user */
+	async linkOAuthIdentity(userId: string, provider: string, oauthId: string): Promise<UserTypes.UserInternal> {
+		const now_ts = Date.now();
+		this.db.prepare(`
+			UPDATE users SET auth_provider = ?, oauth_id = ?, updated_at = ? WHERE id = ?
+		`).run(provider, oauthId, now_ts, userId);
+
+		const updated = await this.findUserByIdInternal(userId);
+		if (!updated)
+			throw new SharedErrors.NotFoundError(`User not found after linking OAuth: ${userId}`);
+		return updated;
 	}
 
 	/** Update user, throws NotFoundError if not found */
@@ -156,7 +206,9 @@ export class SQLiteUserRepository implements IUserRepository {
 				updated_at = ?,
 				is_deleted = ?,
 				is_online = ?,
-				has_2fa_enabled = ?
+				has_2fa_enabled = ?,
+				auth_provider = ?,
+				oauth_id = ?
 			WHERE id = ?
 		`).run(
 			anonName,
@@ -166,6 +218,8 @@ export class SQLiteUserRepository implements IUserRepository {
 			1,
 			0,
 			0,
+			'local',
+			null,
 			id
 		);
 
@@ -322,6 +376,14 @@ export class SQLiteUserRepository implements IUserRepository {
 		const row = this.db.prepare(`
 			SELECT * FROM users WHERE LOWER(email) = ?
 		`).get(normalizedEmail) as UserTypes.UserRow | undefined;
+		return row ? UserMapper.rowToInternal(row) : null;
+	}
+
+	/** Search by OAuth provider and ID, return internal user (with private fields) */
+	async findByOAuth(provider: AuthTypes.AuthProvider, oauthId: string): Promise<UserTypes.UserInternal | null> {
+		const row = this.db.prepare(`
+			SELECT * FROM users WHERE auth_provider = ? AND oauth_id = ?
+		`).get(provider, oauthId) as UserTypes.UserRow | undefined;
 		return row ? UserMapper.rowToInternal(row) : null;
 	}
 	

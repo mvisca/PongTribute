@@ -5,8 +5,10 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL UNIQUE COLLATE NOCASE,
   email TEXT NOT NULL UNIQUE COLLATE NOCASE,
-  password_hash TEXT NOT NULL,
-  avatar TEXT NOT NULL,
+  password_hash TEXT,
+  auth_provider TEXT NOT NULL DEFAULT 'local',
+  oauth_id TEXT,
+  avatar TEXT,
   is_online INTEGER DEFAULT 0,
   is_deleted INTEGER DEFAULT 0,
   has_2fa_enabled INTEGER DEFAULT 0,
@@ -15,7 +17,10 @@ CREATE TABLE IF NOT EXISTS users (
   last_logout_at INTEGER DEFAULT 0 NOT NULL,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
-); 
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_oauth_identity ON users(auth_provider, oauth_id)
+WHERE auth_provider != 'local';
 
 -- ============================================================================
 -- TABLA: refresh_tokens

@@ -55,13 +55,15 @@ export namespace UserSchemas {
 		id: UuidField,
 		username: UsernameField,
 		email: EmailField,
-		passwordHash: PasswordHashField,
-		avatar: AvatarFieldUrl,
+		passwordHash: Type.Optional(PasswordHashField),
+		avatar: Type.Optional(AvatarFieldUrl),
 		isOnline: Type.Boolean(),
 		isDeleted: Type.Boolean(),
 		has2FAEnabled: Type.Boolean(),
 		totpSecret: Type.Optional(Type.String()),
-		backupCodeHash: Type.Optional(Type.String())
+		backupCodeHash: Type.Optional(Type.String()),
+		authProvider: Type.Optional(Type.String()),
+		oauthId: Type.Optional(Type.String()),
 	});
 
 	// ========================================================================
@@ -93,8 +95,10 @@ export namespace UserSchemas {
 		id: UuidField,
 		username: UsernameField,
 		email: EmailField,
-		avatar: AvatarFieldUrl,
-		passwordHash: PasswordHashField,
+		avatar: Type.Optional(AvatarFieldUrl),
+		passwordHash: Type.Optional(PasswordHashField),
+		authProvider: Type.Optional(Type.String()),
+		oauthId: Type.Optional(Type.String()),
 		isOnline: BooleanField,
 		isDeleted: BooleanField,
 		has2FAEnabled: BooleanField,

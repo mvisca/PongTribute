@@ -17,8 +17,10 @@ export class UserMapper {
 			id: row.id,
 			username: row.username,
 			email: row.email,
-			avatar: row.avatar,
-			passwordHash: row.password_hash,
+			avatar: row.avatar ?? undefined,
+			passwordHash: row.password_hash ?? undefined,
+			authProvider: row.auth_provider,
+			oauthId: row.oauth_id ?? undefined,
 			isOnline: row.is_online === 1,
 			isDeleted: row.is_deleted === 1,
 			has2FAEnabled: row.has_2fa_enabled === 1,
@@ -35,16 +37,16 @@ export class UserMapper {
 	* SQLite Row to Domain Entity, SIN 'passwordHash'
 	*/
 	static rowToResponse(row: UserTypes.UserRow): UserTypes.UserPublic {
-		const { passwordHash, ...response } = this.rowToInternal(row);
-		return response;
+		const { passwordHash, authProvider, oauthId, isDeleted, totpSecret, backupCodeHash, ...response } = this.rowToInternal(row);
+		return { ...response, avatar: response.avatar ?? '' };
 	}
-	
+
 	/**
 	* Domain Entity to DB Row, SIN 'passwordHash'
 	*/
 	static internalToResponse(user: UserTypes.UserInternal): UserTypes.UserPublic {
-		const { passwordHash, ...response } = user;
-		return response;
+		const { passwordHash, authProvider, oauthId, isDeleted, totpSecret, backupCodeHash, ...response } = user;
+		return { ...response, avatar: response.avatar ?? '' };
 	}
 	
 	/**

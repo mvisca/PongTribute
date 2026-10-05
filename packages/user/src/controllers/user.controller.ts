@@ -221,6 +221,48 @@ export class UserController {
 	}
 
 	// ========================================================================
+	// OAUTH INTERNALS
+	// ========================================================================
+
+	async findByOAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { provider, oauthId } = request.params as { provider: string; oauthId: string };
+			const user = await this.userService.findByOAuth(provider, oauthId);
+			if (!user) return reply.code(404).send({ error: 'Not found' });
+			return reply.code(200).send(user);
+		} catch (err) {
+			return SharedErrors.handleError(err, reply);
+		}
+	}
+
+	async createOAuthUser(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const data = request.body as {
+				username: string;
+				email: string;
+				authProvider: string;
+				oauthId: string;
+				avatar?: string;
+			};
+			const user = await this.userService.createOAuthUser(data);
+			return reply.code(201).send(user);
+		} catch (err) {
+			return SharedErrors.handleError(err, reply);
+		}
+	}
+
+	async linkOAuthIdentity(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+		try {
+			const { id } = request.params as UserTypes.UserIdParams;
+			const { provider, oauthId } = request.body as { provider: string; oauthId: string };
+			const user = await this.userService.linkOAuthIdentity(id, provider, oauthId);
+			return reply.code(200).send(user);
+		} catch (err) {
+			return SharedErrors.handleError(err, reply);
+		}
+	}
+
+	// ========================================================================
 	// VALIDADORES
 	// ========================================================================
 

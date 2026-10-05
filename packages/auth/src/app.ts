@@ -7,13 +7,15 @@ import swagger from '@fastify/swagger';
 import swaggerUI from '@fastify/swagger-ui';
 import { SharedErrors, SWAGGER_THEME_CSS } from "@transcendence/shared";
 import { AuthService } from './services/auth.service.js';
+import { OAuthService } from './services/oauth.service.js';
 import { MailerService } from "./services/mailer.service.js";
-import { authRoutes, AuthEnv } from './index.js';
+import { authRoutes, oauthRoutes, AuthEnv } from './index.js';
 import { healthRoutes } from './routes/health.routes.js';
 
 export interface AuthAppDependencies {
 	redisClient: Redis;
 	authService: AuthService;
+	oauthService: OAuthService;
 	mailerService: MailerService;
 }
 
@@ -112,6 +114,7 @@ export function buildApp(deps: AuthAppDependencies): FastifyInstance {
 	app.register(healthRoutes, { ...deps });
 	app.log.info('[AUTH] Registering public routes');
 	app.register(authRoutes, { prefix: '/api', ...deps });
+	app.register(oauthRoutes, { prefix: '/api', ...deps });
 
 	/** 7. Manejo global de errores. Captura cualquier error no manejado */
 	app.setErrorHandler((error, request, reply) => {

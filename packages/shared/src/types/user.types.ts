@@ -18,8 +18,10 @@ export namespace UserTypes {
 		id: string;
 		username: string;
 		email: string;
-		avatar: string;
-		password_hash: string;
+		avatar: string | null;
+		password_hash: string | null;
+		auth_provider: string;
+		oauth_id: string | null;
 		is_online: number;
 		is_deleted: number;
 		has_2fa_enabled: number;
